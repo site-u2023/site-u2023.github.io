@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1121.1721"
+VERSION="R7.1121.1735"
 
 show_menu() {
     local title="$1"
@@ -28,45 +28,42 @@ show_menu() {
     echo "$choice"
 }
 
+show_msgbox() {
+    local breadcrumb="$1"
+    local message="$2"
+    
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
+    echo "$message"
+    echo ""
+    printf "$(translate 'tr-tui-ok'): "
+    read
+}
+
 custom_feeds_selection() {
+    local tr_main_menu tr_custom_feeds breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    breadcrumb="${tr_main_menu} > ${tr_custom_feeds}"
+    
     if [ "$PKG_MGR" != "opkg" ]; then
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "Custom feeds are only available for OPKG"
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "Custom feeds are only available for OPKG"
         return 0
     fi
     
     download_customfeeds_json || {
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "Failed to load custom feeds"
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "Failed to load custom feeds"
         return 0
     }
     
     local cat_id=$(get_customfeed_categories | head -1)
     
     if [ -z "$cat_id" ]; then
-        clear
-        echo "========================================"
-        echo "  $(translate 'tr-tui-custom-feeds')"
-        echo "========================================"
-        echo ""
-        echo "No custom feeds available"
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
     fi
     
@@ -157,43 +154,46 @@ review_and_apply() {
 }
 
 device_info() {
-    clear
-    echo "========================================"
-    echo "  $(translate 'tr-tui-view-device-info')"
-    echo "========================================"
-    echo ""
-    echo "Model:   $DEVICE_MODEL"
-    echo "Target:  $DEVICE_TARGET"
-    echo "Version: $OPENWRT_VERSION"
-    [ -n "$DEVICE_MEM" ] && echo "Memory:  $DEVICE_MEM"
-    [ -n "$DEVICE_CPU" ] && echo "CPU:     $DEVICE_CPU"
-    [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
-    [ -n "$DEVICE_USB" ] && echo "USB:     $DEVICE_USB"
-    echo ""
-    printf "$(translate 'tr-tui-ok'): "
-    read
+    local tr_main_menu tr_device_info breadcrumb info
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_device_info=$(translate "tr-tui-view-device-info")
+    breadcrumb="${tr_main_menu} > ${tr_device_info}"
+    
+    info="Model: $DEVICE_MODEL\n"
+    info="${info}Target: $DEVICE_TARGET\n"
+    info="${info}Version: $OPENWRT_VERSION\n"
+    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
+    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
+    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
+    
+    show_msgbox "$breadcrumb" "$info"
 }
 
 show_network_info() {
-    clear
-    echo "========================================"
-    echo "  $(translate 'tr-auto-detection')"
-    echo "========================================"
-    echo ""
+    local tr_main_menu tr_internet_connection conn_type_label breadcrumb
+    local tr_isp tr_as info
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_internet_connection=$(translate "tr-internet-connection")
+    conn_type_label=$(get_setup_item_label "connection-type")
+    breadcrumb="${tr_main_menu} > ${tr_internet_connection} > ${conn_type_label}"
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
-        echo "No configuration detected."
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "No configuration detected."
         return 1
     fi
     
-    local tr_connection_type=$(translate "tr-connection-type")
-    local tr_isp=$(translate "tr-isp")
-    local tr_as=$(translate "tr-as")
+    tr_isp=$(translate "tr-isp")
+    tr_as=$(translate "tr-as")
     
-    echo "${tr_connection_type}: $DETECTED_CONN_TYPE"
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
+    echo "$(translate 'tr-connection-type'): $DETECTED_CONN_TYPE"
     [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
     echo ""
@@ -617,19 +617,23 @@ package_selection() {
 }
 
 view_customfeeds() {
-    clear
-    echo "========================================"
-    echo "  $(translate 'tr-tui-view-customfeeds')"
-    echo "========================================"
-    echo ""
+    local tr_main_menu tr_review tr_customfeeds breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_customfeeds=$(translate "tr-tui-view-customfeeds")
+    breadcrumb="${tr_main_menu} > ${tr_review} > ${tr_customfeeds}"
     
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        echo "No custom feeds available"
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
     fi
+    
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
     
     local i=1
     get_customfeed_categories | while read cat_id; do
@@ -650,39 +654,45 @@ view_customfeeds() {
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
         local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-        
-        clear
-        echo "========================================"
-        echo "  customfeeds-${selected_cat}.sh"
-        echo "========================================"
-        echo ""
+        local cat_name=$(get_category_name "$selected_cat")
+        local cat_breadcrumb="${breadcrumb} > ${cat_name}"
         
         if [ -f "$script_file" ]; then
+            clear
+            echo "========================================"
+            echo "  $cat_breadcrumb"
+            echo "========================================"
+            echo ""
             cat "$script_file"
+            echo ""
+            printf "$(translate 'tr-tui-ok'): "
+            read
         else
-            echo "Script not found"
+            show_msgbox "$cat_breadcrumb" "Script not found"
         fi
         
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        view_customfeeds
     fi
 }
 
 view_selected_custom_packages() {
-    clear
-    echo "========================================"
-    echo "  $(translate 'tr-tui-view-custom-packages')"
-    echo "========================================"
-    echo ""
+    local tr_main_menu tr_review tr_custom_packages breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_custom_packages=$(translate "tr-tui-view-custom-packages")
+    breadcrumb="${tr_main_menu} > ${tr_review} > ${tr_custom_packages}"
     
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        echo "No custom feeds available"
-        echo ""
-        printf "$(translate 'tr-tui-ok'): "
-        read
+        show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
     fi
+    
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
     
     local i=1
     get_customfeed_categories | while read cat_id; do
@@ -703,10 +713,11 @@ view_selected_custom_packages() {
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
         local cat_name=$(get_category_name "$selected_cat")
+        local cat_breadcrumb="${breadcrumb} > ${cat_name}"
         
         clear
         echo "========================================"
-        echo "  ${cat_name}"
+        echo "  $cat_breadcrumb"
         echo "========================================"
         echo ""
         
@@ -726,6 +737,8 @@ view_selected_custom_packages() {
         echo ""
         printf "$(translate 'tr-tui-ok'): "
         read
+        
+        view_selected_custom_packages
     fi
 }
 
