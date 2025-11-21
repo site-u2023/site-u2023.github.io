@@ -236,23 +236,23 @@ init() {
 # Language and Translation
 
 download_language_json() {
-    local lang="${1:-en}"
-    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
-    
-    if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-        echo "Warning: Failed to download language file for ${lang}"
-        if [ "$lang" != "en" ]; then
-            echo "Attempting fallback to English..."
-            lang_url="${BASE_URL}/www/langs/custom.en.json"
-            if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-                echo "Warning: Failed to download English fallback"
-                return 1
-            fi
-        else
-            return 1
-        fi
-    fi
-    return 0
+    local lang="${1:-en}"
+    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    
+    if ! __download_file_core "$lang_url" "$LANG_JSON"; then
+        echo "Warning: Failed to download language file for ${lang}"
+        if [ "$lang" != "en" ]; then
+            echo "Attempting fallback to English..."
+            lang_url="${BASE_URL}/www/langs/custom.en.json"
+            if ! __download_file_core "$lang_url" "$LANG_JSON"; then
+                echo "Warning: Failed to download English fallback"
+                return 1
+            fi
+        else
+            return 1
+        fi
+    fi
+    return 0
 }
 
 translate() {
