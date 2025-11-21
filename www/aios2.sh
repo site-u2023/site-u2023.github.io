@@ -88,9 +88,6 @@ TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 
-# Package Dependencies
-WHIPTAIL_PACKAGES="whiptail"
-
 # UI Configuration Variables
 UI_HEIGHT="0"
 UI_WIDTH="78"
@@ -107,6 +104,7 @@ DEFAULT_BTN_NO="tr-tui-no"
 select_ui_mode() {
     local has_whiptail=0
     local has_simple=0
+    local whiptail_pkg="whiptail"
     
     if [ -n "$WHIPTAIL_UI_URL" ]; then
         if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
@@ -146,9 +144,9 @@ select_ui_mode() {
         UI_MODE="simple"
     else
         UI_MODE="whiptail"
-        if ! check_packages_installed $WHIPTAIL_PACKAGES; then
+        if ! check_packages_installed $whiptail_pkg; then
             echo "$(translate 'tr-tui-ui-installing')"
-            if install_package $WHIPTAIL_PACKAGES; then
+            if install_package $whiptail_pkg; then
                 echo "$(translate 'tr-tui-ui-install-success')"
             else
                 echo "$(translate 'tr-tui-ui-install-failed')"
@@ -994,8 +992,6 @@ EOF3
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
 }
-
-# Whiptail UI Functions
 
 # Main Entry Point
 
