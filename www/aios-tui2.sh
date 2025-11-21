@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.0957"
+VERSION="R7.1121.1049"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aiost"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -28,12 +28,12 @@ POSTINST_TEMPLATE_PATH=""
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
-    if [ ! -f "$CONFIG_JS" ]; then
-        wget -q -O "$CONFIG_JS" "${BOOTSTRAP_URL}/config.js?t=$(date +%s)" || {
-            echo "Error: Failed to download config.js"
-            return 1
-        }
-    fi
+    wget -q -O "$CONFIG_JS" "${BOOTSTRAP_URL}/config.js?t=$(date +%s)" || {
+        echo "Error: Failed to download config.js"
+        return 1
+    }
+
+    BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
 
     BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
     AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -233,7 +233,8 @@ init() {
     pkill -f "$script_name" 2>/dev/null
     
     mkdir -p "$CONFIG_DIR"
-    
+
+    rm -f "$CONFIG_DIR"/config.js
     rm -f "$CONFIG_DIR"/*.json
     rm -f "$CONFIG_DIR"/*.txt
     rm -f "$CONFIG_DIR"/*.log
@@ -261,13 +262,13 @@ init() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")?t=$(date +%s)"
     
     if ! wget -q -O "$LANG_JSON" "$lang_url"; then
         echo "Warning: Failed to download language file for ${lang}"
         if [ "$lang" != "en" ]; then
             echo "Attempting fallback to English..."
-            lang_url="$BASE_URL/www/langs/custom.en.json"
+            lang_url="${BASE_URL}/www/langs/custom.en.json?t=$(date +%s)"
             if ! wget -q -O "$LANG_JSON" "$lang_url"; then
                 echo "Warning: Failed to download English fallback"
                 return 1
@@ -1008,8 +1009,10 @@ compute_dslite_aftr() {
 # File Generation
 
 generate_files() {
+    local cache_buster="?t=$(date +%s)"
+    
     {
-        wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+        wget -q -O - "${POSTINST_TEMPLATE_URL}${cache_buster}" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
         
         if [ -s "$SELECTED_PACKAGES" ]; then
             pkgs=$(cat "$SELECTED_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
@@ -1018,19 +1021,19 @@ generate_files() {
             echo "PACKAGES=\"\""
         fi
         
-        wget -q -O - "$POSTINST_TEMPLATE_URL" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+        wget -q -O - "${POSTINST_TEMPLATE_URL}${cache_buster}" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
     } > "$CONFIG_DIR/postinst.sh"
     
     chmod +x "$CONFIG_DIR/postinst.sh"
     
     {
-        wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '1,/^# BEGIN_VARS/p'
+        wget -q -O - "${SETUP_TEMPLATE_URL}${cache_buster}" | sed -n '1,/^# BEGIN_VARS/p'
         
         if [ -s "$SETUP_VARS" ]; then
             cat "$SETUP_VARS"
         fi
         
-        wget -q -O - "$SETUP_TEMPLATE_URL" | sed -n '/^# END_VARS/,$p'
+        wget -q -O - "${SETUP_TEMPLATE_URL}${cache_buster}" | sed -n '/^# END_VARS/,$p'
     } > "$CONFIG_DIR/setup.sh"
     
     chmod +x "$CONFIG_DIR/setup.sh"
@@ -1063,14 +1066,14 @@ generate_files() {
             fi
             
             {
-                wget -q -O - "$template_url" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
+                wget -q -O - "${template_url}${cache_buster}" | sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p'
                 
                 echo "PACKAGES=\"${selected_pkgs}\""
                 echo "API_URL=\"${api_url}\""
                 echo "DOWNLOAD_BASE_URL=\"${download_url}\""
                 echo "RUN_OPKG_UPDATE=\"0\""
                 
-                wget -q -O - "$template_url" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
+                wget -q -O - "${template_url}${cache_buster}" | sed -n '/^# END_VARIABLE_DEFINITIONS/,$p'
             } > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
