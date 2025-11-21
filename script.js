@@ -21,21 +21,21 @@ const DEFAULT_SERVICES = {
     adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
 };
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
-const AIOS_TUI_URL = 'https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/main/www/aios-tui.sh';
+const AIOS_URL2 = 'https://site-u.pages.dev/www/aios2.sh';
 const PROXY_URL = 'https://proxy.site-u.workers.dev/proxy?url=';
 const BASE_DIR = '/tmp/aios';
-const BASE_DIR_TUI = '/tmp/aiost';
+const BASE_DIR2 = '/tmp/aios2';
 const AIOS_PATH = `${BASE_DIR}/aios`;
-const AIOS_TUI_PATH = `${BASE_DIR_TUI}/aios-tui.sh`;
+const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
 const DEFAULT_TERMINALS = {
   aios: {
     name: 'aios',
     command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
-  aiostui: {
-    name: 'aios-tui (β)',
-    command: `mkdir -p ${BASE_DIR_TUI}; wget --no-check-certificate -O ${AIOS_TUI_PATH} "https://site-u.pages.dev/www/aios-tui.sh" && chmod +x ${AIOS_TUI_PATH} && ${AIOS_TUI_PATH}`
+  aios2: {
+    name: 'aios2 (β)',
+    command: `mkdir -p ${BASE_DIR2}; wget --no-check-certificate -O ${AIOS_PATH2} ${AIOS_URL2} && chmod +x ${AIOS_PATH2} && ${AIOS_PATH2}`
   },
   ssh: {
     name: 'SSH',
@@ -100,8 +100,8 @@ const translations = {
         // Terminal Explanations
         aiosExplanation: 'メニュー形式スクリプト',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
-        aiostuiExplanation: 'TUI形式スクリプト',
-        aiostuiExplanationLink: 'https://site-u.pages.dev/www/aios-tui.sh',
+        aios2Explanation: 'TUI形式スクリプト',
+        aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2.sh',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -163,8 +163,8 @@ const translations = {
         // Terminal Explanations
         aiosExplanation: 'Menu-based script',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
-        aiostuiExplanation: 'TUI-based script',
-        aiostuiExplanationLink: 'https://site-u.pages.dev/www/aios-tui.sh',
+        aios2Explanation: 'TUI-based script',
+        aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2.sh',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -935,9 +935,9 @@ function updateTerminalExplanation() {
             explanationKey = 'aiosExplanation';
             linkKey = 'aiosExplanationLink';
             break;
-        case 'aiostui':
-            explanationKey = 'aiostuiExplanation';
-            linkKey = 'aiostuiExplanationLink';
+        case 'aios2':
+            explanationKey = 'aios2Explanation';
+            linkKey = 'aios2ExplanationLink';
             break;
         case 'ssh':
             explanationKey = 'sshExplanation';
