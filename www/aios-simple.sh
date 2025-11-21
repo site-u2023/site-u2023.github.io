@@ -74,16 +74,6 @@ custom_feeds_selection() {
     package_selection "$cat_id"
 }
 
-show_auto_detection_if_available() {
-    if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
-        if whiptail_show_network_info; then
-            auto_add_conditional_packages "internet-connection"
-            return 0
-        fi
-    fi
-    return 1
-}
-
 review_and_apply() {
     generate_files
     
