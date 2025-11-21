@@ -1,20 +1,18 @@
 #!/bin/sh
-# shellcheck shell=ash
+# shellcheck shell=sh
 
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-BASE_CONFIG_DIR="/tmp"
-CONFIG_DIR="$BASE_CONFIG_DIR/aios2"
+BASE_DIR="/tmp"
+CONFIG_DIR="$BASE_DIR/aios2"
 
-# OpenWrt version check
 OPENWRT_RELEASE=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2 | cut -c 1-2)
 if [ -z "$OPENWRT_RELEASE" ]; then
     echo "[ERROR] Unable to detect OpenWrt version"
     exit 1
 fi
 
-# Check if version is SNAPSHOT or >= 19
 if [ "$OPENWRT_RELEASE" = "SN" ]; then
     echo "OpenWrt version: SNAPSHOT [OK]"
 elif [ "$OPENWRT_RELEASE" -ge 19 ] 2>/dev/null; then
@@ -24,7 +22,6 @@ else
     exit 1
 fi
 
-# Run opkg update if requested
 [ "$RUN_OPKG_UPDATE" = "1" ] && {
     echo "Running opkg update..."
     opkg update
@@ -60,19 +57,16 @@ echo "$PACKAGES" | tr ' ' '\n' | while IFS=':' read -r pattern exclude filename 
 
     echo "Found: ${PACKAGE_NAME}"
 
-    # Download package
     if wget --no-check-certificate -O "${CONFIG_DIR}/${filename}.ipk" "${DOWNLOAD_BASE_URL}/${PACKAGE_NAME}"; then
         opkg install "${CONFIG_DIR}/${filename}.ipk" && rm -f "${CONFIG_DIR}/${filename}.ipk"
         echo "Installation completed: ${PACKAGE_NAME}"
 
-        # Enable & start service
         if [ -n "$enable_service" ]; then
             echo "Enabling and starting service: ${enable_service}"
             /etc/init.d/"${enable_service}" enable
             /etc/init.d/"${enable_service}" start
         fi
 
-        # Restart service
         if [ -n "$restart_service" ]; then
             echo "Restarting service: ${restart_service}"
             /etc/init.d/"${restart_service}" restart
