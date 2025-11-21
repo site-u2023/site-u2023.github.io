@@ -1196,29 +1196,6 @@ aios2_main() {
     select_ui_mode
 
     echo ""
-    
-    if [ "$UI_MODE" = "whiptail" ]; then
-        if [ -f "$CONFIG_DIR/aios2-whiptail.sh" ]; then
-            # shellcheck disable=SC1091
-            . "$CONFIG_DIR/aios2-whiptail.sh"
-            aios2_whiptail_main
-        else
-            echo "Error: whiptail UI module not found"
-            return 1
-        fi
-    elif [ "$UI_MODE" = "simple" ]; then
-        if [ -f "$CONFIG_DIR/aios2-simple.sh" ]; then
-            # shellcheck disable=SC1091
-            . "$CONFIG_DIR/aios2-simple.sh"
-            aios2_simple_main
-        else
-            echo "Error: simple UI module not found"
-            return 1
-        fi
-    else
-        echo "Error: Unknown UI mode: $UI_MODE"
-        return 1
-    fi
 }
 
 aios2_main
