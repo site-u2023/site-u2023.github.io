@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1447"
+VERSION="R7.1121.1503"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -27,8 +27,8 @@ POSTINST_TEMPLATE_PATH=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
-    
-    wget -q -O "$CONFIG_JS" "${BOOTSTRAP_URL}/config.js?t=$(date +%s)" || {
+        
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_JS" || {
         echo "Error: Failed to download config.js"
         return 1
     }
@@ -111,16 +111,16 @@ select_ui_mode() {
     local whiptail_pkg="whiptail"
     
     if [ -n "$WHIPTAIL_UI_URL" ]; then
-        if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
-            wget -q -O "$CONFIG_DIR/aios2-whiptail.sh" "$WHIPTAIL_UI_URL" && has_whiptail=1
-        fi
-    fi
+        if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
+            __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh" && has_whiptail=1
+        fi
+    fi
     
     if [ -n "$SIMPLE_UI_URL" ]; then
-        if wget -q --spider "$SIMPLE_UI_URL" 2>/dev/null; then
-            wget -q -O "$CONFIG_DIR/aios2-simple.sh" "$SIMPLE_UI_URL" && has_simple=1
-        fi
-    fi
+        if wget -q --spider "$SIMPLE_UI_URL" 2>/dev/null; then
+            __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh" && has_simple=1
+        fi
+    fi
     
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
@@ -236,23 +236,23 @@ init() {
 # Language and Translation
 
 download_language_json() {
-    local lang="${1:-en}"
-    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")?t=$(date +%s)"
-    
-    if ! wget -q -O "$LANG_JSON" "$lang_url"; then
-        echo "Warning: Failed to download language file for ${lang}"
-        if [ "$lang" != "en" ]; then
-            echo "Attempting fallback to English..."
-            lang_url="${BASE_URL}/www/langs/custom.en.json?t=$(date +%s)"
-            if ! wget -q -O "$LANG_JSON" "$lang_url"; then
-                echo "Warning: Failed to download English fallback"
-                return 1
-            fi
-        else
-            return 1
-        fi
-    fi
-    return 0
+    local lang="${1:-en}"
+    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    
+    if ! __download_file_core "$lang_url" "$LANG_JSON"; then
+        echo "Warning: Failed to download language file for ${lang}"
+        if [ "$lang" != "en" ]; then
+            echo "Attempting fallback to English..."
+            lang_url="${BASE_URL}/www/langs/custom.en.json"
+            if ! __download_file_core "$lang_url" "$LANG_JSON"; then
+                echo "Warning: Failed to download English fallback"
+                return 1
+            fi
+        else
+            return 1
+        fi
+    fi
+    return 0
 }
 
 translate() {
@@ -280,13 +280,8 @@ translate() {
 # File Downloads
 
 download_setup_json() {
-    if [ ! -f "$SETUP_JSON" ]; then
-        if ! wget -q -O "$SETUP_JSON" "${SETUP_JSON_URL}?t=$(date +%s)"; then
-            echo "Failed to download setup.json"
-            return 1
-        fi
-    fi
-    return 0
+    fetch_cached_template "$SETUP_JSON_URL" "$SETUP_JSON"
+    return $?
 }
 
 download_postinst_json() {
@@ -323,9 +318,9 @@ get_extended_device_info() {
     get_device_info
     
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-    
-    if ! wget -q -O "$AUTO_CONFIG_JSON" "$AUTO_CONFIG_API_URL"; then
-        echo "Warning: Failed to fetch auto-config API"
+    
+    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
+        echo "Warning: Failed to fetch auto-config API"
         echo "https://www.cloudflarestatus.com/"
         return 1
     fi
@@ -1105,9 +1100,12 @@ aios2_main() {
     
     echo "Fetching postinst.json"
     if ! download_postinst_json; then
-        echo "Warning: Failed to download postinst.json"
-        echo "Package selection will not be available."
-        sleep 2
+        echo "ERROR: Failed to download postinst.json."
+        echo "FATAL: Package selection is unavailable. The script will now exit." 
+        printf "Press [Enter] to exit the script. "
+        read -r dummy
+        
+        exit 1
     fi
 
     echo "Fetching review.json"
