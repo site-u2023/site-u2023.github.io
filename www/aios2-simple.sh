@@ -40,7 +40,7 @@ show_msgbox() {
     echo "$message"
     echo ""
     printf "%s: " "$(translate 'tr-tui-ok')"
-    read
+    read -r _
 }
 
 # Package Compatibility Check for Custom Feeds
@@ -114,7 +114,7 @@ review_and_apply() {
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
                 printf "%s: " "$(translate 'tr-tui-ok')"
-                read
+                read -r _
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
@@ -529,7 +529,7 @@ category_config() {
     echo ""
     echo "Configuration completed!"
     printf "%s: " "$(translate 'tr-tui-ok')"
-    read
+    read -r _
 }
 
 package_categories() {
