@@ -70,7 +70,8 @@ custom_feeds_selection() {
         return 0
     }
     
-    local cat_id=$(get_customfeed_categories | head -1)
+    local cat_id
+    cat_id=$(get_customfeed_categories | head -1)
     
     if [ -z "$cat_id" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
@@ -100,14 +101,16 @@ review_and_apply() {
         
         [ "$choice" = "b" ] && return 0
         
-        local action=$(get_review_item_action $choice)
+        local action
+        action=$(get_review_item_action $choice)
         
         case "$action" in
             device_info) 
                 device_info 
                 ;;
             textbox)
-                local file=$(get_review_item_file $choice)
+                local file
+                file=$(get_review_item_file $choice)
                 clear
                 echo "========================================"
                 echo "  $(get_review_item_label $choice)"
@@ -249,7 +252,8 @@ process_items() {
     fi
     
     for item_id in $items; do
-        local item_type=$(get_setup_item_type "$item_id")
+        local item_type
+        item_type=$(get_setup_item_type "$item_id")
         
         if ! should_show_item "$item_id"; then
             continue
@@ -257,9 +261,12 @@ process_items() {
         
         case "$item_type" in
             radio-group)
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
+                local label
+                label=$(get_setup_item_label "$item_id")
+                local variable
+                variable=$(get_setup_item_variable "$item_id")
+                local default
+                default=$(get_setup_item_default "$item_id")
                 
                 if [ "$item_id" = "mape-type" ]; then
                     if [ -n "$MAPE_GUA_PREFIX" ]; then
@@ -269,16 +276,19 @@ process_items() {
                     fi
                 fi
                 
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                local current
+                current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
-                local options=$(get_setup_item_options "$item_id")
+                local options
+                options=$(get_setup_item_options "$item_id")
                 
                 echo ""
                 echo "$label:"
                 local i=1
                 for opt in $options; do
-                    local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                    local opt_label
+                    opt_label=$(get_setup_item_option_label "$item_id" "$opt")
                     if [ "$opt" = "$current" ]; then
                         echo "$i) $opt_label [current]"
                     else
@@ -301,19 +311,25 @@ process_items() {
                 ;;
             
             section)
-                local nested=$(get_section_nested_items "$item_id")
+                local nested
+                nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
                     process_items "$cat_id" "$nested"
                 fi
                 ;;
                 
             field)
-                local label=$(get_setup_item_label "$item_id")
-                local variable=$(get_setup_item_variable "$item_id")
-                local default=$(get_setup_item_default "$item_id")
-                local field_type=$(get_setup_item_field_type "$item_id")
+                local label
+                label=$(get_setup_item_label "$item_id")
+                local variable
+                variable=$(get_setup_item_variable "$item_id")
+                local default
+                default=$(get_setup_item_default "$item_id")
+                local field_type
+                field_type=$(get_setup_item_field_type "$item_id")
                 
-                local current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                local current
+                current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 
                 if [ -z "$current" ]; then
                     case "$variable" in
@@ -355,11 +371,14 @@ process_items() {
                 
                 if [ "$field_type" = "computed" ]; then
                     if [ "$item_id" = "dslite-aftr-address-computed" ]; then
-                        local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                        local aftr_type
+                        aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                        local area
+                        area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         
                         if [ -n "$aftr_type" ] && [ -n "$area" ]; then
-                            local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            local computed
+                            computed=$(compute_dslite_aftr "$aftr_type" "$area")
                             if [ -n "$computed" ]; then
                                 current="$computed"
                                 sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -373,7 +392,8 @@ process_items() {
                 fi
                 
                 if [ "$field_type" = "select" ]; then
-                    local source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
+                    local source
+                    source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
                     
                     if [ -n "$source" ]; then
                         case "$source" in
@@ -398,13 +418,15 @@ process_items() {
                         esac
                     fi
                     
-                    local options=$(get_setup_item_options "$item_id")
+                    local options
+                    options=$(get_setup_item_options "$item_id")
                     
                     echo ""
                     echo "$label:"
                     local i=1
                     for opt in $options; do
-                        local opt_label=$(get_setup_item_option_label "$item_id" "$opt")
+                        local opt_label
+                        opt_label=$(get_setup_item_option_label "$item_id" "$opt")
                         if [ "$opt" = "$current" ]; then
                             echo "$i) $opt_label [current]"
                         else
@@ -424,9 +446,12 @@ process_items() {
                             auto_add_conditional_packages "$cat_id"
                             
                             if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
-                                local aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                local area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                local computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                                local aftr_type
+                                aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                                local area
+                                area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                                local computed
+                                computed=$(compute_dslite_aftr "$aftr_type" "$area")
                                 if [ -n "$computed" ]; then
                                     sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
                                     echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
@@ -454,7 +479,8 @@ process_items() {
                 local cat_idx=0
                 local item_idx=0
                 for cid in $(get_setup_categories); do
-                    local citems=$(get_setup_category_items "$cid")
+                    local citems
+                    citems=$(get_setup_category_items "$cid")
                     local idx=0
                     for itm in $citems; do
                         if [ "$itm" = "$item_id" ]; then
@@ -466,8 +492,10 @@ process_items() {
                     cat_idx=$((cat_idx+1))
                 done
                 
-                local content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
-                local class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+                local content
+                content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
+                local class
+                class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
                 
                 if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
                     content=$(translate "$class")
@@ -484,7 +512,8 @@ process_items() {
 
 category_config() {
     local cat_id="$1"
-    local cat_title=$(get_setup_category_title "$cat_id")
+    local cat_title
+    cat_title=$(get_setup_category_title "$cat_id")
     
     clear
     echo "========================================"
@@ -492,10 +521,12 @@ category_config() {
     echo "========================================"
     
     if [ "$cat_id" = "basic-config" ]; then
-        local tr_language=$(translate "tr-language")
+        local tr_language
+        tr_language=$(translate "tr-language")
         [ -z "$tr_language" ] || [ "$tr_language" = "tr-language" ] && tr_language="Language"
         
-        local current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        local current_lang
+        current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
         echo ""
@@ -542,10 +573,12 @@ package_categories() {
         
         local i=1
         get_categories | while read cat_id; do
-            local is_hidden=$(get_category_hidden "$cat_id")
+            local is_hidden
+            is_hidden=$(get_category_hidden "$cat_id")
             [ "$is_hidden" = "true" ] && continue
             
-            local cat_name=$(get_category_name "$cat_id")
+            local cat_name
+            cat_name=$(get_category_name "$cat_id")
             echo "$i) $cat_name"
             i=$((i+1))
         done
@@ -561,7 +594,8 @@ package_categories() {
         
         if [ -n "$choice" ]; then
             selected_cat=$(get_categories | while read cat_id; do
-                local is_hidden=$(get_category_hidden "$cat_id")
+                local is_hidden
+                is_hidden=$(get_category_hidden "$cat_id")
                 [ "$is_hidden" != "true" ] && echo "$cat_id"
             done | sed -n "${choice}p")
             
@@ -574,8 +608,10 @@ package_categories() {
 
 package_selection() {
     local cat_id="$1"
-    local cat_name=$(get_category_name "$cat_id")
-    local cat_desc=$(get_category_desc "$cat_id")
+    local cat_name
+    cat_name=$(get_category_name "$cat_id")
+    local cat_desc
+    cat_desc=$(get_category_desc "$cat_id")
     
     clear
     echo "========================================"
@@ -590,7 +626,8 @@ package_selection() {
             continue
         fi
         
-        local pkg_name=$(get_package_name "$pkg_id")
+        local pkg_name
+        pkg_name=$(get_package_name "$pkg_id")
         
         if is_package_selected "$pkg_id"; then
             echo "[X] $pkg_name"
@@ -608,7 +645,8 @@ package_selection() {
             continue
         fi
         
-        local pkg_name=$(get_package_name "$pkg_id")
+        local pkg_name
+        pkg_name=$(get_package_name "$pkg_id")
         echo "$i) $pkg_name"
         i=$((i+1))
     done
@@ -670,7 +708,8 @@ view_customfeeds() {
     
     local i=1
     get_customfeed_categories | while read cat_id; do
-        local cat_name=$(get_category_name "$cat_id")
+        local cat_name
+        cat_name=$(get_category_name "$cat_id")
         echo "$i) $cat_name"
         i=$((i+1))
     done
@@ -687,7 +726,8 @@ view_customfeeds() {
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
         local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-        local cat_name=$(get_category_name "$selected_cat")
+        local cat_name
+        cat_name=$(get_category_name "$selected_cat")
         local cat_breadcrumb="${breadcrumb} > ${cat_name}"
         
         if [ -f "$script_file" ]; then
@@ -729,7 +769,8 @@ view_selected_custom_packages() {
     
     local i=1
     get_customfeed_categories | while read cat_id; do
-        local cat_name=$(get_category_name "$cat_id")
+        local cat_name
+        cat_name=$(get_category_name "$cat_id")
         echo "$i) $cat_name"
         i=$((i+1))
     done
@@ -745,7 +786,8 @@ view_selected_custom_packages() {
     
     if [ -n "$choice" ]; then
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        local cat_name=$(get_category_name "$selected_cat")
+        local cat_name 
+        cat_name=$(get_category_name "$selected_cat")
         local cat_breadcrumb="${breadcrumb} > ${cat_name}"
         
         clear
@@ -761,7 +803,8 @@ view_selected_custom_packages() {
             fi
             
             if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                local pkg_name=$(get_package_name "$pkg_id")
+                local pkg_name
+                pkg_name=$(get_package_name "$pkg_id")
                 echo "  - ${pkg_name}"
                 has_packages=1
             fi
@@ -796,12 +839,14 @@ main_menu() {
             i=$((i+1))
         done
         
-        local packages_label=$(translate "tr-tui-packages")
+        local packages_label
+        packages_label=$(translate "tr-tui-packages")
         echo "$i) $packages_label"
         local packages_choice=$i
         i=$((i+1))
         
-        local custom_feeds_label=$(translate "tr-tui-custom-feeds")
+        local custom_feeds_label
+        custom_feeds_label=$(translate "tr-tui-custom-feeds")
         echo "$i) $custom_feeds_label"
         local custom_feeds_choice=$i
         i=$((i+1))
@@ -820,7 +865,8 @@ main_menu() {
             continue
         fi
         
-        local setup_cat_count=$(get_setup_categories | wc -l)
+        local setup_cat_count
+        setup_cat_count=$(get_setup_categories | wc -l)
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
             category_config "$selected_cat"
