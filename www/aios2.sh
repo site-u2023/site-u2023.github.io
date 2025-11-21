@@ -95,6 +95,7 @@ WHIPTAIL_PACKAGES="whiptail"
 UI_HEIGHT="0"
 UI_WIDTH="78"
 
+DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
