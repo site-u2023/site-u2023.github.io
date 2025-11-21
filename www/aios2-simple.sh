@@ -40,7 +40,7 @@ custom_feeds_selection() {
         echo ""
         echo "Custom feeds are only available for OPKG"
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 0
     fi
@@ -53,7 +53,7 @@ custom_feeds_selection() {
         echo ""
         echo "Failed to load custom feeds"
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 0
     }
@@ -68,7 +68,7 @@ custom_feeds_selection() {
         echo ""
         echo "No custom feeds available"
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 0
     fi
@@ -174,7 +174,7 @@ device_info() {
     [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
     [ -n "$DEVICE_USB" ] && echo "USB:     $DEVICE_USB"
     echo ""
-    printf "Press Enter to continue..."
+    printf "$(translate 'tr-tui-ok')"
     read
 }
 
@@ -188,7 +188,7 @@ show_network_info() {
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
         echo "No configuration detected."
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 1
     fi
@@ -203,7 +203,7 @@ show_network_info() {
     echo ""
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
-        echo "MAP-E Configuration:"
+        echo "$(translate 'tr-mape'):"
         [ -n "$MAPE_GUA_PREFIX" ] && echo "  option ip6prefix_gua $MAPE_GUA_PREFIX"
         echo "  option peeraddr $MAPE_BR"
         [ -n "$MAPE_IPV4_PREFIX" ] && echo "  option ipaddr $MAPE_IPV4_PREFIX"
@@ -214,7 +214,7 @@ show_network_info() {
         [ -n "$MAPE_PSIDLEN" ] && echo "  option psidlen $MAPE_PSIDLEN"
         [ -n "$MAPE_PSID_OFFSET" ] && echo "  option offset $MAPE_PSID_OFFSET"
     elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
-        echo "DS-Lite Configuration:"
+        echo "$(translate 'tr-dslite'):"
         echo "  option peeraddr $DSLITE_AFTR"
     fi
     
@@ -522,7 +522,7 @@ category_config() {
     
     echo ""
     echo "Configuration completed!"
-    printf "Press Enter to continue..."
+    printf "$(translate 'tr-tui-ok')"
     read
 }
 
@@ -630,7 +630,7 @@ view_customfeeds() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
         echo "No custom feeds available"
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 0
     fi
@@ -683,7 +683,7 @@ view_selected_custom_packages() {
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
         echo "No custom feeds available"
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
         return 0
     fi
@@ -728,7 +728,7 @@ view_selected_custom_packages() {
         fi
         
         echo ""
-        printf "Press Enter to continue..."
+        printf "$(translate 'tr-tui-ok')"
         read
     fi
 }
