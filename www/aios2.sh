@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1617"
+VERSION="R7.1121.2204"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -284,13 +284,25 @@ ${key}=${translation}"
 
 # File Downloads
 
+download_file_with_cache() {
+    local url="$1"
+    local output_path="$2"
+    
+    if [ -f "$output_path" ] && [ -s "$output_path" ]; then
+        return 0
+    fi
+    
+    __download_file_core "$url" "$output_path"
+    return $?
+}
+
 download_setup_json() {
     fetch_cached_template "$SETUP_JSON_URL" "$SETUP_JSON"
     return $?
 }
 
 download_postinst_json() {
-    __download_file_core "$PACKAGES_URL" "$PACKAGES_JSON"
+    download_file_with_cache "$PACKAGES_URL" "$PACKAGES_JSON"
     return $?
 }
 
@@ -702,7 +714,7 @@ is_package_selected() {
 }
 
 download_review_json() {
-    __download_file_core "$REVIEW_JSON_URL" "$REVIEW_JSON"
+    download_file_with_cache "$REVIEW_JSON_URL" "$REVIEW_JSON"
     return $?
 }
 
@@ -741,7 +753,7 @@ get_review_item_file() {
 # Custom Feeds Management
 
 download_customfeeds_json() {
-    __download_file_core "$CUSTOMFEEDS_JSON_URL" "$CUSTOMFEEDS_JSON"
+    download_file_with_cache "$CUSTOMFEEDS_JSON_URL" "$CUSTOMFEEDS_JSON"
     return $?
 }
 
