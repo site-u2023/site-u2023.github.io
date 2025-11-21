@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1122.0114"
+VERSION="R7.1122.0155"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -34,6 +34,16 @@ print_banner_unicode() {
     printf "\033[38;5;208m    ██  ██      ██      ██  ██         ██\033[0m\n"
     printf "\033[31m     █████     ████      ████     ██████ \033[0m\033[37m 2⃣\033[0m\n"
     printf "\n"
+}
+
+banner_supported() {
+    echo "$TERM" | grep -Eq 'xterm-256color|screen-256color|ttyd'
+}
+
+print_banner() {
+    if banner_supported; then
+        print_banner_unicode
+    fi
 }
 
 load_config_from_js() {
@@ -1119,7 +1129,7 @@ EOF3
 
 aios2_main() {
     clear
-    print_banner_unicode
+    print_banner
 
     echo "Vr.$VERSION"
     echo ""
