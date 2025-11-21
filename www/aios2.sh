@@ -102,12 +102,6 @@ DEFAULT_BTN_CANCEL="tr-tui-cancel"
 DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 
-# Whiptail Color Configuration
-
-NEWT_COLORS='
-title=black,lightgray
-'
-
 # Common UI Template Functions
 
 build_breadcrumb() {
