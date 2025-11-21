@@ -5,7 +5,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1121.1608"
+VERSION="R7.1121.1617"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -24,6 +24,7 @@ SETUP_TEMPLATE_PATH=""
 LANGUAGE_PATH_TEMPLATE=""
 CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
+TRANSLATION_CACHE_DATA=""
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
@@ -258,7 +259,7 @@ download_language_json() {
 translate() {
     local key="$1"
     
-    local cached=$(grep "^${key}=" "$TRANSLATION_CACHE" 2>/dev/null | cut -d= -f2-)
+    local cached=$(echo "$TRANSLATION_CACHE_DATA" | grep "^${key}=" | cut -d= -f2-)
     if [ -n "$cached" ]; then
         echo "$cached"
         return 0
@@ -267,7 +268,8 @@ translate() {
     if [ -f "$LANG_JSON" ]; then
         local translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
         if [ -n "$translation" ]; then
-            echo "${key}=${translation}" >> "$TRANSLATION_CACHE"
+            TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
+${key}=${translation}"
             echo "$translation"
             return 0
         fi
