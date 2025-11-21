@@ -155,7 +155,9 @@ review_and_apply() {
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
                     printf "%s" "$(translate 'tr-tui-reboot-question') (y/n): "
-                    read reboot_confirm
+
+                    reboot_confirm=""
+                    read -r reboot_confirm
                     if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
                         reboot
                     fi
@@ -402,8 +404,8 @@ process_items() {
                                 ;;
                             *)
                                 echo ""
-                                printf "$label [$current]: "
-                                read value
+                                printf '%s [%s]: ' "$label" "$current"
+                                read -r value
                                 
                                 if [ -z "$value" ]; then
                                     value="$current"
@@ -461,8 +463,8 @@ process_items() {
                     fi
                 else
                     echo ""
-                    printf "$label [$current]: "
-                    read value
+                    printf '%s [%s]: ' "$label" "$current"
+                    read -r value
                     
                     if [ -z "$value" ]; then
                         value="$current"
@@ -530,8 +532,8 @@ category_config() {
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
         echo ""
-        printf "$tr_language [$current_lang]: "
-        read value
+        printf '%s [%s]: ' "$tr_language" "$current_lang"
+        read -r value
         
         if [ -z "$value" ]; then
             value="$current_lang"
