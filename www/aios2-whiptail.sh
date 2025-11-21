@@ -4,7 +4,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1121.1629"
+VERSION="R7.1121.1829"
 
 NEWT_COLORS='
 title=black,lightgray
@@ -93,9 +93,22 @@ show_textbox() {
     rm -f "$temp_file"
 }
 
+# Package Compatibility Check for Custom Feeds
+
+package_compatible() {
+    local pkg_id="$1"
+    local pkg_managers
+    
+    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
+    
+    [ -z "$pkg_managers" ] && return 0
+    
+    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
+    
+    return 1
+}
 
 custom_feeds_selection() {
-    [ "$PKG_MGR" != "opkg" ] && return 0
     download_customfeeds_json || return 0
     
     local tr_main_menu tr_custom_feeds breadcrumb
@@ -700,6 +713,12 @@ package_selection() {
     
     idx=1
     while read -r pkg_id; do
+        if [ "$caller" = "custom_feeds" ]; then
+            if ! package_compatible "$pkg_id"; then
+                continue
+            fi
+        fi
+        
         pkg_name=$(get_package_name "$pkg_id")
         
         if is_package_selected "$pkg_id" "$caller"; then
@@ -792,6 +811,10 @@ EOF
             : > "$temp_view"
             
             while read -r pkg_id; do
+                if ! package_compatible "$pkg_id"; then
+                    continue
+                fi
+                
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pkg_name=$(get_package_name "$pkg_id")
                     echo "  - ${pkg_name}"
@@ -900,12 +923,9 @@ EOF
         packages_choice=$i
         i=$((i+1))
         
-        custom_feeds_choice=0
-        if [ "$PKG_MGR" = "opkg" ]; then
-            menu_items="$menu_items $i \"$custom_feeds_label\""
-            custom_feeds_choice=$i
-            i=$((i+1))
-        fi
+        menu_items="$menu_items $i \"$custom_feeds_label\""
+        custom_feeds_choice=$i
+        i=$((i+1))
         
         menu_items="$menu_items $i \"$review_label\""
         review_choice=$i
@@ -921,7 +941,7 @@ EOF
             category_config "$selected_cat"
         elif [ "$choice" -eq "$packages_choice" ]; then
             package_categories
-        elif [ "$custom_feeds_choice" -gt 0 ] && [ "$choice" -eq "$custom_feeds_choice" ]; then
+        elif [ "$choice" -eq "$custom_feeds_choice" ]; then
             custom_feeds_selection
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
