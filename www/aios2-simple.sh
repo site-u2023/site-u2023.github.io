@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.0956"
+VERSION="R7.1122.1019"
 
 BREADCRUMB_SEP=" > "
 
@@ -270,10 +270,10 @@ show_network_info() {
     fi
     
     echo ""
-    printf "%s (%s/%s): " "$(translate 'tr-tui-use-auto-config')" "$(translate 'tr-tui-yes')" "$(translate 'tr-tui-no')"
+    printf "%s (y/n): " "$(translate 'tr-tui-use-auto-config')"
     read -r confirm
     
-    if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
