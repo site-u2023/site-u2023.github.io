@@ -3,7 +3,11 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1022"
+VERSION="R7.1122.1059"
+
+# Choice constants for consistent navigation
+CHOICE_BACK="0"
+CHOICE_EXIT="00"
 
 BREADCRUMB_SEP=" > "
 
@@ -47,7 +51,7 @@ show_menu() {
         i=$((i+1))
     done
     
-    echo "b) $(translate 'tr-tui-back')"
+    echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
     echo ""
     printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
@@ -125,11 +129,11 @@ review_and_apply() {
             echo "$i) $(get_review_item_label "$i")"
         done
         
-        echo "b) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
-        [ "$choice" = "b" ] && return 0
+        [ "$choice" = "$CHOICE_BACK" ] && return 0
         
         local action
         action=$(get_review_item_action "$choice")
@@ -594,12 +598,12 @@ package_categories() {
             i=$((i+1))
         done
         
-        echo "b) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
-        if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+        if [ "$choice" = "$CHOICE_BACK" ]; then
             return 0
         fi
         
@@ -651,7 +655,7 @@ package_selection() {
     done
     
     echo ""
-    echo "Enter package number to toggle (or 'b' to go back):"
+    echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
     
     local i=1
     get_category_packages "$cat_id" | while read -r pkg_id; do
@@ -669,7 +673,7 @@ package_selection() {
     printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     
-    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+    if [ "$choice" = "$CHOICE_BACK" ]; then
         return 0
     fi
     
@@ -715,169 +719,53 @@ view_customfeeds() {
         return 0
     fi
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
-    
-    local i=1
-    get_customfeed_categories | while read -r cat_id; do
-        local cat_name
-        cat_name=$(get_category_name "$cat_id")
-        echo "$i) $cat_name"
-        i=$((i+1))
-    done
-    
-    echo "b) $(translate 'tr-tui-back')"
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
-    read -r choice
-    
-    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
-        return 0
-    fi
-    
-    if [ -n "$choice" ]; then
-        local selected_cat cat_name cat_breadcrumb
-        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        cat_name=$(get_category_name "$selected_cat")
-        cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
-        
-        clear
-        echo "========================================"
-        echo "  $cat_breadcrumb"
-        echo "========================================"
-        echo ""
-        
-        local has_packages=0
-        while read -r pkg_id; do
-            if ! package_compatible "$pkg_id"; then
-                continue
-            fi
-           
-            if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                local pkg_name
-                pkg_name=$(get_package_name "$pkg_id")
-                echo " - ${pkg_name}"
-                has_packages=1
-            fi
-        done <<EOF
-$(get_category_packages "$selected_cat")
-EOF
-
-        if [ "$has_packages" -eq 0 ]; then
-            echo "  $(translate 'tr-tui-no-packages')"
-        fi
-        
-        echo ""
-        wait_ok
-        
-        view_selected_custom_packages
-    fi
-}
-
-main_menu() {
     while true; do
         clear
         echo "========================================"
-        echo "  aios2 Vr.$VERSION"
+        echo "  $breadcrumb"
         echo "========================================"
-        echo ""
-        echo "Device: $DEVICE_MODEL"
         echo ""
         
         local i=1
-        for cat_id in $(get_setup_categories); do
-            local cat_title
-            cat_title=$(get_setup_category_title "$cat_id")
-            echo "$i) $cat_title"
+        get_customfeed_categories | while read -r cat_id; do
+            local cat_name
+            cat_name=$(get_category_name "$cat_id")
+            echo "$i) $cat_name"
             i=$((i+1))
         done
         
-        local packages_label custom_feeds_label
-        packages_label=$(translate "tr-tui-packages")
-        echo "$i) $packages_label"
-        local packages_choice=$i
-        i=$((i+1))
-        
-        custom_feeds_label=$(translate "tr-tui-custom-feeds")
-        echo "$i) $custom_feeds_label"
-        local custom_feeds_choice=$i
-        i=$((i+1))
-        
-        echo "$i) $(translate 'tr-tui-review-configuration')"
-        local review_choice=$i
-        i=$((i+1))
-        echo "$i) $(translate 'tr-tui-exit')"
-        local exit_choice=$i
-        
+        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
-        if [ -z "$choice" ]; then
-            continue
-        fi
-        
-        local setup_cat_count
-        setup_cat_count=$(get_setup_categories | wc -l)
-        if [ "$choice" -le "$setup_cat_count" ] 2>/dev/null; then
-            selected_cat=$(get_setup_categories | sed -n "${choice}p")
-            category_config "$selected_cat"
-        elif [ "$choice" -eq "$packages_choice" ] 2>/dev/null; then
-            package_categories
-        elif [ "$choice" -eq "$custom_feeds_choice" ] 2>/dev/null; then
-            custom_feeds_selection
-        elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
-            review_and_apply
-        elif [ "$choice" -eq "$exit_choice" ] 2>/dev/null; then
+        if [ "$choice" = "$CHOICE_BACK" ]; then
             return 0
         fi
-    done
-}
-
-aios2_simple_main() {
-    device_info
-    main_menu
-}categories | while read -r cat_id; do
-        local cat_name
-        cat_name=$(get_category_name "$cat_id")
-        echo "$i) $cat_name"
-        i=$((i+1))
-    done
-    
-    echo "b) $(translate 'tr-tui-back')"
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
-    read -r choice
-    
-    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
-        return 0
-    fi
-    
-    if [ -n "$choice" ]; then
-        local selected_cat cat_name cat_breadcrumb script_file
-        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-        cat_name=$(get_category_name "$selected_cat")
-        cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds" "$cat_name")
         
-        if [ -f "$script_file" ]; then
-            clear
-            echo "========================================"
-            echo "  $cat_breadcrumb"
-            echo "========================================"
-            echo ""
-            cat "$script_file"
-            echo ""
-            wait_ok
-        else
-            show_msgbox "$cat_breadcrumb" "Script not found"
+        if [ -n "$choice" ]; then
+            local selected_cat cat_name cat_breadcrumb script_file
+            selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+            script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
+            cat_name=$(get_category_name "$selected_cat")
+            cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds" "$cat_name")
+            
+            if [ -f "$script_file" ]; then
+                clear
+                echo "========================================"
+                echo "  $cat_breadcrumb"
+                echo "========================================"
+                echo ""
+                cat "$script_file"
+                echo ""
+                wait_ok
+            else
+                show_msgbox "$cat_breadcrumb" "Script not found"
+            fi
+            
+            # Continue loop to return to customfeeds menu
         fi
-        
-        view_customfeeds
-    fi
+    done
 }
 
 view_selected_custom_packages() {
@@ -908,12 +796,12 @@ view_selected_custom_packages() {
             i=$((i+1))
         done
         
-        echo "b) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
-        if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+        if [ "$choice" = "$CHOICE_BACK" ]; then
             return 0
         fi
         
@@ -987,8 +875,7 @@ main_menu() {
         echo "$i) $(translate 'tr-tui-review-configuration')"
         local review_choice=$i
         i=$((i+1))
-        echo "$i) $(translate 'tr-tui-exit')"
-        local exit_choice=$i
+        echo "$CHOICE_EXIT) $(translate 'tr-tui-exit')"
         
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
@@ -997,6 +884,13 @@ main_menu() {
         if [ -z "$choice" ]; then
             continue
         fi
+        
+        # Handle exit choice
+        case "$choice" in
+            "$CHOICE_EXIT")
+                return 0
+                ;;
+        esac
         
         local setup_cat_count
         setup_cat_count=$(get_setup_categories | wc -l)
@@ -1009,8 +903,6 @@ main_menu() {
             custom_feeds_selection
         elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
             review_and_apply
-        elif [ "$choice" -eq "$exit_choice" ] 2>/dev/null; then
-            return 0
         fi
     done
 }
