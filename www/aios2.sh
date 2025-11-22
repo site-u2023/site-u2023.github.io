@@ -68,6 +68,8 @@ load_config_from_js() {
     WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
+    WHIPTAIL_FALLBACK_PATH=$(grep 'whiptail_fallback_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    
     local CACHE_BUSTER
     CACHE_BUSTER="?t=$(date +%s)"
     
@@ -164,7 +166,8 @@ select_ui_mode() {
             ;;
         3)
             # テストモード - fallback whiptail を強制使用
-            __download_file_core "${BASE_URL}/www/whiptail" "$CONFIG_DIR/whiptail"
+            WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
+            __download_file_core "$WHIPTAIL_FALLBACK_URL" "$CONFIG_DIR/whiptail"
             chmod +x "$CONFIG_DIR/whiptail"
             . "$CONFIG_DIR/whiptail"
             UI_MODE="whiptail"
