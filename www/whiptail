@@ -213,11 +213,9 @@ whiptail() {
                 _debug "  menu: prompt='$prompt' height=$height width=$width menu_height=$menu_height"
                 _debug "  menu: remaining args=$# items=$*"
                 
-                # メニュー表示を直接処理
                 _whiptail_header "$title"
                 [ -n "$prompt" ] && echo "$prompt" >&2 && echo "" >&2
                 
-                # メニュー項目を2つずつ処理（key label のペア）
                 while [ $# -ge 2 ]; do
                     local key="$1"
                     local label="$2"
@@ -228,23 +226,12 @@ whiptail() {
                 
                 echo "" >&2
                 
-                # 空入力対策：有効な入力があるまでループ
                 local choice=""
                 while [ -z "$choice" ]; do
                     printf "Choice: " >&2
-                    # 標準入力から1行読み込む（-t 0でバッファクリア）
-                    read -t 0.01 -r dummy 2>/dev/null || true
-                    read -r choice </dev/tty
+                    IFS= read -r choice
                     _debug "  menu: choice='$choice'"
-                    
-                    if [ -z "$choice" ]; then
-                        _debug "  menu: empty input, retry"
-                    fi
                 done
-                
-                # stdinを元に戻す
-                exec 0<&9
-                exec 9<&-
                 
                 echo "$choice"
                 return 0
