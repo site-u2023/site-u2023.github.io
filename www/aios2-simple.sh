@@ -39,12 +39,10 @@ build_breadcrumb() {
 
 confirm_yesno() {
     local prompt="$1"
-    local yes no yes_upper no_upper choice_lower
+    local yes no choice_lower
     
     yes=$(translate "$DEFAULT_BTN_YES")
     no=$(translate "$DEFAULT_BTN_NO")
-    yes_upper=$(echo "$yes" | tr '[:lower:]' '[:upper:]')
-    no_upper=$(echo "$no" | tr '[:lower:]' '[:upper:]')
     
     printf "%s (%s/%s): " "$prompt" "$yes" "$no"
     read -r choice
