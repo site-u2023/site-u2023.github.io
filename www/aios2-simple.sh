@@ -890,8 +890,6 @@ main_menu() {
         echo "  aios2 Vr.$VERSION"
         echo "========================================"
         echo ""
-        echo "Device: $DEVICE_MODEL"
-        echo ""
         
         local i=1
         for cat_id in $(get_setup_categories); do
