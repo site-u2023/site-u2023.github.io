@@ -150,17 +150,14 @@ _whiptail_textbox() {
 }
 
 whiptail() {
-    # stdin を /dev/tty に強制的に繋ぎ直す
-    exec 9<&0
-    exec 0</dev/tty
+    # ファイルディスクリプタ3を閉じる（evalの3>&1 1>&2 2>&3対策）
+    exec 3>&- 2>/dev/null || true
     
     _debug "whiptail() called with $# args: $*"
     
-    # 標準入力を /dev/tty に固定（一度だけ）
-    if [ ! -t 0 ]; then
-        exec </dev/tty
-        _debug "  stdin redirected to /dev/tty"
-    fi
+    # 標準入力を /dev/tty に固定
+    exec </dev/tty
+    _debug "  stdin redirected to /dev/tty"
     
     local title="" type="" prompt=""
     local yes_btn="" no_btn="" ok_btn="" cancel_btn=""
