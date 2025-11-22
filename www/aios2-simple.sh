@@ -643,11 +643,10 @@ category_config() {
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
         echo ""
-        printf "%s [%s]: " "$tr_language" "$current_lang" >&2
+        printf "%s [%s]: " "$tr_language" "$current_lang"
         read -r value
         
         [ -z "$value" ] && value="$current_lang"
-        echo "Selected: $value" >&2
         
         if [ -n "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
