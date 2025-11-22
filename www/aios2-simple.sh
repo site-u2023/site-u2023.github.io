@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1218"
+VERSION="R7.1122.1226"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -76,8 +76,6 @@ confirm_save_config() {
         sleep 1
         return 0
     else
-        echo "$(translate 'tr-tui-config-cancelled')"
-        sleep 1
         return 1
     fi
 }
