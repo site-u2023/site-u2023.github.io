@@ -3,11 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1443"
-
-# ========================================
-# Global Constants (翻訳キーのまま維持)
-# ========================================
+VERSION="R7.1122.1452"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -19,17 +15,11 @@ DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
-# Y/N を強制的に設定（多言語対応のため）
 sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
 sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
 
 BREADCRUMB_SEP=" > "
 
-# ========================================
-# Template Functions (モジュール化)
-# ========================================
-
-# メニューヘッダー表示
 show_menu_header() {
     local breadcrumb="$1"
     
@@ -40,7 +30,6 @@ show_menu_header() {
     echo ""
 }
 
-# メニューフッター表示
 show_menu_footer() {
     local show_back="${1:-true}"
     local show_exit="${2:-false}"
@@ -52,7 +41,6 @@ show_menu_footer() {
     printf "%s: " "$(translate 'tr-tui-ui-choice')"
 }
 
-# チェックボックス表示
 show_checkbox() {
     local is_selected="$1"
     local label="$2"
@@ -64,7 +52,6 @@ show_checkbox() {
     fi
 }
 
-# 番号付きリスト項目表示
 show_numbered_item() {
     local number="$1"
     local label="$2"
@@ -77,7 +64,6 @@ show_numbered_item() {
     fi
 }
 
-# 入力プロンプト表示
 show_input_prompt() {
     local label="$1"
     local current="${2:-}"
@@ -89,19 +75,13 @@ show_input_prompt() {
     fi
 }
 
-# 選択プロンプト表示（Enter=keep current）
 show_select_prompt() {
     printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
 }
 
-# セパレータ表示
 show_separator() {
     echo "----------------------------------------"
 }
-
-# ========================================
-# Core UI Functions (モジュール化済み)
-# ========================================
 
 build_breadcrumb() {
     local result=""
@@ -169,10 +149,6 @@ confirm_info_close() {
     return 0
 }
 
-# ========================================
-# Menu Display Functions (テンプレート化)
-# ========================================
-
 show_menu() {
     local title="$1"
     shift
@@ -201,10 +177,6 @@ show_msgbox() {
     wait_ok
 }
 
-# ========================================
-# Package Compatibility Check
-# ========================================
-
 package_compatible() {
     local pkg_id="$1"
     local pkg_managers
@@ -217,10 +189,6 @@ package_compatible() {
     
     return 1
 }
-
-# ========================================
-# Custom Feeds Selection (テンプレート化)
-# ========================================
 
 custom_feeds_selection() {
     local tr_main_menu tr_custom_feeds breadcrumb
@@ -242,12 +210,8 @@ custom_feeds_selection() {
         return 0
     fi
     
-    package_selection "$cat_id"
+    package_selection "$cat_id" "custom_feeds" "$breadcrumb"
 }
-
-# ========================================
-# Review and Apply (テンプレート化)
-# ========================================
 
 review_and_apply() {
     generate_files
@@ -330,10 +294,6 @@ review_and_apply() {
     done
 }
 
-# ========================================
-# Device Info (テンプレート化)
-# ========================================
-
 device_info() {
     local tr_main_menu tr_device_info breadcrumb
     
@@ -353,10 +313,6 @@ device_info() {
     
     confirm_info_close
 }
-
-# ========================================
-# Network Info (テンプレート化)
-# ========================================
 
 show_network_info() {
     local tr_main_menu tr_internet_connection conn_type_label breadcrumb
@@ -407,10 +363,6 @@ show_network_info() {
         return 1
     fi
 }
-
-# ========================================
-# Process Items (テンプレート化)
-# ========================================
 
 process_items() {
     local cat_id="$1"
@@ -643,10 +595,6 @@ process_items() {
     done
 }
 
-# ========================================
-# Category Config (テンプレート化)
-# ========================================
-
 category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title breadcrumb
@@ -702,10 +650,6 @@ category_config() {
     fi
 }
 
-# ========================================
-# Package Categories (テンプレート化)
-# ========================================
-
 package_categories() {
     local tr_main_menu tr_packages breadcrumb
     
@@ -742,39 +686,44 @@ package_categories() {
             done | sed -n "${choice}p")
             
             if [ -n "$selected_cat" ]; then
-                package_selection "$selected_cat"
+                package_selection "$selected_cat" "normal" "$breadcrumb"
             fi
         fi
     done
 }
 
-# ========================================
-# Package Selection (テンプレート化)
-# ========================================
-
 package_selection() {
     local cat_id="$1"
-    local tr_main_menu tr_packages cat_name cat_desc breadcrumb
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
     
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_packages=$(translate "tr-tui-packages")
+    local cat_name breadcrumb target_file
+    
     cat_name=$(get_category_name "$cat_id")
-    cat_desc=$(get_category_desc "$cat_id")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_packages" "$cat_name")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
     
     show_menu_header "$breadcrumb"
+    
+    local cat_desc
+    cat_desc=$(get_category_desc "$cat_id")
     echo "$cat_desc"
     echo ""
     
     get_category_packages "$cat_id" | while read -r pkg_id; do
-        if ! package_compatible "$pkg_id"; then
+        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
         
         local pkg_name is_selected
         pkg_name=$(get_package_name "$pkg_id")
         
-        if is_package_selected "$pkg_id"; then
+        if is_package_selected "$pkg_id" "$caller"; then
             is_selected="true"
         else
             is_selected="false"
@@ -788,7 +737,7 @@ package_selection() {
     
     local i=1
     get_category_packages "$cat_id" | while read -r pkg_id; do
-        if ! package_compatible "$pkg_id"; then
+        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
         
@@ -809,7 +758,7 @@ package_selection() {
         local selected_idx=1 found_pkg=""
         
         while read -r pkg_id; do
-            if ! package_compatible "$pkg_id"; then
+            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
                 continue
             fi
            
@@ -823,20 +772,16 @@ $(get_category_packages "$cat_id")
 EOF
 
         if [ -n "$found_pkg" ]; then
-            if is_package_selected "$found_pkg"; then
-                sed -i "/^${found_pkg}$/d" "$SELECTED_PACKAGES"
+            if is_package_selected "$found_pkg" "$caller"; then
+                sed -i "/^${found_pkg}$/d" "$target_file"
             else
-                echo "$found_pkg" >> "$SELECTED_PACKAGES"
+                echo "$found_pkg" >> "$target_file"
             fi
         fi
         
-        package_selection "$cat_id"
+        package_selection "$cat_id" "$caller" "$parent_breadcrumb"
     fi
 }
-
-# ========================================
-# View Custom Feeds (テンプレート化)
-# ========================================
 
 view_customfeeds() {
     local tr_main_menu tr_review tr_customfeeds breadcrumb
@@ -886,10 +831,6 @@ view_customfeeds() {
         fi
     done
 }
-
-# ========================================
-# View Selected Custom Packages (テンプレート化)
-# ========================================
 
 view_selected_custom_packages() {
     local tr_main_menu tr_review tr_custom_packages breadcrumb
@@ -955,10 +896,6 @@ EOF
     done
 }
 
-# ========================================
-# Main Menu (テンプレート化)
-# ========================================
-
 main_menu() {
     while true; do
         show_menu_header "aios2 Vr.$VERSION"
@@ -1013,10 +950,6 @@ main_menu() {
         fi
     done
 }
-
-# ========================================
-# Entry Point
-# ========================================
 
 aios2_simple_main() {
     device_info
