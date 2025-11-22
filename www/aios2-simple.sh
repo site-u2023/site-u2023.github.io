@@ -567,10 +567,10 @@ process_items() {
                     fi
                 else
                     local value
-                    value=$(show_inputbox "$item_breadcrumb" "" "$current")
+                    value=$(show_inputbox "$item_breadcrumb" "$item_label" "$current")
                     
-                    if [ $? -ne 0 ]; then
-                        return 1
+                    if [ -z "$value" ]; then
+                        value="$current"
                     fi
                     
                     if [ -n "$value" ]; then
