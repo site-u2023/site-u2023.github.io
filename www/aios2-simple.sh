@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1208"
+VERSION="R7.1122.1218"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
