@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1547"
+VERSION="R7.1122.1557"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -182,8 +182,8 @@ show_textbox() {
     show_menu_header "$breadcrumb"
     [ -f "$file" ] && cat "$file"
     echo ""
-    printf "[%s] " "$ok_btn"
-    read -r _
+    echo "[$ok_btn]"
+    read -r _ 2>/dev/null
 }
 
 show_msgbox() {
@@ -194,8 +194,8 @@ show_msgbox() {
     show_menu_header "$breadcrumb"
     echo "$message"
     echo ""
-    printf "[%s] " "$ok_btn"
-    read -r _
+    echo "[$ok_btn]"
+    read -r _ 2>/dev/null
 }
 
 package_compatible() {
