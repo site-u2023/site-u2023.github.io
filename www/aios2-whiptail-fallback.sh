@@ -105,7 +105,8 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --checklist \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    # evalを削除
+    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --checklist "$prompt" "$UI_HEIGHT" "$UI_WIDTH" 0 -- "$@"
 }
 
 show_textbox() {
@@ -181,7 +182,7 @@ EOF
         return 0
     fi
     
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items) || return 0
     
     if [ -n "$choice" ]; then
         selected_cat=$(echo "$categories" | sed -n "${choice}p")
@@ -440,7 +441,7 @@ process_items() {
                 i=$((i+1))
             done
             
-            value=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_opts")
+            value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
             exit_code=$?
             
             if ! [ "$exit_code" -eq 0 ]; then
@@ -578,7 +579,7 @@ process_items() {
                 
                 echo "[DEBUG] Final menu_opts='$menu_opts'" >> "$CONFIG_DIR/debug.log"
                 
-                value=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_opts")
+                value=$(show_menu "$item_breadcrumb" "" "" "" $menu_opts)
                 exit_code=$?
                 
                 echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
@@ -827,7 +828,7 @@ EOF
 $visible_categories
 EOF
     
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+    choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
     
     if ! [ $? -eq 0 ]; then
         return 0
@@ -875,7 +876,7 @@ package_selection() {
 $packages
 EOF
     
-    selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+    selected=$(show_checklist "$breadcrumb" "($(translate 'tr-tui-space-toggle'))" "" "" $checklist_items)
     
     if [ $? -eq 0 ]; then
         if [ "$caller" = "custom_feeds" ]; then
@@ -938,7 +939,7 @@ EOF
             return 0
         fi
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
         
         if ! [ $? -eq 0 ]; then
             return 0
@@ -1010,7 +1011,7 @@ EOF
             return 0
         fi
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
         
         if ! [ $? -eq 0 ]; then
             return 0
@@ -1112,7 +1113,7 @@ review_and_apply() {
 
         done
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        choice=$(show_menu "$breadcrumb" "" "" "" $menu_items)
         
         if ! [ $? -eq 0 ]; then
             return 0
