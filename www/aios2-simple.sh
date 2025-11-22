@@ -76,6 +76,9 @@ show_input_prompt() {
 }
 
 show_select_prompt() {
+    echo ""
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    echo ""
     printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
 }
 
