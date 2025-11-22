@@ -155,7 +155,13 @@ whiptail() {
     exec 0</dev/tty
     
     _debug "whiptail() called with $# args: $*"
-    
+
+    # 一度だけ /dev/tty にリダイレクト（戻さない）
+    if [ ! -t 0 ]; then
+        exec </dev/tty
+        _debug "  stdin redirected to /dev/tty"
+    fi
+
     local title="" type="" prompt=""
     local yes_btn="" no_btn="" ok_btn="" cancel_btn=""
     local height="" width="" menu_height="" default="" file=""
