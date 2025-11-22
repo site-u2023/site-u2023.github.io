@@ -227,9 +227,20 @@ whiptail() {
                 done
                 
                 echo "" >&2
-                printf "Choice: " >&2
-                read -r choice
-                _debug "  menu: choice='$choice'"
+                
+                # 空入力対策：有効な入力があるまでループ
+                local choice=""
+                while [ -z "$choice" ]; do
+                    printf "Choice: " >&2
+                    read -r choice
+                    _debug "  menu: choice='$choice'"
+                    
+                    # 空文字の場合は再入力を促す
+                    if [ -z "$choice" ]; then
+                        _debug "  menu: empty input, retry"
+                        echo "Please enter a valid choice." >&2
+                    fi
+                done
                 
                 # stdinを元に戻す
                 exec 0<&9
