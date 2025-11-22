@@ -57,7 +57,7 @@ var config = {
   whiptail_ui_path: "aios2-whiptail.sh",
   simple_ui_path: "aios2-simple.sh",
 
-  whiptail_fallback_path: "www/whiptail",
+  whiptail_fallback_path: "whiptail",
   
   // LuCI OPKG 検索エンドポイント
   // https://downloads.openwrt.org/releases/24.10.2/packages/aarch64_cortex-a53/packages/Packages
