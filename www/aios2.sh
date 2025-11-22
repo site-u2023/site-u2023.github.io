@@ -1229,8 +1229,8 @@ aios2_main() {
     ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
     echo ""
-    echo "INFO: Parallel download finished in ${ELAPSED_TIME} seconds."
-    echo "INFO: Language detected: ${AUTO_LANGUAGE:-en}"
+    echo "Parallel download finished in ${ELAPSED_TIME} seconds."
+    echo "Language detected: ${AUTO_LANGUAGE:-en}"
     echo ""
 
     if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
