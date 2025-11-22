@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1156"
+VERSION="R7.1122.1208"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -15,8 +15,8 @@ DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
-TRANSLATIONS["tr-tui-yes"]="y"
-TRANSLATIONS["tr-tui-no"]="n"
+sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
+sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
 
 BREADCRUMB_SEP=" > "
 
