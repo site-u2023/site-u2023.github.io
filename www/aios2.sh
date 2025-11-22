@@ -166,19 +166,19 @@ select_ui_mode() {
             UI_MODE="simple"
             ;;
         3)      
-            # fallback専用のUI実装をダウンロード
-            WHIPTAIL_FALLBACK_UI_URL="${WHIPTAIL_UI_URL/aios2-whiptail/aios2-whiptail-fallback}"
-            if __download_file_core "$WHIPTAIL_FALLBACK_UI_URL" "$CONFIG_DIR/aios2-whiptail_fallback.sh"; then
-                UI_MODE="whiptail_fallback"
-            else
-                echo "Warning: Fallback UI not found, using standard whiptail UI"
-                UI_MODE="whiptail"
-            fi
-            # テストモード - fallback専用whiptailコマンド
+            # テストモード - fallback専用whiptailコマンドを先にダウンロード
             WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
-            __download_file_core "$WHIPTAIL_FALLBACK_URL" "$CONFIG_DIR/whiptail"
+            __download_file_core "$WHIPTAIL_FALLBACK_URL" "$CONFIG_DIR/whiptail" >/dev/null 2>&1
             chmod +x "$CONFIG_DIR/whiptail"
             export PATH="$CONFIG_DIR:$PATH"
+            
+            # fallback専用のUI実装をダウンロード
+            WHIPTAIL_FALLBACK_UI_URL="${WHIPTAIL_UI_URL/aios2-whiptail/aios2-whiptail-fallback}"
+            if __download_file_core "$WHIPTAIL_FALLBACK_UI_URL" "$CONFIG_DIR/aios2-whiptail_fallback.sh" >/dev/null 2>&1; then
+                UI_MODE="whiptail_fallback"
+            else
+                UI_MODE="whiptail"
+            fi
             ;;
         *)
             UI_MODE="whiptail"
