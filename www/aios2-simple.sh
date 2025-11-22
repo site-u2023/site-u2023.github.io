@@ -519,14 +519,6 @@ process_items() {
                     local source
                     source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
                     
-                    if [ -n "$source" ]; then
-                        case "$source" in
-                            "browser-languages")
-                                continue
-                                ;;
-                        esac
-                    fi
-                    
                     local opt_count
                     opt_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*]" 2>/dev/null | grep -c "^{")
                     
