@@ -150,27 +150,38 @@ select_ui_mode() {
         return 0
     fi
     
-    translate 'tr-tui-ui-mode-select'
+    echo "$(translate 'tr-tui-ui-mode-select')"
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
+    echo "3) test (fallback whiptail)"
     
-    printf "%s" "$(translate 'tr-tui-ui-choice') [1]: "
+    printf "%s [1]: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     
-    if [ "$choice" = "2" ]; then
-        UI_MODE="simple"
-    else
-        UI_MODE="whiptail"
-        if ! check_packages_installed $whiptail_pkg; then
-            translate 'tr-tui-ui-installing'
-            if install_package $whiptail_pkg; then
-                translate 'tr-tui-ui-install-success'
-            else
-                translate 'tr-tui-ui-install-failed'
-                UI_MODE="simple"
+    case "$choice" in
+        2)
+            UI_MODE="simple"
+            ;;
+        3)
+            # テストモード - fallback whiptail を強制使用
+            __download_file_core "${BASE_URL}/www/whiptail" "$CONFIG_DIR/whiptail"
+            chmod +x "$CONFIG_DIR/whiptail"
+            . "$CONFIG_DIR/whiptail"
+            UI_MODE="whiptail"
+            ;;
+        *)
+            UI_MODE="whiptail"
+            if ! command -v whiptail >/dev/null 2>&1; then
+                echo "$(translate 'tr-tui-ui-installing')"
+                if install_package $whiptail_pkg; then
+                    echo "$(translate 'tr-tui-ui-install-success')"
+                else
+                    echo "$(translate 'tr-tui-ui-install-failed')"
+                    UI_MODE="simple"
+                fi
             fi
-        fi
-    fi
+            ;;
+    esac
 }
 
 # Package Manager Detection
