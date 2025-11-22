@@ -55,8 +55,8 @@ show_menu() {
     shift 4
     
     if [ "$WHIPTAIL_FALLBACK_MODE" = "1" ]; then
-        # Fallback mode: eval を使用して引数を正しく展開
-        eval "whiptail --title \"\$breadcrumb\" \
+        # Fallback mode: 絶対パスで whiptail を呼び出す
+        eval "$CONFIG_DIR/whiptail --title \"\$breadcrumb\" \
                  --ok-button \"\$ok_btn\" \
                  --cancel-button \"\$cancel_btn\" \
                  --menu \"\$prompt\" \"\$UI_HEIGHT\" \"\$UI_WIDTH\" 0 \
