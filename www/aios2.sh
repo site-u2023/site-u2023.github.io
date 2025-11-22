@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1122.0155"
+VERSION="R7.1122.0928"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -27,7 +27,7 @@ TRANSLATION_CACHE_DATA=""
 
 print_banner_unicode() {
     printf "\n"
-    printf       "\033[37m                                          ➋\033[0m\n"
+    printf       "\033[37m                                          ➋➁⓶\033[0m\n"
     printf       "\033[35m               ██ █\033[0m\n"
     printf       "\033[34m     ████      ███       ████      █████\033[0m\n"
     printf       "\033[32m        ██      ██      ██  ██    ██\033[0m\n"
@@ -221,7 +221,9 @@ install_package() {
 init() {
     local script_name
     script_name=$(basename "$0")
-    pkill -f "$script_name" 2>/dev/null
+    for pid in $(pidof "$script_name" 2>/dev/null); do
+        [ "$pid" != "$$" ] && kill "$pid" 2>/dev/null
+    done
     
     mkdir -p "$CONFIG_DIR"
 
