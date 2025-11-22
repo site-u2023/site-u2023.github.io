@@ -6,10 +6,16 @@ VERSION="R7.1122.2140"
 DEBUG="${DEBUG:-0}"
 DEBUG_LOG="${DEBUG_LOG:-/tmp/aios2/whiptail_debug.log}"
 
+# 初期化時にログファイルをクリア
+: > "$DEBUG_LOG"
+echo "[$(date '+%Y-%m-%d %H:%M:%S')] whiptail fallback initialized" >> "$DEBUG_LOG"
+
 _debug() {
+    # ログには常に書き出す
+    echo "[$(date '+%H:%M:%S')] $*" >> "$DEBUG_LOG"
+    # 画面表示はDEBUG=1の時のみ
     if [ "$DEBUG" = "1" ]; then
         echo "[DEBUG] $*" >&2
-        echo "[$(date '+%H:%M:%S')] $*" >> "$DEBUG_LOG"
     fi
 }
 
@@ -148,29 +154,52 @@ whiptail() {
     exec 9<&0
     exec 0</dev/tty
     
-    _debug "whiptail() called with: $*"
+    _debug "whiptail() called with $# args: $*"
     
     local title="" type="" prompt=""
     local yes_btn="" no_btn="" ok_btn="" cancel_btn=""
-    local height="" width="" default="" file=""
+    local height="" width="" menu_height="" default="" file=""
     local ret=0
     
     while [ $# -gt 0 ]; do
-        _debug "parsing: '$1'"
+        _debug "parsing arg: '$1'"
         case "$1" in
-            --title) title="$2"; _debug "title='$2'"; shift 2 ;;
-            --yes-button) yes_btn="$2"; _debug "yes_btn='$2'"; shift 2 ;;
-            --no-button) no_btn="$2"; _debug "no_btn='$2'"; shift 2 ;;
-            --ok-button) ok_btn="$2"; _debug "ok_btn='$2'"; shift 2 ;;
-            --cancel-button) cancel_btn="$2"; _debug "cancel_btn='$2'"; shift 2 ;;
-            --scrolltext) _debug "scrolltext flag"; shift ;;
+            --title) 
+                title="$2"
+                _debug "  title='$2'"
+                shift 2
+                ;;
+            --yes-button)
+                yes_btn="$2"
+                _debug "  yes_btn='$2'"
+                shift 2
+                ;;
+            --no-button)
+                no_btn="$2"
+                _debug "  no_btn='$2'"
+                shift 2
+                ;;
+            --ok-button)
+                ok_btn="$2"
+                _debug "  ok_btn='$2'"
+                shift 2
+                ;;
+            --cancel-button)
+                cancel_btn="$2"
+                _debug "  cancel_btn='$2'"
+                shift 2
+                ;;
+            --scrolltext)
+                _debug "  scrolltext flag"
+                shift
+                ;;
             --inputbox)
                 type="inputbox"
                 prompt="$2"
                 height="$3"
                 width="$4"
                 default="$5"
-                _debug "inputbox: prompt='$2' default='$5'"
+                _debug "  inputbox: prompt='$2' default='$5'"
                 shift 5
                 ;;
             --menu)
@@ -180,19 +209,41 @@ whiptail() {
                 width="$4"
                 menu_height="$5"
                 shift 5
-                _debug "menu: prompt='$prompt' items=$#"
-                _whiptail_menu "$title" "$prompt" "$@"
-                ret=$?
+                
+                _debug "  menu: prompt='$prompt' height=$height width=$width menu_height=$menu_height"
+                _debug "  menu: remaining args=$# items=$*"
+                
+                # メニュー表示を直接処理
+                _whiptail_header "$title"
+                [ -n "$prompt" ] && echo "$prompt" >&2 && echo "" >&2
+                
+                # メニュー項目を2つずつ処理（key label のペア）
+                while [ $# -ge 2 ]; do
+                    local key="$1"
+                    local label="$2"
+                    _debug "  menu item: key='$key' label='$label'"
+                    echo "$key) $label" >&2
+                    shift 2
+                done
+                
+                echo "" >&2
+                printf "Choice: " >&2
+                read -r choice
+                _debug "  menu: choice='$choice'"
+                
+                # stdinを元に戻す
                 exec 0<&9
                 exec 9<&-
-                return $ret
+                
+                echo "$choice"
+                return 0
                 ;;
             --yesno)
                 type="yesno"
                 prompt="$2"
                 height="$3"
                 width="$4"
-                _debug "yesno: prompt='$2'"
+                _debug "  yesno: prompt='$2'"
                 shift 4
                 ;;
             --msgbox)
@@ -200,7 +251,7 @@ whiptail() {
                 prompt="$2"
                 height="$3"
                 width="$4"
-                _debug "msgbox: prompt length=${#prompt}"
+                _debug "  msgbox: prompt length=${#prompt}"
                 shift 4
                 ;;
             --checklist)
@@ -208,8 +259,10 @@ whiptail() {
                 prompt="$2"
                 height="$3"
                 width="$4"
+                menu_height="$5"
+                _debug "  checklist: prompt='$prompt'"
                 shift 5
-                _debug "checklist: prompt='$prompt' items=$#"
+                _debug "  checklist: remaining args=$#"
                 _whiptail_checklist "$title" "$prompt" "$@"
                 ret=$?
                 exec 0<&9
@@ -221,11 +274,11 @@ whiptail() {
                 file="$2"
                 height="$3"
                 width="$4"
-                _debug "textbox: file='$2'"
+                _debug "  textbox: file='$2'"
                 shift 4
                 ;;
             *)
-                _debug "skip: '$1'"
+                _debug "  skip unknown: '$1'"
                 shift
                 ;;
         esac
@@ -244,11 +297,4 @@ whiptail() {
     exec 9<&-
     
     return $ret
-}
-
-# 初期化時にログファイルをクリア
-[ "$DEBUG" = "1" ] && {
-    : > "$DEBUG_LOG"
-    echo "[FALLBACK] whiptail loaded (DEBUG=ON)" >&2
-    echo "[$(date '+%Y-%m-%d %H:%M:%S')] whiptail fallback initialized" >> "$DEBUG_LOG"
 }
