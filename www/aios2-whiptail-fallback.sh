@@ -1037,6 +1037,7 @@ main_menu() {
     local tr_main_menu tr_select tr_exit packages_label custom_feeds_label review_label
     local setup_categories setup_cat_count
     local i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
+    local menu_args
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
@@ -1050,30 +1051,31 @@ main_menu() {
     setup_cat_count=$(echo "$setup_categories" | wc -l)
     
     while true; do
-        # 位置パラメータをクリア
-        set --
+        # 文字列として引数を構築
+        menu_args=""
         i=1
         
         while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
-            set -- "$@" "$i" "$cat_title"
+            menu_args="$menu_args $i \"$cat_title\""
             i=$((i+1))
         done <<EOF
 $setup_categories
 EOF
         
-        set -- "$@" "$i" "$packages_label"
+        menu_args="$menu_args $i \"$packages_label\""
         packages_choice=$i
         i=$((i+1))
         
-        set -- "$@" "$i" "$custom_feeds_label"
+        menu_args="$menu_args $i \"$custom_feeds_label\""
         custom_feeds_choice=$i
         i=$((i+1))
         
-        set -- "$@" "$i" "$review_label"
+        menu_args="$menu_args $i \"$review_label\""
         review_choice=$i
         
-        choice=$(show_menu "$VERSION" "" "$tr_select" "$tr_exit" "$@")
+        # eval を使って展開
+        choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_args")
         
         if ! [ $? -eq 0 ]; then
             return 0
