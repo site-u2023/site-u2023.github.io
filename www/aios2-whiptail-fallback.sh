@@ -5,6 +5,8 @@
 
 VERSION="R7.1122.0917"
 
+WHIPTAIL_FALLBACK_MODE="${WHIPTAIL_FALLBACK_MODE:-1}"
+
 UI_WIDTH="78"
 UI_HEIGHT="0"
 
@@ -52,7 +54,17 @@ show_menu() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    if [ "$WHIPTAIL_FALLBACK_MODE" = "1" ]; then
+        # Fallback mode: 直接呼び出し（evalなし、リダイレクトなし）
+        whiptail --title "$breadcrumb" \
+                 --ok-button "$ok_btn" \
+                 --cancel-button "$cancel_btn" \
+                 --menu "$prompt" "$UI_HEIGHT" "$UI_WIDTH" 0 \
+                 "$@"
+    else
+        # Normal mode: 本家whiptail互換（evalあり、リダイレクトあり）
+        eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    fi
 }
 
 show_inputbox() {
