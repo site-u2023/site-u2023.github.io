@@ -954,6 +954,8 @@ EOF
     done
 }
 
+
+
 main_menu() {
     while true; do
         show_menu_header "aios2 Vr.$VERSION"
@@ -1002,10 +1004,13 @@ main_menu() {
         if [ "$choice" -le "$setup_cat_count" ] 2>/dev/null; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
             category_config "$selected_cat"
+            continue
         elif [ "$choice" -eq "$packages_choice" ] 2>/dev/null; then
             package_categories
+            continue
         elif [ "$choice" -eq "$custom_feeds_choice" ] 2>/dev/null; then
             custom_feeds_selection
+            continue
         elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
             review_and_apply
         fi
