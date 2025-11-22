@@ -46,6 +46,8 @@
     "tr-ssh-interface": "SSH Interface",
     "tr-ssh-port": "SSH Port",
     "tr-flow-offloading-type": "Flow Offloading Type",
+    "tr-software-flow-offloading": "Software Flow Offloading",
+    "tr-hardware-flow-offloading": "Hardware Flow Offloading",
     "tr-restore-backup-path": "Restore Backup Path",
 
     "tr-wi-fi-configuration": "Wi-Fi Configuration",
