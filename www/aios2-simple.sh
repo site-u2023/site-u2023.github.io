@@ -866,11 +866,6 @@ EOF
 main_menu() {
     while true; do
         clear
-        echo "========================================"
-        echo "  aios2 Vr.$VERSION"
-        echo "========================================"
-        echo ""
-        echo "Device: $DEVICE_MODEL"
         echo ""
         
         local i=1
