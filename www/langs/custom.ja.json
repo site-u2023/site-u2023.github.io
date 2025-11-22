@@ -46,6 +46,8 @@
     "tr-ssh-interface": "SSHインターフェース",
     "tr-ssh-port": "SSHポート",
     "tr-flow-offloading-type": "フローオフロード方式",
+    "tr-software-flow-offloading": "ソフトウェアフローオフロード",
+    "tr-hardware-flow-offloading": "ハードウェアフローオフロード".
     "tr-restore-backup-path": "バックアップ復元パス",
 
     "tr-wi-fi-configuration": "Wi-Fi設定",
