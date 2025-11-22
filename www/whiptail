@@ -26,7 +26,7 @@ _whiptail_inputbox() {
     else
         printf "[%s]: " "$default" >&2
     fi
-    read -r value
+    read -r value < /dev/tty
     echo "[DEBUG] _whiptail_inputbox: value='${value:-$default}'" >&2
     echo "${value:-$default}"
     return 0
@@ -49,7 +49,7 @@ _whiptail_menu() {
     
     echo "" >&2
     printf "Choice: " >&2
-    read -r choice
+    read -r choice < /dev/tty
     echo "[DEBUG] _whiptail_menu: choice='$choice'" >&2
     echo "$choice"
     return 0
@@ -66,7 +66,7 @@ _whiptail_yesno() {
     echo "$prompt" >&2
     echo "" >&2
     printf "(%s/%s): " "$yes_btn" "$no_btn" >&2
-    read -r choice
+    read -r choice < /dev/tty
     echo "[DEBUG] _whiptail_yesno: choice='$choice'" >&2
     
     case "$(echo "$choice" | tr '[:upper:]' '[:lower:]')" in
@@ -85,7 +85,7 @@ _whiptail_msgbox() {
     echo "$prompt" >&2
     echo "" >&2
     printf "[%s] " "$ok_btn" >&2
-    read -r _
+    read -r _ < /dev/tty
     echo "[DEBUG] _whiptail_msgbox: done" >&2
     return 0
 }
