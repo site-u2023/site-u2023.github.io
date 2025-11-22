@@ -1073,10 +1073,16 @@ EOF
         review_choice=$i
         
         # 一時ファイルから引数文字列を構築
-        menu_args=""
+                menu_args=""
         while IFS= read -r line; do
             menu_args="$menu_args \"$line\""
         done < "$menu_file"
+        
+        # デバッグ出力
+        echo "[DEBUG] menu_file contents:" >> "$CONFIG_DIR/debug.log"
+        cat "$menu_file" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] menu_args=$menu_args" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] About to call eval" >> "$CONFIG_DIR/debug.log"
         
         # evalで実行
         choice=$(eval "$CONFIG_DIR/whiptail --title \"\$VERSION\" --ok-button \"\$tr_select\" --cancel-button \"\$tr_exit\" --menu \"\" \"\$UI_HEIGHT\" \"\$UI_WIDTH\" 0 $menu_args 3>&1 1>&2 2>&3")
