@@ -229,10 +229,11 @@ whiptail() {
                 
                 echo "" >&2
                 
-                # 重要: 明示的に /dev/tty から読み込む
                 local choice=""
                 while [ -z "$choice" ]; do
                     printf "Choice: " >&2
+                    # バッファをクリアしてから読み込む
+                    while read -t 0.01 -r dummy 2>/dev/null; do :; done
                     read -r choice </dev/tty
                     _debug "  menu: choice='$choice'"
                 done
