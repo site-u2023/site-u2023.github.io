@@ -563,7 +563,7 @@ process_items() {
                         return $RETURN_BACK
                     fi
                     
-                    if [ -n "$choice" ]; then
+                    if [ -n "$choice" ] && [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -le "$opt_count" ] 2>/dev/null; then
                         local selected_idx=$((choice - 1))
                         local selected_opt
                         selected_opt=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[$selected_idx].value" 2>/dev/null | head -1)
