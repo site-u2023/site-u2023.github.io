@@ -55,14 +55,12 @@ show_menu() {
     shift 4
     
     if [ "$WHIPTAIL_FALLBACK_MODE" = "1" ]; then
-        # Fallback mode: 絶対パスで whiptail を呼び出す
         eval "$CONFIG_DIR/whiptail --title \"\$breadcrumb\" \
                  --ok-button \"\$ok_btn\" \
                  --cancel-button \"\$cancel_btn\" \
                  --menu \"\$prompt\" \"\$UI_HEIGHT\" \"\$UI_WIDTH\" 0 \
                  \"\$@\" 3>&1 1>&2 2>&3"
     else
-        # Normal mode
         eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
     fi
 }
@@ -74,7 +72,7 @@ show_inputbox() {
     local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
     local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" "$UI_HEIGHT" "$UI_WIDTH" "$default" 3>&1 1>&2 2>&3
+    $CONFIG_DIR/whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" "$UI_HEIGHT" "$UI_WIDTH" "$default" 3>&1 1>&2 2>&3
 }
 
 show_yesno() {
@@ -83,7 +81,7 @@ show_yesno() {
     local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
     local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
     
-    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$UI_HEIGHT" "$UI_WIDTH"
+    $CONFIG_DIR/whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$UI_HEIGHT" "$UI_WIDTH"
 }
 
 show_msgbox() {
@@ -95,7 +93,7 @@ show_msgbox() {
     lines=$(printf '%b\n' "$message" | wc -l)
     height=$((lines + 7))
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" "$height" "$UI_WIDTH"
+    $CONFIG_DIR/whiptail --title "$breadcrumb" --ok-button "$ok_btn" --msgbox "$message" "$height" "$UI_WIDTH"
 }
 
 show_checklist() {
@@ -105,7 +103,7 @@ show_checklist() {
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
     shift 4
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --checklist "$prompt" "$UI_HEIGHT" "$UI_WIDTH" 0 "$@" 3>&1 1>&2 2>&3
+    $CONFIG_DIR/whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --checklist "$prompt" "$UI_HEIGHT" "$UI_WIDTH" 0 "$@" 3>&1 1>&2 2>&3
 }
 
 show_textbox() {
@@ -131,7 +129,7 @@ show_textbox() {
         content=$(cat "$temp_file")
         show_msgbox "$breadcrumb" "$content"
     else
-        whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" "$UI_HEIGHT" "$UI_WIDTH"
+        $CONFIG_DIR/whiptail --scrolltext --title "$breadcrumb" --ok-button "$ok_btn" --textbox "$temp_file" "$UI_HEIGHT" "$UI_WIDTH"
     fi
     
     rm -f "$temp_file"
