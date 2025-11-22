@@ -235,7 +235,6 @@ whiptail() {
                     read -r choice
                     _debug "  menu: choice='$choice'"
                     
-                    # 空文字の場合は再入力を促す
                     if [ -z "$choice" ]; then
                         _debug "  menu: empty input, retry"
                         echo "Please enter a valid choice." >&2
