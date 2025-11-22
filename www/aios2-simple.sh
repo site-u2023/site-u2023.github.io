@@ -3,21 +3,20 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1112"
+VERSION="R7.1122.1156"
 
-# Choice constants for consistent navigation
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
-CHOICE_YES="y"
-CHOICE_NO="n"
 
-# Button label translation keys
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
 DEFAULT_BTN_YES="tr-tui-yes"
 DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
+
+TRANSLATIONS["tr-tui-yes"]="y"
+TRANSLATIONS["tr-tui-no"]="n"
 
 BREADCRUMB_SEP=" > "
 
@@ -38,7 +37,33 @@ build_breadcrumb() {
     echo "$result"
 }
 
-# OKのみの入力待ち（カーソル非表示・点滅）
+confirm_yesno() {
+    local prompt="$1"
+    local yes no yes_upper no_upper choice_lower
+    
+    yes=$(translate "$DEFAULT_BTN_YES")
+    no=$(translate "$DEFAULT_BTN_NO")
+    yes_upper=$(echo "$yes" | tr '[:lower:]' '[:upper:]')
+    no_upper=$(echo "$no" | tr '[:lower:]' '[:upper:]')
+    
+    printf "%s (%s/%s): " "$prompt" "$yes" "$no"
+    read -r choice
+    
+    choice_lower=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+    
+    case "$choice_lower" in
+        "$yes")
+            return 0
+            ;;
+        "$no")
+            return 1
+            ;;
+        *)
+            return 1
+            ;;
+    esac
+}
+
 wait_ok() {
     printf '\033[?25l'
     printf '\033[5m[%s]\033[0m ' "$(translate "$DEFAULT_BTN_OK")"
@@ -46,26 +71,23 @@ wait_ok() {
     printf '\033[?25h'
 }
 
-# Yes/No確認
-confirm_yesno() {
-    local prompt="$1"
-    local yes_label no_label
-    
-    yes_label=$(translate "$DEFAULT_BTN_YES")
-    no_label=$(translate "$DEFAULT_BTN_NO")
-    
-    printf "%s (%s/%s): " "$prompt" "$yes_label" "$no_label"
-    read -r choice
-    
-    # 大文字小文字両対応
-    case "$choice" in
-        "$CHOICE_YES"|"${CHOICE_YES^^}"|"Y")
-            return 0
-            ;;
-        *)
-            return 1
-            ;;
-    esac
+confirm_save_config() {
+    echo ""
+    if confirm_yesno "$(translate 'tr-tui-apply-confirm-question')"; then
+        echo "$(translate 'tr-tui-config-applied')"
+        sleep 1
+        return 0
+    else
+        echo "$(translate 'tr-tui-config-cancelled')"
+        sleep 1
+        return 1
+    fi
+}
+
+confirm_info_close() {
+    echo ""
+    wait_ok
+    return 0
 }
 
 show_menu() {
@@ -184,8 +206,7 @@ review_and_apply() {
                 echo "  $item_breadcrumb"
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
-                echo ""
-                wait_ok
+                confirm_info_close
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
@@ -251,8 +272,7 @@ device_info() {
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
     [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
     [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
-    echo ""
-    wait_ok
+    confirm_info_close
 }
 
 show_network_info() {
@@ -588,11 +608,13 @@ category_config() {
     
     process_items "$cat_id" ""
     
-    auto_add_conditional_packages "$cat_id"
-    
-    echo ""
-    echo "Configuration completed!"
-    wait_ok
+    if confirm_save_config; then
+        auto_add_conditional_packages "$cat_id"
+        [ "$cat_id" = "basic-config" ] && update_language_packages
+        return 0
+    else
+        return 1
+    fi
 }
 
 package_categories() {
@@ -779,8 +801,7 @@ view_customfeeds() {
                 echo "========================================"
                 echo ""
                 cat "$script_file"
-                echo ""
-                wait_ok
+                confirm_info_close
             else
                 show_msgbox "$cat_breadcrumb" "Script not found"
             fi
@@ -857,8 +878,7 @@ EOF
                 echo "  $(translate 'tr-tui-no-packages')"
             fi
             
-            echo ""
-            wait_ok
+            confirm_info_close
         fi
     done
 }
@@ -866,6 +886,11 @@ EOF
 main_menu() {
     while true; do
         clear
+        echo "========================================"
+        echo "  aios2 Vr.$VERSION"
+        echo "========================================"
+        echo ""
+        echo "Device: $DEVICE_MODEL"
         echo ""
         
         local i=1
@@ -900,7 +925,6 @@ main_menu() {
             continue
         fi
         
-        # Handle exit choice
         case "$choice" in
             "$CHOICE_EXIT")
                 return 0
