@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1452"
+VERSION="R7.1122.1458"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -697,7 +697,7 @@ package_selection() {
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
     
-    local cat_name breadcrumb target_file
+    local cat_name breadcrumb target_file packages
     
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
@@ -708,6 +708,8 @@ package_selection() {
         target_file="$SELECTED_PACKAGES"
     fi
     
+    packages=$(get_category_packages "$cat_id")
+    
     show_menu_header "$breadcrumb"
     
     local cat_desc
@@ -715,7 +717,7 @@ package_selection() {
     echo "$cat_desc"
     echo ""
     
-    get_category_packages "$cat_id" | while read -r pkg_id; do
+    echo "$packages" | while read -r pkg_id; do
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
@@ -736,7 +738,7 @@ package_selection() {
     echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
     
     local i=1
-    get_category_packages "$cat_id" | while read -r pkg_id; do
+    echo "$packages" | while read -r pkg_id; do
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
@@ -757,6 +759,21 @@ package_selection() {
     if [ -n "$choice" ]; then
         local selected_idx=1 found_pkg=""
         
+        echo "$packages" | while read -r pkg_id; do
+            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
+                continue
+            fi
+           
+            if [ "$selected_idx" -eq "$choice" ]; then
+                found_pkg="$pkg_id"
+                break
+            fi
+            selected_idx=$((selected_idx+1))
+        done
+        
+        # サブシェル問題を回避
+        found_pkg=""
+        selected_idx=1
         while read -r pkg_id; do
             if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
                 continue
@@ -768,7 +785,7 @@ package_selection() {
             fi
             selected_idx=$((selected_idx+1))
         done <<EOF
-$(get_category_packages "$cat_id")
+$packages
 EOF
 
         if [ -n "$found_pkg" ]; then
