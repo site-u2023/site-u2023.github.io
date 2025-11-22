@@ -175,7 +175,7 @@ select_ui_mode() {
             # fallback専用のUI実装をダウンロード
             WHIPTAIL_FALLBACK_UI_URL="${WHIPTAIL_UI_URL/aios2-whiptail/aios2-whiptail-fallback}"
             if __download_file_core "$WHIPTAIL_FALLBACK_UI_URL" "$CONFIG_DIR/aios2-whiptail-fallback.sh"; then
-                UI_MODE="whiptail-fallback"
+                UI_MODE="whiptail_fallback"
             else
                 echo "Warning: Fallback UI not found, using standard whiptail UI"
                 UI_MODE="whiptail"
