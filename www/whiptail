@@ -114,7 +114,7 @@ _whiptail_checklist() {
     
     echo "" >&2
     printf "Toggle (space-separated numbers): " >&2
-    read -r choices
+    read -r choice < /dev/tty
     echo "[DEBUG] _whiptail_checklist: choices='$choices'" >&2
     echo "$choices"
     return 0
@@ -130,7 +130,7 @@ _whiptail_textbox() {
     [ -f "$file" ] && cat "$file" >&2
     echo "" >&2
     printf "[%s] " "$ok_btn" >&2
-    read -r _
+    read -r _ < /dev/tty
     echo "[DEBUG] _whiptail_textbox: done" >&2
     return 0
 }
