@@ -1035,6 +1035,7 @@ main_menu() {
     local tr_main_menu tr_select tr_exit packages_label custom_feeds_label review_label
     local setup_categories setup_cat_count
     local i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
+    local menu_file menu_args
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
@@ -1048,18 +1049,15 @@ main_menu() {
     setup_cat_count=$(echo "$setup_categories" | wc -l)
     
     while true; do
-        # 一時ファイルを使用してメニュー項目を渡す
-        local menu_file="$CONFIG_DIR/main_menu_items.txt"
+        menu_file="$CONFIG_DIR/main_menu_items.txt"
         : > "$menu_file"
         
         i=1
-        while read -r cat_id; do
+        echo "$setup_categories" | while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
             printf '%s\n%s\n' "$i" "$cat_title" >> "$menu_file"
             i=$((i+1))
-        done <<EOF
-$setup_categories
-EOF
+        done
         
         printf '%s\n%s\n' "$i" "$packages_label" >> "$menu_file"
         packages_choice=$i
@@ -1072,8 +1070,14 @@ EOF
         printf '%s\n%s\n' "$i" "$review_label" >> "$menu_file"
         review_choice=$i
         
-        # xargsでファイルから読み込んで実行
-        choice=$(cat "$menu_file" | xargs "$CONFIG_DIR/whiptail" --title "$VERSION" --ok-button "$tr_select" --cancel-button "$tr_exit" --menu "" "$UI_HEIGHT" "$UI_WIDTH" 0 3>&1 1>&2 2>&3)
+        # 一時ファイルから引数文字列を構築
+        menu_args=""
+        while IFS= read -r line; do
+            menu_args="$menu_args \"$line\""
+        done < "$menu_file"
+        
+        # evalで実行
+        choice=$(eval "$CONFIG_DIR/whiptail --title \"\$VERSION\" --ok-button \"\$tr_select\" --cancel-button \"\$tr_exit\" --menu \"\" \"\$UI_HEIGHT\" \"\$UI_WIDTH\" 0 $menu_args 3>&1 1>&2 2>&3")
         
         if ! [ $? -eq 0 ]; then
             rm -f "$menu_file"
