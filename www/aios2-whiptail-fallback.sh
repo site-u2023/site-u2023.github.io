@@ -1072,7 +1072,8 @@ EOF
         menu_items="$menu_items $i \"$review_label\""
         review_choice=$i
         
-        choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
+        # evalを使わずに直接呼び出し
+        choice=$(show_menu "$VERSION" "" "$tr_select" "$tr_exit" $menu_items)
         
         if ! [ $? -eq 0 ]; then
             return 0
