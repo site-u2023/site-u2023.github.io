@@ -1036,7 +1036,7 @@ EOF
 main_menu() {
     local tr_main_menu tr_select tr_exit packages_label custom_feeds_label review_label
     local setup_categories setup_cat_count
-    local menu_items i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
+    local i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
@@ -1050,29 +1050,30 @@ main_menu() {
     setup_cat_count=$(echo "$setup_categories" | wc -l)
     
     while true; do
-        menu_items="" 
+        # 位置パラメータをクリア
+        set --
         i=1
         
         while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
-            menu_items="$menu_items $i \"$cat_title\""
+            set -- "$@" "$i" "$cat_title"
             i=$((i+1))
         done <<EOF
 $setup_categories
 EOF
         
-        menu_items="$menu_items $i \"$packages_label\""
+        set -- "$@" "$i" "$packages_label"
         packages_choice=$i
         i=$((i+1))
         
-        menu_items="$menu_items $i \"$custom_feeds_label\""
+        set -- "$@" "$i" "$custom_feeds_label"
         custom_feeds_choice=$i
         i=$((i+1))
         
-        menu_items="$menu_items $i \"$review_label\""
+        set -- "$@" "$i" "$review_label"
         review_choice=$i
         
-        choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
+        choice=$(show_menu "$VERSION" "" "$tr_select" "$tr_exit" "$@")
         
         if ! [ $? -eq 0 ]; then
             return 0
