@@ -178,6 +178,7 @@ whiptail() {
                 prompt="$2"
                 height="$3"
                 width="$4"
+                menu_height="$5"
                 shift 5
                 _debug "menu: prompt='$prompt' items=$#"
                 _whiptail_menu "$title" "$prompt" "$@"
