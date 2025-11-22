@@ -167,10 +167,7 @@ select_ui_mode() {
             ;;
         3)
             # テストモード - fallback whiptail を強制使用
-            echo "[DEBUG] BASE_URL=$BASE_URL"
-            echo "[DEBUG] WHIPTAIL_FALLBACK_PATH=$WHIPTAIL_FALLBACK_PATH"
             WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
-            echo "[DEBUG] WHIPTAIL_FALLBACK_URL=$WHIPTAIL_FALLBACK_URL"
             __download_file_core "$WHIPTAIL_FALLBACK_URL" "$CONFIG_DIR/whiptail"
             chmod +x "$CONFIG_DIR/whiptail"
             . "$CONFIG_DIR/whiptail"
