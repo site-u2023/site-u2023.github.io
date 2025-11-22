@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1612"
+VERSION="R7.1122.1615"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -527,19 +527,33 @@ process_items() {
                         esac
                     fi
                     
-                    local options menu_args
-                    options=$(get_setup_item_options "$item_id")
+                    local opt_count
+                    opt_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*]" 2>/dev/null | grep -c "^{")
                     
-                    menu_args=""
+                    if [ -z "$opt_count" ] || [ "$opt_count" -eq 0 ]; then
+                        opt_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*]" 2>/dev/null | grep -c "^{")
+                    fi
+                    
+                    local menu_args=""
                     local i=1
-                    for opt in $options; do
-                        local opt_label
-                        opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        if [ "$opt" = "$current" ]; then
+                    local idx=0
+                    while [ "$idx" -lt "$opt_count" ]; do
+                        local opt_value opt_label
+                        opt_value=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[$idx].value" 2>/dev/null | head -1)
+                        opt_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[$idx].label" 2>/dev/null | head -1)
+                        
+                        if [ -z "$opt_label" ]; then
+                            opt_value=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[$idx].value" 2>/dev/null | head -1)
+                            opt_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[$idx].label" 2>/dev/null | head -1)
+                        fi
+                        
+                        if [ "$opt_value" = "$current" ]; then
                             opt_label="$opt_label [*]"
                         fi
+                        
                         menu_args="$menu_args $i \"$opt_label\""
                         i=$((i+1))
+                        idx=$((idx+1))
                     done
                     
                     local choice
@@ -550,22 +564,26 @@ process_items() {
                     fi
                     
                     if [ -n "$choice" ]; then
+                        local selected_idx=$((choice - 1))
                         local selected_opt
-                        selected_opt=$(echo "$options" | sed -n "${choice}p")
-                        if [ -n "$selected_opt" ]; then
-                            sed -i "/^${variable}=/d" "$SETUP_VARS"
-                            echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                            auto_add_conditional_packages "$cat_id"
-                            
-                            if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
-                                local aftr_type area computed
-                                aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                                if [ -n "$computed" ]; then
-                                    sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                                    echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
-                                fi
+                        selected_opt=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[$selected_idx].value" 2>/dev/null | head -1)
+                        
+                        if [ -z "$selected_opt" ]; then
+                            selected_opt=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[$selected_idx].value" 2>/dev/null | head -1)
+                        fi
+                        
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        auto_add_conditional_packages "$cat_id"
+                        
+                        if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                            local aftr_type area computed
+                            aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                            computed=$(compute_dslite_aftr "$aftr_type" "$area")
+                            if [ -n "$computed" ]; then
+                                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                                echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
                             fi
                         fi
                     fi
