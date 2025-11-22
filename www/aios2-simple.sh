@@ -111,20 +111,16 @@ show_inputbox() {
     show_menu_header "$breadcrumb"
     [ -n "$prompt" ] && echo "$prompt" >&2
     echo "" >&2
-    echo "$CHOICE_BACK) $cancel_btn" >&2
-    echo "" >&2
     printf "[%s]: " "$default" >&2
     read -r value
     
-    if [ "$value" = "$CHOICE_BACK" ]; then
-        return 1
+    if [ -z "$value" ]; then
+        value="$default"
     fi
     
-    [ -z "$value" ] && value="$default"
     echo "$value"
     return 0
 }
-
 show_yesno() {
     local breadcrumb="$1"
     local message="$2"
