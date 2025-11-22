@@ -641,8 +641,6 @@ category_config() {
     cat_title=$(get_setup_category_title "$cat_id")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
-    show_menu_header "$breadcrumb"
-    
     if [ "$cat_id" = "internet-connection" ]; then
         if show_network_info; then
             echo ""
