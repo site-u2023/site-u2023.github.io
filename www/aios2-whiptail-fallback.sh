@@ -1161,7 +1161,7 @@ XX_aios2_whiptail_main() {
     main_menu
 }
 
-aios2_whiptail_main() {
+aios2_whiptail-fallback_main() {
     export NEWT_COLORS
     echo "[DEBUG] calling device_info" >&2
     device_info
