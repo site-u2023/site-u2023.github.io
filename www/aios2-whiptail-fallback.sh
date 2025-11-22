@@ -1053,11 +1053,13 @@ main_menu() {
         : > "$menu_file"
         
         i=1
-        echo "$setup_categories" | while read -r cat_id; do
+        while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
             printf '%s\n%s\n' "$i" "$cat_title" >> "$menu_file"
             i=$((i+1))
-        done
+        done <<EOF
+$setup_categories
+EOF
         
         printf '%s\n%s\n' "$i" "$packages_label" >> "$menu_file"
         packages_choice=$i
