@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1517"
+VERSION="R7.1122.1547"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -251,7 +251,10 @@ review_and_apply() {
             i=$((i+1))
         done
         
-        show_menu_footer "true" "false"
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         [ "$choice" = "$CHOICE_BACK" ] && return 0
@@ -269,9 +272,7 @@ review_and_apply() {
                 item_label=$(get_review_item_label "$choice")
                 item_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$item_label")
                 
-                show_menu_header "$item_breadcrumb"
-                [ -f "$file" ] && cat "$file"
-                confirm_info_close
+                show_textbox "$item_breadcrumb" "$file"
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
@@ -288,7 +289,7 @@ review_and_apply() {
                 echo "$(translate 'tr-tui-apply-confirm-step4')"
                 echo ""
                 
-                if confirm_yesno "$(translate 'tr-tui-apply-confirm-question')"; then
+                if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
                     echo ""
                     echo "$(translate 'tr-tui-installing-packages')"
                     sh "$CONFIG_DIR/postinst.sh"
@@ -305,7 +306,7 @@ review_and_apply() {
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
                     
-                    if confirm_yesno "$(translate 'tr-tui-reboot-question')"; then
+                    if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
                         reboot
                     fi
                     return 0
@@ -332,7 +333,9 @@ device_info() {
     [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
     [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
     
-    confirm_info_close
+    echo ""
+    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+    read -r _
 }
 
 show_network_info() {
@@ -376,7 +379,7 @@ show_network_info() {
     fi
     
     echo ""
-    if confirm_yesno "$(translate 'tr-tui-use-auto-config')"; then
+    if show_yesno "$breadcrumb" "$(translate 'tr-tui-use-auto-config')"; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -634,7 +637,7 @@ category_config() {
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
         echo ""
-        show_input_prompt "$tr_language" "$current_lang"
+        printf "%s [%s]: " "$tr_language" "$current_lang"
         read -r value
         
         [ -z "$value" ] && value="$current_lang"
@@ -655,19 +658,11 @@ category_config() {
         fi
     fi
     
-    process_items "$cat_id" ""
+    process_items "$cat_id" "" "$breadcrumb"
     
-    show_separator
-    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-    echo ""
-    
-    if confirm_save_config; then
-        auto_add_conditional_packages "$cat_id"
-        [ "$cat_id" = "basic-config" ] && update_language_packages
-        return 0
-    else
-        return 0
-    fi
+    auto_add_conditional_packages "$cat_id"
+    [ "$cat_id" = "basic-config" ] && update_language_packages
+    return 0
 }
 
 package_categories() {
@@ -691,7 +686,10 @@ package_categories() {
             i=$((i+1))
         done
         
-        show_menu_footer "true" "false"
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -769,7 +767,10 @@ package_selection() {
         i=$((i+1))
     done
     
-    show_menu_footer "true" "false"
+    echo ""
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     
     if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -791,7 +792,6 @@ package_selection() {
             selected_idx=$((selected_idx+1))
         done
         
-        # サブシェル問題を回避
         found_pkg=""
         selected_idx=1
         while read -r pkg_id; do
@@ -844,7 +844,10 @@ view_customfeeds() {
             i=$((i+1))
         done
         
-        show_menu_footer "true" "false"
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -859,9 +862,7 @@ view_customfeeds() {
             cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds" "$cat_name")
             
             if [ -f "$script_file" ]; then
-                show_menu_header "$cat_breadcrumb"
-                cat "$script_file"
-                confirm_info_close
+                show_textbox "$cat_breadcrumb" "$script_file"
             else
                 show_msgbox "$cat_breadcrumb" "Script not found"
             fi
@@ -893,7 +894,10 @@ view_selected_custom_packages() {
             i=$((i+1))
         done
         
-        show_menu_footer "true" "false"
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -928,7 +932,9 @@ EOF
                 echo "  $(translate 'tr-tui-no-packages')"
             fi
             
-            confirm_info_close
+            echo ""
+            printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+            read -r _
         fi
     done
 }
@@ -960,7 +966,10 @@ main_menu() {
         local review_choice=$i
         i=$((i+1))
         
-        show_menu_footer "false" "true"
+        echo ""
+        echo "$CHOICE_EXIT) $(translate 'tr-tui-exit')"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ -z "$choice" ]; then
