@@ -641,6 +641,29 @@ category_config() {
     cat_title=$(get_setup_category_title "$cat_id")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
+    show_menu_header "$breadcrumb"
+    
+    if [ "$cat_id" = "basic-config" ]; then
+        local tr_language current_lang
+        tr_language=$(translate "tr-language")
+        [ -z "$tr_language" ] || [ "$tr_language" = "tr-language" ] && tr_language="Language"
+        
+        current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
+        
+        echo ""
+        printf "%s [%s]: " "$tr_language" "$current_lang"
+        read -r value
+        
+        [ -z "$value" ] && value="$current_lang"
+        
+        if [ -n "$value" ]; then
+            sed -i "/^language=/d" "$SETUP_VARS"
+            echo "language='${value}'" >> "$SETUP_VARS"
+            update_language_packages
+        fi
+    fi
+    
     if [ "$cat_id" = "internet-connection" ]; then
         if show_network_info; then
             echo ""
@@ -653,6 +676,7 @@ category_config() {
     process_items "$cat_id" "" "$breadcrumb"
     
     auto_add_conditional_packages "$cat_id"
+    [ "$cat_id" = "basic-config" ] && update_language_packages
     return 0
 }
 
