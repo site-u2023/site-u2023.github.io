@@ -156,7 +156,6 @@ select_ui_mode() {
     echo "$(translate 'tr-tui-ui-mode-select')"
     echo "1) $(translate 'tr-tui-ui-whiptail')"
     echo "2) $(translate 'tr-tui-ui-simple')"
-    echo "3) test (fallback whiptail)"
     
     printf "%s [1]: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
