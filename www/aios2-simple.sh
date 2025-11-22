@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1226"
+VERSION="R7.1122.1436"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -604,12 +604,17 @@ category_config() {
     
     process_items "$cat_id" ""
     
+    echo ""
+    echo "----------------------------------------"
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    echo ""
+    
     if confirm_save_config; then
         auto_add_conditional_packages "$cat_id"
         [ "$cat_id" = "basic-config" ] && update_language_packages
         return 0
     else
-        return 1
+        return 0
     fi
 }
 
