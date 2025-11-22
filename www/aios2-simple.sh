@@ -3,7 +3,34 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.0936"
+VERSION="R7.1122.0956"
+
+BREADCRUMB_SEP=" > "
+
+build_breadcrumb() {
+    local result=""
+    local first=1
+    
+    for level in "$@"; do
+        [ -z "$level" ] && continue
+        if [ $first -eq 1 ]; then
+            result="$level"
+            first=0
+        else
+            result="${result}${BREADCRUMB_SEP}${level}"
+        fi
+    done
+    
+    echo "$result"
+}
+
+# OKのみの入力待ち（カーソル非表示・点滅）
+wait_ok() {
+    printf '\033[?25l'
+    printf '\033[5m[%s]\033[0m ' "$(translate 'tr-tui-ok')"
+    read -r _
+    printf '\033[?25h'
+}
 
 show_menu() {
     local title="$1"
@@ -22,7 +49,7 @@ show_menu() {
     
     echo "b) $(translate 'tr-tui-back')"
     echo ""
-    printf "%s" "$(translate 'tr-tui-ui-choice'): "
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     echo "$choice"
 }
@@ -38,8 +65,7 @@ show_msgbox() {
     echo ""
     echo "$message"
     echo ""
-    printf "%s: " "$(translate 'tr-tui-ok')"
-    read -r _
+    wait_ok
 }
 
 # Package Compatibility Check for Custom Feeds
@@ -62,7 +88,7 @@ custom_feeds_selection() {
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-    breadcrumb="${tr_main_menu} > ${tr_custom_feeds}"
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
     
     download_customfeeds_json || {
         show_msgbox "$breadcrumb" "Failed to load custom feeds"
@@ -83,10 +109,15 @@ custom_feeds_selection() {
 review_and_apply() {
     generate_files
     
+    local tr_main_menu tr_review breadcrumb
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+    
     while true; do
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-review-configuration')"
+        echo "  $breadcrumb"
         echo "========================================"
         echo ""
         
@@ -95,7 +126,7 @@ review_and_apply() {
         done
         
         echo "b) $(translate 'tr-tui-back')"
-        printf "%s" "$(translate 'tr-tui-ui-choice'): "
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         [ "$choice" = "b" ] && return 0
@@ -108,23 +139,28 @@ review_and_apply() {
                 device_info 
                 ;;
             textbox)
-                local file
+                local file item_label item_breadcrumb
                 file=$(get_review_item_file "$choice")
+                item_label=$(get_review_item_label "$choice")
+                item_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$item_label")
                 clear
                 echo "========================================"
-                echo "  $(get_review_item_label "$choice")"
+                echo "  $item_breadcrumb"
                 echo "========================================"
                 [ -f "$file" ] && cat "$file"
-                printf "%s: " "$(translate 'tr-tui-ok')"
-                read -r _
+                echo ""
+                wait_ok
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
                 ;;
             apply)
+                local apply_label apply_breadcrumb
+                apply_label=$(translate "tr-tui-apply")
+                apply_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$apply_label")
                 clear
                 echo "========================================"
-                echo "  $(translate 'tr-tui-apply')"
+                echo "  $apply_breadcrumb"
                 echo "========================================"
                 echo ""
                 echo "$(translate 'tr-tui-apply-confirm-step1')"
@@ -134,7 +170,7 @@ review_and_apply() {
                 echo ""
                 echo "$(translate 'tr-tui-apply-confirm-question')"
                 echo ""
-                printf "%s" "$(translate 'tr-tui-yes')/$(translate 'tr-tui-no'): "
+                printf "%s/%s: " "$(translate 'tr-tui-yes')" "$(translate 'tr-tui-no')"
                 read -r confirm
                 
                 if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
@@ -153,7 +189,7 @@ review_and_apply() {
                     echo ""
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
-                    printf "%s" "$(translate 'tr-tui-reboot-question') (y/n): "
+                    printf "%s (y/n): " "$(translate 'tr-tui-reboot-question')"
 
                     reboot_confirm=""
                     read -r reboot_confirm
@@ -168,31 +204,36 @@ review_and_apply() {
 }
 
 device_info() {
-    local tr_main_menu tr_device_info breadcrumb info
+    local tr_main_menu tr_device_info breadcrumb
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_device_info=$(translate "tr-tui-view-device-info")
-    breadcrumb="${tr_main_menu} > ${tr_device_info}"
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
     
-    info="Model: $DEVICE_MODEL\n"
-    info="${info}Target: $DEVICE_TARGET\n"
-    info="${info}Version: $OPENWRT_VERSION\n"
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM\n"
-    [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU\n"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)\n"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB\n"
-    
-    show_msgbox "$breadcrumb" "$info"
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
+    echo "Model: $DEVICE_MODEL"
+    echo "Target: $DEVICE_TARGET"
+    echo "Version: $OPENWRT_VERSION"
+    [ -n "$DEVICE_MEM" ] && echo "Memory: $DEVICE_MEM"
+    [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
+    [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
+    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
+    echo ""
+    wait_ok
 }
 
 show_network_info() {
     local tr_main_menu tr_internet_connection conn_type_label breadcrumb
-    local tr_isp tr_as info
+    local tr_isp tr_as
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_internet_connection=$(translate "tr-internet-connection")
     conn_type_label=$(get_setup_item_label "connection-type")
-    breadcrumb="${tr_main_menu} > ${tr_internet_connection} > ${conn_type_label}"
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_internet_connection" "$conn_type_label")
     
     if [ -z "$DETECTED_CONN_TYPE" ] || [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
         show_msgbox "$breadcrumb" "No configuration detected."
@@ -229,7 +270,7 @@ show_network_info() {
     fi
     
     echo ""
-    printf "%s" "$(translate 'tr-tui-use-auto-config') ($(translate 'tr-tui-yes')/$(translate 'tr-tui-no')): "
+    printf "%s (%s/%s): " "$(translate 'tr-tui-use-auto-config')" "$(translate 'tr-tui-yes')" "$(translate 'tr-tui-no')"
     read -r confirm
     
     if [ "$confirm" = "$(translate 'tr-tui-yes')" ] || [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
@@ -262,11 +303,9 @@ process_items() {
         
         case "$item_type" in
             radio-group)
-                local label
+                local label variable default current options
                 label=$(get_setup_item_label "$item_id")
-                local variable
                 variable=$(get_setup_item_variable "$item_id")
-                local default
                 default=$(get_setup_item_default "$item_id")
                 
                 if [ "$item_id" = "mape-type" ]; then
@@ -277,11 +316,9 @@ process_items() {
                     fi
                 fi
                 
-                local current
                 current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 [ -z "$current" ] && current="$default"
                 
-                local options
                 options=$(get_setup_item_options "$item_id")
                 
                 echo ""
@@ -298,7 +335,7 @@ process_items() {
                     i=$((i+1))
                 done
                 
-                printf "%s" "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
+                printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
                 read -r choice
                 
                 if [ -n "$choice" ]; then
@@ -320,65 +357,37 @@ process_items() {
                 ;;
                 
             field)
-                local label
+                local label variable default field_type current
                 label=$(get_setup_item_label "$item_id")
-                local variable
                 variable=$(get_setup_item_variable "$item_id")
-                local default
                 default=$(get_setup_item_default "$item_id")
-                local field_type
                 field_type=$(get_setup_item_field_type "$item_id")
                 
-                local current
                 current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 
                 if [ -z "$current" ]; then
                     case "$variable" in
-                        mape_gua_prefix)
-                            current="${MAPE_GUA_PREFIX:-$default}"
-                            ;;
-                        mape_br)
-                            current="${MAPE_BR:-$default}"
-                            ;;
-                        mape_ipv4_prefix)
-                            current="${MAPE_IPV4_PREFIX:-$default}"
-                            ;;
-                        mape_ipv4_prefixlen)
-                            current="${MAPE_IPV4_PREFIXLEN:-$default}"
-                            ;;
-                        mape_ipv6_prefix)
-                            current="${MAPE_IPV6_PREFIX:-$default}"
-                            ;;
-                        mape_ipv6_prefixlen)
-                            current="${MAPE_IPV6_PREFIXLEN:-$default}"
-                            ;;
-                        mape_ealen)
-                            current="${MAPE_EALEN:-$default}"
-                            ;;
-                        mape_psidlen)
-                            current="${MAPE_PSIDLEN:-$default}"
-                            ;;
-                        mape_psid_offset)
-                            current="${MAPE_PSID_OFFSET:-$default}"
-                            ;;
-                        dslite_aftr_address)
-                            current="${DSLITE_AFTR:-$default}"
-                            ;;
-                        *)
-                            current="$default"
-                            ;;
+                        mape_gua_prefix) current="${MAPE_GUA_PREFIX:-$default}" ;;
+                        mape_br) current="${MAPE_BR:-$default}" ;;
+                        mape_ipv4_prefix) current="${MAPE_IPV4_PREFIX:-$default}" ;;
+                        mape_ipv4_prefixlen) current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
+                        mape_ipv6_prefix) current="${MAPE_IPV6_PREFIX:-$default}" ;;
+                        mape_ipv6_prefixlen) current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
+                        mape_ealen) current="${MAPE_EALEN:-$default}" ;;
+                        mape_psidlen) current="${MAPE_PSIDLEN:-$default}" ;;
+                        mape_psid_offset) current="${MAPE_PSID_OFFSET:-$default}" ;;
+                        dslite_aftr_address) current="${DSLITE_AFTR:-$default}" ;;
+                        *) current="$default" ;;
                     esac
                 fi
                 
                 if [ "$field_type" = "computed" ]; then
                     if [ "$item_id" = "dslite-aftr-address-computed" ]; then
-                        local aftr_type
+                        local aftr_type area computed
                         aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        local area
                         area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         
                         if [ -n "$aftr_type" ] && [ -n "$area" ]; then
-                            local computed
                             computed=$(compute_dslite_aftr "$aftr_type" "$area")
                             if [ -n "$computed" ]; then
                                 current="$computed"
@@ -406,9 +415,7 @@ process_items() {
                                 printf '%s [%s]: ' "$label" "$current"
                                 read -r value
                                 
-                                if [ -z "$value" ]; then
-                                    value="$current"
-                                fi
+                                [ -z "$value" ] && value="$current"
                                 
                                 if [ -n "$value" ]; then
                                     sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -436,7 +443,7 @@ process_items() {
                         i=$((i+1))
                     done
                     
-                    printf "%s" "$(translate 'tr-tui-ui-choice') [Enter=keep current]: "
+                    printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
                     read -r choice
                     
                     if [ -n "$choice" ]; then
@@ -447,11 +454,9 @@ process_items() {
                             auto_add_conditional_packages "$cat_id"
                             
                             if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
-                                local aftr_type
+                                local aftr_type area computed
                                 aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                local area
                                 area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                local computed
                                 computed=$(compute_dslite_aftr "$aftr_type" "$area")
                                 if [ -n "$computed" ]; then
                                     sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
@@ -465,9 +470,7 @@ process_items() {
                     printf '%s [%s]: ' "$label" "$current"
                     read -r value
                     
-                    if [ -z "$value" ]; then
-                        value="$current"
-                    fi
+                    [ -z "$value" ] && value="$current"
                     
                     if [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -477,12 +480,11 @@ process_items() {
                 ;;
                 
             info-display)
-                local cat_idx=0
-                local item_idx=0
+                local cat_idx=0 item_idx=0
                 for cid in $(get_setup_categories); do
-                    local citems
+                    local citems idx
                     citems=$(get_setup_category_items "$cid")
-                    local idx=0
+                    idx=0
                     for itm in $citems; do
                         if [ "$itm" = "$item_id" ]; then
                             item_idx=$idx
@@ -493,9 +495,8 @@ process_items() {
                     cat_idx=$((cat_idx+1))
                 done
                 
-                local content
+                local content class
                 content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
-                local class
                 class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
                 
                 if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
@@ -513,20 +514,22 @@ process_items() {
 
 category_config() {
     local cat_id="$1"
-    local cat_title
+    local tr_main_menu cat_title breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
     clear
     echo "========================================"
-    echo "  $cat_title"
+    echo "  $breadcrumb"
     echo "========================================"
     
     if [ "$cat_id" = "basic-config" ]; then
-        local tr_language
+        local tr_language current_lang
         tr_language=$(translate "tr-language")
         [ -z "$tr_language" ] || [ "$tr_language" = "tr-language" ] && tr_language="Language"
         
-        local current_lang
         current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
@@ -534,9 +537,7 @@ category_config() {
         printf '%s [%s]: ' "$tr_language" "$current_lang"
         read -r value
         
-        if [ -z "$value" ]; then
-            value="$current_lang"
-        fi
+        [ -z "$value" ] && value="$current_lang"
         
         if [ -n "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
@@ -560,25 +561,29 @@ category_config() {
     
     echo ""
     echo "Configuration completed!"
-    printf "%s: " "$(translate 'tr-tui-ok')"
-    read -r _
+    wait_ok
 }
 
 package_categories() {
+    local tr_main_menu tr_packages breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_packages=$(translate "tr-tui-packages")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_packages")
+    
     while true; do
         clear
         echo "========================================"
-        echo "  $(translate 'tr-tui-packages')"
+        echo "  $breadcrumb"
         echo "========================================"
         echo ""
         
         local i=1
         get_categories | while read -r cat_id; do
-            local is_hidden
+            local is_hidden cat_name
             is_hidden=$(get_category_hidden "$cat_id")
             [ "$is_hidden" = "true" ] && continue
             
-            local cat_name
             cat_name=$(get_category_name "$cat_id")
             echo "$i) $cat_name"
             i=$((i+1))
@@ -586,7 +591,7 @@ package_categories() {
         
         echo "b) $(translate 'tr-tui-back')"
         echo ""
-        printf "%s" "$(translate 'tr-tui-ui-choice'): "
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -609,14 +614,17 @@ package_categories() {
 
 package_selection() {
     local cat_id="$1"
-    local cat_name
+    local tr_main_menu tr_packages cat_name cat_desc breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_packages=$(translate "tr-tui-packages")
     cat_name=$(get_category_name "$cat_id")
-    local cat_desc
     cat_desc=$(get_category_desc "$cat_id")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_packages" "$cat_name")
     
     clear
     echo "========================================"
-    echo "  $(translate 'tr-tui-packages') > $cat_name"
+    echo "  $breadcrumb"
     echo "========================================"
     echo ""
     echo "$cat_desc"
@@ -653,7 +661,7 @@ package_selection() {
     done
     
     echo ""
-    printf "%s" "$(translate 'tr-tui-ui-choice'): "
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -661,11 +669,8 @@ package_selection() {
     fi
     
     if [ -n "$choice" ]; then
-        local selected_idx=1
-        local found_pkg=""
+        local selected_idx=1 found_pkg=""
         
-        found_pkg=""
-        selected_idx=1
         while read -r pkg_id; do
             if ! package_compatible "$pkg_id"; then
                 continue
@@ -698,7 +703,7 @@ view_customfeeds() {
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     tr_customfeeds=$(translate "tr-tui-view-customfeeds")
-    breadcrumb="${tr_main_menu} > ${tr_review} > ${tr_customfeeds}"
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
     
     if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
@@ -721,7 +726,7 @@ view_customfeeds() {
     
     echo "b) $(translate 'tr-tui-back')"
     echo ""
-    printf "%s" "$(translate 'tr-tui-ui-choice'): "
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     
     if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
@@ -729,71 +734,10 @@ view_customfeeds() {
     fi
     
     if [ -n "$choice" ]; then
+        local selected_cat cat_name cat_breadcrumb
         selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        local script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-        local cat_name
         cat_name=$(get_category_name "$selected_cat")
-        local cat_breadcrumb="${breadcrumb} > ${cat_name}"
-        
-        if [ -f "$script_file" ]; then
-            clear
-            echo "========================================"
-            echo "  $cat_breadcrumb"
-            echo "========================================"
-            echo ""
-            cat "$script_file"
-            echo ""
-            printf "%s: " "$(translate 'tr-tui-ok')"
-            read -r _
-        else
-            show_msgbox "$cat_breadcrumb" "Script not found"
-        fi
-        
-        view_customfeeds
-    fi
-}
-
-view_selected_custom_packages() {
-    local tr_main_menu tr_review tr_custom_packages breadcrumb
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_custom_packages=$(translate "tr-tui-view-custom-packages")
-    breadcrumb="${tr_main_menu} > ${tr_review} > ${tr_custom_packages}"
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
-    
-    local i=1
-    get_customfeed_categories | while read -r cat_id; do
-        local cat_name
-        cat_name=$(get_category_name "$cat_id")
-        echo "$i) $cat_name"
-        i=$((i+1))
-    done
-    
-    echo "b) $(translate 'tr-tui-back')"
-    echo ""
-    printf "%s" "$(translate 'tr-tui-ui-choice'): "
-    read -r choice
-    
-    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
-        return 0
-    fi
-    
-    if [ -n "$choice" ]; then
-        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
-        local cat_name 
-        cat_name=$(get_category_name "$selected_cat")
-        local cat_breadcrumb="${breadcrumb} > ${cat_name}"
+        cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
         
         clear
         echo "========================================"
@@ -802,7 +746,6 @@ view_selected_custom_packages() {
         echo ""
         
         local has_packages=0
-        has_packages=0
         while read -r pkg_id; do
             if ! package_compatible "$pkg_id"; then
                 continue
@@ -823,8 +766,7 @@ EOF
         fi
         
         echo ""
-        printf "%s: " "$(translate 'tr-tui-ok')"
-        read -r _
+        wait_ok
         
         view_selected_custom_packages
     fi
@@ -842,18 +784,18 @@ main_menu() {
         
         local i=1
         for cat_id in $(get_setup_categories); do
+            local cat_title
             cat_title=$(get_setup_category_title "$cat_id")
             echo "$i) $cat_title"
             i=$((i+1))
         done
         
-        local packages_label
+        local packages_label custom_feeds_label
         packages_label=$(translate "tr-tui-packages")
         echo "$i) $packages_label"
         local packages_choice=$i
         i=$((i+1))
         
-        local custom_feeds_label
         custom_feeds_label=$(translate "tr-tui-custom-feeds")
         echo "$i) $custom_feeds_label"
         local custom_feeds_choice=$i
@@ -866,7 +808,7 @@ main_menu() {
         local exit_choice=$i
         
         echo ""
-        printf "%s" "$(translate 'tr-tui-ui-choice'): "
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
         if [ -z "$choice" ]; then
@@ -875,16 +817,194 @@ main_menu() {
         
         local setup_cat_count
         setup_cat_count=$(get_setup_categories | wc -l)
-        if [ "$choice" -le "$setup_cat_count" ]; then
+        if [ "$choice" -le "$setup_cat_count" ] 2>/dev/null; then
             selected_cat=$(get_setup_categories | sed -n "${choice}p")
             category_config "$selected_cat"
-        elif [ "$choice" -eq "$packages_choice" ]; then
+        elif [ "$choice" -eq "$packages_choice" ] 2>/dev/null; then
             package_categories
-        elif [ "$choice" -eq "$custom_feeds_choice" ]; then
+        elif [ "$choice" -eq "$custom_feeds_choice" ] 2>/dev/null; then
             custom_feeds_selection
-        elif [ "$choice" -eq "$review_choice" ]; then
+        elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
             review_and_apply
-        elif [ "$choice" -eq "$exit_choice" ]; then
+        elif [ "$choice" -eq "$exit_choice" ] 2>/dev/null; then
+            return 0
+        fi
+    done
+}
+
+aios2_simple_main() {
+    device_info
+    main_menu
+}categories | while read -r cat_id; do
+        local cat_name
+        cat_name=$(get_category_name "$cat_id")
+        echo "$i) $cat_name"
+        i=$((i+1))
+    done
+    
+    echo "b) $(translate 'tr-tui-back')"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    read -r choice
+    
+    if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+        return 0
+    fi
+    
+    if [ -n "$choice" ]; then
+        local selected_cat cat_name cat_breadcrumb script_file
+        selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+        script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
+        cat_name=$(get_category_name "$selected_cat")
+        cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds" "$cat_name")
+        
+        if [ -f "$script_file" ]; then
+            clear
+            echo "========================================"
+            echo "  $cat_breadcrumb"
+            echo "========================================"
+            echo ""
+            cat "$script_file"
+            echo ""
+            wait_ok
+        else
+            show_msgbox "$cat_breadcrumb" "Script not found"
+        fi
+        
+        view_customfeeds
+    fi
+}
+
+view_selected_custom_packages() {
+    local tr_main_menu tr_review tr_custom_packages breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_custom_packages=$(translate "tr-tui-view-custom-packages")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
+    
+    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    while true; do
+        clear
+        echo "========================================"
+        echo "  $breadcrumb"
+        echo "========================================"
+        echo ""
+        
+        local i=1
+        get_customfeed_categories | while read -r cat_id; do
+            local cat_name
+            cat_name=$(get_category_name "$cat_id")
+            echo "$i) $cat_name"
+            i=$((i+1))
+        done
+        
+        echo "b) $(translate 'tr-tui-back')"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "b" ] || [ "$choice" = "B" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_cat cat_name cat_breadcrumb
+            selected_cat=$(get_customfeed_categories | sed -n "${choice}p")
+            cat_name=$(get_category_name "$selected_cat")
+            cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
+            
+            clear
+            echo "========================================"
+            echo "  $cat_breadcrumb"
+            echo "========================================"
+            echo ""
+            
+            local has_packages=0
+            while read -r pkg_id; do
+                if ! package_compatible "$pkg_id"; then
+                    continue
+                fi
+               
+                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    local pkg_name
+                    pkg_name=$(get_package_name "$pkg_id")
+                    echo " - ${pkg_name}"
+                    has_packages=1
+                fi
+            done <<EOF
+$(get_category_packages "$selected_cat")
+EOF
+
+            if [ "$has_packages" -eq 0 ]; then
+                echo "  $(translate 'tr-tui-no-packages')"
+            fi
+            
+            echo ""
+            wait_ok
+        fi
+    done
+}
+
+main_menu() {
+    while true; do
+        clear
+        echo "========================================"
+        echo "  aios2 Vr.$VERSION"
+        echo "========================================"
+        echo ""
+        echo "Device: $DEVICE_MODEL"
+        echo ""
+        
+        local i=1
+        for cat_id in $(get_setup_categories); do
+            local cat_title
+            cat_title=$(get_setup_category_title "$cat_id")
+            echo "$i) $cat_title"
+            i=$((i+1))
+        done
+        
+        local packages_label custom_feeds_label
+        packages_label=$(translate "tr-tui-packages")
+        echo "$i) $packages_label"
+        local packages_choice=$i
+        i=$((i+1))
+        
+        custom_feeds_label=$(translate "tr-tui-custom-feeds")
+        echo "$i) $custom_feeds_label"
+        local custom_feeds_choice=$i
+        i=$((i+1))
+        
+        echo "$i) $(translate 'tr-tui-review-configuration')"
+        local review_choice=$i
+        i=$((i+1))
+        echo "$i) $(translate 'tr-tui-exit')"
+        local exit_choice=$i
+        
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ -z "$choice" ]; then
+            continue
+        fi
+        
+        local setup_cat_count
+        setup_cat_count=$(get_setup_categories | wc -l)
+        if [ "$choice" -le "$setup_cat_count" ] 2>/dev/null; then
+            selected_cat=$(get_setup_categories | sed -n "${choice}p")
+            category_config "$selected_cat"
+        elif [ "$choice" -eq "$packages_choice" ] 2>/dev/null; then
+            package_categories
+        elif [ "$choice" -eq "$custom_feeds_choice" ] 2>/dev/null; then
+            custom_feeds_selection
+        elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
+            review_and_apply
+        elif [ "$choice" -eq "$exit_choice" ] 2>/dev/null; then
             return 0
         fi
     done
