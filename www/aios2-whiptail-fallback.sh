@@ -1035,7 +1035,6 @@ main_menu() {
     local tr_main_menu tr_select tr_exit packages_label custom_feeds_label review_label
     local setup_categories setup_cat_count
     local i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
-    local menu_args
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
@@ -1049,35 +1048,39 @@ main_menu() {
     setup_cat_count=$(echo "$setup_categories" | wc -l)
     
     while true; do
-        # 文字列として引数を構築
-        menu_args=""
-        i=1
+        # 一時ファイルを使用してメニュー項目を渡す
+        local menu_file="$CONFIG_DIR/main_menu_items.txt"
+        : > "$menu_file"
         
+        i=1
         while read -r cat_id; do
             cat_title=$(get_setup_category_title "$cat_id")
-            menu_args="$menu_args $i \"$cat_title\""
+            printf '%s\n%s\n' "$i" "$cat_title" >> "$menu_file"
             i=$((i+1))
         done <<EOF
 $setup_categories
 EOF
         
-        menu_args="$menu_args $i \"$packages_label\""
+        printf '%s\n%s\n' "$i" "$packages_label" >> "$menu_file"
         packages_choice=$i
         i=$((i+1))
         
-        menu_args="$menu_args $i \"$custom_feeds_label\""
+        printf '%s\n%s\n' "$i" "$custom_feeds_label" >> "$menu_file"
         custom_feeds_choice=$i
         i=$((i+1))
         
-        menu_args="$menu_args $i \"$review_label\""
+        printf '%s\n%s\n' "$i" "$review_label" >> "$menu_file"
         review_choice=$i
         
-        # eval を使って展開
-        choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_args")
+        # xargsでファイルから読み込んで実行
+        choice=$(xargs -a "$menu_file" "$CONFIG_DIR/whiptail" --title "$VERSION" --ok-button "$tr_select" --cancel-button "$tr_exit" --menu "" "$UI_HEIGHT" "$UI_WIDTH" 0 3>&1 1>&2 2>&3)
         
         if ! [ $? -eq 0 ]; then
+            rm -f "$menu_file"
             return 0
         fi
+        
+        rm -f "$menu_file"
         
         if [ "$choice" -le "$setup_cat_count" ]; then
             selected_cat=$(echo "$setup_categories" | sed -n "${choice}p")
