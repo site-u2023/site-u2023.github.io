@@ -677,7 +677,6 @@ category_config() {
     
     auto_add_conditional_packages "$cat_id"
     [ "$cat_id" = "basic-config" ] && update_language_packages
-    return 0
 }
 
 package_categories() {
