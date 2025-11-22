@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1019"
+VERSION="R7.1122.1022"
 
 BREADCRUMB_SEP=" > "
 
@@ -320,6 +320,11 @@ process_items() {
                 [ -z "$current" ] && current="$default"
                 
                 options=$(get_setup_item_options "$item_id")
+
+                if [ "$item_id" = "connection-type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
+                    options=$(echo "$options" | grep -v "^auto$")
+                    echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> "$CONFIG_DIR/debug.log"
+                fi
                 
                 echo ""
                 echo "$label:"
