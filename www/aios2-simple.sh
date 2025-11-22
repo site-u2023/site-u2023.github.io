@@ -3,19 +3,19 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1121.1621"
+VERSION="R7.1122.0936"
 
 show_menu() {
     local title="$1"
     shift
     
     clear
-    echo "=== $title ===" | fold -s -w 78
+    echo "=== $title ==="
     echo ""
     
     local i=1
     while [ $# -gt 0 ]; do
-        echo "$i) $1" | fold -s -w 76
+        echo "$i) $1"
         shift
         i=$((i+1))
     done
