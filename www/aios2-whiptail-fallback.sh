@@ -1073,7 +1073,7 @@ EOF
         review_choice=$i
         
         # xargsでファイルから読み込んで実行
-        choice=$(xargs -a "$menu_file" "$CONFIG_DIR/whiptail" --title "$VERSION" --ok-button "$tr_select" --cancel-button "$tr_exit" --menu "" "$UI_HEIGHT" "$UI_WIDTH" 0 3>&1 1>&2 2>&3)
+        choice=$(cat "$menu_file" | xargs "$CONFIG_DIR/whiptail" --title "$VERSION" --ok-button "$tr_select" --cancel-button "$tr_exit" --menu "" "$UI_HEIGHT" "$UI_WIDTH" 0 3>&1 1>&2 2>&3)
         
         if ! [ $? -eq 0 ]; then
             rm -f "$menu_file"
