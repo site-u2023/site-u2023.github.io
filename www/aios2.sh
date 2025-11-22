@@ -220,7 +220,7 @@ install_package() {
 
 init() {
     local script_name
-    script_name="${0##*/}" 
+    script_name=$(basename "$0")
     for pid in $(pidof "$script_name" 2>/dev/null); do
         [ "$pid" != "$$" ] && kill "$pid" 2>/dev/null
     done
