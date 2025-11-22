@@ -530,8 +530,12 @@ process_items() {
                     local opt_count
                     opt_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*]" 2>/dev/null | grep -c "^{")
                     
-                    if [ -z "$opt_count" ] || [ "$opt_count" -eq 0 ]; then
+                    if [ "$opt_count" -eq 0 ]; then
                         opt_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*]" 2>/dev/null | grep -c "^{")
+                    fi
+                    
+                    if [ "$opt_count" -eq 0 ]; then
+                        continue
                     fi
                     
                     local menu_args=""
