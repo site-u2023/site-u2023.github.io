@@ -155,13 +155,13 @@ whiptail() {
     exec 0</dev/tty
     
     _debug "whiptail() called with $# args: $*"
-
-    # 一度だけ /dev/tty にリダイレクト（戻さない）
+    
+    # 標準入力を /dev/tty に固定（一度だけ）
     if [ ! -t 0 ]; then
         exec </dev/tty
         _debug "  stdin redirected to /dev/tty"
     fi
-
+    
     local title="" type="" prompt=""
     local yes_btn="" no_btn="" ok_btn="" cancel_btn=""
     local height="" width="" menu_height="" default="" file=""
@@ -232,10 +232,11 @@ whiptail() {
                 
                 echo "" >&2
                 
+                # 重要: 明示的に /dev/tty から読み込む
                 local choice=""
                 while [ -z "$choice" ]; do
                     printf "Choice: " >&2
-                    IFS= read -r choice
+                    read -r choice </dev/tty
                     _debug "  menu: choice='$choice'"
                 done
                 
