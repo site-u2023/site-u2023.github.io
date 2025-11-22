@@ -290,7 +290,7 @@ whiptail() {
     case "$type" in
         inputbox) _whiptail_inputbox "$title" "$prompt" "$default"; ret=$? ;;
         yesno) _whiptail_yesno "$title" "$prompt" "$yes_btn" "$no_btn"; ret=$? ;;
-        msgbox) _whiptail_msgbox "$title" "$prompt" "$ok_btn"; ret=$? ;;
+        msgbox) _whiptail_msgbox "$title" "$prompt" "$ok_btn"; ret=$?; return 0 ;;
         textbox) _whiptail_textbox "$title" "$file" "$ok_btn"; ret=$? ;;
     esac
     
