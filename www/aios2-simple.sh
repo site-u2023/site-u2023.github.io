@@ -3,7 +3,11 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1436"
+VERSION="R7.1122.1443"
+
+# ========================================
+# Global Constants (翻訳キーのまま維持)
+# ========================================
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -15,10 +19,89 @@ DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
+# Y/N を強制的に設定（多言語対応のため）
 sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
 sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
 
 BREADCRUMB_SEP=" > "
+
+# ========================================
+# Template Functions (モジュール化)
+# ========================================
+
+# メニューヘッダー表示
+show_menu_header() {
+    local breadcrumb="$1"
+    
+    clear
+    echo "========================================"
+    echo "  $breadcrumb"
+    echo "========================================"
+    echo ""
+}
+
+# メニューフッター表示
+show_menu_footer() {
+    local show_back="${1:-true}"
+    local show_exit="${2:-false}"
+    
+    echo ""
+    [ "$show_back" = "true" ] && echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    [ "$show_exit" = "true" ] && echo "$CHOICE_EXIT) $(translate 'tr-tui-exit')"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+}
+
+# チェックボックス表示
+show_checkbox() {
+    local is_selected="$1"
+    local label="$2"
+    
+    if [ "$is_selected" = "true" ]; then
+        echo "[X] $label"
+    else
+        echo "[ ] $label"
+    fi
+}
+
+# 番号付きリスト項目表示
+show_numbered_item() {
+    local number="$1"
+    local label="$2"
+    local is_current="${3:-false}"
+    
+    if [ "$is_current" = "true" ]; then
+        echo "$number) $label [current]"
+    else
+        echo "$number) $label"
+    fi
+}
+
+# 入力プロンプト表示
+show_input_prompt() {
+    local label="$1"
+    local current="${2:-}"
+    
+    if [ -n "$current" ]; then
+        printf '%s [%s]: ' "$label" "$current"
+    else
+        printf '%s: ' "$label"
+    fi
+}
+
+# 選択プロンプト表示（Enter=keep current）
+show_select_prompt() {
+    printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
+}
+
+# セパレータ表示
+show_separator() {
+    echo "----------------------------------------"
+}
+
+# ========================================
+# Core UI Functions (モジュール化済み)
+# ========================================
 
 build_breadcrumb() {
     local result=""
@@ -53,7 +136,7 @@ confirm_yesno() {
         "$yes")
             return 0
             ;;
-        "$no")
+        "$no"|"")
             return 1
             ;;
         *)
@@ -86,24 +169,24 @@ confirm_info_close() {
     return 0
 }
 
+# ========================================
+# Menu Display Functions (テンプレート化)
+# ========================================
+
 show_menu() {
     local title="$1"
     shift
     
-    clear
-    echo "=== $title ==="
-    echo ""
+    show_menu_header "$title"
     
     local i=1
     while [ $# -gt 0 ]; do
-        echo "$i) $1"
+        show_numbered_item "$i" "$1"
         shift
         i=$((i+1))
     done
     
-    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    show_menu_footer "true" "false"
     read -r choice
     echo "$choice"
 }
@@ -112,17 +195,15 @@ show_msgbox() {
     local breadcrumb="$1"
     local message="$2"
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
+    show_menu_header "$breadcrumb"
     echo "$message"
     echo ""
     wait_ok
 }
 
-# Package Compatibility Check for Custom Feeds
+# ========================================
+# Package Compatibility Check
+# ========================================
 
 package_compatible() {
     local pkg_id="$1"
@@ -136,6 +217,10 @@ package_compatible() {
     
     return 1
 }
+
+# ========================================
+# Custom Feeds Selection (テンプレート化)
+# ========================================
 
 custom_feeds_selection() {
     local tr_main_menu tr_custom_feeds breadcrumb
@@ -160,6 +245,10 @@ custom_feeds_selection() {
     package_selection "$cat_id"
 }
 
+# ========================================
+# Review and Apply (テンプレート化)
+# ========================================
+
 review_and_apply() {
     generate_files
     
@@ -169,18 +258,15 @@ review_and_apply() {
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
     while true; do
-        clear
-        echo "========================================"
-        echo "  $breadcrumb"
-        echo "========================================"
-        echo ""
+        show_menu_header "$breadcrumb"
         
-        for i in $(get_review_items); do
-            echo "$i) $(get_review_item_label "$i")"
+        local i=1
+        for item_id in $(get_review_items); do
+            show_numbered_item "$i" "$(get_review_item_label "$i")"
+            i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        show_menu_footer "true" "false"
         read -r choice
         
         [ "$choice" = "$CHOICE_BACK" ] && return 0
@@ -197,10 +283,8 @@ review_and_apply() {
                 file=$(get_review_item_file "$choice")
                 item_label=$(get_review_item_label "$choice")
                 item_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$item_label")
-                clear
-                echo "========================================"
-                echo "  $item_breadcrumb"
-                echo "========================================"
+                
+                show_menu_header "$item_breadcrumb"
                 [ -f "$file" ] && cat "$file"
                 confirm_info_close
                 ;;
@@ -211,11 +295,8 @@ review_and_apply() {
                 local apply_label apply_breadcrumb
                 apply_label=$(translate "tr-tui-apply")
                 apply_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$apply_label")
-                clear
-                echo "========================================"
-                echo "  $apply_breadcrumb"
-                echo "========================================"
-                echo ""
+                
+                show_menu_header "$apply_breadcrumb"
                 echo "$(translate 'tr-tui-apply-confirm-step1')"
                 echo "$(translate 'tr-tui-apply-confirm-step2')"
                 echo "$(translate 'tr-tui-apply-confirm-step3')"
@@ -249,6 +330,10 @@ review_and_apply() {
     done
 }
 
+# ========================================
+# Device Info (テンプレート化)
+# ========================================
+
 device_info() {
     local tr_main_menu tr_device_info breadcrumb
     
@@ -256,11 +341,8 @@ device_info() {
     tr_device_info=$(translate "tr-tui-view-device-info")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
+    show_menu_header "$breadcrumb"
+    
     echo "Model: $DEVICE_MODEL"
     echo "Target: $DEVICE_TARGET"
     echo "Version: $OPENWRT_VERSION"
@@ -268,8 +350,13 @@ device_info() {
     [ -n "$DEVICE_CPU" ] && echo "CPU: $DEVICE_CPU"
     [ -n "$DEVICE_STORAGE" ] && echo "Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)"
     [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
+    
     confirm_info_close
 }
+
+# ========================================
+# Network Info (テンプレート化)
+# ========================================
 
 show_network_info() {
     local tr_main_menu tr_internet_connection conn_type_label breadcrumb
@@ -288,11 +375,8 @@ show_network_info() {
     tr_isp=$(translate "tr-isp")
     tr_as=$(translate "tr-as")
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
+    show_menu_header "$breadcrumb"
+    
     echo "$(translate 'tr-connection-type'): $DETECTED_CONN_TYPE"
     [ -n "$ISP_NAME" ] && echo "${tr_isp}: $ISP_NAME"
     [ -n "$ISP_AS" ] && echo "${tr_as}: $ISP_AS"
@@ -323,6 +407,10 @@ show_network_info() {
         return 1
     fi
 }
+
+# ========================================
+# Process Items (テンプレート化)
+# ========================================
 
 process_items() {
     local cat_id="$1"
@@ -372,17 +460,15 @@ process_items() {
                 echo "$label:"
                 local i=1
                 for opt in $options; do
-                    local opt_label
+                    local opt_label is_current
                     opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    if [ "$opt" = "$current" ]; then
-                        echo "$i) $opt_label [current]"
-                    else
-                        echo "$i) $opt_label"
-                    fi
+                    is_current="false"
+                    [ "$opt" = "$current" ] && is_current="true"
+                    show_numbered_item "$i" "$opt_label" "$is_current"
                     i=$((i+1))
                 done
                 
-                printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
+                show_select_prompt
                 read -r choice
                 
                 if [ -n "$choice" ]; then
@@ -459,7 +545,7 @@ process_items() {
                                 ;;
                             *)
                                 echo ""
-                                printf '%s [%s]: ' "$label" "$current"
+                                show_input_prompt "$label" "$current"
                                 read -r value
                                 
                                 [ -z "$value" ] && value="$current"
@@ -480,17 +566,15 @@ process_items() {
                     echo "$label:"
                     local i=1
                     for opt in $options; do
-                        local opt_label
+                        local opt_label is_current
                         opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        if [ "$opt" = "$current" ]; then
-                            echo "$i) $opt_label [current]"
-                        else
-                            echo "$i) $opt_label"
-                        fi
+                        is_current="false"
+                        [ "$opt" = "$current" ] && is_current="true"
+                        show_numbered_item "$i" "$opt_label" "$is_current"
                         i=$((i+1))
                     done
                     
-                    printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
+                    show_select_prompt
                     read -r choice
                     
                     if [ -n "$choice" ]; then
@@ -514,7 +598,7 @@ process_items() {
                     fi
                 else
                     echo ""
-                    printf '%s [%s]: ' "$label" "$current"
+                    show_input_prompt "$label" "$current"
                     read -r value
                     
                     [ -z "$value" ] && value="$current"
@@ -559,6 +643,10 @@ process_items() {
     done
 }
 
+# ========================================
+# Category Config (テンプレート化)
+# ========================================
+
 category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title breadcrumb
@@ -567,10 +655,7 @@ category_config() {
     cat_title=$(get_setup_category_title "$cat_id")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
+    show_menu_header "$breadcrumb"
     
     if [ "$cat_id" = "basic-config" ]; then
         local tr_language current_lang
@@ -581,7 +666,7 @@ category_config() {
         [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
         
         echo ""
-        printf '%s [%s]: ' "$tr_language" "$current_lang"
+        show_input_prompt "$tr_language" "$current_lang"
         read -r value
         
         [ -z "$value" ] && value="$current_lang"
@@ -604,8 +689,7 @@ category_config() {
     
     process_items "$cat_id" ""
     
-    echo ""
-    echo "----------------------------------------"
+    show_separator
     echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
     echo ""
     
@@ -618,6 +702,10 @@ category_config() {
     fi
 }
 
+# ========================================
+# Package Categories (テンプレート化)
+# ========================================
+
 package_categories() {
     local tr_main_menu tr_packages breadcrumb
     
@@ -626,11 +714,7 @@ package_categories() {
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_packages")
     
     while true; do
-        clear
-        echo "========================================"
-        echo "  $breadcrumb"
-        echo "========================================"
-        echo ""
+        show_menu_header "$breadcrumb"
         
         local i=1
         get_categories | while read -r cat_id; do
@@ -639,13 +723,11 @@ package_categories() {
             [ "$is_hidden" = "true" ] && continue
             
             cat_name=$(get_category_name "$cat_id")
-            echo "$i) $cat_name"
+            show_numbered_item "$i" "$cat_name"
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-        echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        show_menu_footer "true" "false"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -666,6 +748,10 @@ package_categories() {
     done
 }
 
+# ========================================
+# Package Selection (テンプレート化)
+# ========================================
+
 package_selection() {
     local cat_id="$1"
     local tr_main_menu tr_packages cat_name cat_desc breadcrumb
@@ -676,11 +762,7 @@ package_selection() {
     cat_desc=$(get_category_desc "$cat_id")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_packages" "$cat_name")
     
-    clear
-    echo "========================================"
-    echo "  $breadcrumb"
-    echo "========================================"
-    echo ""
+    show_menu_header "$breadcrumb"
     echo "$cat_desc"
     echo ""
     
@@ -689,14 +771,16 @@ package_selection() {
             continue
         fi
         
-        local pkg_name
+        local pkg_name is_selected
         pkg_name=$(get_package_name "$pkg_id")
         
         if is_package_selected "$pkg_id"; then
-            echo "[X] $pkg_name"
+            is_selected="true"
         else
-            echo "[ ] $pkg_name"
+            is_selected="false"
         fi
+        
+        show_checkbox "$is_selected" "$pkg_name"
     done
     
     echo ""
@@ -710,12 +794,11 @@ package_selection() {
         
         local pkg_name
         pkg_name=$(get_package_name "$pkg_id")
-        echo "$i) $pkg_name"
+        show_numbered_item "$i" "$pkg_name"
         i=$((i+1))
     done
     
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    show_menu_footer "true" "false"
     read -r choice
     
     if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -751,6 +834,10 @@ EOF
     fi
 }
 
+# ========================================
+# View Custom Feeds (テンプレート化)
+# ========================================
+
 view_customfeeds() {
     local tr_main_menu tr_review tr_customfeeds breadcrumb
     
@@ -765,23 +852,17 @@ view_customfeeds() {
     fi
     
     while true; do
-        clear
-        echo "========================================"
-        echo "  $breadcrumb"
-        echo "========================================"
-        echo ""
+        show_menu_header "$breadcrumb"
         
         local i=1
         get_customfeed_categories | while read -r cat_id; do
             local cat_name
             cat_name=$(get_category_name "$cat_id")
-            echo "$i) $cat_name"
+            show_numbered_item "$i" "$cat_name"
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-        echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        show_menu_footer "true" "false"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -796,11 +877,7 @@ view_customfeeds() {
             cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds" "$cat_name")
             
             if [ -f "$script_file" ]; then
-                clear
-                echo "========================================"
-                echo "  $cat_breadcrumb"
-                echo "========================================"
-                echo ""
+                show_menu_header "$cat_breadcrumb"
                 cat "$script_file"
                 confirm_info_close
             else
@@ -809,6 +886,10 @@ view_customfeeds() {
         fi
     done
 }
+
+# ========================================
+# View Selected Custom Packages (テンプレート化)
+# ========================================
 
 view_selected_custom_packages() {
     local tr_main_menu tr_review tr_custom_packages breadcrumb
@@ -824,23 +905,17 @@ view_selected_custom_packages() {
     fi
     
     while true; do
-        clear
-        echo "========================================"
-        echo "  $breadcrumb"
-        echo "========================================"
-        echo ""
+        show_menu_header "$breadcrumb"
         
         local i=1
         get_customfeed_categories | while read -r cat_id; do
             local cat_name
             cat_name=$(get_category_name "$cat_id")
-            echo "$i) $cat_name"
+            show_numbered_item "$i" "$cat_name"
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-        echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        show_menu_footer "true" "false"
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
@@ -853,11 +928,7 @@ view_selected_custom_packages() {
             cat_name=$(get_category_name "$selected_cat")
             cat_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages" "$cat_name")
             
-            clear
-            echo "========================================"
-            echo "  $cat_breadcrumb"
-            echo "========================================"
-            echo ""
+            show_menu_header "$cat_breadcrumb"
             
             local has_packages=0
             while read -r pkg_id; do
@@ -884,40 +955,38 @@ EOF
     done
 }
 
+# ========================================
+# Main Menu (テンプレート化)
+# ========================================
+
 main_menu() {
     while true; do
-        clear
-        echo "========================================"
-        echo "  aios2 Vr.$VERSION"
-        echo "========================================"
-        echo ""
+        show_menu_header "aios2 Vr.$VERSION"
         
         local i=1
         for cat_id in $(get_setup_categories); do
             local cat_title
             cat_title=$(get_setup_category_title "$cat_id")
-            echo "$i) $cat_title"
+            show_numbered_item "$i" "$cat_title"
             i=$((i+1))
         done
         
         local packages_label custom_feeds_label
         packages_label=$(translate "tr-tui-packages")
-        echo "$i) $packages_label"
+        show_numbered_item "$i" "$packages_label"
         local packages_choice=$i
         i=$((i+1))
         
         custom_feeds_label=$(translate "tr-tui-custom-feeds")
-        echo "$i) $custom_feeds_label"
+        show_numbered_item "$i" "$custom_feeds_label"
         local custom_feeds_choice=$i
         i=$((i+1))
         
-        echo "$i) $(translate 'tr-tui-review-configuration')"
+        show_numbered_item "$i" "$(translate 'tr-tui-review-configuration')"
         local review_choice=$i
         i=$((i+1))
-        echo "$CHOICE_EXIT) $(translate 'tr-tui-exit')"
         
-        echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        show_menu_footer "false" "true"
         read -r choice
         
         if [ -z "$choice" ]; then
@@ -944,6 +1013,10 @@ main_menu() {
         fi
     done
 }
+
+# ========================================
+# Entry Point
+# ========================================
 
 aios2_simple_main() {
     device_info
