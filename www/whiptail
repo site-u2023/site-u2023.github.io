@@ -232,12 +232,13 @@ whiptail() {
                 local choice=""
                 while [ -z "$choice" ]; do
                     printf "Choice: " >&2
-                    read -r choice
+                    # 標準入力から1行読み込む（-t 0でバッファクリア）
+                    read -t 0.01 -r dummy 2>/dev/null || true
+                    read -r choice </dev/tty
                     _debug "  menu: choice='$choice'"
                     
                     if [ -z "$choice" ]; then
                         _debug "  menu: empty input, retry"
-                        echo "Please enter a valid choice." >&2
                     fi
                 done
                 
