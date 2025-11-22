@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1557"
+VERSION="R7.1122.1602"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -109,11 +109,11 @@ show_inputbox() {
     local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
     
     show_menu_header "$breadcrumb"
-    [ -n "$prompt" ] && echo "$prompt"
-    echo ""
-    echo "$CHOICE_BACK) $cancel_btn"
-    echo ""
-    printf "[%s]: " "$default"
+    [ -n "$prompt" ] && echo "$prompt" >&2
+    echo "" >&2
+    echo "$CHOICE_BACK) $cancel_btn" >&2
+    echo "" >&2
+    printf "[%s]: " "$default" >&2
     read -r value
     
     if [ "$value" = "$CHOICE_BACK" ]; then
