@@ -3,10 +3,14 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1458"
+VERSION="R7.1122.1517"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
+
+RETURN_STAY="0"
+RETURN_BACK="1"
+RETURN_MAIN="2"
 
 DEFAULT_BTN_SELECT="tr-tui-select"
 DEFAULT_BTN_BACK="tr-tui-back"
@@ -28,17 +32,6 @@ show_menu_header() {
     echo "  $breadcrumb"
     echo "========================================"
     echo ""
-}
-
-show_menu_footer() {
-    local show_back="${1:-true}"
-    local show_exit="${2:-false}"
-    
-    echo ""
-    [ "$show_back" = "true" ] && echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-    [ "$show_exit" = "true" ] && echo "$CHOICE_EXIT) $(translate 'tr-tui-exit')"
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
 }
 
 show_checkbox() {
@@ -64,24 +57,6 @@ show_numbered_item() {
     fi
 }
 
-show_input_prompt() {
-    local label="$1"
-    local current="${2:-}"
-    
-    if [ -n "$current" ]; then
-        printf '%s [%s]: ' "$label" "$current"
-    else
-        printf '%s: ' "$label"
-    fi
-}
-
-show_select_prompt() {
-    echo ""
-    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-    echo ""
-    printf "%s [Enter=keep current]: " "$(translate 'tr-tui-ui-choice')"
-}
-
 show_separator() {
     echo "----------------------------------------"
 }
@@ -103,81 +78,124 @@ build_breadcrumb() {
     echo "$result"
 }
 
-confirm_yesno() {
-    local prompt="$1"
-    local yes no choice_lower
+show_menu() {
+    local breadcrumb="$1"
+    local prompt="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
+    shift 4
     
-    yes=$(translate "$DEFAULT_BTN_YES")
-    no=$(translate "$DEFAULT_BTN_NO")
+    show_menu_header "$breadcrumb"
+    [ -n "$prompt" ] && echo "$prompt" && echo ""
     
-    printf "%s (%s/%s): " "$prompt" "$yes" "$no"
-    read -r choice
+    while [ $# -gt 0 ]; do
+        show_numbered_item "$1" "$2"
+        shift 2
+    done
     
-    choice_lower=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
-    
-    case "$choice_lower" in
-        "$yes")
-            return 0
-            ;;
-        "$no"|"")
-            return 1
-            ;;
-        *)
-            return 1
-            ;;
-    esac
-}
-
-wait_ok() {
-    printf '\033[?25l'
-    printf '\033[5m[%s]\033[0m ' "$(translate "$DEFAULT_BTN_OK")"
-    read -r _
-    printf '\033[?25h'
-}
-
-confirm_save_config() {
     echo ""
-    if confirm_yesno "$(translate 'tr-tui-apply-confirm-question')"; then
-        echo "$(translate 'tr-tui-config-applied')"
-        sleep 1
-        return 0
-    else
+    echo "$CHOICE_BACK) $cancel_btn"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    read -r choice
+    echo "$choice"
+}
+
+show_inputbox() {
+    local breadcrumb="$1"
+    local prompt="$2"
+    local default="$3"
+    local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
+    
+    show_menu_header "$breadcrumb"
+    [ -n "$prompt" ] && echo "$prompt"
+    echo ""
+    echo "$CHOICE_BACK) $cancel_btn"
+    echo ""
+    printf "[%s]: " "$default"
+    read -r value
+    
+    if [ "$value" = "$CHOICE_BACK" ]; then
         return 1
     fi
-}
-
-confirm_info_close() {
-    echo ""
-    wait_ok
+    
+    [ -z "$value" ] && value="$default"
+    echo "$value"
     return 0
 }
 
-show_menu() {
-    local title="$1"
-    shift
+show_yesno() {
+    local breadcrumb="$1"
+    local message="$2"
+    local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
+    local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
     
-    show_menu_header "$title"
+    show_menu_header "$breadcrumb"
+    echo "$message"
+    echo ""
+    printf "(%s/%s): " "$yes_btn" "$no_btn"
+    read -r choice
     
-    local i=1
+    local choice_lower
+    choice_lower=$(echo "$choice" | tr '[:upper:]' '[:lower:]')
+    
+    [ "$choice_lower" = "$yes_btn" ] && return 0
+    return 1
+}
+
+show_checklist() {
+    local breadcrumb="$1"
+    local prompt="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
+    local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
+    shift 4
+    
+    show_menu_header "$breadcrumb"
+    [ -n "$prompt" ] && echo "$prompt" && echo ""
+    
     while [ $# -gt 0 ]; do
-        show_numbered_item "$i" "$1"
-        shift
-        i=$((i+1))
+        local key="$1"
+        local label="$2"
+        local status="$3"
+        if [ "$status" = "ON" ]; then
+            echo "[X] $key) $label"
+        else
+            echo "[ ] $key) $label"
+        fi
+        shift 3
     done
     
-    show_menu_footer "true" "false"
+    echo ""
+    echo "$CHOICE_BACK) $cancel_btn"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
     echo "$choice"
+}
+
+show_textbox() {
+    local breadcrumb="$1"
+    local file="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
+    
+    show_menu_header "$breadcrumb"
+    [ -f "$file" ] && cat "$file"
+    echo ""
+    printf "[%s] " "$ok_btn"
+    read -r _
 }
 
 show_msgbox() {
     local breadcrumb="$1"
     local message="$2"
+    local ok_btn="${3:-$(translate "$DEFAULT_BTN_OK")}"
     
     show_menu_header "$breadcrumb"
     echo "$message"
     echo ""
-    wait_ok
+    printf "[%s] " "$ok_btn"
+    read -r _
 }
 
 package_compatible() {
@@ -370,6 +388,7 @@ show_network_info() {
 process_items() {
     local cat_id="$1"
     local parent_items="$2"
+    local breadcrumb="$3"
     
     local items
     if [ -z "$parent_items" ]; then
@@ -386,10 +405,13 @@ process_items() {
             continue
         fi
         
+        local item_label item_breadcrumb
+        item_label=$(get_setup_item_label "$item_id")
+        item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${item_label}"
+        
         case "$item_type" in
             radio-group)
-                local label variable default current options
-                label=$(get_setup_item_label "$item_id")
+                local variable default current options menu_args
                 variable=$(get_setup_item_variable "$item_id")
                 default=$(get_setup_item_default "$item_id")
                 
@@ -408,25 +430,29 @@ process_items() {
 
                 if [ "$item_id" = "connection-type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
                     options=$(echo "$options" | grep -v "^auto$")
-                    echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> "$CONFIG_DIR/debug.log"
                 fi
                 
-                echo ""
-                echo "$label:"
+                menu_args=""
                 local i=1
                 for opt in $options; do
-                    local opt_label is_current
+                    local opt_label
                     opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    is_current="false"
-                    [ "$opt" = "$current" ] && is_current="true"
-                    show_numbered_item "$i" "$opt_label" "$is_current"
+                    if [ "$opt" = "$current" ]; then
+                        opt_label="$opt_label [*]"
+                    fi
+                    menu_args="$menu_args $i \"$opt_label\""
                     i=$((i+1))
                 done
                 
-                show_select_prompt
-                read -r choice
+                local choice
+                choice=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_args")
+                
+                if [ "$choice" = "$CHOICE_BACK" ]; then
+                    return $RETURN_BACK
+                fi
                 
                 if [ -n "$choice" ]; then
+                    local selected_opt
                     selected_opt=$(echo "$options" | sed -n "${choice}p")
                     if [ -n "$selected_opt" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -440,13 +466,12 @@ process_items() {
                 local nested
                 nested=$(get_section_nested_items "$item_id")
                 if [ -n "$nested" ]; then
-                    process_items "$cat_id" "$nested"
+                    process_items "$cat_id" "$nested" "$item_breadcrumb"
                 fi
                 ;;
                 
             field)
-                local label variable default field_type current
-                label=$(get_setup_item_label "$item_id")
+                local variable default field_type current
                 variable=$(get_setup_item_variable "$item_id")
                 default=$(get_setup_item_default "$item_id")
                 field_type=$(get_setup_item_field_type "$item_id")
@@ -484,8 +509,6 @@ process_items() {
                             fi
                         fi
                     fi
-                    echo ""
-                    echo "$label: $current"
                     continue
                 fi
                 
@@ -498,41 +521,33 @@ process_items() {
                             "browser-languages")
                                 continue
                                 ;;
-                            *)
-                                echo ""
-                                show_input_prompt "$label" "$current"
-                                read -r value
-                                
-                                [ -z "$value" ] && value="$current"
-                                
-                                if [ -n "$value" ]; then
-                                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                                    echo "${variable}='${value}'" >> "$SETUP_VARS"
-                                fi
-                                continue
-                                ;;
                         esac
                     fi
                     
-                    local options
+                    local options menu_args
                     options=$(get_setup_item_options "$item_id")
                     
-                    echo ""
-                    echo "$label:"
+                    menu_args=""
                     local i=1
                     for opt in $options; do
-                        local opt_label is_current
+                        local opt_label
                         opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                        is_current="false"
-                        [ "$opt" = "$current" ] && is_current="true"
-                        show_numbered_item "$i" "$opt_label" "$is_current"
+                        if [ "$opt" = "$current" ]; then
+                            opt_label="$opt_label [*]"
+                        fi
+                        menu_args="$menu_args $i \"$opt_label\""
                         i=$((i+1))
                     done
                     
-                    show_select_prompt
-                    read -r choice
+                    local choice
+                    choice=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_args")
+                    
+                    if [ "$choice" = "$CHOICE_BACK" ]; then
+                        return $RETURN_BACK
+                    fi
                     
                     if [ -n "$choice" ]; then
+                        local selected_opt
                         selected_opt=$(echo "$options" | sed -n "${choice}p")
                         if [ -n "$selected_opt" ]; then
                             sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -552,11 +567,12 @@ process_items() {
                         fi
                     fi
                 else
-                    echo ""
-                    show_input_prompt "$label" "$current"
-                    read -r value
+                    local value
+                    value=$(show_inputbox "$item_breadcrumb" "" "$current")
                     
-                    [ -z "$value" ] && value="$current"
+                    if [ $? -ne 0 ]; then
+                        return 1
+                    fi
                     
                     if [ -n "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -590,12 +606,13 @@ process_items() {
                 fi
                 
                 if [ -n "$content" ]; then
-                    echo ""
-                    echo "$content"
+                    show_msgbox "$breadcrumb" "$content"
                 fi
                 ;;
         esac
     done
+    
+    return 0
 }
 
 category_config() {
@@ -678,7 +695,7 @@ package_categories() {
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
-            return 0
+            return $RETURN_STAY
         fi
         
         if [ -n "$choice" ]; then
@@ -756,7 +773,7 @@ package_selection() {
     read -r choice
     
     if [ "$choice" = "$CHOICE_BACK" ]; then
-        return 0
+        return $RETURN_STAY
     fi
     
     if [ -n "$choice" ]; then
@@ -831,7 +848,7 @@ view_customfeeds() {
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
-            return 0
+            return $RETURN_STAY
         fi
         
         if [ -n "$choice" ]; then
@@ -880,7 +897,7 @@ view_selected_custom_packages() {
         read -r choice
         
         if [ "$choice" = "$CHOICE_BACK" ]; then
-            return 0
+            return $RETURN_STAY
         fi
         
         if [ -n "$choice" ]; then
