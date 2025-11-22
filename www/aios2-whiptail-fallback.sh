@@ -55,12 +55,12 @@ show_menu() {
     shift 4
     
     if [ "$WHIPTAIL_FALLBACK_MODE" = "1" ]; then
-        # Fallback mode: リダイレクトを追加
-        whiptail --title "$breadcrumb" \
-                 --ok-button "$ok_btn" \
-                 --cancel-button "$cancel_btn" \
-                 --menu "$prompt" "$UI_HEIGHT" "$UI_WIDTH" 0 \
-                 "$@" 3>&1 1>&2 2>&3
+        # Fallback mode: eval を使用して引数を正しく展開
+        eval "whiptail --title \"\$breadcrumb\" \
+                 --ok-button \"\$ok_btn\" \
+                 --cancel-button \"\$cancel_btn\" \
+                 --menu \"\$prompt\" \"\$UI_HEIGHT\" \"\$UI_WIDTH\" 0 \
+                 \"\$@\" 3>&1 1>&2 2>&3"
     else
         # Normal mode
         eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --menu \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
