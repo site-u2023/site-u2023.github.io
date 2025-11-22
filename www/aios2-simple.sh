@@ -3,11 +3,21 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1059"
+VERSION="R7.1122.1112"
 
 # Choice constants for consistent navigation
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
+CHOICE_YES="y"
+CHOICE_NO="n"
+
+# Button label translation keys
+DEFAULT_BTN_SELECT="tr-tui-select"
+DEFAULT_BTN_BACK="tr-tui-back"
+DEFAULT_BTN_YES="tr-tui-yes"
+DEFAULT_BTN_NO="tr-tui-no"
+DEFAULT_BTN_OK="tr-tui-ok"
+DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
 BREADCRUMB_SEP=" > "
 
@@ -31,9 +41,31 @@ build_breadcrumb() {
 # OKのみの入力待ち（カーソル非表示・点滅）
 wait_ok() {
     printf '\033[?25l'
-    printf '\033[5m[%s]\033[0m ' "$(translate 'tr-tui-ok')"
+    printf '\033[5m[%s]\033[0m ' "$(translate "$DEFAULT_BTN_OK")"
     read -r _
     printf '\033[?25h'
+}
+
+# Yes/No確認
+confirm_yesno() {
+    local prompt="$1"
+    local yes_label no_label
+    
+    yes_label=$(translate "$DEFAULT_BTN_YES")
+    no_label=$(translate "$DEFAULT_BTN_NO")
+    
+    printf "%s (%s/%s): " "$prompt" "$yes_label" "$no_label"
+    read -r choice
+    
+    # 大文字小文字両対応
+    case "$choice" in
+        "$CHOICE_YES"|"${CHOICE_YES^^}"|"Y")
+            return 0
+            ;;
+        *)
+            return 1
+            ;;
+    esac
 }
 
 show_menu() {
@@ -51,7 +83,7 @@ show_menu() {
         i=$((i+1))
     done
     
-    echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
     echo ""
     printf "%s: " "$(translate 'tr-tui-ui-choice')"
     read -r choice
@@ -129,7 +161,7 @@ review_and_apply() {
             echo "$i) $(get_review_item_label "$i")"
         done
         
-        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
         
@@ -172,12 +204,8 @@ review_and_apply() {
                 echo "$(translate 'tr-tui-apply-confirm-step3')"
                 echo "$(translate 'tr-tui-apply-confirm-step4')"
                 echo ""
-                echo "$(translate 'tr-tui-apply-confirm-question')"
-                echo ""
-                printf "%s/%s: " "$(translate 'tr-tui-yes')" "$(translate 'tr-tui-no')"
-                read -r confirm
                 
-                if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+                if confirm_yesno "$(translate 'tr-tui-apply-confirm-question')"; then
                     echo ""
                     echo "$(translate 'tr-tui-installing-packages')"
                     sh "$CONFIG_DIR/postinst.sh"
@@ -193,11 +221,8 @@ review_and_apply() {
                     echo ""
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
-                    printf "%s (y/n): " "$(translate 'tr-tui-reboot-question')"
-
-                    reboot_confirm=""
-                    read -r reboot_confirm
-                    if [ "$reboot_confirm" = "y" ] || [ "$reboot_confirm" = "Y" ]; then
+                    
+                    if confirm_yesno "$(translate 'tr-tui-reboot-question')"; then
                         reboot
                     fi
                     return 0
@@ -274,10 +299,7 @@ show_network_info() {
     fi
     
     echo ""
-    printf "%s (y/n): " "$(translate 'tr-tui-use-auto-config')"
-    read -r confirm
-    
-    if [ "$confirm" = "y" ] || [ "$confirm" = "Y" ]; then
+    if confirm_yesno "$(translate 'tr-tui-use-auto-config')"; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
         return 0
@@ -598,7 +620,7 @@ package_categories() {
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
@@ -734,7 +756,7 @@ view_customfeeds() {
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
@@ -762,8 +784,6 @@ view_customfeeds() {
             else
                 show_msgbox "$cat_breadcrumb" "Script not found"
             fi
-            
-            # Continue loop to return to customfeeds menu
         fi
     done
 }
@@ -796,7 +816,7 @@ view_selected_custom_packages() {
             i=$((i+1))
         done
         
-        echo "$CHOICE_BACK) $(translate 'tr-tui-back')"
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
         echo ""
         printf "%s: " "$(translate 'tr-tui-ui-choice')"
         read -r choice
