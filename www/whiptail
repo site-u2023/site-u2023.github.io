@@ -1,8 +1,13 @@
 #!/bin/sh
 # whiptail fallback - text UI emulation
 
+VERSION="R7.1122.2053"
+
+echo "[FALLBACK] whiptail loaded" >&2
+
 _whiptail_header() {
     local title="$1"
+    echo "[DEBUG] _whiptail_header: title='$title'" >&2
     echo "========================================" >&2
     echo "  $title" >&2
     echo "========================================" >&2
@@ -14,6 +19,7 @@ _whiptail_inputbox() {
     local prompt="$2"
     local default="$3"
     
+    echo "[DEBUG] _whiptail_inputbox: title='$title' prompt='$prompt' default='$default'" >&2
     _whiptail_header "$title"
     if [ -n "$prompt" ]; then
         printf "%s [%s]: " "$prompt" "$default" >&2
@@ -21,6 +27,7 @@ _whiptail_inputbox() {
         printf "[%s]: " "$default" >&2
     fi
     read -r value
+    echo "[DEBUG] _whiptail_inputbox: value='${value:-$default}'" >&2
     echo "${value:-$default}"
     return 0
 }
@@ -30,10 +37,12 @@ _whiptail_menu() {
     local prompt="$2"
     shift 2
     
+    echo "[DEBUG] _whiptail_menu: title='$title' prompt='$prompt' args='$@'" >&2
     _whiptail_header "$title"
     [ -n "$prompt" ] && echo "$prompt" >&2 && echo "" >&2
     
     while [ $# -ge 2 ]; do
+        echo "[DEBUG] _whiptail_menu: item key='$1' label='$2'" >&2
         echo "$1) $2" >&2
         shift 2
     done
@@ -41,6 +50,7 @@ _whiptail_menu() {
     echo "" >&2
     printf "Choice: " >&2
     read -r choice
+    echo "[DEBUG] _whiptail_menu: choice='$choice'" >&2
     echo "$choice"
     return 0
 }
@@ -51,11 +61,13 @@ _whiptail_yesno() {
     local yes_btn="${3:-y}"
     local no_btn="${4:-n}"
     
+    echo "[DEBUG] _whiptail_yesno: title='$title' prompt='$prompt' yes='$yes_btn' no='$no_btn'" >&2
     _whiptail_header "$title"
     echo "$prompt" >&2
     echo "" >&2
     printf "(%s/%s): " "$yes_btn" "$no_btn" >&2
     read -r choice
+    echo "[DEBUG] _whiptail_yesno: choice='$choice'" >&2
     
     case "$(echo "$choice" | tr '[:upper:]' '[:lower:]')" in
         y|yes|"$yes_btn") return 0 ;;
@@ -68,11 +80,13 @@ _whiptail_msgbox() {
     local prompt="$2"
     local ok_btn="${3:-OK}"
     
+    echo "[DEBUG] _whiptail_msgbox: title='$title' prompt='$prompt' ok='$ok_btn'" >&2
     _whiptail_header "$title"
     echo "$prompt" >&2
     echo "" >&2
     printf "[%s] " "$ok_btn" >&2
     read -r _
+    echo "[DEBUG] _whiptail_msgbox: done" >&2
     return 0
 }
 
@@ -81,6 +95,7 @@ _whiptail_checklist() {
     local prompt="$2"
     shift 2
     
+    echo "[DEBUG] _whiptail_checklist: title='$title' prompt='$prompt' args='$@'" >&2
     _whiptail_header "$title"
     [ -n "$prompt" ] && echo "$prompt" >&2 && echo "" >&2
     
@@ -88,6 +103,7 @@ _whiptail_checklist() {
         local key="$1"
         local label="$2"
         local status="$3"
+        echo "[DEBUG] _whiptail_checklist: key='$key' label='$label' status='$status'" >&2
         if [ "$status" = "ON" ]; then
             echo "[X] $key) $label" >&2
         else
@@ -99,6 +115,7 @@ _whiptail_checklist() {
     echo "" >&2
     printf "Toggle (space-separated numbers): " >&2
     read -r choices
+    echo "[DEBUG] _whiptail_checklist: choices='$choices'" >&2
     echo "$choices"
     return 0
 }
@@ -108,34 +125,39 @@ _whiptail_textbox() {
     local file="$2"
     local ok_btn="${3:-OK}"
     
+    echo "[DEBUG] _whiptail_textbox: title='$title' file='$file' ok='$ok_btn'" >&2
     _whiptail_header "$title"
     [ -f "$file" ] && cat "$file" >&2
     echo "" >&2
     printf "[%s] " "$ok_btn" >&2
     read -r _
+    echo "[DEBUG] _whiptail_textbox: done" >&2
     return 0
 }
 
 whiptail() {
+    echo "[DEBUG] whiptail() called with: $@" >&2
+    
     local title="" type="" prompt=""
     local yes_btn="" no_btn="" ok_btn="" cancel_btn=""
-    local height="" width=""
-    local args=""
+    local height="" width="" default="" file=""
     
     while [ $# -gt 0 ]; do
+        echo "[DEBUG] whiptail parsing: '$1'" >&2
         case "$1" in
-            --title) title="$2"; shift 2 ;;
-            --yes-button) yes_btn="$2"; shift 2 ;;
-            --no-button) no_btn="$2"; shift 2 ;;
-            --ok-button) ok_btn="$2"; shift 2 ;;
-            --cancel-button) cancel_btn="$2"; shift 2 ;;
-            --scrolltext) shift ;;
+            --title) title="$2"; echo "[DEBUG] title='$2'" >&2; shift 2 ;;
+            --yes-button) yes_btn="$2"; echo "[DEBUG] yes_btn='$2'" >&2; shift 2 ;;
+            --no-button) no_btn="$2"; echo "[DEBUG] no_btn='$2'" >&2; shift 2 ;;
+            --ok-button) ok_btn="$2"; echo "[DEBUG] ok_btn='$2'" >&2; shift 2 ;;
+            --cancel-button) cancel_btn="$2"; echo "[DEBUG] cancel_btn='$2'" >&2; shift 2 ;;
+            --scrolltext) echo "[DEBUG] scrolltext flag" >&2; shift ;;
             --inputbox)
                 type="inputbox"
                 prompt="$2"
                 height="$3"
                 width="$4"
                 default="$5"
+                echo "[DEBUG] inputbox: prompt='$2' h='$3' w='$4' default='$5'" >&2
                 shift 5
                 ;;
             --menu)
@@ -144,8 +166,9 @@ whiptail() {
                 height="$3"
                 width="$4"
                 menu_height="$5"
+                echo "[DEBUG] menu: prompt='$2' h='$3' w='$4' mh='$5'" >&2
                 shift 5
-                # 残りはメニュー項目
+                echo "[DEBUG] menu remaining args: '$@'" >&2
                 _whiptail_menu "$title" "$prompt" "$@"
                 return $?
                 ;;
@@ -154,6 +177,7 @@ whiptail() {
                 prompt="$2"
                 height="$3"
                 width="$4"
+                echo "[DEBUG] yesno: prompt='$2' h='$3' w='$4'" >&2
                 shift 4
                 ;;
             --msgbox)
@@ -161,6 +185,7 @@ whiptail() {
                 prompt="$2"
                 height="$3"
                 width="$4"
+                echo "[DEBUG] msgbox: prompt='$2' h='$3' w='$4'" >&2
                 shift 4
                 ;;
             --checklist)
@@ -169,7 +194,9 @@ whiptail() {
                 height="$3"
                 width="$4"
                 list_height="$5"
+                echo "[DEBUG] checklist: prompt='$2' h='$3' w='$4' lh='$5'" >&2
                 shift 5
+                echo "[DEBUG] checklist remaining args: '$@'" >&2
                 _whiptail_checklist "$title" "$prompt" "$@"
                 return $?
                 ;;
@@ -178,14 +205,17 @@ whiptail() {
                 file="$2"
                 height="$3"
                 width="$4"
+                echo "[DEBUG] textbox: file='$2' h='$3' w='$4'" >&2
                 shift 4
                 ;;
             *)
+                echo "[DEBUG] unknown/skip: '$1'" >&2
                 shift
                 ;;
         esac
     done
     
+    echo "[DEBUG] executing type='$type'" >&2
     case "$type" in
         inputbox) _whiptail_inputbox "$title" "$prompt" "$default" ;;
         yesno) _whiptail_yesno "$title" "$prompt" "$yes_btn" "$no_btn" ;;
@@ -193,3 +223,5 @@ whiptail() {
         textbox) _whiptail_textbox "$title" "$file" "$ok_btn" ;;
     esac
 }
+
+echo "[FALLBACK] whiptail function defined" >&2
