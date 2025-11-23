@@ -23,6 +23,12 @@
       "transix": {
         "east": "2404:8e00::feed:100",
         "west": "2404:8e01::feed:100"
+      },
+      "xpass": {
+        "default": "dgw.xpass.jp"
+      },
+      "v6connect": {
+        "default": "dslite.v6connect.net"
       }
     },
     "gua_validation": {
@@ -406,7 +412,9 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "options": [
-                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
+                {"value": "transix", "label": "transix (gw.transix.jp)", "class": "tr-transix"},
+                {"value": "xpass", "label": "Xpass/クロスパス (dgw.xpass.jp)", "class": "tr-xpass"},
+                {"value": "v6connect", "label": "v6コネクト (dslite.v6connect.net)", "class": "tr-v6connect"},
                 {"value": "manual", "label": "手動入力", "class": "tr-manual"}
               ]
             },
