@@ -43,26 +43,6 @@ const dsliteRulesData = {
         east: "2404:8e00::feed:100",
         west: "2404:8e01::feed:100"
       }
-    },
-    {
-      aftrType: "xpass",
-      ipv6PrefixRanges: [
-        "2001:e30:1c1e::/48", "2001:e30:1c1f::/48"
-      ],
-      aftrAddresses: {
-        east: "2001:e30:1c1e::1",
-        west: "2001:e30:1c1f::1"
-      }
-    },
-    {
-      aftrType: "v6option",
-      ipv6PrefixRanges: [
-        "2404:8e00::/32", "2404:8e01::/32"
-      ],
-      aftrAddresses: {
-        east: "2404:8e00:feed:100::1",
-        west: "2404:8e01:feed:100::1"
-      }
     }
   ]
 };
