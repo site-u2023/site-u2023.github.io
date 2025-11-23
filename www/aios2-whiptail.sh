@@ -405,6 +405,22 @@ process_items() {
                     default="pd"
                 fi
             fi
+
+            if [ "$item_id" = "dslite-aftr-type" ]; then
+                if [ -n "$DSLITE_AFTR" ]; then
+                    case "$DSLITE_AFTR" in
+                        2404:8e00::*|2404:8e01::*)
+                            default="transix"
+                            ;;
+                        *xpass*|*dgw.xpass.jp*)
+                            default="xpass"
+                            ;;
+                        *v6connect*|*dslite.v6connect.net*)
+                            default="v6connect"
+                            ;;
+                    esac
+                fi
+            fi
             
             current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             [ -z "$current" ] && current="$default"
