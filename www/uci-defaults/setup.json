@@ -408,8 +408,7 @@
               "options": [
                 {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
                 {"value": "manual", "label": "手動入力", "class": "tr-manual"}
-              ],
-              "computeTarget": "dslite-aftr-address"
+              ]
             },
             {
               "type": "field",
@@ -422,7 +421,7 @@
                 {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
-              "computeTarget": "dslite-aftr-address"
+              "showWhen": {"dslite_aftr_type": "transix"}
             },
             {
               "type": "field",
@@ -432,12 +431,7 @@
               "fieldType": "text",
               "variable": "dslite_aftr_address",
               "placeholder": "2404:8e00::feed:100",
-              "default": "2404:8e00::feed:100",
-              "apiSource": "aftr.aftrIpv6Address",
-              "computed": {
-                "from": ["dslite_aftr_type", "dslite_area"],
-                "map": "aftr_map"
-              }
+              "apiSource": "aftr.aftrIpv6Address"
             }
           ]
         },
