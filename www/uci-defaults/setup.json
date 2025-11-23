@@ -406,7 +406,8 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "options": [
-                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"}
+                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
+                {"value": "manual", "label": "手動入力", "class": "tr-manual"}
               ],
               "computeTarget": "dslite-aftr-address"
             },
