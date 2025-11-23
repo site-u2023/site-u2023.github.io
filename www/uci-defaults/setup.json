@@ -25,10 +25,12 @@
         "west": "2404:8e01::feed:100"
       },
       "xpass": {
-        "default": "dgw.xpass.jp"
+        "east": "dgw.xpass.jp",
+        "west": "dgw.xpass.jp"
       },
       "v6connect": {
-        "default": "dslite.v6connect.net"
+        "east": "dslite.v6connect.net",
+        "west": "dslite.v6connect.net"
       }
     },
     "gua_validation": {
