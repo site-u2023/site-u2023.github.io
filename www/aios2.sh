@@ -397,6 +397,8 @@ get_extended_device_info() {
     MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
     
     DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrIpv6Address' 2>/dev/null)
+    DSLITE_AFTR_TYPE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrType' 2>/dev/null)
+    DSLITE_JURISDICTION=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.jurisdiction' 2>/dev/null)
     
     reset_detected_conn_type
     
@@ -1270,6 +1272,11 @@ aios2_main() {
             echo "mape_type='pd'" >> "$SETUP_VARS"
             echo "[DEBUG] Set mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
         fi
+    fi
+
+    if [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR_TYPE" ]; then
+        echo "dslite_aftr_type='$DSLITE_AFTR_TYPE'" >> "$SETUP_VARS"
+        [ -n "$DSLITE_JURISDICTION" ] && echo "dslite_area='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
     fi
     
     apply_api_defaults
