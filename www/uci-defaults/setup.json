@@ -406,9 +406,7 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "options": [
-                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"},
-                {"value": "xpass", "label": "gw.xpass.jp", "class": "tr-gwxpassjp"},
-                {"value": "v6option", "label": "gw.v6option.jp", "class": "tr-gwv6optionjp"}
+                {"value": "transix", "label": "gw.transix.jp", "class": "tr-gwtransixjp"}
               ],
               "computeTarget": "dslite-aftr-address"
             },
