@@ -23,14 +23,6 @@
       "transix": {
         "east": "2404:8e00::feed:100",
         "west": "2404:8e01::feed:100"
-      },
-      "xpass": {
-        "east": "2404:8e02::feed:100",
-        "west": "2404:8e03::feed:100"
-      },
-      "v6option": {
-        "east": "2404:8e04::feed:100",
-        "west": "2404:8e05::feed:100"
       }
     },
     "gua_validation": {
