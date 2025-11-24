@@ -458,6 +458,8 @@
               "computed": {
                   "from": ["dslite_aftr_type", "dslite_jurisdiction"],
                   "map": "aftr_map"
+                }
+              }
             }
           ]
         },
