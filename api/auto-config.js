@@ -718,7 +718,6 @@ function checkDSLiteRule(ipv6) {
 
       if (checkIPv6InRangeJS(ipv6, prefix, len)) {
         const jurisdiction = determineJurisdiction(ipv6);
-
         const aftrIpv6Address = jurisdiction && rule.aftrAddresses
           ? rule.aftrAddresses[jurisdiction]
           : null;
