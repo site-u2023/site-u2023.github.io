@@ -464,6 +464,10 @@ process_items() {
             ;;
             
         field)
+            if ! should_show_item "$item_id"; then
+                echo "[DEBUG] Field $item_id hidden by showWhen" >> "$CONFIG_DIR/debug.log"
+                return $RETURN_STAY
+            fi
             variable=$(get_setup_item_variable "$item_id")
             default=$(get_setup_item_default "$item_id")
             field_type=$(get_setup_item_field_type "$item_id")
