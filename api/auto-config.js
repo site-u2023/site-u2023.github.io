@@ -39,6 +39,10 @@ const dsliteRulesData = {
         "2404:8e00::/32", "2404:8e01::/32",
         "240b:0010::/32", "240b:0011::/32", "240b:0012::/32"
       ],
+      aftrAddresses: {
+        east: "2404:8e00::feed:100",
+        west: "2404:8e01::feed:100"
+      },
       aftrFqdn: "gw.transix.jp"
     },
     {
