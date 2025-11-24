@@ -845,8 +845,11 @@ should_show_item() {
     # showWhenのキー名を取得
     local key_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
     
-    # キー名を変数名に変換（- を _ に置換）
-    local var_name=$(echo "$key_name" | tr '-' '_')
+    local var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
+    
+    if [ -z "$var_name" ]; then
+        var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
+    fi
     
     echo "[DEBUG] key_name=$key_name, var_name=$var_name" >> $CONFIG_DIR/debug.log
     
