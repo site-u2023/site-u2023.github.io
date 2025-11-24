@@ -404,7 +404,7 @@
         {
           "type": "section",
           "id": "dslite-section",
-          "showWhen": {"connection_type": "dslite"},
+          "showWhen": {"connection_type": ["dslite", "auto"]},
           "items": [
             {
               "type": "field",
@@ -414,24 +414,37 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "options": [
-                {"value": "transix", "label": "transix (gw.transix.jp)", "class": "tr-transix"},
-                {"value": "xpass", "label": "Xpass/クロスパス (dgw.xpass.jp)", "class": "tr-xpass"},
-                {"value": "v6connect", "label": "v6コネクト (dslite.v6connect.net)", "class": "tr-v6connect"},
-                {"value": "manual", "label": "手動入力", "class": "tr-manual"}
-              ]
+                {"value": "transix", "label": "transix"},
+                {"value": "xpass", "label": "Xpass"},
+                {"value": "v6connect", "label": "v6connect"},
+                {"value": "manual", "label": "Manual", "class": "tr-manual"}
+              ],
+              "apiSource": "aftr.aftrType",
+              "computeTarget": "dslite-aftr-address"
             },
             {
               "type": "field",
-              "id": "dslite-area",
+              "id": "dslite-jurisdiction",
               "label": "Area",
               "class": "tr-dslite-area",
               "fieldType": "select",
-              "variable": "dslite_area",
+              "variable": "dslite_jurisdiction",
               "options": [
                 {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
-              "showWhen": {"dslite_aftr_type": "transix"}
+              "apiSource": "aftr.jurisdiction",
+              "computeTarget": "dslite-aftr-address",
+              "showWhen": {"dslite_aftr_type": ["transix", "xpass", "v6connect"]}
+            },
+            {
+              "type": "field",
+              "id": "dslite-peeraddr",
+              "label": "FQDN",
+              "fieldType": "text",
+              "variable": "dslite_peeraddr",
+              "placeholder": "gw.transix.jp",
+              "apiSource": "aftr.peeraddr"
             },
             {
               "type": "field",
@@ -441,7 +454,10 @@
               "fieldType": "text",
               "variable": "dslite_aftr_address",
               "placeholder": "2404:8e00::feed:100",
-              "apiSource": "aftr.aftrIpv6Address"
+              "apiSource": "aftr.aftrIpv6Address",
+              "computed": true,
+              "computeFrom": ["dslite_aftr_type", "dslite_jurisdiction"],
+              "computeMap": "aftr_map"
             }
           ]
         },
