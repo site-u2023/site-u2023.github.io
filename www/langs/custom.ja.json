@@ -78,7 +78,12 @@
 
     "tr-dslite-settings": "DS-Lite設定",
     "tr-dslite-aftr-type": "AFTRタイプ",
+    "tr-transix": "トランジックス",
+    "tr-xpass": "クロスパス",
+    "tr-v6connect": "v6コネクト",
     "tr-dslite-area": "エリア",
+    "tr-east-japan": "東日本",
+    "tr-west-japan": "西日本",
     "tr-dslite-aftr-ipv6-address": "AFTRアドレス",
     "tr-dslite-notice1": "注: 本当の値とは違う場合があります。",
 
