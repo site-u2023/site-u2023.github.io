@@ -1905,11 +1905,12 @@ function updateAutoConnectionInfo(apiInfo) {
         if (apiInfo.aftr?.aftrType) {
             infoText += `<strong>Service Type:</strong> ${apiInfo.aftr.aftrType}<br>`;
         }
-        
+
         if (apiInfo.aftr?.jurisdiction) {
-            const regionClass = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
-            infoText += `<strong>Region:</strong> <span class="${regionClass}"></span><br>`;
+            const regionClass = apiInfo.aftr.jurisdiction === 'east' ? eastLabel : westLabel;
+            infoText += `<strong>Region:</strong> <span>${regionClass}</span><br>`;
         }
+
         
         if (apiInfo.aftr?.peeraddr) {
             infoText += `<strong>FQDN:</strong> ${apiInfo.aftr.peeraddr}<br>`;
