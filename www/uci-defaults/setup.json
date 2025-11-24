@@ -419,7 +419,8 @@
                 {"value": "v6connect", "label": "v6connect"},
                 {"value": "manual", "label": "Manual", "class": "tr-manual"}
               ],
-              "apiSource": "aftr.aftrType"
+              "apiSource": "aftr.aftrType",
+              "computeTarget": "dslite-aftr-address"
             },
             {
               "type": "field",
@@ -433,6 +434,7 @@
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
               "apiSource": "aftr.jurisdiction",
+              "computeTarget": "dslite-aftr-address",
               "showWhen": {"dslite_aftr_type": ["transix", "xpass", "v6connect"]}
             },
             {
@@ -443,7 +445,11 @@
               "fieldType": "text",
               "variable": "dslite_aftr_address",
               "placeholder": "gw.transix.jp",
-              "apiSource": "aftr.peeraddr"
+              "apiSource": "aftr.peeraddr",
+              "computed": {
+                  "from": ["dslite_aftr_type", "dslite_jurisdiction"],
+                  "map": "aftr_map"
+              }
             }
           ]
         },
