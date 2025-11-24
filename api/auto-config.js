@@ -46,18 +46,26 @@ const dsliteRulesData = {
       aftrFqdn: "gw.transix.jp"
     },
     {
-      aftrType: "v6plus",
-      ipv6PrefixRanges: [
-        "2409:250::/32", "240d:1e::/32"
-      ],
-      aftrFqdn: "gw.v6plus.net"
-    },
-    {
       aftrType: "xpass",
       ipv6PrefixRanges: [
-        "2001:e68::/32"
+        "2001:e30:1c1e::/48", "2001:e30:1c1f::/48"
       ],
-      aftrFqdn: "gw.xpass.jp"
+      aftrAddresses: {
+        east: "2404:8e02::feed:100",
+        west: "2404:8e03::feed:100"
+      },
+      aftrFqdn: "dgw.xpass.jp"
+    },
+    {
+      aftrType: "v6option",
+      ipv6PrefixRanges: [
+        "2404:8e00::/32", "2404:8e01::/32"
+      ],
+      aftrAddresses: {
+        east: "2404:8e04::feed:100",
+        west: "2404:8e05::feed:100"
+      },
+      aftrFqdn: "dslite.v6connect.net"
     }
   ]
 };
