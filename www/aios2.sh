@@ -396,7 +396,7 @@ get_extended_device_info() {
     ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
     MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
     
-    DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.peeraddr' 2>/dev/null)
+    DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrFqdn' 2>/dev/null)
     DSLITE_AFTR_TYPE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrType' 2>/dev/null)
     DSLITE_JURISDICTION=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.jurisdiction' 2>/dev/null)
     
