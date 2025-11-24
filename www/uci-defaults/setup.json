@@ -455,9 +455,9 @@
               "variable": "dslite_aftr_address",
               "placeholder": "2404:8e00::feed:100",
               "apiSource": "aftr.aftrIpv6Address",
-              "computed": true,
-              "computeFrom": ["dslite_aftr_type", "dslite_jurisdiction"],
-              "computeMap": "aftr_map"
+              "computed": {
+                  "from": ["dslite_aftr_type", "dslite_jurisdiction"],
+                  "map": "aftr_map"
             }
           ]
         },
