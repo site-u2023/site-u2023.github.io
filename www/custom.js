@@ -1050,7 +1050,7 @@ function evaluateShowWhen(condition) {
     if (!condition || typeof condition !== 'object') return true;
     
     for (const [key, expectedValue] of Object.entries(condition)) {
-        const actualValue = getFieldValue(`[name="${key}"]`);
+        const actualValue = getFieldValue(`#${key}`);
         
         if (Array.isArray(expectedValue)) {
             if (!expectedValue.includes(actualValue)) return false;
