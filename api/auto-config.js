@@ -714,7 +714,7 @@ function checkDSLiteRule(ipv6) {
         return {
           aftrType: rule.aftrType,
           jurisdiction: jurisdiction,
-          aftrIpv6Address: aftrIpv6Address
+          aftrIpv6Address: aftrIpv6Address,
           peeraddr: rule.aftrFqdn
         };
       }
