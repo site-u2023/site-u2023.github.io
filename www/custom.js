@@ -638,6 +638,7 @@ function buildField(field) {
         if (field.computeTarget) {
             ctrl.addEventListener('change', () => {
                 computeFieldValue(field.computeTarget);
+                evaluateAllShowWhen();
                 updateVariableDefinitions();
             });
         } else if (field.id !== 'device-language') {
