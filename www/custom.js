@@ -1064,22 +1064,6 @@ function evaluateAllShowWhen() {
     });
 }
 
-function evaluateShowWhen(condition) {
-    if (!condition || typeof condition !== 'object') return true;
-    
-    for (const [key, expectedValue] of Object.entries(condition)) {
-        const actualValue = getFieldValue(`#${key}`);
-        
-        if (Array.isArray(expectedValue)) {
-            if (!expectedValue.includes(actualValue)) return false;
-        } else {
-            if (actualValue !== expectedValue) return false;
-        }
-    }
-    
-    return true;
-}
-
 function updatePackagesForRadioGroup(radioName, selectedValue) {
     if (!state.config.setup) return;
     
