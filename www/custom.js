@@ -641,7 +641,10 @@ function buildField(field) {
                 updateVariableDefinitions();
             });
         } else if (field.id !== 'device-language') {
-            ctrl.addEventListener('change', () => updateAllPackageState('form-field'));
+            ctrl.addEventListener('change', () => {
+                evaluateAllShowWhen();
+                updateAllPackageState('form-field');
+            });
         }
     } else {
         ctrl = document.createElement('input');
