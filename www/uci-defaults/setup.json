@@ -19,19 +19,10 @@
       "ap_ip": "192.168.1.2",
       "ap_gateway": "192.168.1.1"
     },
-    "aftr_map": {
-      "transix": {
-        "east": "gw.transix.jp",
-        "west": "gw.transix.jp"
-      },
-      "xpass": {
-        "east": "dgw.xpass.jp",
-        "west": "dgw.xpass.jp"
-      },
-      "v6connect": {
-        "east": "dslite.v6connect.net",
-        "west": "dslite.v6connect.net"
-      }
+    "aftr_fqdn_map": {
+      "transix": "gw.transix.jp",
+      "xpass": "dgw.xpass.jp",
+      "v6connect": "dslite.v6connect.net"
     },
     "gua_validation": {
       "prefix_check": "2000::/3",
@@ -71,7 +62,6 @@
           "mape_gua_prefix",
           "mape_type",
           "dslite_aftr_type",
-          "dslite_area",
           "dslite_aftr_address"
         ]
       },
@@ -404,7 +394,7 @@
         {
           "type": "section",
           "id": "dslite-section",
-          "showWhen": {"connection_type": ["dslite", "auto"]},
+          "showWhen": {"connection_type": "dslite"},
           "items": [
             {
               "type": "field",
@@ -413,42 +403,28 @@
               "class": "tr-dslite-aftr-type",
               "fieldType": "select",
               "variable": "dslite_aftr_type",
+              "default": "transix",
               "options": [
-                {"value": "transix", "label": "transix"},
-                {"value": "xpass", "label": "Xpass"},
-                {"value": "v6connect", "label": "v6connect"},
+                {"value": "transix", "label": "transix", "class": "tr-transix"},
+                {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
+                {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"},
                 {"value": "manual", "label": "Manual", "class": "tr-manual"}
               ],
-              "apiSource": "aftr.aftrType",
               "computeTarget": "dslite-aftr-address"
-            },
-            {
-              "type": "field",
-              "id": "dslite-jurisdiction",
-              "label": "Area",
-              "class": "tr-dslite-area",
-              "fieldType": "select",
-              "variable": "dslite_jurisdiction",
-              "options": [
-                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
-                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
-              ],
-              "apiSource": "aftr.jurisdiction",
-              "computeTarget": "dslite-aftr-address",
-              "showWhen": {"dslite_aftr_type": ["transix", "xpass", "v6connect"]}
             },
             {
               "type": "field",
               "id": "dslite-aftr-address",
               "label": "AFTR Address",
-              "class": "tr-dslite-aftr-ipv6-address",
+              "class": "tr-dslite-aftr-address",
               "fieldType": "text",
               "variable": "dslite_aftr_address",
-              "placeholder": "gw.transix.jp",
-              "apiSource": "aftr.peeraddr",
+              "placeholder": "gw.transix.jp or IPv6 address",
+              "default": "gw.transix.jp",
+              "apiSource": "aftr.aftrAddress",
               "computed": {
-                  "from": ["dslite_aftr_type", "dslite_jurisdiction"],
-                  "map": "aftr_map"
+                "from": ["dslite_aftr_type"],
+                "map": "aftr_fqdn_map"
               }
             }
           ]
