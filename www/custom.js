@@ -1907,8 +1907,8 @@ function updateAutoConnectionInfo(apiInfo) {
         }
         
         if (apiInfo.aftr?.jurisdiction) {
-            const region = apiInfo.aftr.jurisdiction === 'east' ? 'East Japan' : 'West Japan';
-            infoText += `<strong>Region:</strong> ${region}<br>`;
+            const regionClass = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
+            infoText += `<strong>Region:</strong> <span class="${regionClass}"></span><br>`;
         }
         
         if (apiInfo.aftr?.peeraddr) {
