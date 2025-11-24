@@ -610,6 +610,7 @@ function buildField(field) {
     if (field.fieldType === 'select') {
         ctrl = document.createElement('select');
         if (field.id) ctrl.id = field.id;
+        if (field.variable) ctrl.name = field.variable;
         
         let optionsSource = [];
         if (field.source === 'browser-languages') {
