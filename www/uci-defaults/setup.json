@@ -19,8 +19,11 @@
       "ap_ip": "192.168.1.2",
       "ap_gateway": "192.168.1.1"
     },
-    "aftr_fqdn_map": {
-      "transix": "gw.transix.jp",
+    "aftr_map": {
+      "transix": {
+        "east": "2404:8e00::feed:100",
+        "west": "2404:8e01::feed:100"
+      },
       "xpass": "dgw.xpass.jp",
       "v6connect": "dslite.v6connect.net"
     },
@@ -414,17 +417,32 @@
             },
             {
               "type": "field",
+              "id": "dslite-jurisdiction",
+              "label": "Area",
+              "class": "tr-dslite-area",
+              "fieldType": "select",
+              "variable": "dslite_jurisdiction",
+              "options": [
+                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
+                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
+              ],
+              "apiSource": "aftr.jurisdiction",
+              "computeTarget": "dslite-aftr-address",
+              "showWhen": {"dslite_aftr_type": ["transix"]}
+            },
+            {
+              "type": "field",
               "id": "dslite-aftr-address",
               "label": "AFTR Address",
               "class": "tr-dslite-aftr-address",
               "fieldType": "text",
               "variable": "dslite_aftr_address",
               "placeholder": "gw.transix.jp or IPv6 address",
-              "default": "gw.transix.jp",
+              "default": "2404:8e00::feed:100",
               "apiSource": "aftr.aftrAddress",
               "computed": {
-                "from": ["dslite_aftr_type"],
-                "map": "aftr_fqdn_map"
+                "from": ["dslite_aftr_type", "dslite_jurisdiction"],
+                "map": "aftr_map"
               }
             }
           ]
