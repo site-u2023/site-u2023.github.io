@@ -877,15 +877,10 @@ function computeFieldValue(targetFieldId) {
     
     console.log(`  map[${value1}][${value2}]`);
     
-    if (map[value1] && map[value1][value2]) {
-        targetField.value = map[value1][value2];
-        console.log(`  → ${targetField.value}`);
-
-        if (state.ui.initialized) {
-            updateVariableDefinitions();
-        }
-    } else {
-        console.error(`No mapping found for: map[${value1}][${value2}]`);
+    targetField.value = map[value1]?.[value2] || map[value1] || '';
+    console.log(`  → ${targetField.value}`);
+    if (state.ui.initialized) {
+        updateVariableDefinitions();
     }
 }
 
