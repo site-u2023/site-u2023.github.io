@@ -843,7 +843,7 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> "$CONFIG_DIR/debug.log"
     
-    var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/' | tr '-' '_')
     expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
