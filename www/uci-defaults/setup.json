@@ -685,7 +685,7 @@
               "placeholder": "5000",
               "default": "5000",
               "min": 100
-            },
+            }, 
             {
               "type": "field",
               "id": "netopt-somaxconn",
