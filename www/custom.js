@@ -836,20 +836,25 @@ function buildInfoDisplay(item) {
     return div;
 }
 
-function computeFieldValue(targetFieldId) {
-    const targetField = document.getElementById(targetFieldId);
+function computeFieldValue(targetVariable) {
+    const fieldConfig = findFieldByVariable(targetVariable);
+    if (!fieldConfig) {
+        console.error(`computeFieldValue: Field not found for variable: ${targetVariable}`);
+        return;
+    }
+    
+    if (!fieldConfig.computed) {
+        console.error(`computeFieldValue: No computed config for: ${targetVariable}`);
+        return;
+    }
+    
+    const targetField = document.getElementById(fieldConfig.id);
     if (!targetField) {
-        console.error(`computeFieldValue: Target field not found: ${targetFieldId}`);
+        console.error(`computeFieldValue: Target element not found: ${fieldConfig.id}`);
         return;
     }
 
-    const fieldConfig = findFieldConfig(targetFieldId);
-    if (!fieldConfig || !fieldConfig.computed) {
-        console.error(`computeFieldValue: No computed config for: ${targetFieldId}`);
-        return;
-    }
-
-    console.log(`Computing value for: ${targetFieldId}`);
+    console.log(`Computing value for: ${targetVariable} (id: ${fieldConfig.id})`);
 
     const values = {};
     fieldConfig.computed.from.forEach(variableName => {
