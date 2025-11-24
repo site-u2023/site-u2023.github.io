@@ -518,9 +518,9 @@ process_items() {
             echo "[DEBUG] current='$current'" >> "$CONFIG_DIR/debug.log"
             
             if [ "$field_type" = "computed" ]; then
-                if [ "$item_id" = "dslite-aftr-address-computed" ]; then
+                if [ "$item_id" = "dslite-aftr-address" ]; then
                     aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    area=$(grep "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                     
                     if [ -n "$aftr_type" ] && [ -n "$area" ]; then
                         computed=$(compute_dslite_aftr "$aftr_type" "$area")
@@ -602,7 +602,7 @@ process_items() {
                     
                     if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
                         aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        area=$(grep "^dslite_area=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                        area=$(grep "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         computed=$(compute_dslite_aftr "$aftr_type" "$area")
                         if [ -n "$computed" ]; then
                             sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
