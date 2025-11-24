@@ -356,11 +356,6 @@ process_items() {
     
     echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id, parent_type=$parent_item_type" >> "$CONFIG_DIR/debug.log"
     
-    if ! should_show_item "$item_id"; then
-        echo "[DEBUG] Item $item_id hidden by showWhen" >> "$CONFIG_DIR/debug.log"
-        return $RETURN_STAY
-    fi
-    
     item_type=$(get_setup_item_type "$item_id")
     echo "[DEBUG] Item type: $item_type" >> "$CONFIG_DIR/debug.log"
     
@@ -761,6 +756,10 @@ No additional settings required."
                     fi
                 fi
             else
+                if ! should_show_item "$item_id"; then
+                    continue
+                fi
+                
                 process_items "$cat_id" "$item_id" "$radio_breadcrumb"
                 ret=$?
                 case $ret in
