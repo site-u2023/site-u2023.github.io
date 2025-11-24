@@ -972,7 +972,7 @@ export default {
     const zonename = cf.timezone || null;
     const timezone = zonename ? getOpenwrtTimezone(zonename) : null;
 
-    // aftrオブジェクト内に統合された設定用アドレス(aftrAddress)を作成
+    // AFTRアドレスの選定ロジック
     if (aftrRule) {
       aftrRule.aftrAddress = aftrRule.aftrIpv6Address || aftrRule.peeraddr;
     }
