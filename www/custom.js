@@ -933,24 +933,6 @@ function setupEventListeners() {
     });
 }
 
-function evaluateShowWhen(condition) {
-    if (!condition || typeof condition !== 'object') return true;
-    
-    for (const [key, expectedValue] of Object.entries(condition)) {
-        const actualValue = getFieldValue(`input[name="${key}"]:checked`) || 
-                          getFieldValue(`#${key}`) ||
-                          getFieldValue(`input[name="${key}"]`);
-        
-        if (Array.isArray(expectedValue)) {
-            if (!expectedValue.includes(actualValue)) return false;
-        } else {
-            if (actualValue !== expectedValue) return false;
-        }
-    }
-    
-    return true;
-}
-
 function evaluateInitialPackages() {
     if (!state.config.setup) return;
     
