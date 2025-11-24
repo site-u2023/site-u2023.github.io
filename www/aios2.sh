@@ -1276,7 +1276,7 @@ aios2_main() {
 
     if [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR_TYPE" ]; then
         echo "dslite_aftr_type='$DSLITE_AFTR_TYPE'" >> "$SETUP_VARS"
-        [ -n "$DSLITE_JURISDICTION" ] && echo "dslite_area='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
+        [ -n "$DSLITE_JURISDICTION" ] && echo "dslite_jurisdiction='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
     fi
     
     apply_api_defaults
