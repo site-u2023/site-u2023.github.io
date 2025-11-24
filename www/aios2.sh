@@ -842,27 +842,21 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> $CONFIG_DIR/debug.log
     
-    # showWhenのキー名（id形式）を取得
+    # showWhenのキー名を取得
     local key_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
     
-    # キー名に対応するvariable名を取得
-    local var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
-    
-    # もしvariableが見つからなければ、section内を探す
-    if [ -z "$var_name" ]; then
-        var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
-    fi
-    
-    # それでも見つからなければ、id名をそのまま使用（後方互換性）
-    [ -z "$var_name" ] && var_name="$key_name"
+    # キー名を変数名に変換（- を _ に置換）
+    local var_name=$(echo "$key_name" | tr '-' '_')
     
     echo "[DEBUG] key_name=$key_name, var_name=$var_name" >> $CONFIG_DIR/debug.log
     
+    # 期待値を取得（配列形式）
     local expected=$(jsonfilter -e "@.${key_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     
+    # 配列でなければ単一値として取得
     if [ -z "$expected" ]; then
         expected=$(jsonfilter -e "@.${key_name}" 2>/dev/null <<EOF
 $show_when
@@ -875,12 +869,21 @@ EOF
     # SETUP_VARSから現在の値を取得
     local current=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    echo "[DEBUG] current value of $var_name: $current" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] current value of $var_name: '$current'" >> $CONFIG_DIR/debug.log
     
-    [ -z "$current" ] && return 1
+    # 値が設定されていない場合は非表示
+    [ -z "$current" ] && {
+        echo "[DEBUG] No value set, hiding item" >> $CONFIG_DIR/debug.log
+        return 1
+    }
     
-    echo "$expected" | grep -q "^${current}\$" && return 0
+    # 期待値に含まれているかチェック
+    if echo "$expected" | grep -q "^${current}\$"; then
+        echo "[DEBUG] Match found, showing item" >> $CONFIG_DIR/debug.log
+        return 0
+    fi
     
+    echo "[DEBUG] No match, hiding item" >> $CONFIG_DIR/debug.log
     return 1
 }
 
