@@ -831,9 +831,8 @@ get_effective_connection_type() {
 
 should_show_item() {
     local item_id="$1"
-    local show_when var_name expected current_val
     
-    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
     if [ -z "$show_when" ]; then
         show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
@@ -841,49 +840,48 @@ should_show_item() {
     
     [ -z "$show_when" ] && return 0
     
-    echo "[DEBUG] showWhen for $item_id: $show_when" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] showWhen for $item_id: $show_when" >> $CONFIG_DIR/debug.log
     
-    var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/' | tr '-' '_')
-    expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
+    # showWhenのキー名（id形式）を取得
+    local key_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    
+    # キー名に対応するvariable名を取得
+    local var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
+    
+    # もしvariableが見つからなければ、section内を探す
+    if [ -z "$var_name" ]; then
+        var_name=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$key_name'].variable" 2>/dev/null | head -1)
+    fi
+    
+    # それでも見つからなければ、id名をそのまま使用（後方互換性）
+    [ -z "$var_name" ] && var_name="$key_name"
+    
+    echo "[DEBUG] key_name=$key_name, var_name=$var_name" >> $CONFIG_DIR/debug.log
+    
+    local expected=$(jsonfilter -e "@.${key_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     
     if [ -z "$expected" ]; then
-        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
+        expected=$(jsonfilter -e "@.${key_name}" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     fi
     
-    current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    echo "[DEBUG] expected values: $expected" >> $CONFIG_DIR/debug.log
     
-    echo "[DEBUG] var_name=$var_name, current=$current_val, expected=$expected" >> "$CONFIG_DIR/debug.log"
+    # SETUP_VARSから現在の値を取得
+    local current=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    if [ -z "$(echo "$expected" | tr -d '\n')" ]; then
-        echo "[DEBUG] No expected value, returning 0 (show)" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
+    echo "[DEBUG] current value of $var_name: $current" >> $CONFIG_DIR/debug.log
     
-    if [ "$(echo "$expected" | wc -l)" -eq 1 ] && [ -n "$expected" ]; then
-        echo "[DEBUG] expected (single): $expected" >> "$CONFIG_DIR/debug.log"
-        if [ "$expected" = "$current_val" ]; then
-            echo "[DEBUG] Match! returning 0 (show)" >> "$CONFIG_DIR/debug.log"
-            return 0
-        else
-            echo "[DEBUG] No match, returning 1 (hide)" >> "$CONFIG_DIR/debug.log"
-            return 1
-        fi
-    fi
+    [ -z "$current" ] && return 1
     
-    echo "[DEBUG] expected (array): $expected" >> "$CONFIG_DIR/debug.log"
-    if echo "$expected" | grep -qx "$current_val"; then
-        echo "[DEBUG] Match in array! returning 0 (show)" >> "$CONFIG_DIR/debug.log"
-        return 0
-    else
-        echo "[DEBUG] No match in array, returning 1 (hide)" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
+    echo "$expected" | grep -q "^${current}\$" && return 0
+    
+    return 1
 }
 
 auto_add_conditional_packages() {
