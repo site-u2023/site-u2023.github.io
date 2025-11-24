@@ -21,8 +21,8 @@
     },
     "aftr_map": {
       "transix": {
-        "east": "2404:8e00::feed:100",
-        "west": "2404:8e01::feed:100"
+        "east": "gw.transix.jp",
+        "west": "gw.transix.jp"
       },
       "xpass": {
         "east": "dgw.xpass.jp",
