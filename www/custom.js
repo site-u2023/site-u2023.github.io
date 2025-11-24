@@ -1896,15 +1896,29 @@ function updateAutoConnectionInfo(apiInfo) {
         infoText += `<hr>`;
         infoText += `<h4><span class="tr-dslite-notice1">Note: Actual values may differ.</span></h4>`;
         infoText += `<hr>`;
-        if (apiInfo.aftr?.aftrIpv6Address) {
-            infoText += `option aftr_addr ${apiInfo.aftr.aftrIpv6Address}<br>`;
-        }
+        
         if (apiInfo.aftr?.aftrType) {
-            infoText += `option aftr_type ${apiInfo.aftr.aftrType}<br>`;
+            infoText += `<strong>Service Type:</strong> ${apiInfo.aftr.aftrType}<br>`;
         }
+        
         if (apiInfo.aftr?.jurisdiction) {
-            infoText += `option area ${apiInfo.aftr.jurisdiction}<br>`;
+            const region = apiInfo.aftr.jurisdiction === 'east' ? 'East Japan' : 'West Japan';
+            infoText += `<strong>Region:</strong> ${region}<br>`;
         }
+        
+        if (apiInfo.aftr?.peeraddr) {
+            infoText += `<strong>FQDN:</strong> ${apiInfo.aftr.peeraddr}<br>`;
+        }
+        
+        infoText += `<hr>`;
+        infoText += `<strong>UCI Configuration:</strong><br>`;
+        infoText += `<code>`;
+        
+        if (apiInfo.aftr?.peeraddr) {
+            infoText += `option peeraddr '${apiInfo.aftr.peeraddr}'<br>`;
+        }
+        
+        infoText += `</code>`;
         infoText += `<hr>`;
     } else {
         infoText += `<span class="tr-standard-notice">Standard connection will be used</span>`;
