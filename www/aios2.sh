@@ -842,22 +842,20 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> $CONFIG_DIR/debug.log
     
-    # showWhenのキー名を取得
-    local key_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    # showWhenのキー名を取得（すでに変数名形式）
+    local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
     
-    local var_name=$(echo "$key_name" | tr '-' '_')
-    
-    echo "[DEBUG] key_name=$key_name, var_name=$var_name" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] var_name=$var_name" >> $CONFIG_DIR/debug.log
     
     # 期待値を取得（配列形式）
-    local expected=$(jsonfilter -e "@.${key_name}[*]" 2>/dev/null <<EOF
+    local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
 $show_when
 EOF
 )
     
     # 配列でなければ単一値として取得
     if [ -z "$expected" ]; then
-        expected=$(jsonfilter -e "@.${key_name}" 2>/dev/null <<EOF
+        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
 $show_when
 EOF
 )
