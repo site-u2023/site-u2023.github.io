@@ -382,7 +382,7 @@ process_items() {
                         continue
                         ;;
                     $RETURN_BACK)
-                        return $RETURN_BACK
+                        return $RETURN_STAY
                         ;;
                     $RETURN_MAIN)
                         return $RETURN_MAIN
@@ -458,8 +458,28 @@ process_items() {
                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-                sync
                 auto_add_conditional_packages "$cat_id"
+                
+                # 特殊処理: 接続タイプの場合
+                if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
+                    if [ "$selected_opt" = "auto" ]; then
+                        if show_network_info "$item_breadcrumb"; then
+                            auto_add_conditional_packages "$cat_id"
+                            return $RETURN_STAY
+                        fi
+                    elif [ "$selected_opt" = "dhcp" ]; then
+                        local dhcp_content tr_dhcp
+                        dhcp_content="DHCP configuration will be applied automatically.
+No additional settings required."
+                        tr_dhcp=$(translate "tr-dhcp-information")
+                        if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
+                            dhcp_content="$tr_dhcp"
+                        fi
+                        show_msgbox "$item_breadcrumb" "$dhcp_content"
+                        auto_add_conditional_packages "$cat_id"
+                        return $RETURN_STAY
+                    fi
+                fi
             fi
             return $RETURN_STAY
             ;;
@@ -678,8 +698,7 @@ category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title base_breadcrumb
     local tr_language lang_breadcrumb current_lang value
-    local found_radio radio_breadcrumb item_id item_type radio_label conn_type dhcp_content tr_dhcp
-    local ret
+    local item_id item_type ret
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
@@ -712,93 +731,33 @@ category_config() {
         fi
     fi
     
-    while true; do
-        found_radio=0
-        radio_breadcrumb="$base_breadcrumb"
-        local need_restart=0
+    # カテゴリ内の全アイテムを処理
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        item_type=$(get_setup_item_type "$item_id")
         
-        for item_id in $(get_setup_category_items "$cat_id"); do
-            item_type=$(get_setup_item_type "$item_id")
-            
-            if [ "$item_type" = "radio-group" ]; then
-                found_radio=1
-                
-                process_items "$cat_id" "$item_id" "$base_breadcrumb"
-                ret=$?
-                case $ret in
-                    $RETURN_STAY)
-                        ;;
-                    $RETURN_BACK)
-                        return $RETURN_BACK
-                        ;;
-                    $RETURN_MAIN)
-                        return $RETURN_MAIN
-                        ;;
-                esac
-                
-                radio_label=$(get_setup_item_label "$item_id")
-                radio_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${radio_label}"
-                
-                if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
-                    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    
-                    if [ "$conn_type" = "auto" ]; then
-                        if show_network_info "$radio_breadcrumb"; then
-                            auto_add_conditional_packages "$cat_id"
-                            return $RETURN_STAY
-                        fi
-                        continue
-                    fi
-                    
-                    if [ "$conn_type" = "dhcp" ]; then
-                        dhcp_content="DHCP configuration will be applied automatically.
-No additional settings required."
-                        tr_dhcp=$(translate "tr-dhcp-information")
-                        if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
-                            dhcp_content="$tr_dhcp"
-                        fi
-                        show_msgbox "$radio_breadcrumb" "$dhcp_content"
-                        auto_add_conditional_packages "$cat_id"
-                        return $RETURN_STAY
-                    fi
-                fi
-            else
-                # フィールド処理（showWhenを考慮）
-                if ! should_show_item "$item_id"; then
-                    echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-                
-                process_items "$cat_id" "$item_id" "$radio_breadcrumb"
-                ret=$?
-                case $ret in
-                    $RETURN_STAY)
-                        continue
-                        ;;
-                    $RETURN_BACK)
-                        if [ "$found_radio" -eq 1 ]; then
-                            echo "[DEBUG] Field cancelled, restarting from radio-group" >> "$CONFIG_DIR/debug.log"
-                            need_restart=1
-                            break
-                        else
-                            return $RETURN_BACK
-                        fi
-                        ;;
-                    $RETURN_MAIN)
-                        return $RETURN_MAIN
-                        ;;
-                esac
-            fi
-        done
-        
-        # ラジオグループがない、または全フィールドが正常に処理された場合は終了
-        if [ "$found_radio" -eq 0 ] || [ "$need_restart" -eq 0 ]; then
-            break
+        # アイテムを表示すべきかチェック
+        if ! should_show_item "$item_id"; then
+            echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
+            continue
         fi
+        
+        process_items "$cat_id" "$item_id" "$base_breadcrumb"
+        ret=$?
+        
+        case $ret in
+            $RETURN_STAY)
+                continue
+                ;;
+            $RETURN_BACK)
+                return $RETURN_BACK
+                ;;
+            $RETURN_MAIN)
+                return $RETURN_MAIN
+                ;;
+        esac
     done
     
     auto_add_conditional_packages "$cat_id"
-    
     [ "$cat_id" = "basic-config" ] && update_language_packages
     
     return $RETURN_STAY
