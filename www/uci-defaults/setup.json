@@ -433,7 +433,7 @@
               "type": "field",
               "id": "dslite-aftr-address",
               "label": "AFTR Address",
-              "class": "tr-dslite-aftr-address",
+              "class": "tr-dslite-aftr-ipv6-address",
               "fieldType": "text",
               "variable": "dslite_aftr_address",
               "placeholder": "gw.transix.jp or IPv6 address",
