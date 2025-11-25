@@ -942,16 +942,9 @@ function evaluateShowWhen(condition) {
     if (!condition || typeof condition !== 'object') return true;
     
     for (const [key, expectedValue] of Object.entries(condition)) {
-        let actualValue;
-        
-        if (key.includes('_')) {
-            const field = findFieldByVariable(key);
-            if (field) {
-                actualValue = getFieldValue(`input[name="${field.id}"]:checked`) || 
-                            getFieldValue(`#${field.id}`) ||
-                            getFieldValue(`input[name="${field.id}"]`);
-            }
-        }
+        const actualValue = getFieldValue(`input[name="${key}"]:checked`) || 
+                          getFieldValue(`#${key}`) ||
+                          getFieldValue(`input[name="${key}"]`);
         
         if (Array.isArray(expectedValue)) {
             if (!expectedValue.includes(actualValue)) return false;
