@@ -1,4 +1,4 @@
-# 構造
+# 設定構造
 
 ### メインメニュー
 <details><summary>1 基本設定</summary>
