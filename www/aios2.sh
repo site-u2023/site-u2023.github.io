@@ -842,25 +842,25 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> $CONFIG_DIR/debug.log
     
-    # showWhenのキー名を取得
-    local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
-    # ハイフンをアンダースコアに変換（item_id形式 → 変数名形式）
-    var_name=$(echo "$var_name" | tr '-' '_')
+    # showWhenのキー名を取得（JSONキー形式、ハイフン含む）
+    local show_key=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
     
-    echo "[DEBUG] var_name=$var_name" >> $CONFIG_DIR/debug.log
+    echo "[DEBUG] show_key (raw from JSON)=$show_key" >> $CONFIG_DIR/debug.log
     
-    # 期待値を取得（配列形式）
-    local expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
-$show_when
-EOF
-)
+    # 変数名に変換（ハイフン→アンダースコア）
+    local var_name=$(echo "$show_key" | tr '-' '_')
+    
+    echo "[DEBUG] var_name (converted)=$var_name" >> $CONFIG_DIR/debug.log
+    
+    # 期待値を取得（配列形式） - キー名をエスケープして使用
+    local expected
+    
+    # まず配列として取得を試みる
+    expected=$(echo "$show_when" | jsonfilter -e "@['$show_key'][*]" 2>/dev/null)
     
     # 配列でなければ単一値として取得
     if [ -z "$expected" ]; then
-        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
-$show_when
-EOF
-)
+        expected=$(echo "$show_when" | jsonfilter -e "@['$show_key']" 2>/dev/null)
     fi
     
     echo "[DEBUG] expected values: $expected" >> $CONFIG_DIR/debug.log
