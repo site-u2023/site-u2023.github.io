@@ -382,7 +382,7 @@ process_items() {
                         continue
                         ;;
                     $RETURN_BACK)
-                        return $RETURN_STAY
+                        return $RETURN_BACK
                         ;;
                     $RETURN_MAIN)
                         return $RETURN_MAIN
