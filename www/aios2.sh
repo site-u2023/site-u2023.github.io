@@ -994,9 +994,14 @@ compute_dslite_aftr() {
     local area="$2"
     local computed
     
-    [ -z "$aftr_type" ] || [ -z "$area" ] && return 1
+    [ -z "$aftr_type" ] && return 1
     
-    computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}.${area}" 2>/dev/null)
+    if [ "$aftr_type" = "transix" ]; then
+        [ -z "$area" ] && return 1
+        computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}.${area}" 2>/dev/null)
+    else
+        computed=$(jsonfilter -i "$SETUP_JSON" -e "@.constants.aftr_map.${aftr_type}" 2>/dev/null)
+    fi
     
     if [ -n "$computed" ]; then
         echo "$computed"
