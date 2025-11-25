@@ -397,6 +397,8 @@
         {
           "type": "section",
           "id": "dslite-section",
+          "title": "DS-Lite",
+          "class": "tr-dslite",
           "showWhen": {"connection_type": "dslite"},
           "items": [
             {
