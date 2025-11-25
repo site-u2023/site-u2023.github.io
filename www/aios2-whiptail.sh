@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1125.1014"
+VERSION="R7.1125.1117"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -714,6 +714,7 @@ category_config() {
     while true; do
         found_radio=0
         radio_breadcrumb="$base_breadcrumb"
+        local need_restart=0
         
         for item_id in $(get_setup_category_items "$cat_id"); do
             item_type=$(get_setup_item_type "$item_id")
@@ -761,6 +762,12 @@ No additional settings required."
                     fi
                 fi
             else
+                # フィールド処理（showWhenを考慮）
+                if ! should_show_item "$item_id"; then
+                    echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
+                
                 process_items "$cat_id" "$item_id" "$radio_breadcrumb"
                 ret=$?
                 case $ret in
@@ -770,6 +777,7 @@ No additional settings required."
                     $RETURN_BACK)
                         if [ "$found_radio" -eq 1 ]; then
                             echo "[DEBUG] Field cancelled, restarting from radio-group" >> "$CONFIG_DIR/debug.log"
+                            need_restart=1
                             break
                         else
                             return $RETURN_BACK
@@ -782,11 +790,8 @@ No additional settings required."
             fi
         done
         
-        if [ "$found_radio" -eq 0 ]; then
-            break
-        fi
-        
-        if [ "$ret" = "$RETURN_STAY" ]; then
+        # ラジオグループがない、または全フィールドが正常に処理された場合は終了
+        if [ "$found_radio" -eq 0 ] || [ "$need_restart" -eq 0 ]; then
             break
         fi
     done
