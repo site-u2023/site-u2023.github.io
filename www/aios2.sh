@@ -842,8 +842,10 @@ should_show_item() {
     
     echo "[DEBUG] showWhen for $item_id: $show_when" >> $CONFIG_DIR/debug.log
     
-    # showWhenのキー名を取得（すでに変数名形式）
+    # showWhenのキー名を取得
     local var_name=$(echo "$show_when" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    # ハイフンをアンダースコアに変換（item_id形式 → 変数名形式）
+    var_name=$(echo "$var_name" | tr '-' '_')
     
     echo "[DEBUG] var_name=$var_name" >> $CONFIG_DIR/debug.log
     
