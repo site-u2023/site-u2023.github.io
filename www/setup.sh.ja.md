@@ -423,7 +423,6 @@
 
 <details>
 <summary>connection_type: mape</summary>
-
 ```sh
 [ "${connection_type}" = "auto" -o "${connection_type}" = "mape" ] && 
 [ -n "${mape_br}" ] && {
@@ -487,17 +486,17 @@
     SET ${MAPE}=interface
     SET ${MAPE}.proto='map'
     SET ${MAPE}.maptype='map-e'
-    SET ${MAPE}.peeraddr="${mape_br}"               # BRアドレス
-    SET ${MAPE}.ipaddr="${mape_ipv4_prefix}"        # 共有IPv4アドレス
+    SET ${MAPE}.peeraddr="${mape_br}"
+    SET ${MAPE}.ipaddr="${mape_ipv4_prefix}"
     SET ${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
-    SET ${MAPE}.ip6prefix="${mape_ipv6_prefix}"     # CE IPv6プレフィックス
+    SET ${MAPE}.ip6prefix="${mape_ipv6_prefix}"
     SET ${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
-    SET ${MAPE}.ealen="${mape_ealen}"               # EA-bitsの長さ
-    SET ${MAPE}.psidlen="${mape_psidlen}"           # PSID長
-    SET ${MAPE}.offset="${mape_psid_offset}"        # PSIDオフセット
+    SET ${MAPE}.ealen="${mape_ealen}"
+    SET ${MAPE}.psidlen="${mape_psidlen}"
+    SET ${MAPE}.offset="${mape_psid_offset}"
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
-    SET ${MAPE}.legacymap='1'                       # レガシーMAP対応
+    SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
     
     dhcp_relay "${MAPE6}"
@@ -508,25 +507,15 @@
 
     # map.shスクリプトのパッチ適用（日本IPv6 IPoE対応）
     MAP_SH="/lib/netifd/proto/map.sh"
-    cp "$MAP_SH" "$MAP_SH".bak  # オリジナルをバックアップ
+    EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+    ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
     
-    # SNAT除外ポート機能を追加
-    # ファイル先頭にDONT_SNAT_TO変数を定義（特定ポートをSNATから除外可能にする）
-    sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
-    
-    # MTU値を1280から1460に変更
-    # 理由: IPv6トンネルのオーバーヘッドを考慮した最適値
-    sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
-    
-    # SNAT処理を完全書き換え（iptablesからnftablesへ移行）
-    # 元のコード: json_add_objectによる単純なSNAT設定
-    # 新しいコード: nftablesを使用した高度なポートマッピング
-    # - PSIDに基づくポート範囲を取得
-    # - DONT_SNAT_TO変数で指定されたポートを除外
-    # - numgen（番号生成器）を使って利用可能ポートにラウンドロビン分散
-    # - icmp/tcp/udpの各プロトコルに対して個別にルール作成
-    sed -i '137,158d' "$MAP_SH"
-    sed -i '136a\
+    if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
+        cp "$MAP_SH" "$MAP_SH".bak
+        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
+        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
+        sed -i '137,158d' "$MAP_SH"
+        sed -i '136a\
 \t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 \t    json_add_object ""\
 \t      json_add_string type nat\
@@ -555,6 +544,23 @@
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 \t    done\
 \t  fi' "$MAP_SH"
+    fi
+}
+```
+
+</details>
+
+### Webターミナル有効化
+
+<details>
+<summary>enable_ttyd</summary>
+```sh
+[ -n "${enable_ttyd}" ] && {
+    # UCI操作用ヘルパー関数
+    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+    
+    local SEC=ttyd
+    SET @ttyd[0].command='/bin/login -f root'
 }
 ```
 
