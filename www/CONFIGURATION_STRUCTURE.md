@@ -53,7 +53,9 @@
           - West Japan
             - AFTRアドレス [2404:8e01::feed:100]
       - dgw.xpass.jp
-        - AFTRアドレス [dgw.xpass.jp] (2001:f60:0:200::1:1)
+        - AFTRアドレス [dgw.xpass.jp]
+      - dslite.v6connect.net
+        - AFTRアドレス [dslite.v6connect.net]
   - MAP-E
     - アドレスタイプ [GUA/PD]
       - GUA
