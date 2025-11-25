@@ -368,27 +368,35 @@ process_items() {
     item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${item_label}"
     
     case "$item_type" in
-        section)
+section)
             echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
             
-            nested=$(get_section_nested_items "$item_id")
-            for child_id in $nested; do
-                local ret
-                process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
-                ret=$?
+            while true; do
+                nested=$(get_section_nested_items "$item_id")
+                local all_completed=1
                 
-                case $ret in
-                    $RETURN_STAY)
-                        continue
-                        ;;
-                    $RETURN_BACK)
-                        return $RETURN_BACK
-                        ;;
-                    $RETURN_MAIN)
-                        return $RETURN_MAIN
-                        ;;
-                esac
+                for child_id in $nested; do
+                    local ret
+                    process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
+                    ret=$?
+                    
+                    case $ret in
+                        $RETURN_STAY)
+                            continue
+                            ;;
+                        $RETURN_BACK)
+                            all_completed=0
+                            break
+                            ;;
+                        $RETURN_MAIN)
+                            return $RETURN_MAIN
+                            ;;
+                    esac
+                done
+                
+                [ "$all_completed" -eq 1 ] && break
             done
+            
             return $RETURN_STAY
             ;;
             
