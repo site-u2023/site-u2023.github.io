@@ -458,6 +458,7 @@ process_items() {
                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+                sync
                 auto_add_conditional_packages "$cat_id"
             fi
             return $RETURN_STAY
