@@ -1167,9 +1167,6 @@ XX_aios2_whiptail_main() {
 
 aios2_whiptail_main() {
     export NEWT_COLORS
-    echo "[DEBUG] calling device_info" >&2
     device_info
-    echo "[DEBUG] device_info done, calling main_menu" >&2
     main_menu
-    echo "[DEBUG] main_menu done" >&2
 }
