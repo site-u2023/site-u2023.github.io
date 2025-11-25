@@ -368,30 +368,46 @@ process_items() {
     item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${item_label}"
     
     case "$item_type" in
-section)
+        section)
             echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
             
             while true; do
                 nested=$(get_section_nested_items "$item_id")
                 local all_completed=1
+                local first_field=1
                 
                 for child_id in $nested; do
+                    if ! should_show_item "$child_id"; then
+                        continue
+                    fi
+                    
                     local ret
                     process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
                     ret=$?
                     
                     case $ret in
                         $RETURN_STAY)
+                            first_field=0
                             continue
                             ;;
                         $RETURN_BACK)
-                            all_completed=0
-                            break
+                            if [ "$first_field" -eq 1 ]; then
+                                # 最初のフィールドで戻る = sectionを抜ける
+                                echo "[DEBUG] First field cancelled, exiting section" >> "$CONFIG_DIR/debug.log"
+                                return $RETURN_BACK
+                            else
+                                # 2番目以降で戻る = section内の最初から再試行
+                                echo "[DEBUG] Non-first field cancelled, restarting section" >> "$CONFIG_DIR/debug.log"
+                                all_completed=0
+                                break
+                            fi
                             ;;
                         $RETURN_MAIN)
                             return $RETURN_MAIN
                             ;;
                     esac
+                    
+                    first_field=0
                 done
                 
                 [ "$all_completed" -eq 1 ] && break
