@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1122.0917"
+VERSION="R7.1125.1014"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -600,7 +600,7 @@ process_items() {
                     
                     auto_add_conditional_packages "$cat_id"
                     
-                    if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
+                    if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-jurisdiction" ]; then
                         aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         area=$(grep "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                         computed=$(compute_dslite_aftr "$aftr_type" "$area")
