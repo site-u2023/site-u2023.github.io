@@ -35,7 +35,7 @@ const DEFAULT_TERMINALS = {
   },
   aios2: {
     name: 'aios2 (β)',
-    command: `wget --no-check-certificate -O- "${AIOS_URL2}?t=$(date +%s)" | sh`
+    command: `wget --no-check-certificate -O- "${AIOS_URL2}" | sh`
   },
   ssh: {
     name: 'SSH',
