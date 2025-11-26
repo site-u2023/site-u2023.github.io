@@ -309,10 +309,10 @@ fi
     : ${agh_dns_backup_port:=54}
     : ${agh_redirect_dns:=1}
     : ${agh_family_type:=any}
-    LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
-    [ -z "$LAN" ] && LAN="$(uci -q get network.lan.device || echo br-lan)"
-    NET_ADDR=$(ip -4 -o addr show dev "$LAN" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
-    NET_ADDR6_LIST=$(ip -6 -o addr show dev "$LAN" scope global 2>/dev/null | grep -v temporary | awk 'match($4,/^(2|fd|fc)/){sub(/\/.*/,"",$4); print $4;}')
+    DHCP_CONF="/etc/config/dhcp"
+    FW_CONF="/etc/config/firewall"
+    [ ! -f "$DHCP_CONF".bak ] && cp "$DHCP_CONF" "$DHCP_CONF".bak
+    [ ! -f "$FW_CONF".bak ] && cp "$FW_CONF" "$FW_CONF".bak
     local SEC=dhcp
     SET @dnsmasq[0].noresolv='1'
     SET @dnsmasq[0].cachesize='0'
@@ -325,13 +325,9 @@ fi
     ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
     ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
     DEL lan.dhcp_option
-    [ -n "$NET_ADDR" ] && ADDLIST lan.dhcp_option="6,${NET_ADDR}"
+    [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
     DEL lan.dhcp_option6
-    if [ -n "$NET_ADDR6_LIST" ]; then
-        for ip in $NET_ADDR6_LIST; do
-            ADDLIST lan.dhcp_option6="option6:dns=[${ip}]"
-        done
-    fi
+    [ -n "${lan_ipv6_address}" ] && ADDLIST lan.dhcp_option6="option6:dns=[${lan_ipv6_address}]"
     [ "${agh_redirect_dns}" = "1" ] && {
         local SEC=firewall
         local rule_name="adguardhome_dns_${agh_dns_port}"
