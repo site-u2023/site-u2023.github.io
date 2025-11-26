@@ -13,6 +13,7 @@ LAN="${LAN:-br-lan}"
 DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
 WEB_PORT="${WEB_PORT:-3000}"
+SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -321,6 +322,7 @@ generate_yaml() {
   sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
   sed -i "s|{{AGH_PASS_HASH}}|${AGH_PASS_HASH}|g" "$yaml_tmp"
   sed -i "s|{{DNS_PORT}}|${DNS_PORT}|g" "$yaml_tmp"
+  sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
   sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
   
   mv "$yaml_tmp" "$yaml_path"
