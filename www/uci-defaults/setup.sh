@@ -304,6 +304,51 @@ fi
         SET "$IDX".enabled='1'
     }
 }
+[ -n "${enable_adguardhome}" ] && {
+    : ${agh_dns_port:=53}
+    : ${agh_dns_backup_port:=54}
+    : ${agh_redirect_dns:=1}
+    : ${agh_family_type:=any}
+    LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
+    [ -z "$LAN" ] && LAN="$(uci -q get network.lan.device || echo br-lan)"
+    NET_ADDR=$(ip -4 -o addr show dev "$LAN" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
+    NET_ADDR6_LIST=$(ip -6 -o addr show dev "$LAN" scope global 2>/dev/null | grep -v temporary | awk 'match($4,/^(2|fd|fc)/){sub(/\/.*/,"",$4); print $4;}')
+    local SEC=dhcp
+    SET @dnsmasq[0].noresolv='1'
+    SET @dnsmasq[0].cachesize='0'
+    SET @dnsmasq[0].rebind_protection='0'
+    SET @dnsmasq[0].port="${agh_dns_backup_port}"
+    SET @dnsmasq[0].domain='lan'
+    SET @dnsmasq[0].local='/lan/'
+    SET @dnsmasq[0].expandhosts='1'
+    DEL @dnsmasq[0].server
+    ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
+    ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
+    DEL lan.dhcp_option
+    [ -n "$NET_ADDR" ] && ADDLIST lan.dhcp_option="6,${NET_ADDR}"
+    DEL lan.dhcp_option6
+    if [ -n "$NET_ADDR6_LIST" ]; then
+        for ip in $NET_ADDR6_LIST; do
+            ADDLIST lan.dhcp_option6="option6:dns=[${ip}]"
+        done
+    fi
+    [ "${agh_redirect_dns}" = "1" ] && {
+        local SEC=firewall
+        local rule_name="adguardhome_dns_${agh_dns_port}"
+        DEL "$rule_name"
+        SET "$rule_name"=redirect
+        SET "$rule_name".name="AdGuardHome DNS Redirect"
+        SET "$rule_name".family="${agh_family_type}"
+        SET "$rule_name".src='lan'
+        SET "$rule_name".dest='lan'
+        ADDLIST "$rule_name".proto='tcp'
+        ADDLIST "$rule_name".proto='udp'
+        SET "$rule_name".src_dport="${agh_dns_port}"
+        SET "$rule_name".dest_port="${agh_dns_port}"
+        SET "$rule_name".target='DNAT'
+    }
+    [ -x /etc/init.d/adguardhome ] && /etc/init.d/adguardhome enable
+}
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     local SEC=network
