@@ -103,7 +103,7 @@ dns:
   private_networks: []
   use_private_ptr_resolvers: true
   local_ptr_upstreams:
-    - 127.0.0.1:54
+    - 127.0.0.1:{{DNS_BACKUP_PORT}}
   use_dns64: false
   dns64_prefixes: []
   serve_http3: false
@@ -199,7 +199,7 @@ filtering:
   filtering_enabled: true
   parental_enabled: false
   safebrowsing_enabled: false
-  protection_enabled: false
+  protection_enabled: true
 clients:
   runtime_sources:
     whois: true
