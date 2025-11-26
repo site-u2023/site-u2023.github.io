@@ -609,7 +609,11 @@
             "adguardhome-dep-libuuid1",
             "adguardhome-dep-apache-utils"
           ],
-          "enableVar": "enable_adguardhome"
+          "enableVar": "enable_adguardhome",
+          "requirements": {
+            "minMemoryMB": 50,
+            "minFlashMB": 100
+          }
         },
         {
           "id": "--nodeps libaprutil",
