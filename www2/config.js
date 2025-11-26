@@ -93,4 +93,3 @@ const custom_ofs_link    = "https://github.com/site-u2023/site-u2023.github.io";
 // フィードバックリンク
 const custom_feedback_text = "Forum";
 const custom_feedback_link = "https://forum.openwrt.org/t/builder-custom-firmware-selector-openwrt-org";
-})();
