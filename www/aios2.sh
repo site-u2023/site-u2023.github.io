@@ -1164,7 +1164,7 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
-    echo "Fetching auto-config (for language detection)"
+    echo "Fetching auto-config"
     get_extended_device_info
     
     echo "Fetching essential files in parallel"
