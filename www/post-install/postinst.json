@@ -600,52 +600,6 @@
           "virtual": true
         },
         {
-          "id": "adguardhome",
-          "name": "adguardhome",
-          "dependencies": [
-            "adguardhome-dep-libaprutil",
-            "adguardhome-dep-libapr",
-            "adguardhome-dep-libexpat",
-            "adguardhome-dep-libuuid1",
-            "adguardhome-dep-apache-utils"
-          ],
-          "enableVar": "enable_adguardhome",
-          "requirements": {
-            "minMemoryMB": 50,
-            "minFlashMB": 100
-          }
-        },
-        {
-          "id": "--nodeps libaprutil",
-          "name": "libaprutil",
-          "uniqueId": "adguardhome-dep-libaprutil",
-          "hidden": true
-        },
-        {
-          "id": "--nodeps libapr",
-          "name": "libapr",
-          "uniqueId": "adguardhome-dep-libapr",
-          "hidden": true
-        },
-        {
-          "id": "--nodeps libexpat",
-          "name": "libexpat",
-          "uniqueId": "adguardhome-dep-libexpat",
-          "hidden": true
-        },
-        {
-          "id": "--nodeps libuuid1",
-          "name": "libuuid1",
-          "uniqueId": "adguardhome-dep-libuuid1",
-          "hidden": true
-        },
-        {
-          "id": "--nodeps apache-utils",
-          "name": "apache-utils",
-          "uniqueId": "adguardhome-dep-apache-utils",
-          "hidden": true
-        },
-        {
           "id": "luci-app-https-dns-proxy",
           "name": "luci-app-https-dns-proxy (DoH)"
         },
