@@ -5,15 +5,14 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1126.2302"
+VERSION="R7.1126.2320"
 
-# set -ex
-
-REQUIRED_MEM="50" # unit: MB
-REQUIRED_FLASH="100" # unit: MB
+REQUIRED_MEM="50"
+REQUIRED_FLASH="100"
 LAN="${LAN:-br-lan}"
 DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
+WEB_PORT="${WEB_PORT:-3000}"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -23,10 +22,13 @@ ARCH=""
 AGH=""
 PACKAGE_MANAGER=""
 FAMILY_TYPE=""
+AGH_USER=""
+AGH_PASS=""
+AGH_PASS_HASH=""
 
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
-    printf "\033[1;33mAdGuard Home is already installed. Exiting.\033[0m\n"
+    printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
     remove_adguardhome
     exit 0
   fi
@@ -127,6 +129,35 @@ install_prompt() {
   done
 }
 
+install_dependencies() {
+  printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
+  
+  PKGS="libaprutil libapr libexpat libuuid1 apache-utils"
+  
+  case "$PACKAGE_MANAGER" in
+    opkg)
+      opkg update >/dev/null 2>&1
+      for p in $PKGS; do
+        opkg install --nodeps "$p" >/dev/null 2>&1
+      done
+      ;;
+    apk)
+      apk update >/dev/null 2>&1
+      for p in $PKGS; do
+        apk add --force "$p" >/dev/null 2>&1
+      done
+      ;;
+  esac
+  
+  if command -v htpasswd >/dev/null 2>&1; then
+    printf "\033[1;32mhtpasswd installed successfully\033[0m\n"
+    return 0
+  else
+    printf "\033[1;31mhtpasswd installation failed\033[0m\n"
+    return 1
+  fi
+}
+
 install_cacertificates() {
   case "$PACKAGE_MANAGER" in
     apk)
@@ -155,6 +186,7 @@ install_openwrt() {
       else
         printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official\033[0m\n"
         install_official
+        return
       fi
       ;;
     opkg)
@@ -168,6 +200,7 @@ install_openwrt() {
       else
         printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
         install_official
+        return
       fi
       ;;
   esac
@@ -216,6 +249,86 @@ install_official() {
   chmod 700 /etc/"$SERVICE_NAME"
 }
 
+prompt_credentials() {
+  printf "\033[1;34mAdGuard Home Admin Setup\033[0m\n"
+  
+  while [ -z "$AGH_USER" ]; do
+    printf "Enter admin username [admin]: "
+    read -r AGH_USER
+    AGH_USER="${AGH_USER:-admin}"
+  done
+  
+  while [ -z "$AGH_PASS" ] || [ ${#AGH_PASS} -lt 8 ]; do
+    printf "Enter admin password (min 8 chars): "
+    stty -echo 2>/dev/null
+    read -r AGH_PASS
+    stty echo 2>/dev/null
+    printf "\n"
+    if [ ${#AGH_PASS} -lt 8 ]; then
+      printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
+      AGH_PASS=""
+    fi
+  done
+  
+  printf "Confirm password: "
+  stty -echo 2>/dev/null
+  read -r AGH_PASS_CONFIRM
+  stty echo 2>/dev/null
+  printf "\n"
+  
+  if [ "$AGH_PASS" != "$AGH_PASS_CONFIRM" ]; then
+    printf "\033[1;31mPasswords do not match. Aborting.\033[0m\n"
+    exit 1
+  fi
+}
+
+generate_password_hash() {
+  if ! command -v htpasswd >/dev/null 2>&1; then
+    printf "\033[1;31mhtpasswd not found. Cannot generate password hash.\033[0m\n"
+    return 1
+  fi
+  
+  AGH_PASS_HASH=$(htpasswd -B -n -b "" "$AGH_PASS" 2>/dev/null | cut -d: -f2)
+  
+  if [ -z "$AGH_PASS_HASH" ]; then
+    printf "\033[1;31mFailed to generate password hash.\033[0m\n"
+    return 1
+  fi
+  
+  printf "\033[1;32mPassword hash generated successfully\033[0m\n"
+  return 0
+}
+
+generate_yaml() {
+  local yaml_path yaml_template_url yaml_tmp
+  
+  if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
+    yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
+  else
+    yaml_path="/etc/adguardhome.yaml"
+  fi
+  
+  yaml_template_url="${SCRIPT_BASE_URL}/adguardhome.yaml"
+  yaml_tmp="/tmp/adguardhome.yaml.tmp"
+  
+  printf "\033[1;34mDownloading AdGuard Home configuration template\033[0m\n"
+  
+  if ! { wget -q -O "$yaml_tmp" "$yaml_template_url" || wget -q --no-check-certificate -O "$yaml_tmp" "$yaml_template_url"; }; then
+    printf "\033[1;31mFailed to download YAML template.\033[0m\n"
+    return 1
+  fi
+  
+  sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
+  sed -i "s|{{AGH_PASS_HASH}}|${AGH_PASS_HASH}|g" "$yaml_tmp"
+  sed -i "s|{{DNS_PORT}}|${DNS_PORT}|g" "$yaml_tmp"
+  sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
+  
+  mv "$yaml_tmp" "$yaml_path"
+  chmod 600 "$yaml_path"
+  
+  printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
+}
+
 get_iface_addrs() {
   local flag=0
   
@@ -248,9 +361,6 @@ common_config() {
   uci set dhcp.@dnsmasq[0].noresolv="1"
   uci set dhcp.@dnsmasq[0].cachesize="0"
   uci set dhcp.@dnsmasq[0].rebind_protection='0'
-  # uci set dhcp.@dnsmasq[0].rebind_protection='1'  # keep enabled
-  # uci set dhcp.@dnsmasq[0].rebind_localhost='1'   # protect localhost
-  # uci add_list dhcp.@dnsmasq[0].rebind_domain='lan'  # allow internal domain
   uci set dhcp.@dnsmasq[0].port="${DNS_BACKUP_PORT}"
   uci set dhcp.@dnsmasq[0].domain="lan"
   uci set dhcp.@dnsmasq[0].local="/lan/"
@@ -269,14 +379,10 @@ common_config() {
   uci commit dhcp
   /etc/init.d/dnsmasq restart || {
     printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"
-    printf "\033[1;31mTo remove AdGuard Home, run:\033[0m\n"
-    printf "\033[1;31msh %s/standalone-blocker-adguardhome.sh remove_adguardhome auto\033[0m\n" "$TMP"
     exit 1
   }
   /etc/init.d/odhcpd restart || {
     printf "\033[1;31mFailed to restart odhcpd\033[0m\n"
-    printf "\033[1;31mTo remove AdGuard Home, run:\033[0m\n"
-    printf "\033[1;31msh %s/standalone-blocker-adguardhome.sh remove_adguardhome auto\033[0m\n" "$TMP"
     exit 1
   }
   /etc/init.d/"$SERVICE_NAME" enable
@@ -312,8 +418,6 @@ common_config_firewall() {
   uci commit firewall
   /etc/init.d/firewall restart || {
     printf "\033[1;31mFailed to restart firewall\033[0m\n"
-    printf "\033[1;31mTo remove AdGuard Home, run:\033[0m\n"
-    printf "\033[1;31msh %s/standalone-blocker-adguardhome.sh remove_adguardhome auto\033[0m\n" "$TMP"
     exit 1
   }
   
@@ -418,8 +522,16 @@ get_access() {
     port="${addr##*:}"
     [ -z "$port" ] && port=
   fi
-  [ -z "$port" ] && port=3000
+  [ -z "$port" ] && port=$WEB_PORT
 
+  printf "\n"
+  printf "\033[1;32m========================================\033[0m\n"
+  printf "\033[1;32m  AdGuard Home is ready!\033[0m\n"
+  printf "\033[1;32m========================================\033[0m\n"
+  printf "\033[1;33m  Username: %s\033[0m\n" "$AGH_USER"
+  printf "\033[1;33m  Password: (as you entered)\033[0m\n"
+  printf "\033[1;32m========================================\033[0m\n"
+  
   if command -v qrencode >/dev/null 2>&1; then
     printf "\033[1;32mWeb interface IPv4: http://${NET_ADDR}:${port}/\033[0m\n"
     printf "http://${NET_ADDR}:${port}/\n" | qrencode -t UTF8 -v 3
@@ -440,8 +552,18 @@ get_access() {
 adguardhome_main() {
   check_system
   install_prompt "$@"
+  install_dependencies || {
+    printf "\033[1;31mFailed to install dependencies. Aborting.\033[0m\n"
+    exit 1
+  }
+  prompt_credentials
+  generate_password_hash || {
+    printf "\033[1;31mFailed to generate password hash. Aborting.\033[0m\n"
+    exit 1
+  }
   install_cacertificates
   install_"$INSTALL_MODE"
+  generate_yaml
   get_iface_addrs
   common_config
   common_config_firewall
