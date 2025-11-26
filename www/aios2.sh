@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1126.1047"
+VERSION="R7.1126.1708"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -28,9 +28,9 @@ TRANSLATION_CACHE_DATA=""
 print_banner_unicode() {
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
-    printf       "\033[34m ████  ███   ████   █████\033[0m   \033[37m█████\033[0m\n"
-    printf       "\033[32m    ██  ██  ██  ██ ██\033[0m           \033[37m██\033[0m\n"
-    printf       "\033[33m █████  ██  ██  ██  █████\033[0m   \033[37m█████\033[0m\n"
+    printf       "\033[34m ████  ███   ████   █████\033[0m  \033[37m█████\033[0m\n"
+    printf       "\033[32m    ██  ██  ██  ██ ██\033[0m          \033[37m██\033[0m\n"
+    printf       "\033[33m █████  ██  ██  ██  █████\033[0m   \033[37m████\033[0m\n"
     printf "\033[38;5;208m██  ██  ██  ██  ██      ██\033[0m\033[37m ██\033[0m\n"
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
