@@ -713,6 +713,14 @@ get_package_checked() {
     echo "$checked"
 }
 
+get_package_enablevar() {
+    local pkg_id="$1"
+    local enable_var
+    enable_var=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+    [ -z "$enable_var" ] && enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+    echo "$enable_var"
+}
+
 is_package_selected() {
     local pkg_id="$1"
     local caller="${2:-normal}"
@@ -1059,7 +1067,19 @@ EOF
 
 generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
-    local tpl_custom
+    local tpl_custom enable_var
+    
+    # enableVar処理: 選択されたパッケージのenableVarをSETUP_VARSに追記
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r pkg_id; do
+            enable_var=$(get_package_enablevar "$pkg_id")
+            if [ -n "$enable_var" ]; then
+                if ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                fi
+            fi
+        done < "$SELECTED_PACKAGES"
+    fi
     
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
     
