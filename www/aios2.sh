@@ -25,7 +25,7 @@ CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
 TRANSLATION_CACHE_DATA=""
 
-print_banner_unicode() {
+XXX_print_banner_unicode() {
     printf "\n"
     printf       "\033[37m                                          ➁\033[0m\n"
     printf       "\033[35m               ██ █\033[0m\n"
@@ -36,6 +36,19 @@ print_banner_unicode() {
     printf       "\033[31m     █████     ████      ████     ██████\033[0m\n"
     printf "\n"
     printf       "\n\033[37m               Vr.%s\033[0m\n" "$VERSION"
+    printf "\n"
+}
+
+print_banner_unicode() {
+    printf "\n"
+    printf       "\033[35m               ██ █\033[0m\n"
+    printf       "\033[34m     ████      ███       ████      █████\033[0m       \033[37m█████\033[0m\n"
+    printf       "\033[32m        ██      ██      ██  ██    ██\033[0m               \033[37m██\033[0m\n"
+    printf       "\033[33m     █████      ██      ██  ██     █████\033[0m       \033[37m█████\033[0m\n"
+    printf "\033[38;5;208m    ██  ██      ██      ██  ██         ██\033[0m    \033[37m ██\033[0m\n"
+    printf       "\033[31m     █████     ████      ████     ██████\033[0m      \033[37m██████\033[0m\n"
+    printf "\n"
+    printf       "\033[37m                  Vr.%s\033[0m\n" "$VERSION"
     printf "\n"
 }
 
