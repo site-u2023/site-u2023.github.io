@@ -25,8 +25,6 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-MEM_FREE=$(awk '/^MemAvailable:/{v=$2} /^MemFree:/{f=$2} END{print int((v?v:f)/1024)}' /proc/meminfo)
-FLASH_FREE=$(df -k / | awk 'NR==2{print int($4/1024)}')
 exec >/tmp/aios-setup.log 2>&1
 disable_wan() {
     local SEC=network
@@ -304,51 +302,6 @@ fi
         SET "$IDX".url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
         SET "$IDX".action='block'
         SET "$IDX".enabled='1'
-    }
-}
-[ -n "${enable_adguardhome}" ] && {
-    [ "$MEM_FREE" -lt 50 ] || [ "$FLASH_FREE" -lt 100 ] && {
-        echo "AdGuardHome skipped: insufficient resources (Mem:${MEM_FREE}MB, Flash:${FLASH_FREE}MB)"
-    } || {
-        : ${agh_dns_port:=53}
-        : ${agh_dns_backup_port:=54}
-        : ${agh_redirect_dns:=1}
-        : ${agh_family_type:=any}
-        DHCP_CONF="/etc/config/dhcp"
-        FW_CONF="/etc/config/firewall"
-        [ ! -f "$DHCP_CONF".bak ] && cp "$DHCP_CONF" "$DHCP_CONF".bak
-        [ ! -f "$FW_CONF".bak ] && cp "$FW_CONF" "$FW_CONF".bak
-        local SEC=dhcp
-        SET @dnsmasq[0].noresolv='1'
-        SET @dnsmasq[0].cachesize='0'
-        SET @dnsmasq[0].rebind_protection='0'
-        SET @dnsmasq[0].port="${agh_dns_backup_port}"
-        SET @dnsmasq[0].domain='lan'
-        SET @dnsmasq[0].local='/lan/'
-        SET @dnsmasq[0].expandhosts='1'
-        DEL @dnsmasq[0].server
-        ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
-        ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
-        DEL lan.dhcp_option
-        [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
-        DEL lan.dhcp_option6
-        [ -n "${lan_ipv6_address}" ] && ADDLIST lan.dhcp_option6="option6:dns=[${lan_ipv6_address}]"
-        [ "${agh_redirect_dns}" = "1" ] && {
-            local SEC=firewall
-            local rule_name="adguardhome_dns_${agh_dns_port}"
-            DEL "$rule_name"
-            SET "$rule_name"=redirect
-            SET "$rule_name".name="AdGuardHome DNS Redirect"
-            SET "$rule_name".family="${agh_family_type}"
-            SET "$rule_name".src='lan'
-            SET "$rule_name".dest='lan'
-            ADDLIST "$rule_name".proto='tcp'
-            ADDLIST "$rule_name".proto='udp'
-            SET "$rule_name".src_dport="${agh_dns_port}"
-            SET "$rule_name".dest_port="${agh_dns_port}"
-            SET "$rule_name".target='DNAT'
-        }
-        [ -x /etc/init.d/adguardhome ] && /etc/init.d/adguardhome enable
     }
 }
 [ -n "${enable_usb_rndis}" ] && {
