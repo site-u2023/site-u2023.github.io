@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1122.0928"
+VERSION="R7.1126.1047"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -34,6 +34,8 @@ print_banner_unicode() {
     printf       "\033[33m     █████      ██      ██  ██     █████\033[0m\n"
     printf "\033[38;5;208m    ██  ██      ██      ██  ██         ██\033[0m\n"
     printf       "\033[31m     █████     ████      ████     ██████\033[0m\n"
+    printf "\n"
+    printf       "\n\033[37m               Vr.%s\033[0m\n" "$VERSION"
     printf "\n"
 }
 
@@ -1156,9 +1158,6 @@ EOF3
 aios2_main() {
     clear
     print_banner
-
-    echo "Vr.$VERSION"
-    echo ""
     
     init
     echo "Fetching config.js"
