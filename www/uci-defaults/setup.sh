@@ -25,6 +25,8 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+MEM_FREE=$(awk '/^MemAvailable:/{v=$2} /^MemFree:/{f=$2} END{print int((v?v:f)/1024)}' /proc/meminfo)
+FLASH_FREE=$(df -k / | awk 'NR==2{print int($4/1024)}')
 exec >/tmp/aios-setup.log 2>&1
 disable_wan() {
     local SEC=network
@@ -305,6 +307,8 @@ fi
     }
 }
 [ -n "${enable_adguardhome}" ] && {
+    [ "$MEM_FREE" -lt 50 ] || [ "$FLASH_FREE" -lt 100 ] && {
+        echo "AdGuardHome skipped: insufficient resources (Mem:${MEM_FREE}MB, Flash:${FLASH_FREE}MB)" >> /tmp/setup.log
     : ${agh_dns_port:=53}
     : ${agh_dns_backup_port:=54}
     : ${agh_redirect_dns:=1}
