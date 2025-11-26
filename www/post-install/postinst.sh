@@ -13,8 +13,25 @@ else
     exit 1
 fi
 
+# opkg用--nodepsをapk用--force-broken-worldに変換
+normalize_packages() {
+    local pkg_list="$1"
+    if [ "$PKG_MGR" = "apk" ]; then
+        echo "$pkg_list" | sed 's/--nodeps /--force-broken-world /g'
+    else
+        echo "$pkg_list"
+    fi
+}
+
+NORMALIZED_PKGS=$(normalize_packages "$PACKAGES")
+
 MISSING_PKGS=""
-for pkg in $PACKAGES; do
+for pkg in $NORMALIZED_PKGS; do
+    # フラグはスキップ
+    case "$pkg" in
+        --*) continue ;;
+    esac
+    
     if [ "$PKG_MGR" = "opkg" ]; then
         if ! opkg list-installed | grep -q "^${pkg} "; then
             MISSING_PKGS="$MISSING_PKGS $pkg"
@@ -29,10 +46,10 @@ done
 if [ -n "$MISSING_PKGS" ]; then
     if [ "$PKG_MGR" = "opkg" ]; then
         opkg update
-        opkg install "$MISSING_PKGS"
+        eval "opkg install $NORMALIZED_PKGS"
     elif [ "$PKG_MGR" = "apk" ]; then
         apk update
-        apk add "$MISSING_PKGS"
+        eval "apk add $NORMALIZED_PKGS"
     fi
 fi
 
