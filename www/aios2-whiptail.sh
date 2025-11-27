@@ -1302,8 +1302,11 @@ review_and_apply() {
                     fi
                 fi
                 ;;
-            view_selected_custom_packages|view_customfeeds|view_customscripts)
+            view_selected_custom_packages|view_customfeeds)
                 $action
+                ;;
+            view_customscripts)
+                view_customscripts
                 ;;
             apply)
                 confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
