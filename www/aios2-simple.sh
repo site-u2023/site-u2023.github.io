@@ -669,6 +669,9 @@ process_items() {
                 
                 if [ -z "$current" ]; then
                     case "$variable" in
+                        country) current="${AUTO_COUNTRY:-$default}" ;;
+                        timezone) current="${AUTO_TIMEZONE:-$default}" ;;
+                        zonename) current="${AUTO_ZONENAME:-$default}" ;;
                         mape_gua_prefix) current="${MAPE_GUA_PREFIX:-$default}" ;;
                         mape_br) current="${MAPE_BR:-$default}" ;;
                         mape_ipv4_prefix) current="${MAPE_IPV4_PREFIX:-$default}" ;;
