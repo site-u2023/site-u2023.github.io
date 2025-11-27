@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1125.1303"
+VERSION="R7.1127.2231"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -1316,7 +1316,17 @@ review_and_apply() {
                 ;;
             textbox)
                 file=$(get_review_item_file "$choice")
-                [ -f "$file" ] && show_textbox "$breadcrumb" "$file"
+                if [ -f "$file" ] && [ -s "$file" ]; then
+                    show_textbox "$breadcrumb" "$file"
+                else
+                    local empty_class
+                    empty_class=$(get_review_item_empty_class "$choice")
+                    if [ -n "$empty_class" ]; then
+                        show_msgbox "$breadcrumb" "$(translate "$empty_class")"
+                    else
+                        show_msgbox "$breadcrumb" "Empty"
+                    fi
+                fi
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
