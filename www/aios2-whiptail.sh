@@ -1172,6 +1172,50 @@ EOF
     done
 }
 
+view_customscripts() {
+    local tr_main_menu tr_review tr_customscripts breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_customscripts=$(translate "tr-tui-view-customscripts")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customscripts")
+    
+    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts configured"
+        return 0
+    fi
+    
+    local info_text=""
+    info_text="Custom Scripts Configuration:\n\n"
+    info_text="${info_text}Source: ${CUSTOMSCRIPTS_JSON_URL}\n"
+    info_text="${info_text}Local: ${CUSTOMSCRIPTS_JSON}\n\n"
+    
+    local categories cat_id cat_name scripts script_id script_name
+    categories=$(get_customscript_categories)
+    
+    while read -r cat_id; do
+        [ -z "$cat_id" ] && continue
+        cat_name=$(get_customscript_category_name "$cat_id")
+        info_text="${info_text}[${cat_name}]\n"
+        
+        scripts=$(get_customscript_scripts "$cat_id")
+        while read -r script_id; do
+            [ -z "$script_id" ] && continue
+            script_name=$(get_customscript_name "$script_id")
+            info_text="${info_text}  - ${script_name}\n"
+        done <<EOF2
+$scripts
+EOF2
+        info_text="${info_text}\n"
+    done <<EOF
+$categories
+EOF
+    
+    printf "%b" "$info_text" > "$CONFIG_DIR/customscripts_view.txt"
+    show_textbox "$breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
+    rm -f "$CONFIG_DIR/customscripts_view.txt"
+}
+
 main_menu() {
     local tr_main_menu tr_select tr_exit packages_label custom_feeds_label custom_scripts_label review_label
     local setup_categories setup_cat_count
