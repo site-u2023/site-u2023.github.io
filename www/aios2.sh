@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1127.2219"
+VERSION="R7.1127.2318"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1464,7 +1464,7 @@ aios2_main() {
     echo "Fetching essential files in parallel"
     
     TIME_START=$(cut -d' ' -f1 /proc/uptime)
-
+    
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -1488,15 +1488,6 @@ aios2_main() {
     ) &
     POSTINST_PID=$!
     
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    
-    wait $LANG_PID
-    
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    
-    # オプションファイル（並列）
     (
         if ! download_review_json; then
             echo "Warning: Failed to download review.json" >&2
@@ -1520,6 +1511,14 @@ aios2_main() {
     
     prefetch_templates &
     TEMPLATES_PID=$!
+    
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    
+    wait $LANG_PID
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
     
     wait $REVIEW_PID
     wait $CUSTOMFEEDS_PID
@@ -1555,6 +1554,7 @@ aios2_main() {
         return 1
     fi
 
+    # DEBUG用ログのみ
     if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
         if [ -n "$MAPE_GUA_PREFIX" ]; then
             echo "[DEBUG] Detected mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
