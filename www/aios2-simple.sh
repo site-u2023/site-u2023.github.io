@@ -234,6 +234,189 @@ custom_feeds_selection() {
     package_selection "$cat_id" "custom_feeds" "$breadcrumb"
 }
 
+custom_scripts_selection() {
+    local tr_main_menu tr_custom_scripts breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_scripts=$(translate "tr-tui-custom-scripts")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
+    
+    download_customscripts_json || {
+        show_msgbox "$breadcrumb" "Failed to load custom scripts"
+        return 0
+    }
+    
+    local categories
+    categories=$(get_customscript_categories)
+    
+    if [ -z "$categories" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts available"
+        return 0
+    fi
+    
+    while true; do
+        show_menu_header "$breadcrumb"
+        
+        local i=1
+        while read -r cat_id; do
+            local cat_name
+            cat_name=$(get_customscript_category_name "$cat_id")
+            show_numbered_item "$i" "$cat_name"
+            i=$((i+1))
+        done <<EOF
+$categories
+EOF
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_cat
+            selected_cat=$(echo "$categories" | sed -n "${choice}p")
+            [ -n "$selected_cat" ] && custom_scripts_category "$selected_cat" "$breadcrumb"
+        fi
+    done
+}
+
+custom_scripts_category() {
+    local cat_id="$1"
+    local parent_breadcrumb="$2"
+    local cat_name breadcrumb
+    local scripts
+    
+    cat_name=$(get_customscript_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    scripts=$(get_customscript_scripts "$cat_id")
+    
+    if [ -z "$scripts" ]; then
+        show_msgbox "$breadcrumb" "No scripts available"
+        return 0
+    fi
+    
+    while true; do
+        show_menu_header "$breadcrumb"
+        
+        local i=1
+        while read -r script_id; do
+            local script_name
+            script_name=$(get_customscript_name "$script_id")
+            show_numbered_item "$i" "$script_name"
+            i=$((i+1))
+        done <<EOF
+$scripts
+EOF
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_script
+            selected_script=$(echo "$scripts" | sed -n "${choice}p")
+            [ -n "$selected_script" ] && custom_script_options "$selected_script" "$breadcrumb"
+        fi
+    done
+}
+
+custom_script_options() {
+    local script_id="$1"
+    local parent_breadcrumb="$2"
+    local script_name breadcrumb
+    local options
+    
+    script_name=$(get_customscript_name "$script_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${script_name}"
+    
+    options=$(get_customscript_options "$script_id")
+    
+    if [ -z "$options" ]; then
+        show_msgbox "$breadcrumb" "No options available"
+        return 0
+    fi
+    
+    while true; do
+        show_menu_header "$breadcrumb"
+        
+        local i=1
+        while read -r option_id; do
+            local option_label
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
+            show_numbered_item "$i" "$option_label"
+            i=$((i+1))
+        done <<EOF
+$options
+EOF
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_option option_args script_file
+            selected_option=$(echo "$options" | sed -n "${choice}p")
+            
+            if [ -n "$selected_option" ]; then
+                option_args=$(get_customscript_option_args "$script_id" "$selected_option")
+                script_file=$(get_customscript_file "$script_id")
+                
+                if [ -n "$script_file" ]; then
+                    run_custom_script "$script_file" "$option_args" "$breadcrumb"
+                fi
+            fi
+        fi
+    done
+}
+
+run_custom_script() {
+    local script_file="$1"
+    local args="$2"
+    local breadcrumb="$3"
+    local script_url script_path
+    
+    script_url="${BASE_URL}/custom-script/${script_file}"
+    script_path="$CONFIG_DIR/${script_file}"
+    
+    if ! __download_file_core "$script_url" "$script_path"; then
+        show_msgbox "$breadcrumb" "Failed to download script: $script_file"
+        return 1
+    fi
+    
+    chmod +x "$script_path"
+    
+    clear
+    printf "\033[1;34mExecuting: %s %s\033[0m\n\n" "$script_file" "$args"
+    
+    if [ -n "$args" ]; then
+        sh "$script_path" "$args"
+    else
+        sh "$script_path"
+    fi
+    
+    printf "\n\033[1;32mScript execution completed.\033[0m\n"
+    printf "Press [Enter] to continue..."
+    read -r _
+}
+
 review_and_apply() {
     generate_files
     
@@ -948,8 +1131,6 @@ EOF
     done
 }
 
-
-
 main_menu() {
     while true; do
         show_menu_header "aios2 Vr.$VERSION"
@@ -962,7 +1143,7 @@ main_menu() {
             i=$((i+1))
         done
         
-        local packages_label custom_feeds_label
+        local packages_label custom_feeds_label custom_scripts_label
         packages_label=$(translate "tr-tui-packages")
         show_numbered_item "$i" "$packages_label"
         local packages_choice=$i
@@ -971,6 +1152,12 @@ main_menu() {
         custom_feeds_label=$(translate "tr-tui-custom-feeds")
         show_numbered_item "$i" "$custom_feeds_label"
         local custom_feeds_choice=$i
+        i=$((i+1))
+        
+        custom_scripts_label=$(translate "tr-tui-custom-scripts")
+        [ -z "$custom_scripts_label" ] || [ "$custom_scripts_label" = "tr-tui-custom-scripts" ] && custom_scripts_label="Custom Scripts"
+        show_numbered_item "$i" "$custom_scripts_label"
+        local custom_scripts_choice=$i
         i=$((i+1))
         
         show_numbered_item "$i" "$(translate 'tr-tui-review-configuration')"
@@ -1004,6 +1191,9 @@ main_menu() {
             continue
         elif [ "$choice" -eq "$custom_feeds_choice" ] 2>/dev/null; then
             custom_feeds_selection
+            continue
+        elif [ "$choice" -eq "$custom_scripts_choice" ] 2>/dev/null; then
+            custom_scripts_selection
             continue
         elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
             review_and_apply
