@@ -670,6 +670,15 @@ No additional settings required."
             
             if [ -z "$current" ]; then
                 case "$variable" in
+                    country)
+                        current="${AUTO_COUNTRY:-$default}"
+                        ;;
+                    timezone)
+                        current="${AUTO_TIMEZONE:-$default}"
+                        ;;
+                    zonename)
+                        current="${AUTO_ZONENAME:-$default}"
+                        ;;
                     mape_gua_prefix)
                         current="${MAPE_GUA_PREFIX:-$default}"
                         ;;
