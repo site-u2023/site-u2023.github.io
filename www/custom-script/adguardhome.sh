@@ -141,9 +141,9 @@ install_dependencies() {
       for p in $PKGS; do
         opkg install --nodeps "$p" >/dev/null 2>&1
       done
-      # Extract htpasswd and remove apache package
+      # Extract htpasswd before removing apache
       cp /usr/bin/htpasswd /tmp/htpasswd
-      opkg remove apache >/dev/null 2>&1
+      opkg remove --force-depends apache >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
@@ -153,7 +153,7 @@ install_dependencies() {
         apk add --force "$p" >/dev/null 2>&1
       done
       cp /usr/bin/htpasswd /tmp/htpasswd
-      apk del apache2 >/dev/null 2>&1
+      apk del --force apache2 >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
