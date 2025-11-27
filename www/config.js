@@ -50,6 +50,9 @@ var config = {
   // Custom feeds database URL
   customfeeds_db_path: "custom-feeds/customfeeds.json",
 
+  // Custom scripts database URL
+  customscripts_db_path: "custom-script/customscripts.json",
+  
   // Review menu configuration
   review_json_path: "tui/review.json",
 
