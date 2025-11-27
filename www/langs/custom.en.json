@@ -208,5 +208,11 @@
     "tr-tui-custom-feeds": "Custom Feed Packages",
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository" ,
-    "tr-tui-custom-scripts": "Custom Scripts"
+    "tr-tui-custom-scripts": "Custom Scripts",
+    "tr-tui-view-customscripts": "customscripts.sh",
+    "tr-customscript-dns-blockers": "DNS Blockers",
+    "tr-customscript-adguardhome": "AdGuard Home",
+    "tr-customscript-install-openwrt": "Install from OpenWrt repository",
+    "tr-customscript-install-official": "Install official binary from GitHub",
+    "tr-customscript-remove": "Remove AdGuard Home"
 }
