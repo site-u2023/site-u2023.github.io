@@ -179,6 +179,150 @@ EOF
     fi
 }
 
+custom_scripts_selection() {
+    download_customscripts_json || return 0
+    
+    local tr_main_menu tr_custom_scripts breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat
+    local categories
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_scripts=$(translate "tr-tui-custom-scripts")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
+    
+    categories=$(get_customscript_categories)
+    
+    if [ -z "$categories" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts available"
+        return 0
+    fi
+    
+    menu_items="" 
+    i=1
+    
+    while read -r cat_id; do
+        cat_name=$(get_customscript_category_name "$cat_id")
+        menu_items="$menu_items $i \"$cat_name\""
+        i=$((i+1))
+    done <<EOF
+$categories
+EOF
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    
+    if [ -n "$choice" ]; then
+        selected_cat=$(echo "$categories" | sed -n "${choice}p")
+        custom_scripts_category "$selected_cat" "$breadcrumb"
+    fi
+}
+
+custom_scripts_category() {
+    local cat_id="$1"
+    local parent_breadcrumb="$2"
+    local cat_name breadcrumb
+    local menu_items i script_id script_name choice selected_script
+    local scripts
+    
+    cat_name=$(get_customscript_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    scripts=$(get_customscript_scripts "$cat_id")
+    
+    if [ -z "$scripts" ]; then
+        show_msgbox "$breadcrumb" "No scripts available"
+        return 0
+    fi
+    
+    menu_items=""
+    i=1
+    
+    while read -r script_id; do
+        script_name=$(get_customscript_name "$script_id")
+        menu_items="$menu_items $i \"$script_name\""
+        i=$((i+1))
+    done <<EOF
+$scripts
+EOF
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    
+    if [ -n "$choice" ]; then
+        selected_script=$(echo "$scripts" | sed -n "${choice}p")
+        custom_script_options "$selected_script" "$breadcrumb"
+    fi
+}
+
+custom_script_options() {
+    local script_id="$1"
+    local parent_breadcrumb="$2"
+    local script_name breadcrumb
+    local menu_items i option_id option_label choice selected_option
+    local options script_file option_args
+    
+    script_name=$(get_customscript_name "$script_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${script_name}"
+    
+    options=$(get_customscript_options "$script_id")
+    
+    if [ -z "$options" ]; then
+        show_msgbox "$breadcrumb" "No options available"
+        return 0
+    fi
+    
+    menu_items=""
+    i=1
+    
+    while read -r option_id; do
+        option_label=$(get_customscript_option_label "$script_id" "$option_id")
+        menu_items="$menu_items $i \"$option_label\""
+        i=$((i+1))
+    done <<EOF
+$options
+EOF
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    
+    if [ -n "$choice" ]; then
+        selected_option=$(echo "$options" | sed -n "${choice}p")
+        option_args=$(get_customscript_option_args "$script_id" "$selected_option")
+        script_file=$(get_customscript_file "$script_id")
+        
+        if [ -n "$script_file" ]; then
+            run_custom_script "$script_file" "$option_args" "$breadcrumb"
+        fi
+    fi
+}
+
+run_custom_script() {
+    local script_file="$1"
+    local args="$2"
+    local breadcrumb="$3"
+    local script_url script_path
+    
+    script_url="${BASE_URL}/custom-script/${script_file}"
+    script_path="$CONFIG_DIR/${script_file}"
+    
+    if ! __download_file_core "$script_url" "$script_path"; then
+        show_msgbox "$breadcrumb" "Failed to download script: $script_file"
+        return 1
+    fi
+    
+    chmod +x "$script_path"
+    
+    clear
+    printf "\033[1;34mExecuting: %s %s\033[0m\n\n" "$script_file" "$args"
+    
+    if [ -n "$args" ]; then
+        sh "$script_path" "$args"
+    else
+        sh "$script_path"
+    fi
+    
+    printf "\n\033[1;32mScript execution completed.\033[0m\n"
+    printf "Press [Enter] to continue..."
+    read -r _
+}
+
 device_info() {
     local tr_main_menu tr_device_info breadcrumb info
     
@@ -1029,9 +1173,9 @@ EOF
 }
 
 main_menu() {
-    local tr_main_menu tr_select tr_exit packages_label custom_feeds_label review_label
+    local tr_main_menu tr_select tr_exit packages_label custom_feeds_label custom_scripts_label review_label
     local setup_categories setup_cat_count
-    local menu_items i cat_id cat_title packages_choice custom_feeds_choice review_choice choice selected_cat
+    local menu_items i cat_id cat_title packages_choice custom_feeds_choice custom_scripts_choice review_choice choice selected_cat
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
@@ -1039,6 +1183,8 @@ main_menu() {
     packages_label=$(translate "tr-tui-packages")
     custom_feeds_label=$(translate "tr-tui-custom-feeds")
     [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-tui-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+    custom_scripts_label=$(translate "tr-tui-custom-scripts")
+    [ -z "$custom_scripts_label" ] || [ "$custom_scripts_label" = "tr-tui-custom-scripts" ] && custom_scripts_label="Custom Scripts"
     review_label=$(translate "tr-tui-review-configuration")
     
     setup_categories=$(get_setup_categories)
@@ -1064,6 +1210,10 @@ EOF
         custom_feeds_choice=$i
         i=$((i+1))
         
+        menu_items="$menu_items $i \"$custom_scripts_label\""
+        custom_scripts_choice=$i
+        i=$((i+1))
+        
         menu_items="$menu_items $i \"$review_label\""
         review_choice=$i
         
@@ -1080,6 +1230,8 @@ EOF
             package_categories
         elif [ "$choice" -eq "$custom_feeds_choice" ]; then
             custom_feeds_selection
+        elif [ "$choice" -eq "$custom_scripts_choice" ]; then
+            custom_scripts_selection
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
         fi
