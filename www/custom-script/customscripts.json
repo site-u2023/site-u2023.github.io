@@ -16,24 +16,45 @@
             "minMemoryMB": 50,
             "minFlashMB": 100
           },
+          "inputs": [
+            {
+              "id": "username",
+              "type": "text",
+              "label": "tr-customscript-username",
+              "default": "admin",
+              "envVar": "AGH_USER"
+            },
+            {
+              "id": "password",
+              "type": "password",
+              "label": "tr-customscript-password",
+              "minLength": 8,
+              "envVar": "AGH_PASS"
+            },
+            {
+              "id": "web_port",
+              "type": "number",
+              "label": "tr-customscript-web-port",
+              "default": "3000",
+              "envVar": "WEB_PORT"
+            }
+          ],
           "options": [
             {
               "id": "openwrt",
               "label": "tr-customscript-install-openwrt",
-              "description": "Install from OpenWrt repository",
               "args": "openwrt"
             },
             {
               "id": "official",
               "label": "tr-customscript-install-official",
-              "description": "Install official binary from GitHub",
               "args": "official"
             },
             {
               "id": "remove",
               "label": "tr-customscript-remove",
-              "description": "Remove AdGuard Home",
-              "args": "remove"
+              "args": "remove auto",
+              "skipInputs": true
             }
           ]
         }
