@@ -16,6 +16,7 @@ SETUP_JSON_URL=""
 SETUP_TEMPLATE_URL=""
 POSTINST_TEMPLATE_URL=""
 CUSTOMFEEDS_JSON_URL=""
+CUSTOMSCRIPTS_JSON_URL=""
 
 PACKAGES_DB_PATH=""
 SETUP_DB_PATH=""
@@ -64,6 +65,7 @@ load_config_from_js() {
     SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMSCRIPTS_DB_PATH=$(grep 'customscripts_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     REVIEW_DB_PATH=$(grep 'review_json_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
 
     WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -79,6 +81,7 @@ load_config_from_js() {
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
     SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
     CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
+    CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
     REVIEW_JSON_URL="${BASE_URL}/${REVIEW_DB_PATH}"
 
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
@@ -114,6 +117,7 @@ SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
+CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 REVIEW_JSON="$CONFIG_DIR/review.json"
 
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
@@ -815,6 +819,89 @@ get_customfeed_template_url() {
     [ -n "$template_path" ] && echo "${BASE_URL}/${template_path}"
 }
 
+# Custom Scripts Management
+
+download_customscripts_json() {
+    download_file_with_cache "$CUSTOMSCRIPTS_JSON_URL" "$CUSTOMSCRIPTS_JSON"
+    return $?
+}
+
+get_customscript_categories() {
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
+}
+
+get_customscript_category_name() {
+    local cat_id="$1"
+    local class
+    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+    if [ -n "$class" ]; then
+        translate "$class"
+    else
+        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null
+    fi
+}
+
+get_customscript_scripts() {
+    local cat_id="$1"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].scripts[*].id" 2>/dev/null
+}
+
+get_customscript_name() {
+    local script_id="$1"
+    local class
+    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].class" 2>/dev/null | head -1)
+    if [ -n "$class" ]; then
+        translate "$class"
+    else
+        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].name" 2>/dev/null | head -1
+    fi
+}
+
+get_customscript_file() {
+    local script_id="$1"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].script" 2>/dev/null | head -1
+}
+
+get_customscript_options() {
+    local script_id="$1"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[*].id" 2>/dev/null
+}
+
+get_customscript_option_label() {
+    local script_id="$1"
+    local option_id="$2"
+    local idx=0
+    local opt_ids opt_id label
+    
+    opt_ids=$(get_customscript_options "$script_id")
+    for opt_id in $opt_ids; do
+        if [ "$opt_id" = "$option_id" ]; then
+            break
+        fi
+        idx=$((idx+1))
+    done
+    
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].label" 2>/dev/null | head -1)
+    translate "$label"
+}
+
+get_customscript_option_args() {
+    local script_id="$1"
+    local option_id="$2"
+    local idx=0
+    local opt_ids opt_id
+    
+    opt_ids=$(get_customscript_options "$script_id")
+    for opt_id in $opt_ids; do
+        if [ "$opt_id" = "$option_id" ]; then
+            break
+        fi
+        idx=$((idx+1))
+    done
+    
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
+}
+
 # Connection Type and Conditional Logic
 
 get_effective_connection_type() {
@@ -1228,6 +1315,13 @@ aios2_main() {
     ) &
     CUSTOMFEEDS_PID=$!
     
+    (
+        if ! download_customscripts_json; then
+            echo "Warning: Failed to download customscripts.json" >&2
+        fi
+    ) &
+    CUSTOMSCRIPTS_PID=$!
+    
     prefetch_templates &
     TEMPLATES_PID=$!
     
@@ -1241,6 +1335,7 @@ aios2_main() {
     
     wait $REVIEW_PID
     wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
