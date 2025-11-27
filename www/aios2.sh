@@ -1261,7 +1261,7 @@ EOF3
 
 # Main Entry Point
 
-aios2_main() {
+XXX_aios2_main() {
     clear
     print_banner
     
@@ -1392,8 +1392,6 @@ aios2_main() {
         [ -n "$DSLITE_JURISDICTION" ] && echo "dslite_jurisdiction='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
     fi
     
-    apply_api_defaults
-    
     for cat_id in $(get_setup_categories); do
         auto_add_conditional_packages "$cat_id"
     done
@@ -1403,6 +1401,131 @@ aios2_main() {
     
     select_ui_mode
 
+    . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+    aios2_${UI_MODE}_main
+}
+
+aios2_main() {
+    clear
+    print_banner
+    
+    init
+    echo "Fetching config.js"
+    
+    detect_package_manager
+    echo "Detecting package manager: $PKG_MGR"
+    
+    echo "Fetching auto-config"
+    get_extended_device_info
+    
+    echo "Fetching essential files in parallel"
+    
+    TIME_START=$(cut -d' ' -f1 /proc/uptime)
+    
+    (
+        if ! download_setup_json; then
+            echo "Error: Failed to download setup.json" >&2
+            exit 1
+        fi
+    ) &
+    SETUP_PID=$!
+    
+    (
+        if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
+            echo "Warning: Using English as fallback language" >&2
+        fi
+    ) &
+    LANG_PID=$!
+    
+    (
+        if ! download_postinst_json; then
+            echo "ERROR: Failed to download postinst.json." >&2
+            exit 1
+        fi
+    ) &
+    POSTINST_PID=$!
+    
+    (
+        if ! download_review_json; then
+            echo "Warning: Failed to download review.json" >&2
+        fi
+    ) &
+    REVIEW_PID=$!
+    
+    (
+        if ! download_customfeeds_json; then
+            echo "Warning: Failed to download customfeeds.json" >&2
+        fi
+    ) &
+    CUSTOMFEEDS_PID=$!
+    
+    (
+        if ! download_customscripts_json; then
+            echo "Warning: Failed to download customscripts.json" >&2
+        fi
+    ) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    prefetch_templates &
+    TEMPLATES_PID=$!
+    
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    
+    wait $LANG_PID
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    
+    wait $REVIEW_PID
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    
+    TIME_END=$(cut -d' ' -f1 /proc/uptime)
+    echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
+    
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
+    
+    echo ""
+    echo "Parallel download finished in ${ELAPSED_TIME} seconds."
+    echo "Language detected: ${AUTO_LANGUAGE:-en}"
+    echo ""
+    if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
+        echo "Warning: Failed to fetch auto-config API"
+        echo "   https://www.cloudflarestatus.com/"
+        echo ""
+    fi
+    
+    if [ $SETUP_STATUS -ne 0 ]; then
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    if [ $POSTINST_STATUS -ne 0 ]; then
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    load_default_packages
+
+    # DEBUG用ログは残す（変数は保持してるから表示には使える）
+    if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
+        if [ -n "$MAPE_GUA_PREFIX" ]; then
+            echo "[DEBUG] Detected mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
+        else
+            echo "[DEBUG] Detected mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+
+    echo "Fetching UI modules"
+    echo ""
+    
+    select_ui_mode
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
     aios2_${UI_MODE}_main
 }
