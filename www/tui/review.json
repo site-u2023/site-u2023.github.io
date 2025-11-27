@@ -39,13 +39,18 @@
     },
     {
       "id": "7",
+      "class": "tr-tui-view-customscripts",
+      "action": "view_customscripts"
+    },
+    {
+      "id": "8",
       "class": "tr-tui-view-setup",
       "action": "textbox",
       "file": "setup.sh",
       "notfound_class": "tr-tui-setup-not-found"
     },
     {
-      "id": "8",
+      "id": "9",
       "class": "tr-tui-apply",
       "action": "apply"
     }
