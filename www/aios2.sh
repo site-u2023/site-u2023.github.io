@@ -70,7 +70,7 @@ load_config_from_js() {
         local path
         path=$(_get_js_value "$key")
         eval "${path_var}='${path}'"
-        [ -n "$url_var" ] && eval "${url_var}='\${BASE_URL}/${path}'"
+        [ -n "$url_var" ] && eval "${url_var}='${BASE_URL}/${path}'"
     }
 
     # BASE_URL（特殊処理）
