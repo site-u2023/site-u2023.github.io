@@ -26,6 +26,23 @@ CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
 TRANSLATION_CACHE_DATA=""
 
+# URL and Path Configuration
+
+PACKAGES_JSON="$CONFIG_DIR/postinst.json"
+SETUP_JSON="$CONFIG_DIR/setup.json"
+AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
+LANG_JSON="$CONFIG_DIR/lang.json"
+SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
+SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
+SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
+TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
+CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
+CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
+REVIEW_JSON="$CONFIG_DIR/review.json"
+
+TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
+TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
+
 print_banner_unicode() {
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
@@ -114,23 +131,6 @@ load_config_from_js() {
     
     return 0
 }
-
-# URL and Path Configuration
-
-PACKAGES_JSON="$CONFIG_DIR/postinst.json"
-SETUP_JSON="$CONFIG_DIR/setup.json"
-AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
-LANG_JSON="$CONFIG_DIR/lang.json"
-SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
-SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
-SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
-TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
-CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
-CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
-REVIEW_JSON="$CONFIG_DIR/review.json"
-
-TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
-TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
 # UI Mode Selection
 
