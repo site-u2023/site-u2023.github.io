@@ -606,6 +606,24 @@ get_setup_item_default() {
     echo "$result"
 }
 
+get_setup_item_api_source() {
+    local item_id="$1"
+    local result
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].apiSource" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].apiSource" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
+}
+
+get_api_value() {
+    local api_source="$1"
+    [ -z "$api_source" ] && return 1
+    jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${api_source}" 2>/dev/null
+}
+
 get_setup_item_field_type() {
     local item_id="$1"
     local result
