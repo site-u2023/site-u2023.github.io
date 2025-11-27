@@ -1306,7 +1306,7 @@ review_and_apply() {
                 $action
                 ;;
             view_customscripts)
-                view_customscripts
+                custom_scripts_selection
                 ;;
             apply)
                 confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
