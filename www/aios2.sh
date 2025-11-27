@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1126.1708"
+VERSION="R7.1127.2219"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -1510,10 +1510,8 @@ aios2_main() {
         read -r _
         return 1
     fi
-    
-    load_default_packages
 
-    # DEBUG用ログは残す（変数は保持してるから表示には使える）
+    # DEBUG用ログのみ
     if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
         if [ -n "$MAPE_GUA_PREFIX" ]; then
             echo "[DEBUG] Detected mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
