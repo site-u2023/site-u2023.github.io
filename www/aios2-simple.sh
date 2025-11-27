@@ -668,22 +668,14 @@ process_items() {
                 current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 
                 if [ -z "$current" ]; then
-                    case "$variable" in
-                        country) current="${AUTO_COUNTRY:-$default}" ;;
-                        timezone) current="${AUTO_TIMEZONE:-$default}" ;;
-                        zonename) current="${AUTO_ZONENAME:-$default}" ;;
-                        mape_gua_prefix) current="${MAPE_GUA_PREFIX:-$default}" ;;
-                        mape_br) current="${MAPE_BR:-$default}" ;;
-                        mape_ipv4_prefix) current="${MAPE_IPV4_PREFIX:-$default}" ;;
-                        mape_ipv4_prefixlen) current="${MAPE_IPV4_PREFIXLEN:-$default}" ;;
-                        mape_ipv6_prefix) current="${MAPE_IPV6_PREFIX:-$default}" ;;
-                        mape_ipv6_prefixlen) current="${MAPE_IPV6_PREFIXLEN:-$default}" ;;
-                        mape_ealen) current="${MAPE_EALEN:-$default}" ;;
-                        mape_psidlen) current="${MAPE_PSIDLEN:-$default}" ;;
-                        mape_psid_offset) current="${MAPE_PSID_OFFSET:-$default}" ;;
-                        dslite_aftr_address) current="${DSLITE_AFTR:-$default}" ;;
-                        *) current="$default" ;;
-                    esac
+                    local api_source api_value
+                    api_source=$(get_setup_item_api_source "$item_id")
+                    if [ -n "$api_source" ]; then
+                        api_value=$(get_api_value "$api_source")
+                        current="${api_value:-$default}"
+                    else
+                        current="$default"
+                    fi
                 fi
                 
                 if [ "$field_type" = "computed" ]; then
