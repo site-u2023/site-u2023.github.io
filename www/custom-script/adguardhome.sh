@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1126.2320"
+VERSION="R7.1127.1424"
 
 REQUIRED_MEM="50"
 REQUIRED_FLASH="100"
@@ -130,28 +130,38 @@ install_prompt() {
   done
 }
 
-install_dependencies() {
-  printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
-  
-  PKGS="libaprutil libapr libexpat libuuid1 apache"
+install_packages() {
+  local opts="$1"
+  shift
+  local pkgs="$*"
   
   case "$PACKAGE_MANAGER" in
     opkg)
-      opkg update >/dev/null 2>&1
-      for p in $PKGS; do
-        opkg install --nodeps "$p" >/dev/null 2>&1
+      for p in $pkgs; do
+        opkg install $opts "$p" >/dev/null 2>&1
       done
-      # Extract htpasswd before removing apache
+      ;;
+    apk)
+      for p in $pkgs; do
+        apk add $opts "$p" >/dev/null 2>&1
+      done
+      ;;
+  esac
+}
+
+install_dependencies() {
+  printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
+  
+  case "$PACKAGE_MANAGER" in
+    opkg)
+      install_packages "--nodeps" libaprutil libapr libexpat libuuid1 apache
       cp /usr/bin/htpasswd /tmp/htpasswd
       opkg remove --force-depends apache >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
     apk)
-      apk update >/dev/null 2>&1
-      for p in $PKGS; do
-        apk add --force "$p" >/dev/null 2>&1
-      done
+      install_packages "--force" libaprutil libapr libexpat libuuid1 apache
       cp /usr/bin/htpasswd /tmp/htpasswd
       apk del --force apache2 >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
@@ -171,12 +181,10 @@ install_dependencies() {
 install_cacertificates() {
   case "$PACKAGE_MANAGER" in
     apk)
-      apk update >/dev/null 2>&1
-      apk add ca-certificates >/dev/null 2>&1
+      install_packages "" ca-certificates
       ;;
     opkg)
-      opkg update --verbosity=0 >/dev/null 2>&1
-      opkg install --verbosity=0 ca-bundle >/dev/null 2>&1
+      install_packages "--verbosity=0" ca-bundle
       ;;
   esac
 }
@@ -563,6 +571,13 @@ get_access() {
 adguardhome_main() {
   check_system
   install_prompt "$@"
+
+  printf "\033[1;34mUpdating package lists\033[0m\n"
+  case "$PACKAGE_MANAGER" in
+    opkg) opkg update >/dev/null 2>&1 ;;
+    apk) apk update >/dev/null 2>&1 ;;
+  esac
+  
   install_dependencies || {
     printf "\033[1;31mFailed to install dependencies. Aborting.\033[0m\n"
     exit 1
