@@ -1062,6 +1062,52 @@ view_customfeeds() {
     done
 }
 
+view_customscripts() {
+    local tr_main_menu tr_review tr_customscripts breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_customscripts=$(translate "tr-tui-view-customscripts")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customscripts")
+    
+    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts configured"
+        return 0
+    fi
+    
+    show_menu_header "$breadcrumb"
+    
+    echo "Custom Scripts Configuration:"
+    echo ""
+    echo "Source: ${CUSTOMSCRIPTS_JSON_URL}"
+    echo "Local: ${CUSTOMSCRIPTS_JSON}"
+    echo ""
+    
+    local categories cat_id cat_name scripts script_id script_name
+    categories=$(get_customscript_categories)
+    
+    while read -r cat_id; do
+        [ -z "$cat_id" ] && continue
+        cat_name=$(get_customscript_category_name "$cat_id")
+        echo "[${cat_name}]"
+        
+        scripts=$(get_customscript_scripts "$cat_id")
+        while read -r script_id; do
+            [ -z "$script_id" ] && continue
+            script_name=$(get_customscript_name "$script_id")
+            echo "  - ${script_name}"
+        done <<EOF2
+$scripts
+EOF2
+        echo ""
+    done <<EOF
+$categories
+EOF
+    
+    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+    read -r _
+}
+
 view_selected_custom_packages() {
     local tr_main_menu tr_review tr_custom_packages breadcrumb
     
