@@ -771,6 +771,11 @@ get_review_item_file() {
     esac
 }
 
+get_review_item_empty_class() {
+    local item_id="$1"
+    jsonfilter -i "$REVIEW_JSON" -e "@.items[@.id='$item_id'].empty_class" 2>/dev/null | head -1
+}
+
 # Custom Feeds Management
 
 download_customfeeds_json() {
