@@ -1310,6 +1310,7 @@ review_and_apply() {
 $(translate 'tr-tui-apply-confirm-step2')
 $(translate 'tr-tui-apply-confirm-step3')
 $(translate 'tr-tui-apply-confirm-step4')
+$(translate 'tr-tui-apply-confirm-step5')
 
 $(translate 'tr-tui-apply-confirm-question')"
                 
