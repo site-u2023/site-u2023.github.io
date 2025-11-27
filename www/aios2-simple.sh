@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1122.1615"
+VERSION="R7.1127.2238"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -455,7 +455,17 @@ review_and_apply() {
                 item_label=$(get_review_item_label "$choice")
                 item_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$item_label")
                 
-                show_textbox "$item_breadcrumb" "$file"
+                if [ -f "$file" ] && [ -s "$file" ]; then
+                    show_textbox "$item_breadcrumb" "$file"
+                else
+                    local empty_class
+                    empty_class=$(get_review_item_empty_class "$choice")
+                    if [ -n "$empty_class" ]; then
+                        show_msgbox "$item_breadcrumb" "$(translate "$empty_class")"
+                    else
+                        show_msgbox "$item_breadcrumb" "Empty"
+                    fi
+                fi
                 ;;
             view_selected_custom_packages|view_customfeeds)
                 $action
