@@ -57,37 +57,46 @@ load_config_from_js() {
         return 1
     }
 
+    # config.jsから値を抽出
+    _get_js_value() {
+        grep "${1}:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/'
+    }
+
+    # パス変数とURL変数を同時に設定
+    _set_path_url() {
+        local key="$1"
+        local path_var="$2"
+        local url_var="$3"
+        local path
+        path=$(_get_js_value "$key")
+        eval "${path_var}='${path}'"
+        [ -n "$url_var" ] && eval "${url_var}='\${BASE_URL}/${path}'"
+    }
+
+    # BASE_URL（特殊処理）
     BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
-    AUTO_CONFIG_API_URL=$(grep 'auto_config_api_url:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    PACKAGES_DB_PATH=$(grep 'packages_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    POSTINST_TEMPLATE_PATH=$(grep 'postinst_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_DB_PATH=$(grep 'setup_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_TEMPLATE_PATH=$(grep 'setup_template_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    LANGUAGE_PATH_TEMPLATE=$(grep 'language_path_template:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMFEEDS_DB_PATH=$(grep 'customfeeds_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMSCRIPTS_DB_PATH=$(grep 'customscripts_db_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    REVIEW_DB_PATH=$(grep 'review_json_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-
-    WHIPTAIL_UI_PATH=$(grep 'whiptail_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SIMPLE_UI_PATH=$(grep 'simple_ui_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-
-    WHIPTAIL_FALLBACK_PATH=$(grep 'whiptail_fallback_path:' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
-    local CACHE_BUSTER
-    CACHE_BUSTER="?t=$(date +%s)"
+    # 単純な値
+    AUTO_CONFIG_API_URL=$(_get_js_value 'auto_config_api_url')
     
-    PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
-    POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
-    SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
-    SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
-    CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
-    CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
-    REVIEW_JSON_URL="${BASE_URL}/${REVIEW_DB_PATH}"
-
+    # パス + URL のペア
+    _set_path_url 'packages_db_path'        'PACKAGES_DB_PATH'        'PACKAGES_URL'
+    _set_path_url 'postinst_template_path'  'POSTINST_TEMPLATE_PATH'  'POSTINST_TEMPLATE_URL'
+    _set_path_url 'setup_db_path'           'SETUP_DB_PATH'           'SETUP_JSON_URL'
+    _set_path_url 'setup_template_path'     'SETUP_TEMPLATE_PATH'     'SETUP_TEMPLATE_URL'
+    _set_path_url 'customfeeds_db_path'     'CUSTOMFEEDS_DB_PATH'     'CUSTOMFEEDS_JSON_URL'
+    _set_path_url 'customscripts_db_path'   'CUSTOMSCRIPTS_DB_PATH'   'CUSTOMSCRIPTS_JSON_URL'
+    _set_path_url 'review_json_path'        'REVIEW_DB_PATH'          'REVIEW_JSON_URL'
+    _set_path_url 'language_path_template'  'LANGUAGE_PATH_TEMPLATE'  ''
+    _set_path_url 'whiptail_ui_path'        'WHIPTAIL_UI_PATH'        ''
+    _set_path_url 'simple_ui_path'          'SIMPLE_UI_PATH'          ''
+    _set_path_url 'whiptail_fallback_path'  'WHIPTAIL_FALLBACK_PATH'  'WHIPTAIL_FALLBACK_URL'
+    
+    # キャッシュバスター付きURL
+    local CACHE_BUSTER="?t=$(date +%s)"
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
 
-    WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL"
@@ -382,35 +391,46 @@ get_extended_device_info() {
         return 1
     fi
     
-    AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' 2>/dev/null)
-    AUTO_TIMEZONE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.timezone' 2>/dev/null)
-    AUTO_ZONENAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.zonename' 2>/dev/null)
-    AUTO_COUNTRY=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
-    ISP_NAME=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.isp' 2>/dev/null)
-    ISP_AS=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.as' 2>/dev/null)
+    # APIから値を抽出して変数に設定
+    _set_api_value() {
+        local var_name="$1"
+        local json_path="$2"
+        local value
+        value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
+        eval "${var_name}='${value}'"
+    }
     
-    MAPE_BR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.brIpv6Address' 2>/dev/null)
-    MAPE_EALEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.eaBitLength' 2>/dev/null)
-    MAPE_IPV4_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4Prefix' 2>/dev/null)
-    MAPE_IPV4_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv4PrefixLength' 2>/dev/null)
-    MAPE_IPV6_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix' 2>/dev/null)
-    MAPE_IPV6_PREFIXLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6PrefixLength' 2>/dev/null)
-    MAPE_PSIDLEN=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psidlen' 2>/dev/null)
-    MAPE_PSID_OFFSET=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.psIdOffset' 2>/dev/null)
+    # 基本情報
+    _set_api_value 'AUTO_LANGUAGE'      'language'
+    _set_api_value 'AUTO_TIMEZONE'      'timezone'
+    _set_api_value 'AUTO_ZONENAME'      'zonename'
+    _set_api_value 'AUTO_COUNTRY'       'country'
+    _set_api_value 'ISP_NAME'           'isp'
+    _set_api_value 'ISP_AS'             'as'
+    _set_api_value 'ISP_IPV6'           'ipv6'
     
-    ISP_IPV6=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.ipv6' 2>/dev/null)
-    MAPE_GUA_PREFIX=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
+    # MAP-E
+    _set_api_value 'MAPE_BR'            'mape.brIpv6Address'
+    _set_api_value 'MAPE_EALEN'         'mape.eaBitLength'
+    _set_api_value 'MAPE_IPV4_PREFIX'   'mape.ipv4Prefix'
+    _set_api_value 'MAPE_IPV4_PREFIXLEN' 'mape.ipv4PrefixLength'
+    _set_api_value 'MAPE_IPV6_PREFIX'   'mape.ipv6Prefix'
+    _set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
+    _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
+    _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
+    _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
     
-    DSLITE_AFTR=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrFqdn' 2>/dev/null)
-    DSLITE_AFTR_TYPE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.aftrType' 2>/dev/null)
-    DSLITE_JURISDICTION=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.aftr.jurisdiction' 2>/dev/null)
+    # DS-Lite
+    _set_api_value 'DSLITE_AFTR'        'aftr.aftrFqdn'
+    _set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
+    _set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
     
     reset_detected_conn_type
     
+    # デバイス情報（特殊処理のためそのまま）
     DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
     DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
