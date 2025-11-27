@@ -133,7 +133,7 @@ install_prompt() {
 install_dependencies() {
   printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
   
-  PKGS="libaprutil libapr libexpat libuuid1 apache-utils"
+  PKGS="libaprutil libapr libexpat libuuid1 apache"
   
   case "$PACKAGE_MANAGER" in
     opkg)
