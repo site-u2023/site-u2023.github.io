@@ -206,5 +206,11 @@
     "tr-tui-custom-feeds": "カスタムフィードパッケージ",
     "tr-tui-feed-gspotx2f": "gSpotx2fリポジトリ",
     "tr-tui-feed-jerrykuku": "jerrykukuリポジトリ",
-    "tr-tui-custom-scripts": "カスタムスクリプト"
+    "tr-tui-custom-scripts": "カスタムスクリプト",
+    "tr-tui-view-customscripts": "customscripts.sh",
+    "tr-customscript-dns-blockers": "DNSブロッカー",
+    "tr-customscript-adguardhome": "AdGuard Home",
+    "tr-customscript-install-openwrt": "OpenWrtリポジトリからインストール",
+    "tr-customscript-install-official": "公式バイナリをGitHubからインストール",
+    "tr-customscript-remove": "AdGuard Homeを削除",
 }
