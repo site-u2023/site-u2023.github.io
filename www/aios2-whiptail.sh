@@ -4,6 +4,7 @@
 # This file contains whiptail-specific UI functions
 
 VERSION="R7.1127.2231"
+TITLE="aios2"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -1234,7 +1235,7 @@ EOF
         menu_items="$menu_items $i \"$review_label\""
         review_choice=$i
         
-        choice=$(eval "show_menu \"\$VERSION\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
+        choice=$(eval "show_menu \"\$TITLE\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
         
         if ! [ $? -eq 0 ]; then
             return 0
