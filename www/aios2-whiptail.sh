@@ -290,6 +290,11 @@ EOF
         
         if [ -n "$script_file" ]; then
             run_custom_script "$script_file" "$option_args" "$breadcrumb"
+            
+            local generated_script="$CONFIG_DIR/${script_file}"
+            if [ -f "$generated_script" ]; then
+                show_textbox "$breadcrumb" "$generated_script"
+            fi
         fi
     fi
 }
