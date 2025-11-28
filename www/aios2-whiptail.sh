@@ -230,14 +230,39 @@ custom_script_options() {
     local parent_breadcrumb="$2"
     local script_name breadcrumb
     local menu_items i option_id option_label choice selected_option
-    local options script_file option_args
+    local options filtered_options script_file option_args
+    local min_mem min_flash msg
     
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
+    # リソースチェック
+    if ! check_script_requirements "$script_id"; then
+        min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
+        min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
+        
+        msg="$(translate 'tr-tui-customscript-resource-check')
+
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-required')
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-required')
+
+$(translate 'tr-tui-customscript-resource-ng')"
+        
+        show_msgbox "$breadcrumb" "$msg"
+        return 0
+    fi
+    
     options=$(get_customscript_options "$script_id")
     
     if [ -z "$options" ]; then
+        show_msgbox "$breadcrumb" "No options available"
+        return 0
+    fi
+    
+    # スクリプト毎のオプションフィルタ
+    filtered_options=$(filter_script_options "$script_id" "$options")
+    
+    if [ -z "$filtered_options" ]; then
         show_msgbox "$breadcrumb" "No options available"
         return 0
     fi
@@ -250,18 +275,30 @@ custom_script_options() {
         menu_items="$menu_items $i \"$option_label\""
         i=$((i+1))
     done <<EOF
-$options
+$filtered_options
 EOF
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
     
     if [ -n "$choice" ]; then
-        selected_option=$(echo "$options" | sed -n "${choice}p")
+        selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
+        
+        # skipInputsチェック
+        local skip_inputs
+        skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+        
+        if [ "$skip_inputs" != "true" ]; then
+            # インプットボックス表示して変数収集
+            if ! collect_script_inputs "$script_id" "$breadcrumb"; then
+                return 0
+            fi
+        fi
+        
         option_args=$(get_customscript_option_args "$script_id" "$selected_option")
         script_file=$(get_customscript_file "$script_id")
         
         if [ -n "$script_file" ]; then
-            run_custom_script "$script_file" "$option_args" "$breadcrumb"
+            generate_customscript_file "$script_id" "$script_file" "$option_args"
         fi
     fi
 }
