@@ -348,6 +348,8 @@ EOF
         
         if [ -n "$script_file" ]; then
             generate_customscript_file "$script_id" "$script_file" "$option_args"
+
+            run_custom_script "$script_file" "$option_args" "$breadcrumb"
         fi
     fi
 }
