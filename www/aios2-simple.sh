@@ -246,58 +246,18 @@ custom_scripts_selection() {
         return 0
     }
     
-    local categories
-    categories=$(get_customscript_categories)
-    
-    if [ -z "$categories" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts available"
-        return 0
-    fi
-    
-    while true; do
-        show_menu_header "$breadcrumb"
-        
-        local i=1
-        while read -r cat_id; do
-            local cat_name
-            cat_name=$(get_customscript_category_name "$cat_id")
-            show_numbered_item "$i" "$cat_name"
-            i=$((i+1))
-        done <<EOF
-$categories
-EOF
-        
-        echo ""
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-        echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
-        read -r choice
-        
-        if [ "$choice" = "$CHOICE_BACK" ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            local selected_cat
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            [ -n "$selected_cat" ] && custom_scripts_category "$selected_cat" "$breadcrumb"
-        fi
+    # 全カテゴリから全スクリプトをフラットに取得
+    local all_scripts="" cat_id script_id
+    for cat_id in $(get_customscript_categories); do
+        for script_id in $(get_customscript_scripts "$cat_id"); do
+            all_scripts="${all_scripts}${script_id}
+"
+        done
     done
-}
-
-custom_scripts_category() {
-    local cat_id="$1"
-    local parent_breadcrumb="$2"
-    local cat_name breadcrumb
-    local scripts
+    all_scripts=$(echo "$all_scripts" | grep -v '^$')
     
-    cat_name=$(get_customscript_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-    
-    scripts=$(get_customscript_scripts "$cat_id")
-    
-    if [ -z "$scripts" ]; then
-        show_msgbox "$breadcrumb" "No scripts available"
+    if [ -z "$all_scripts" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts available"
         return 0
     fi
     
@@ -311,7 +271,7 @@ custom_scripts_category() {
             show_numbered_item "$i" "$script_name"
             i=$((i+1))
         done <<EOF
-$scripts
+$all_scripts
 EOF
         
         echo ""
@@ -326,7 +286,7 @@ EOF
         
         if [ -n "$choice" ]; then
             local selected_script
-            selected_script=$(echo "$scripts" | sed -n "${choice}p")
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
             [ -n "$selected_script" ] && custom_script_options "$selected_script" "$breadcrumb"
         fi
     done
