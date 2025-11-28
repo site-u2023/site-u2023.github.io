@@ -540,6 +540,12 @@ remove_adguardhome() {
   /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
 
   printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
+  
+  if [ -z "$REMOVE_MODE" ]; then
+    printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+    read -r _
+    reboot
+  fi
 }
 
 get_access() {
@@ -585,6 +591,9 @@ get_access() {
 }
 
 adguardhome_main() {
+  local standalone_mode=""
+  [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
+  
   if [ -n "$REMOVE_MODE" ]; then
     printf "\n\033[1;34m========================================\033[0m\n"
     printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
@@ -625,6 +634,12 @@ adguardhome_main() {
   common_config_firewall
   printf "\n\033[1;32mAdGuard Home installation and configuration completed successfully.\033[0m\n\n"
   get_access
+  
+  if [ -n "$standalone_mode" ]; then
+    printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+    read -r _
+    reboot
+  fi
 }
 
 if [ "$(basename "$0")" = "adguardhome.sh" ]; then
