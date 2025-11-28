@@ -885,50 +885,36 @@ get_customfeed_template_url() {
 
 # Custom Scripts Management
 
+# Custom Scripts Management
+
 download_customscripts_json() {
     download_file_with_cache "$CUSTOMSCRIPTS_JSON_URL" "$CUSTOMSCRIPTS_JSON"
     return $?
 }
 
-get_customscript_categories() {
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
-}
-
-get_customscript_category_name() {
-    local cat_id="$1"
-    local class
-    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
-    if [ -n "$class" ]; then
-        translate "$class"
-    else
-        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null
-    fi
-}
-
-get_customscript_scripts() {
-    local cat_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[@.id='$cat_id'].scripts[*].id" 2>/dev/null
+get_customscript_all_scripts() {
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e '@.scripts[*].id' 2>/dev/null | grep -v '^$'
 }
 
 get_customscript_name() {
     local script_id="$1"
     local class
-    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].class" 2>/dev/null | head -1)
+    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].class" 2>/dev/null)
     if [ -n "$class" ]; then
         translate "$class"
     else
-        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].name" 2>/dev/null | head -1
+        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].name" 2>/dev/null
     fi
 }
 
 get_customscript_file() {
     local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].script" 2>/dev/null | head -1
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].script" 2>/dev/null
 }
 
 get_customscript_options() {
     local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[*].id" 2>/dev/null
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[*].id" 2>/dev/null
 }
 
 get_customscript_option_label() {
@@ -945,7 +931,7 @@ get_customscript_option_label() {
         idx=$((idx+1))
     done
     
-    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].label" 2>/dev/null | head -1)
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].label" 2>/dev/null)
     translate "$label"
 }
 
@@ -963,80 +949,44 @@ get_customscript_option_args() {
         idx=$((idx+1))
     done
     
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null
 }
 
 get_customscript_option_skip_inputs() {
     local script_id="$1"
     local option_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null
 }
 
 get_customscript_inputs() {
     local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[*].id" 2>/dev/null
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[*].id" 2>/dev/null
 }
 
 get_customscript_input_label() {
     local script_id="$1"
     local input_id="$2"
     local label
-    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].label" 2>/dev/null | head -1)
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].label" 2>/dev/null)
     translate "$label"
 }
 
 get_customscript_input_default() {
     local script_id="$1"
     local input_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].default" 2>/dev/null | head -1
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].default" 2>/dev/null
 }
 
 get_customscript_input_envvar() {
     local script_id="$1"
     local input_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1
-}
-
-is_adguardhome_installed() {
-    /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || \
-    /usr/bin/AdGuardHome --version >/dev/null 2>&1
-}
-
-filter_script_options() {
-    local script_id="$1"
-    local options="$2"
-    local filtered=""
-    
-    case "$script_id" in
-        adguardhome)
-            local installed="no"
-            is_adguardhome_installed && installed="yes"
-            
-            while read -r option_id; do
-                [ -z "$option_id" ] && continue
-                if [ "$installed" = "yes" ]; then
-                    [ "$option_id" = "remove" ] && filtered="${filtered}${option_id}
-"
-                else
-                    [ "$option_id" != "remove" ] && filtered="${filtered}${option_id}
-"
-                fi
-            done <<EOF
-$options
-EOF
-            ;;
-        *)
-            filtered="$options"
-            ;;
-    esac
-    
-    echo "$filtered" | grep -v '^$'
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null
 }
 
 get_customscript_requirement() {
     local script_id="$1"
     local req_key="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null | head -1
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null
 }
 
 check_script_requirements() {
@@ -1054,8 +1004,6 @@ check_script_requirements() {
     fi
     return 0
 }
-
-# Connection Type and Conditional Logic
 
 get_effective_connection_type() {
     local conn_type
