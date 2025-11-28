@@ -40,7 +40,7 @@ check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
     remove_adguardhome
-    exit 0
+    return 0
   fi
   
   printf "\033[1;34mChecking system requirements\033[0m\n"
@@ -129,7 +129,7 @@ install_prompt() {
       2|official) INSTALL_MODE="official"; break ;;
       0|exit)
         printf "\033[1;33mInstallation cancelled.\033[0m\n"
-        exit 0
+        return 0
         ;;
       *) printf "\033[1;31mInvalid choice '$choice'. Please enter 1, 2, or 0.\033[0m\n" ;;
     esac
@@ -599,7 +599,7 @@ adguardhome_main() {
     printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
     printf "\033[1;34m========================================\033[0m\n\n"
     remove_adguardhome "$REMOVE_MODE"
-    exit 0
+    return 0
   fi
   
   printf "\n\033[1;34m========================================\033[0m\n"
