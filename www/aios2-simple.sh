@@ -486,10 +486,9 @@ review_and_apply() {
                     done
                     
                     echo ""
-                    echo "$(translate 'tr-tui-config-applied')"
-                    echo ""
-                    
-                    if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                    if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-config-applied')
+
+$(translate 'tr-tui-reboot-question')"; then
                         reboot
                     fi
                     return 0
