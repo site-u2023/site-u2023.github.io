@@ -39,7 +39,7 @@ SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-    remove_adguardhome "$1"
+    remove_adguardhome "$2"
     exit 0
   fi
   
