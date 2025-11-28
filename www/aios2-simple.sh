@@ -463,6 +463,7 @@ review_and_apply() {
                 echo "$(translate 'tr-tui-apply-confirm-step2')"
                 echo "$(translate 'tr-tui-apply-confirm-step3')"
                 echo "$(translate 'tr-tui-apply-confirm-step4')"
+                echo "$(translate 'tr-tui-apply-confirm-step5')"
                 echo ""
                 
                 if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
@@ -478,6 +479,13 @@ review_and_apply() {
                     echo ""
                     echo "$(translate 'tr-tui-applying-config')"
                     sh "$CONFIG_DIR/setup.sh"
+                    
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-scripts')"
+                    for script in "$CONFIG_DIR"/customscripts-*.sh; do
+                        [ -f "$script" ] && sh "$script"
+                    done
+                    
                     echo ""
                     echo "$(translate 'tr-tui-config-applied')"
                     echo ""
