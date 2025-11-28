@@ -24,10 +24,15 @@ AGH_PASS_HASH=""
 
 REQUIRED_MEM="50"
 REQUIRED_FLASH="100"
-LAN="${LAN:-br-lan}"
+
+AGH_USER="${AGH_USER:-admin}"
+AGH_PASS="${AGH_PASS:-}"
+WEB_PORT="${WEB_PORT:-8000}"
 DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
-WEB_PORT="${WEB_PORT:-8000}"
+LAN_ADDR="${LAN_ADDR:-}"
+
+LAN="${LAN:-br-lan}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
 check_system() {
