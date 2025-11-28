@@ -284,9 +284,7 @@ EOF
         fi
         
         option_args=$(get_customscript_option_args "$script_id" "$selected_option")
-        script_file=$(get_customscript_file "$script_id")
-        
-        generate_customscript_file "$script_id" "$script_file" "$option_args"
+        echo "$option_args" > "$CONFIG_DIR/script_args_${script_id}.txt"
     fi
 }
 
