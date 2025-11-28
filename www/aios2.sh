@@ -269,8 +269,10 @@ init() {
     rm -f "$CONFIG_DIR"/config.js
     rm -f "$CONFIG_DIR"/*.json
     rm -f "$CONFIG_DIR"/*.txt
+    rm -f "$CONFIG_DIR"/*.tmp
     rm -f "$CONFIG_DIR"/*.log
     rm -f "$CONFIG_DIR"/customfeeds-*.sh
+    rm -f "$CONFIG_DIR"/customscripts-*.sh
     rm -f "$CONFIG_DIR"/postinst.sh
     rm -f "$CONFIG_DIR"/setup.sh
     
@@ -1045,7 +1047,6 @@ collect_script_inputs() {
         input_default=$(get_customscript_input_default "$script_id" "$input_id")
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
         
-        # LAN_ADDRの場合は自動取得値を初期値に
         if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
             input_default="$LAN_ADDR"
         fi
@@ -1053,14 +1054,13 @@ collect_script_inputs() {
         value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
         
         if ! [ $? -eq 0 ]; then
-            rm -f "$CONFIG_DIR/script_vars.tmp"
+            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
             return 1
         fi
         
         [ -z "$value" ] && value="$input_default"
         
-        # テンプレート埋め込み用の形式
-        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars.tmp"
+        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
     done
     
     return 0
@@ -1484,8 +1484,8 @@ EOF3
                 {
                     sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
                     
-                    if [ -f "$CONFIG_DIR/script_vars_${script_id}.tmp" ]; then
-                        cat "$CONFIG_DIR/script_vars_${script_id}.tmp"
+                    if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                        cat "$CONFIG_DIR/script_vars_${script_id}.txt"
                     fi
                     
                     sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
