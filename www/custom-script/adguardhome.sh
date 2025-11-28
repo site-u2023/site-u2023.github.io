@@ -1,4 +1,3 @@
-
 #!/bin/sh
 # shellcheck shell=sh disable=SC2034,SC3043
 # OpenWrt 19.07+ configuration
@@ -6,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1127.1424"
+VERSION="R7.1128.1919"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -36,13 +35,15 @@ LAN_ADDR="${LAN_ADDR:-192.168.1.1}"
 LAN="${LAN:-br-lan}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
-check_system() {
+check_existing_installation() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
     remove_adguardhome "$1"
     exit 0
   fi
-  
+}
+
+check_system_requirements() {
   printf "\033[1;34mChecking system requirements\033[0m\n"
   
   LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
@@ -578,7 +579,8 @@ get_access() {
 }
 
 adguardhome_main() {
-  check_system "$@" 
+  check_existing_installation "$@"
+  check_system_requirements
   install_prompt "$@"
 
   printf "\033[1;34mUpdating package lists\033[0m\n"
