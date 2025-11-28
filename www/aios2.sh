@@ -966,6 +966,37 @@ get_customscript_option_args() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
 }
 
+get_customscript_option_skip_inputs() {
+    local script_id="$1"
+    local option_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
+}
+
+get_customscript_inputs() {
+    local script_id="$1"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[*].id" 2>/dev/null
+}
+
+get_customscript_input_label() {
+    local script_id="$1"
+    local input_id="$2"
+    local label
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].label" 2>/dev/null | head -1)
+    translate "$label"
+}
+
+get_customscript_input_default() {
+    local script_id="$1"
+    local input_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].default" 2>/dev/null | head -1
+}
+
+get_customscript_input_envvar() {
+    local script_id="$1"
+    local input_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1
+}
+
 is_adguardhome_installed() {
     /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || \
     /usr/bin/AdGuardHome --version >/dev/null 2>&1
