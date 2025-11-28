@@ -1085,27 +1085,21 @@ generate_customscript_file() {
     local script_file="$2"
     local option_args="$3"
     local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
-    local script_url template_path
+    local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     
-    script_url="${BASE_URL}/custom-script/${script_file}"
-    template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-    
-    # テンプレートをダウンロード
-    if ! __download_file_core "$script_url" "$template_path"; then
-        echo "[ERROR] Failed to download script template: $script_file" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    # テンプレートから生成（setup.sh や customfeeds.sh と同じ方式）
     {
-        sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
+        echo "#!/bin/sh"
+        echo "# customscripts-${script_id}.sh (priority: 1024)"
+        echo ""
         
-        if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
-            cat "$CONFIG_DIR/script_vars.tmp"
-            rm -f "$CONFIG_DIR/script_vars.tmp"
+        if [ -f "$vars_file" ]; then
+            while IFS= read -r line; do
+                echo "export $line"
+            done < "$vars_file"
         fi
         
-        sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
+        echo ""
+        echo "sh \"\$CONFIG_DIR/${script_file}\" $option_args"
     } > "$output_file"
     
     chmod +x "$output_file"
