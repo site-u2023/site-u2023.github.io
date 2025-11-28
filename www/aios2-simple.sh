@@ -1189,6 +1189,74 @@ EOF
     done
 }
 
+view_selected_custom_scripts() {
+    local tr_main_menu tr_review tr_script_list breadcrumb
+    local script_id script_name var_file has_scripts
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_script_list=$(translate "tr-tui-view-script-list")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_script_list")
+    
+    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts configured"
+        return 0
+    fi
+    
+    show_menu_header "$breadcrumb"
+    
+    has_scripts=0
+    
+    while read -r script_id; do
+        var_file="$CONFIG_DIR/script_vars_${script_id}.tmp"
+        
+        if [ -f "$var_file" ]; then
+            script_name=$(get_customscript_name "$script_id")
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "$script_name"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            
+            while IFS='=' read -r key value; do
+                value=$(echo "$value" | tr -d '"')
+                
+                case "$key" in
+                    AGH_USER)
+                        echo "  Username: $value"
+                        ;;
+                    AGH_PASS)
+                        echo "  Password: ********"
+                        ;;
+                    WEB_PORT)
+                        echo "  Web Port: $value"
+                        ;;
+                    DNS_PORT)
+                        echo "  DNS Port: $value"
+                        ;;
+                    LAN_ADDR)
+                        echo "  LAN Address: $value"
+                        ;;
+                    *)
+                        echo "  $key: $value"
+                        ;;
+                esac
+            done < "$var_file"
+            
+            echo ""
+            has_scripts=1
+        fi
+    done <<EOF
+$(get_customscript_all_scripts)
+EOF
+    
+    if [ "$has_scripts" -eq 0 ]; then
+        echo "  $(translate 'tr-tui-no-custom-scripts')"
+    fi
+    
+    echo ""
+    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+    read -r _
+}
+
 main_menu() {
     while true; do
         show_menu_header "aios2 Vr.$VERSION"
