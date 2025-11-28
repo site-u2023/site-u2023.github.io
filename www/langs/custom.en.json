@@ -219,9 +219,9 @@
     "tr-tui-customscript-install-official": "Install official binary",
     "tr-tui-customscript-adguardhome": "AdGuard Home",
     "tr-tui-customscript-remove": "Remove AdGuard Home",
-    "tr-tui-customscript-agh-user": "User ID",
-    "tr-tui-customscript-agh-password": "Password",
-    "tr-tui-customscript-agh-webport": "WEB Port",
-    "tr-tui-customscript-agh-dnsport": "DNS Port",
-    "tr-tui-customscript-agh-lanaddr": "LAN Address"
+    "tr-tui-customscript-user": "User ID",
+    "tr-tui-customscript-password": "Password",
+    "tr-tui-customscript-webport": "WEB Port",
+    "tr-tui-customscript-dnsport": "DNS Port",
+    "tr-tui-customscript-lanaddr": "LAN Address"
 }
