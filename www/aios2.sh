@@ -966,6 +966,28 @@ get_customscript_option_args() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
 }
 
+get_customscript_requirement() {
+    local script_id="$1"
+    local req_key="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.categories[*].scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null | head -1
+}
+
+check_script_requirements() {
+    local script_id="$1"
+    local min_mem min_flash
+    
+    min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
+    min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
+    
+    [ -z "$min_mem" ] && min_mem=0
+    [ -z "$min_flash" ] && min_flash=0
+    
+    if [ "$MEM_FREE_MB" -lt "$min_mem" ] || [ "$FLASH_FREE_MB" -lt "$min_flash" ]; then
+        return 1
+    fi
+    return 0
+}
+
 # Connection Type and Conditional Logic
 
 get_effective_connection_type() {
