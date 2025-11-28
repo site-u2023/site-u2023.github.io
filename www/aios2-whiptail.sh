@@ -1212,7 +1212,7 @@ EOF
 
 view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_script_list breadcrumb
-    local temp_view script_id script_name var_file
+    local temp_view script_id var_file
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
@@ -1233,12 +1233,7 @@ view_selected_custom_scripts() {
         var_file="$CONFIG_DIR/script_vars_${script_id}.tmp"
         
         if [ -f "$var_file" ]; then
-            script_name=$(get_customscript_name "$script_id")
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$temp_view"
-            echo "$script_name" >> "$temp_view"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$temp_view"
             cat "$var_file" >> "$temp_view"
-            echo "" >> "$temp_view"
             has_scripts=1
         fi
     done <<EOF
