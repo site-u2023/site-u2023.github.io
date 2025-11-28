@@ -507,11 +507,32 @@ remove_adguardhome() {
   for cfg in network dhcp firewall; do
     bak="/etc/config/${cfg}.adguard.bak"
     if [ -f "$bak" ]; then
-      printf "\033[1;34mRestoring %s configuration\033[0m\n" "$cfg"
+      printf "\033[1;34mRestoring %s configuration from backup\033[0m\n" "$cfg"
       cp "$bak" "/etc/config/${cfg}"
       rm -f "$bak"
     fi
   done
+  
+  # Restore defaults if no backup (manual install or backup missing)
+  if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
+    printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
+    uci -q del dhcp.@dnsmasq[0].noresolv
+    uci -q del dhcp.@dnsmasq[0].cachesize
+    uci -q del dhcp.@dnsmasq[0].rebind_protection
+    uci set dhcp.@dnsmasq[0].port="53"
+    uci -q del dhcp.@dnsmasq[0].server
+    uci -q del dhcp.lan.dhcp_option
+    uci -q del dhcp.lan.dhcp_option6
+    uci commit dhcp
+  fi
+  
+  # Remove firewall rule if exists
+  rule_name="adguardhome_dns_${DNS_PORT}"
+  if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
+    printf "\033[1;34mRemoving firewall rule\033[0m\n"
+    uci -q delete firewall."$rule_name"
+    uci commit firewall
+  fi
 
   uci commit network
   uci commit dhcp
