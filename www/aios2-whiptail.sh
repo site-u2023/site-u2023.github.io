@@ -244,7 +244,7 @@ collect_script_inputs() {
         
         [ -z "$value" ] && value="$input_default"
         
-        # 修正：クォートなしの代入形式に変更
+        # 修正：ラッパーなしの代入形式（テンプレート埋め込み用）
         echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars.tmp"
     done
     
