@@ -208,6 +208,7 @@
     "tr-tui-feed-jerrykuku": "jerrykuku Repository" ,
     "tr-tui-custom-scripts": "Custom Scripts",
 
+    "tr-tui-view-script-list": "Custom Scripts Configuration",
     "tr-tui-customscript-resource-check": "Resource Check",
     "tr-tui-customscript-memory": "Memory",
     "tr-tui-customscript-storage": "Storage",
