@@ -219,9 +219,9 @@
     "tr-tui-customscript-install-official": "公式バイナリのインストール",
     "tr-tui-customscript-adguardhome": "アドガードホーム",
     "tr-tui-customscript-remove": "アドガードホームを削除",
-    "tr-tui-customscript-agh-user": "ユーザーID",
-    "tr-tui-customscript-agh-password": "パスワード",
-    "tr-tui-customscript-agh-webport": "WEBポート",
-    "tr-tui-customscript-agh-dnsport": "DNSポート",
-    "tr-tui-customscript-agh-lanaddr": "LANアドレス"
+    "tr-tui-customscript-user": "ユーザーID",
+    "tr-tui-customscript-password": "パスワード",
+    "tr-tui-customscript-webport": "WEBポート",
+    "tr-tui-customscript-dnsport": "DNSポート",
+    "tr-tui-customscript-lanaddr": "LANアドレス"
 }
