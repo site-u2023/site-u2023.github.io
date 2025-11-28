@@ -1191,32 +1191,31 @@ EOF
 
 view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_script_list breadcrumb
-    local temp_view script_id script_name var_file
-    local input_id input_label input_envvar key value display_value
+    local script_id script_name var_file has_scripts
+    local input_id input_label input_envvar value display_value
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     tr_script_list=$(translate "tr-tui-view-script-list")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_script_list")
     
-    temp_view="$CONFIG_DIR/selected_scripts_view.txt"
-    : > "$temp_view"
-    
     if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
         show_msgbox "$breadcrumb" "No custom scripts configured"
         return 0
     fi
     
-    local has_scripts=0
+    show_menu_header "$breadcrumb"
+    
+    has_scripts=0
     
     while read -r script_id; do
         var_file="$CONFIG_DIR/script_vars_${script_id}.tmp"
         
         if [ -f "$var_file" ]; then
             script_name=$(get_customscript_name "$script_id")
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$temp_view"
-            echo "$script_name" >> "$temp_view"
-            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$temp_view"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+            echo "$script_name"
+            echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
             
             while read -r input_id; do
                 input_label=$(get_customscript_input_label "$script_id" "$input_id")
@@ -1230,12 +1229,12 @@ view_selected_custom_scripts() {
                     display_value="$value"
                 fi
                 
-                echo "  ${input_label}: ${display_value}" >> "$temp_view"
+                echo "  ${input_label}: ${display_value}"
             done <<INPUTS
 $(get_customscript_inputs "$script_id")
 INPUTS
             
-            echo "" >> "$temp_view"
+            echo ""
             has_scripts=1
         fi
     done <<EOF
@@ -1243,12 +1242,12 @@ $(get_customscript_all_scripts)
 EOF
     
     if [ "$has_scripts" -eq 0 ]; then
-        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
-    else
-        show_textbox "$breadcrumb" "$temp_view"
+        echo "  $(translate 'tr-tui-no-custom-scripts')"
     fi
     
-    rm -f "$temp_view"
+    echo ""
+    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+    read -r _
 }
 
 main_menu() {
