@@ -39,7 +39,7 @@ SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-    remove_adguardhome "$2"
+    remove_adguardhome
     exit 0
   fi
   
@@ -110,13 +110,10 @@ check_system() {
 install_prompt() {
   printf "\033[1;34mSystem resources are sufficient for AdGuard Home installation. Proceeding with setup.\033[0m\n"
 
-  if [ -n "$1" ]; then
-    case "$1" in
-      official) INSTALL_MODE="official"; return ;;
-      openwrt) INSTALL_MODE="openwrt"; return ;;
-      remove) remove_adguardhome ;;
-      exit) exit 0 ;;
-      *) printf "\033[1;31mWarning: Unrecognized argument '$1'. Proceeding with interactive prompt.\033[0m\n" ;;
+  if [ -n "$INSTALL_MODE" ]; then
+    case "$INSTALL_MODE" in
+      official|openwrt) return ;;
+      *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '$INSTALL_MODE'. Proceeding with interactive prompt.\033[0m\n" ;;
     esac
   fi
 
@@ -599,8 +596,13 @@ get_access() {
 }
 
 adguardhome_main() {
-  check_system "$@" 
-  install_prompt "$@"
+  if [ -n "$REMOVE_MODE" ]; then
+    remove_adguardhome "$REMOVE_MODE"
+    exit 0
+  fi
+  
+  check_system
+  install_prompt
 
   printf "\033[1;34mUpdating package lists\033[0m\n"
   case "$PACKAGE_MANAGER" in
