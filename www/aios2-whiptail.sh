@@ -1201,22 +1201,25 @@ EOF
 
 view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_scripts breadcrumb
-    local menu_items i script_file script_id script_name choice selected_script script_breadcrumb
-    local scripts
+    local menu_items i script_id script_name choice selected_script script_breadcrumb
+    local configured_scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     tr_scripts=$(translate "tr-tui-view-script-list")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_scripts")
     
-    scripts=""
-    for f in "$CONFIG_DIR"/customscripts-*.sh; do
-        [ -f "$f" ] && scripts="${scripts}$(basename "$f")
+    # 設定済みのスクリプトを検索（script_vars_*.txt が存在するもの）
+    configured_scripts=""
+    for script_id in $(get_customscript_all_scripts); do
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            configured_scripts="${configured_scripts}${script_id}
 "
+        fi
     done
-    scripts=$(echo "$scripts" | grep -v '^$')
+    configured_scripts=$(echo "$configured_scripts" | grep -v '^$')
     
-    if [ -z "$scripts" ]; then
+    if [ -z "$configured_scripts" ]; then
         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
         return 0
     fi
@@ -1225,15 +1228,13 @@ view_selected_custom_scripts() {
         menu_items=""
         i=1
         
-        while read -r script_file; do
-            [ -z "$script_file" ] && continue
-            # customscripts-adguardhome.sh -> adguardhome
-            script_id=$(echo "$script_file" | sed 's/^customscripts-//;s/\.sh$//')
+        while read -r script_id; do
+            [ -z "$script_id" ] && continue
             script_name=$(get_customscript_name "$script_id")
             menu_items="$menu_items $i \"$script_name\""
             i=$((i+1))
         done <<EOF
-$scripts
+$configured_scripts
 EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
@@ -1243,15 +1244,14 @@ EOF
         fi
         
         if [ -n "$choice" ]; then
-            selected_script=$(echo "$scripts" | sed -n "${choice}p")
-            script_id=$(echo "$selected_script" | sed 's/^customscripts-//;s/\.sh$//')
-            script_name=$(get_customscript_name "$script_id")
+            selected_script=$(echo "$configured_scripts" | sed -n "${choice}p")
+            script_name=$(get_customscript_name "$selected_script")
             script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
             
-            if [ -f "$CONFIG_DIR/$selected_script" ]; then
-                show_textbox "$script_breadcrumb" "$CONFIG_DIR/$selected_script"
+            if [ -f "$CONFIG_DIR/script_vars_${selected_script}.txt" ]; then
+                show_textbox "$script_breadcrumb" "$CONFIG_DIR/script_vars_${selected_script}.txt"
             else
-                show_msgbox "$script_breadcrumb" "Script not found"
+                show_msgbox "$script_breadcrumb" "No variables configured"
             fi
         fi
     done
