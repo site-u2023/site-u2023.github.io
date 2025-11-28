@@ -1206,7 +1206,7 @@ EOF
 
 view_customscripts() {
     local tr_main_menu tr_review tr_customscripts breadcrumb
-    local menu_items i script_id script_name choice selected_script script_file
+    local menu_items i script_id script_name choice selected_script script_breadcrumb script_file
     local all_scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
@@ -1248,14 +1248,15 @@ EOF
         if [ -n "$choice" ]; then
             selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
             script_name=$(get_customscript_name "$selected_script")
+            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
             
-            # 生成されたスクリプトファイルを表示
             script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
             
             if [ -f "$script_file" ]; then
-                show_textbox "${breadcrumb}${BREADCRUMB_SEP}${script_name}" "$script_file"
+                cat "$script_file" > "$CONFIG_DIR/customscripts_view.txt"
+                show_textbox "$script_breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
             else
-                show_msgbox "${breadcrumb}${BREADCRUMB_SEP}${script_name}" "Script not configured yet: customscripts-${selected_script}.sh"
+                show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
             fi
         fi
     done
