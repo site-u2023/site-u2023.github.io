@@ -275,16 +275,17 @@ EOF
         selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
         
         local skip_inputs
-        skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-        
         if [ "$skip_inputs" != "true" ]; then
             if ! collect_script_inputs "$script_id" "$breadcrumb"; then
                 return 0
             fi
+        else
+            echo "MODE=$selected_option" > "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
         option_args=$(get_customscript_option_args "$script_id" "$selected_option")
         echo "$option_args" > "$CONFIG_DIR/script_args_${script_id}.txt"
+        echo "OPTION_ARGS='$option_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
     fi
 }
 
