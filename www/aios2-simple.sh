@@ -460,7 +460,7 @@ review_and_apply() {
                     fi
                 fi
                 ;;
-            view_selected_custom_packages|view_customfeeds)
+            view_selected_custom_packages|view_customfeeds|view_selected_custom_scripts)
                 $action
                 ;;
             apply)
