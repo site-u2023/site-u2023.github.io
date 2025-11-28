@@ -246,15 +246,9 @@ custom_scripts_selection() {
         return 0
     }
     
-    # 全カテゴリから全スクリプトをフラットに取得
-    local all_scripts="" cat_id script_id
-    for cat_id in $(get_customscript_categories); do
-        for script_id in $(get_customscript_scripts "$cat_id"); do
-            all_scripts="${all_scripts}${script_id}
-"
-        done
-    done
-    all_scripts=$(echo "$all_scripts" | grep -v '^$')
+    # 全スクリプトを直接取得
+    local all_scripts
+    all_scripts=$(get_customscript_all_scripts)
     
     if [ -z "$all_scripts" ]; then
         show_msgbox "$breadcrumb" "No custom scripts available"
@@ -1124,41 +1118,55 @@ view_customscripts() {
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customscripts")
     
     if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts configured"
+        show_msgbox "$breadcrumb" "No custom scripts available"
         return 0
     fi
     
-    show_menu_header "$breadcrumb"
+    local all_scripts
+    all_scripts=$(get_customscript_all_scripts)
     
-    echo "Custom Scripts Configuration:"
-    echo ""
-    echo "Source: ${CUSTOMSCRIPTS_JSON_URL}"
-    echo "Local: ${CUSTOMSCRIPTS_JSON}"
-    echo ""
-    
-    local categories cat_id cat_name scripts script_id script_name
-    categories=$(get_customscript_categories)
-    
-    while read -r cat_id; do
-        [ -z "$cat_id" ] && continue
-        cat_name=$(get_customscript_category_name "$cat_id")
-        echo "[${cat_name}]"
+    while true; do
+        show_menu_header "$breadcrumb"
         
-        scripts=$(get_customscript_scripts "$cat_id")
+        local i=1
         while read -r script_id; do
-            [ -z "$script_id" ] && continue
+            local script_name
             script_name=$(get_customscript_name "$script_id")
-            echo "  - ${script_name}"
-        done <<EOF2
-$scripts
-EOF2
-        echo ""
-    done <<EOF
-$categories
+            show_numbered_item "$i" "$script_name"
+            i=$((i+1))
+        done <<EOF
+$all_scripts
 EOF
-    
-    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
-    read -r _
+        
+        if [ -z "$all_scripts" ]; then
+            echo "No custom scripts available"
+        fi
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_script script_name script_breadcrumb script_file
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
+            script_name=$(get_customscript_name "$selected_script")
+            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
+            
+            script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
+            
+            if [ -f "$script_file" ]; then
+                show_textbox "$script_breadcrumb" "$script_file"
+            else
+                show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
+            fi
+        fi
+    done
 }
 
 view_selected_custom_packages() {
