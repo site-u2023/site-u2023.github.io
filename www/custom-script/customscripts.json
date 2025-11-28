@@ -28,7 +28,7 @@
         {
           "id": "web_port",
           "type": "number",
-          "label": "tr-tui-customscript-web-port",
+          "label": "tr-tui-customscript-webport",
           "default": "3000",
           "envVar": "WEB_PORT"
         }
