@@ -1201,7 +1201,7 @@ EOF
 
 view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_scripts breadcrumb
-    local menu_items i script_file script_name choice selected_script script_breadcrumb
+    local menu_items i script_file script_id script_name choice selected_script script_breadcrumb
     local scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
@@ -1209,8 +1209,12 @@ view_selected_custom_scripts() {
     tr_scripts=$(translate "tr-tui-view-script-list")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_scripts")
     
-    # 生成されたcustomscripts-*.shを検索
-    scripts=$(ls "$CONFIG_DIR"/customscripts-*.sh 2>/dev/null | xargs -n1 basename 2>/dev/null)
+    scripts=""
+    for f in "$CONFIG_DIR"/customscripts-*.sh; do
+        [ -f "$f" ] && scripts="${scripts}$(basename "$f")
+"
+    done
+    scripts=$(echo "$scripts" | grep -v '^$')
     
     if [ -z "$scripts" ]; then
         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
@@ -1222,9 +1226,10 @@ view_selected_custom_scripts() {
         i=1
         
         while read -r script_file; do
+            [ -z "$script_file" ] && continue
             # customscripts-adguardhome.sh -> adguardhome
-            script_name=$(echo "$script_file" | sed 's/^customscripts-//;s/\.sh$//')
-            script_name=$(get_customscript_name "$script_name")
+            script_id=$(echo "$script_file" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_id")
             menu_items="$menu_items $i \"$script_name\""
             i=$((i+1))
         done <<EOF
@@ -1239,8 +1244,8 @@ EOF
         
         if [ -n "$choice" ]; then
             selected_script=$(echo "$scripts" | sed -n "${choice}p")
-            script_name=$(echo "$selected_script" | sed 's/^customscripts-//;s/\.sh$//')
-            script_name=$(get_customscript_name "$script_name")
+            script_id=$(echo "$selected_script" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_id")
             script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
             
             if [ -f "$CONFIG_DIR/$selected_script" ]; then
@@ -1250,45 +1255,6 @@ EOF
             fi
         fi
     done
-}
-
-view_selected_custom_scripts() {
-    local tr_main_menu tr_review tr_script_list breadcrumb
-    local temp_view script_id var_file
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_script_list=$(translate "tr-tui-view-script-list")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_script_list")
-    
-    temp_view="$CONFIG_DIR/selected_scripts_view.txt"
-    : > "$temp_view"
-    
-    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts configured"
-        return 0
-    fi
-    
-    local has_scripts=0
-    
-    while read -r script_id; do
-        var_file="$CONFIG_DIR/script_vars_${script_id}.txt"
-        
-        if [ -f "$var_file" ]; then
-            cat "$var_file" >> "$temp_view"
-            has_scripts=1
-        fi
-    done <<EOF
-$(get_customscript_all_scripts)
-EOF
-    
-    if [ "$has_scripts" -eq 0 ]; then
-        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
-    else
-        show_textbox "$breadcrumb" "$temp_view"
-    fi
-    
-    rm -f "$temp_view"
 }
 
 main_menu() {
