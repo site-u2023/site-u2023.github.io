@@ -3,7 +3,7 @@
     {
       "id": "dns-blockers",
       "name": "DNS Blockers",
-      "class": "tr-customscript-dns-blockers",
+      "class": "tr-tui-customscript-dns-blockers",
       "description": "DNS-based ad blocking and privacy protection",
       "scripts": [
         {
@@ -20,21 +20,21 @@
             {
               "id": "username",
               "type": "text",
-              "label": "tr-customscript-username",
+              "label": "tr-tui-customscript-username",
               "default": "admin",
               "envVar": "AGH_USER"
             },
             {
               "id": "password",
               "type": "password",
-              "label": "tr-customscript-password",
+              "label": "tr-tui-customscript-password",
               "minLength": 8,
               "envVar": "AGH_PASS"
             },
             {
               "id": "web_port",
               "type": "number",
-              "label": "tr-customscript-web-port",
+              "label": "tr-tui-customscript-web-port",
               "default": "3000",
               "envVar": "WEB_PORT"
             }
@@ -42,17 +42,17 @@
           "options": [
             {
               "id": "openwrt",
-              "label": "tr-customscript-install-openwrt",
+              "label": "tr-tui-customscript-install-openwrt",
               "args": "openwrt"
             },
             {
               "id": "official",
-              "label": "tr-customscript-install-official",
+              "label": "tr-tui-customscript-install-official",
               "args": "official"
             },
             {
               "id": "remove",
-              "label": "tr-customscript-remove",
+              "label": "tr-tui-customscript-remove",
               "args": "remove auto",
               "skipInputs": true
             }
