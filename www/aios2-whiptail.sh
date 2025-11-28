@@ -244,7 +244,8 @@ collect_script_inputs() {
         
         [ -z "$value" ] && value="$input_default"
         
-        echo "${input_envvar}='${value}'" >> "$CONFIG_DIR/script_vars.tmp"
+        # 修正：クォートなしの代入形式に変更
+        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars.tmp"
     done
     
     return 0
@@ -255,23 +256,32 @@ generate_customscript_file() {
     local script_file="$2"
     local option_args="$3"
     local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
+    local script_url template_path
     
+    script_url="${BASE_URL}/custom-script/${script_file}"
+    template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+    
+    # テンプレートをダウンロード
+    if ! __download_file_core "$script_url" "$template_path"; then
+        echo "[ERROR] Failed to download script template: $script_file" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    # テンプレートから生成（setup.sh や customfeeds.sh と同じ方式）
     {
-        echo "#!/bin/sh"
-        echo "# customscripts-${script_id}.sh (priority: 1024)"
+        sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
         
         if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
-            while read -r line; do
-                echo "export $line"
-            done < "$CONFIG_DIR/script_vars.tmp"
+            cat "$CONFIG_DIR/script_vars.tmp"
             rm -f "$CONFIG_DIR/script_vars.tmp"
         fi
         
-        echo ""
-        echo "sh \"\$CONFIG_DIR/${script_file}\" $option_args"
+        sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
     } > "$output_file"
     
     chmod +x "$output_file"
+    
+    echo "[DEBUG] Generated customscript: $output_file" >> "$CONFIG_DIR/debug.log"
 }
 
 custom_script_options() {
