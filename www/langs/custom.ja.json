@@ -217,7 +217,8 @@
     "tr-tui-customscript-resource-ng": "リソースが不足しています",
     "tr-tui-customscript-install-openwrt": "OpenWrtパッケージのインストール",
     "tr-tui-customscript-install-official": "公式バイナリのインストール",
-    "tr-tui-customscript-remove": "AdGuard Homeを削除",
+    "tr-tui-customscript-adguardhome": "アドガードホーム"
+    "tr-tui-customscript-remove": "アドガードホームを削除",
     "tr-tui-customscript-agh-user": "ユーザーID",
     "tr-tui-customscript-agh-password": "パスワード",
     "tr-tui-customscript-agh-webport": "WEBポート",
