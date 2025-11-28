@@ -1375,7 +1375,7 @@ generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
     local tpl_custom enable_var
     local script_id script_file template_path script_url
-    
+   
     # enableVar処理: 選択されたパッケージのenableVarをSETUP_VARSに追記
     if [ -s "$SELECTED_PACKAGES" ]; then
         while read -r pkg_id; do
@@ -1387,82 +1387,83 @@ generate_files() {
             fi
         done < "$SELECTED_PACKAGES"
     fi
-    
+   
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
-    
+   
     if [ -f "$TPL_POSTINST" ]; then
         {
             sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$TPL_POSTINST"
-            
+           
             if [ -s "$SELECTED_PACKAGES" ]; then
                 pkgs=$(cat "$SELECTED_PACKAGES" | tr '\n' ' ' | sed 's/ $//')
                 echo "PACKAGES=\"${pkgs}\""
             else
                 echo "PACKAGES=\"\""
             fi
-            
+           
             sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$TPL_POSTINST"
         } > "$CONFIG_DIR/postinst.sh"
         chmod +x "$CONFIG_DIR/postinst.sh"
     fi
-    
+   
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
-    
+   
     if [ -f "$TPL_SETUP" ]; then
         {
             sed -n '1,/^# BEGIN_VARS/p' "$TPL_SETUP"
-            
+           
             if [ -s "$SETUP_VARS" ]; then
                 cat "$SETUP_VARS"
             fi
-            
+           
             sed -n '/^# END_VARS/,$p' "$TPL_SETUP"
         } > "$CONFIG_DIR/setup.sh"
         chmod +x "$CONFIG_DIR/setup.sh"
     fi
-    
+   
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         while read -r cat_id; do
             template_url=$(get_customfeed_template_url "$cat_id")
-            
+           
             [ -z "$template_url" ] && continue
-            
+           
             tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
-            
+           
             fetch_cached_template "$template_url" "$tpl_custom"
-            
+           
             [ ! -f "$tpl_custom" ] && continue
             api_url=$(get_customfeed_api_base "$cat_id")
             download_url=$(get_customfeed_download_base "$cat_id")
-            
+           
             temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
             : > "$temp_pkg_file"
-            
+           
             while read -r pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pattern=$(get_customfeed_package_pattern "$pkg_id")
                     echo "$pattern"
                 fi
-            done <<EOF2 > "$temp_pkg_file"
+            done <<EOF2
 $(get_category_packages "$cat_id")
 EOF2
-            
+            > "$temp_pkg_file"
+           
             selected_pkgs=""
             if [ -s "$temp_pkg_file" ]; then
                 selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
             fi
-            
+           
             {
                 sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$tpl_custom"
-                
+               
                 echo "PACKAGES=\"${selected_pkgs}\""
                 echo "API_URL=\"${api_url}\""
                 echo "DOWNLOAD_BASE_URL=\"${download_url}\""
                 echo "RUN_OPKG_UPDATE=\"0\""
-                
+               
                 sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$tpl_custom"
             } > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-            
+           
             chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
             rm -f "$temp_pkg_file"
         done <<EOF3
@@ -1476,60 +1477,41 @@ EOF3
         } > "$CONFIG_DIR/customfeeds-none.sh"
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
-    
+   
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
         echo "[DEBUG] Starting customscripts generation" >> "$CONFIG_DIR/debug.log"
         while read -r script_id; do
             echo "[DEBUG] Processing script_id: $script_id" >> "$CONFIG_DIR/debug.log"
-            
+           
             if [ ! -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
                 echo "[DEBUG] No script_args file for $script_id, skipping" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
-            
+           
             script_file=$(get_customscript_file "$script_id")
             echo "[DEBUG] script_file: $script_file" >> "$CONFIG_DIR/debug.log"
             [ -z "$script_file" ] && continue
-            
+           
             script_url="${BASE_URL}/custom-script/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
+           
             fetch_cached_template "$script_url" "$template_path"
-            
-            if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        echo "[DEBUG] Starting customscripts generation" >> "$CONFIG_DIR/debug.log"
-        while read -r script_id; do
-            echo "[DEBUG] Processing script_id: $script_id" >> "$CONFIG_DIR/debug.log"
-            
-            if [ ! -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
-                echo "[DEBUG] No script_args file for $script_id, skipping" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-            
-            script_file=$(get_customscript_file "$script_id")
-            echo "[DEBUG] script_file: $script_file" >> "$CONFIG_DIR/debug.log"
-            [ -z "$script_file" ] && continue
-            
-            script_url="${BASE_URL}/custom-script/${script_file}"
-            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
-            fetch_cached_template "$script_url" "$template_path"
-            
+           
             if [ -f "$template_path" ]; then
                 echo "[DEBUG] Template found, generating script" >> "$CONFIG_DIR/debug.log"
                 {
                     sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
-                    
+                   
                     if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                         cat "$CONFIG_DIR/script_vars_${script_id}.txt"
                     fi
-                    
+                   
                     sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path" | sed '$d'
-                    
+                   
                     option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
                     echo "adguardhome_main ${option_args}"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                
+               
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
                 echo "[DEBUG] Script generated successfully" >> "$CONFIG_DIR/debug.log"
             fi
