@@ -362,14 +362,18 @@ EOF
                     if ! collect_script_inputs "$script_id" "$breadcrumb"; then
                         return 0
                     fi
+                    
+                    # 変数ファイルをリネーム保存（generate_files()で使用）
+                    if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
+                        mv "$CONFIG_DIR/script_vars.tmp" "$CONFIG_DIR/script_vars_${script_id}.tmp"
+                    fi
                 fi
                 
                 option_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                script_file=$(get_customscript_file "$script_id")
                 
-                if [ -n "$script_file" ]; then
-                    generate_customscript_file "$script_id" "$script_file" "$option_args"
-                fi
+                # フラグファイルとして空のスクリプトを作成
+                # （実際の内容は generate_files() で生成される）
+                touch "$CONFIG_DIR/customscripts-${script_id}.sh"
                 return 0
             fi
         fi
