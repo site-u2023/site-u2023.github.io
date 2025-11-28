@@ -1099,12 +1099,12 @@ generate_customscript_file() {
         fi
         
         echo ""
-        echo "sh \"\$CONFIG_DIR/${script_file}\" $option_args"
+        echo "sh \"\${CONFIG_DIR}/${script_file}\" ${option_args}"
     } > "$output_file"
     
     chmod +x "$output_file"
     
-    echo "[DEBUG] Generated customscript: $output_file" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Generated customscript: $output_file with args: ${option_args}" >> "$CONFIG_DIR/debug.log"
 }
 
 check_script_requirements() {
