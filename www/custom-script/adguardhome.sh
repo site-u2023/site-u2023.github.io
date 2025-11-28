@@ -582,8 +582,8 @@ adguardhome_main() {
 
   printf "\033[1;34mUpdating package lists\033[0m\n"
   case "$PACKAGE_MANAGER" in
-    opkg) opkg update >/dev/null 2>&1 ;;
-    apk) apk update >/dev/null 2>&1 ;;
+    opkg) opkg update || { printf "\033[1;31mPackage update failed\033[0m\n"; exit 1; } ;;
+    apk) apk update || { printf "\033[1;31mPackage update failed\033[0m\n"; exit 1; } ;;
   esac
   
   install_dependencies || {
