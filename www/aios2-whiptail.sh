@@ -185,21 +185,14 @@ custom_scripts_selection() {
     
     local tr_main_menu tr_custom_scripts breadcrumb
     local menu_items i script_id script_name choice selected_script
-    local all_scripts cat_id
+    local all_scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_scripts=$(translate "tr-tui-custom-scripts")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
     
-    # 全カテゴリから全スクリプトをフラットに取得
-    all_scripts=""
-    for cat_id in $(get_customscript_categories); do
-        for script_id in $(get_customscript_scripts "$cat_id"); do
-            all_scripts="${all_scripts}${script_id}
-"
-        done
-    done
-    all_scripts=$(echo "$all_scripts" | grep -v '^$')
+    # 全スクリプトを直接取得
+    all_scripts=$(get_customscript_all_scripts)
     
     if [ -z "$all_scripts" ]; then
         show_msgbox "$breadcrumb" "No custom scripts available"
@@ -1213,6 +1206,8 @@ EOF
 
 view_customscripts() {
     local tr_main_menu tr_review tr_customscripts breadcrumb
+    local menu_items i script_id script_name choice selected_script script_file
+    local all_scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
@@ -1224,35 +1219,46 @@ view_customscripts() {
         return 0
     fi
     
-    local info_text=""
-    info_text="Custom Scripts Configuration:\n\n"
-    info_text="${info_text}Source: ${CUSTOMSCRIPTS_JSON_URL}\n"
-    info_text="${info_text}Local: ${CUSTOMSCRIPTS_JSON}\n\n"
+    # 全スクリプトを直接取得
+    all_scripts=$(get_customscript_all_scripts)
     
-    local categories cat_id cat_name scripts script_id script_name
-    categories=$(get_customscript_categories)
+    if [ -z "$all_scripts" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts available"
+        return 0
+    fi
     
-    while read -r cat_id; do
-        [ -z "$cat_id" ] && continue
-        cat_name=$(get_customscript_category_name "$cat_id")
-        info_text="${info_text}[${cat_name}]\n"
+    while true; do
+        menu_items="" 
+        i=1
         
-        scripts=$(get_customscript_scripts "$cat_id")
         while read -r script_id; do
-            [ -z "$script_id" ] && continue
             script_name=$(get_customscript_name "$script_id")
-            info_text="${info_text}  - ${script_name}\n"
-        done <<EOF2
-$scripts
-EOF2
-        info_text="${info_text}\n"
-    done <<EOF
-$categories
+            menu_items="$menu_items $i \"$script_name\""
+            i=$((i+1))
+        done <<EOF
+$all_scripts
 EOF
-    
-    printf "%b" "$info_text" > "$CONFIG_DIR/customscripts_view.txt"
-    show_textbox "$breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
-    rm -f "$CONFIG_DIR/customscripts_view.txt"
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
+            script_name=$(get_customscript_name "$selected_script")
+            
+            # 生成されたスクリプトファイルを表示
+            script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
+            
+            if [ -f "$script_file" ]; then
+                show_textbox "${breadcrumb}${BREADCRUMB_SEP}${script_name}" "$script_file"
+            else
+                show_msgbox "${breadcrumb}${BREADCRUMB_SEP}${script_name}" "Script not configured yet: customscripts-${selected_script}.sh"
+            fi
+        fi
+    done
 }
 
 main_menu() {
