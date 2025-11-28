@@ -359,10 +359,10 @@ EOF
                     if ! collect_script_inputs "$script_id" "$breadcrumb"; then
                         return 0
                     fi
+                else
+                    echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
                 
-                option_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                echo "$option_args" > "$CONFIG_DIR/script_args_${script_id}.txt"
                 return 0
             fi
         fi
