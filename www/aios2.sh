@@ -1469,12 +1469,8 @@ EOF3
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
     
-    # customscripts-*.sh の生成
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        for script_vars_file in "$CONFIG_DIR"/script_vars_*.tmp; do
-            [ -f "$script_vars_file" ] || continue
-            
-            script_id=$(basename "$script_vars_file" .tmp | sed 's/^script_vars_//')
+        while read -r script_id; do
             script_file=$(get_customscript_file "$script_id")
             
             [ -z "$script_file" ] && continue
@@ -1488,15 +1484,18 @@ EOF3
                 {
                     sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
                     
-                    cat "$script_vars_file"
+                    if [ -f "$CONFIG_DIR/script_vars_${script_id}.tmp" ]; then
+                        cat "$CONFIG_DIR/script_vars_${script_id}.tmp"
+                    fi
                     
                     sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-                rm -f "$script_vars_file"
             fi
-        done
+        done <<SCRIPTS
+$(get_customscript_all_scripts)
+SCRIPTS
     fi
 }
 
