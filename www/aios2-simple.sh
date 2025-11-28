@@ -1110,6 +1110,63 @@ EOF
     done
 }
 
+view_selected_custom_scripts() {
+    local tr_main_menu tr_review tr_scripts breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_scripts=$(translate "tr-tui-view-script-list")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_scripts")
+    
+    # 生成されたcustomscripts-*.shを検索
+    local scripts
+    scripts=$(ls "$CONFIG_DIR"/customscripts-*.sh 2>/dev/null | xargs -n1 basename 2>/dev/null)
+    
+    if [ -z "$scripts" ]; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
+        return 0
+    fi
+    
+    while true; do
+        show_menu_header "$breadcrumb"
+        
+        local i=1
+        while read -r script_file; do
+            local script_name
+            script_name=$(echo "$script_file" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_name")
+            show_numbered_item "$i" "$script_name"
+            i=$((i+1))
+        done <<EOF
+$scripts
+EOF
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_script script_name script_breadcrumb
+            selected_script=$(echo "$scripts" | sed -n "${choice}p")
+            script_name=$(echo "$selected_script" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_name")
+            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
+            
+            if [ -f "$CONFIG_DIR/$selected_script" ]; then
+                show_textbox "$script_breadcrumb" "$CONFIG_DIR/$selected_script"
+            else
+                show_msgbox "$script_breadcrumb" "Script not found"
+            fi
+        fi
+    done
+}
+
 view_selected_custom_packages() {
     local tr_main_menu tr_review tr_custom_packages breadcrumb
     
