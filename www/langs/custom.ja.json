@@ -210,7 +210,7 @@
     "tr-tui-view-customscripts": "customscripts.sh",
     "tr-customscript-dns-blockers": "DNSブロッカー",
     "tr-customscript-adguardhome": "AdGuard Home",
-    "tr-customscript-install-openwrt": "OpenWrtリポジトリからインストール",
-    "tr-customscript-install-official": "公式バイナリをGitHubからインストール",
+    "tr-customscript-install-openwrt": "OpenWrtパッケージのインストール",
+    "tr-customscript-install-official": "公式バイナリのインストール",
     "tr-customscript-remove": "AdGuard Homeを削除"
 }
