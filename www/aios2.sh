@@ -1474,11 +1474,6 @@ EOF3
         while read -r script_id; do
             echo "[DEBUG] Processing script_id: $script_id" >> "$CONFIG_DIR/debug.log"
             
-            if [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                echo "[DEBUG] No script_args file for $script_id, skipping" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-            
             script_file=$(get_customscript_file "$script_id")
             echo "[DEBUG] script_file: $script_file" >> "$CONFIG_DIR/debug.log"
             [ -z "$script_file" ] && continue
