@@ -1483,10 +1483,30 @@ EOF3
             
             [ -z "$script_file" ] && continue
             
-            # 引数ファイルがある場合のみ生成
-            if [ -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
-                option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
-                generate_customscript_file "$script_id" "$script_file" "$option_args"
+            script_url="${BASE_URL}/custom-script/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            
+            fetch_cached_template "$script_url" "$template_path"
+            
+            if [ -f "$template_path" ]; then
+                {
+                    sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
+                    
+                    if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                        cat "$CONFIG_DIR/script_vars_${script_id}.txt"
+                    fi
+                    
+                    sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path" | sed '$d'
+                    
+                    if [ -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
+                        option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
+                        echo "adguardhome_main ${option_args}"
+                    else
+                        echo "adguardhome_main \"\$@\""
+                    fi
+                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                
+                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
             fi
         done <<SCRIPTS
 $(get_customscript_all_scripts)
@@ -1495,150 +1515,6 @@ SCRIPTS
 }
 
 # Main Entry Point
-
-XXX_aios2_main() {
-    clear
-    print_banner
-    
-    init
-    echo "Fetching config.js"
-    
-    detect_package_manager
-    echo "Detecting package manager: $PKG_MGR"
-    
-    echo "Fetching auto-config"
-    get_extended_device_info
-    
-    echo "Fetching essential files in parallel"
-    
-    TIME_START=$(cut -d' ' -f1 /proc/uptime)
-    
-    (
-        if ! download_setup_json; then
-            echo "Error: Failed to download setup.json" >&2
-            exit 1
-        fi
-    ) &
-    SETUP_PID=$!
-    
-    (
-        if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
-            echo "Warning: Using English as fallback language" >&2
-        fi
-    ) &
-    LANG_PID=$!
-    
-    (
-        if ! download_postinst_json; then
-            echo "ERROR: Failed to download postinst.json." >&2
-            exit 1
-        fi
-    ) &
-    POSTINST_PID=$!
-    
-    (
-        if ! download_review_json; then
-            echo "Warning: Failed to download review.json" >&2
-        fi
-    ) &
-    REVIEW_PID=$!
-    
-    (
-        if ! download_customfeeds_json; then
-            echo "Warning: Failed to download customfeeds.json" >&2
-        fi
-    ) &
-    CUSTOMFEEDS_PID=$!
-    
-    (
-        if ! download_customscripts_json; then
-            echo "Warning: Failed to download customscripts.json" >&2
-        fi
-    ) &
-    CUSTOMSCRIPTS_PID=$!
-    
-    prefetch_templates &
-    TEMPLATES_PID=$!
-    
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    
-    wait $LANG_PID
-    
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    
-    wait $REVIEW_PID
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    
-    TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
-    
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
-    
-    echo ""
-    echo "Parallel download finished in ${ELAPSED_TIME} seconds."
-    echo "Language detected: ${AUTO_LANGUAGE:-en}"
-    echo ""
-
-    if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
-        echo "Warning: Failed to fetch auto-config API"
-        echo "   https://www.cloudflarestatus.com/"
-        echo ""
-    fi
-    
-    if [ $SETUP_STATUS -ne 0 ]; then
-        echo "Cannot continue without setup.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    if [ $POSTINST_STATUS -ne 0 ]; then
-        echo "Cannot continue without postinst.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    load_default_packages
-
-    {
-        echo "connection_type='auto'"
-        echo "wifi_mode='standard'"
-        echo "net_optimizer='auto'"
-        echo "enable_dnsmasq='auto'"
-    } >> "$SETUP_VARS"
-    
-    if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
-        if [ -n "$MAPE_GUA_PREFIX" ]; then
-            echo "mape_type='gua'" >> "$SETUP_VARS"
-            echo "[DEBUG] Set mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
-        else
-            echo "mape_type='pd'" >> "$SETUP_VARS"
-            echo "[DEBUG] Set mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-
-    if [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR_TYPE" ]; then
-        echo "dslite_aftr_type='$DSLITE_AFTR_TYPE'" >> "$SETUP_VARS"
-        [ -n "$DSLITE_JURISDICTION" ] && echo "dslite_jurisdiction='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
-    fi
-    
-    for cat_id in $(get_setup_categories); do
-        auto_add_conditional_packages "$cat_id"
-    done
-
-    echo "Fetching UI modules"
-    echo ""
-    
-    select_ui_mode
-
-    . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-    aios2_${UI_MODE}_main
-}
 
 aios2_main() {
     clear
