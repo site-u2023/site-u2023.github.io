@@ -161,7 +161,6 @@
     "tr-tui-ok": "OK",
     "tr-tui-decide": "Decide",
     "tr-tui-cancel": "Cancel",
-    "tr-tui-choice": "Choice",
     
     "tr-tui-view-device-info": "View Device Information",
     "tr-tui-view-package-list": "View Configured Packages",
@@ -186,7 +185,6 @@
     "tr-tui-installing-custom-packages": "Installing custom packages",
     "tr-tui-applying-config": "Applying system configuration",
     "tr-tui-config-applied": "Configuration applied successfully!",
-    "tr-tui-reboot-question": "Reboot now?",
     "tr-tui-auto-config-applied": "Auto-configuration applied!",
     "tr-tui-use-auto-config": "Use this auto-detected configuration?",
     
