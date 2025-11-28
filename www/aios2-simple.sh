@@ -1198,7 +1198,7 @@ view_selected_custom_scripts() {
     has_scripts=0
     
     while read -r script_id; do
-        var_file="$CONFIG_DIR/script_vars_${script_id}.tmp"
+        var_file="$CONFIG_DIR/script_vars_${script_id}.txt"
         
         if [ -f "$var_file" ]; then
             cat "$var_file"
