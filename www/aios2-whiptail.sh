@@ -1241,20 +1241,25 @@ EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
-        if [ -n "$choice" ]; then
-        selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
-        script_name=$(get_customscript_name "$selected_script")
-        script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
-        
-        script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
-        
-        if [ -f "$script_file" ]; then
-            cat "$script_file" > "$CONFIG_DIR/customscripts_view.txt"
-            show_textbox "$script_breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
-        else
-            show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
+        if ! [ $? -eq 0 ]; then
+            return 0
         fi
-    fi
+        
+        if [ -n "$choice" ]; then
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
+            script_name=$(get_customscript_name "$selected_script")
+            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
+            
+            script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
+            
+            if [ -f "$script_file" ]; then
+                cat "$script_file" > "$CONFIG_DIR/customscripts_view.txt"
+                show_textbox "$script_breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
+            else
+                show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
+            fi
+        fi
+    done
 }
 
 main_menu() {
