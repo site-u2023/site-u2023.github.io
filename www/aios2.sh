@@ -3,7 +3,9 @@
 # OpenWrt Device Setup Tool - CLI Version
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
-VERSION="R7.1128.1036"
+
+VERSION="R7.1128.1201"
+
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -569,10 +571,9 @@ get_setup_categories() {
 }
 
 get_setup_category_title() {
-    local title
-    local class
-    title=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null)
-    class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null)
+    local title class
+    title=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].title" 2>/dev/null | head -1)
+    class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].class" 2>/dev/null | head -1)
     
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
         translate "$class"
@@ -587,8 +588,8 @@ get_setup_category_items() {
 
 get_setup_item_type() {
     local item_id="$1"
-    
     local result
+    
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
@@ -600,9 +601,8 @@ get_setup_item_type() {
 
 get_setup_item_label() {
     local item_id="$1"
+    local label class
     
-    local label
-    local class
     label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].label" 2>/dev/null | head -1)
     class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
     
@@ -626,6 +626,7 @@ get_setup_item_label() {
 get_setup_item_variable() {
     local item_id="$1"
     local result
+    
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
@@ -638,6 +639,7 @@ get_setup_item_variable() {
 get_setup_item_default() {
     local item_id="$1"
     local result
+    
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
@@ -650,6 +652,7 @@ get_setup_item_default() {
 get_setup_item_api_source() {
     local item_id="$1"
     local result
+    
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].apiSource" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
@@ -662,12 +665,13 @@ get_setup_item_api_source() {
 get_api_value() {
     local api_source="$1"
     [ -z "$api_source" ] && return 1
-    jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${api_source}" 2>/dev/null
+    jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${api_source}" 2>/dev/null | head -1
 }
 
 get_setup_item_field_type() {
     local item_id="$1"
     local result
+    
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].fieldType" 2>/dev/null | head -1)
     
     if [ -z "$result" ]; then
@@ -679,12 +683,12 @@ get_setup_item_field_type() {
 
 get_setup_item_options() {
     local item_id="$1"
-    
     local result
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
+    
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null | grep -v '^$')
     
     if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null | grep -v '^$')
     fi
     
     echo "$result"
@@ -693,9 +697,8 @@ get_setup_item_options() {
 get_setup_item_option_label() {
     local item_id="$1"
     local value="$2"
+    local label class
     
-    local label
-    local class
     label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].label" 2>/dev/null | head -1)
     class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[@.value='$value'].class" 2>/dev/null | head -1)
     
@@ -719,14 +722,14 @@ get_categories() {
 
 get_category_name() {
     local cat_id="$1"
-    local name
-    local class
-    name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
-    class=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+    local name class
+    
+    name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null | head -1)
+    class=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null | head -1)
     
     if [ -z "$name" ]; then
-        name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null)
-        class=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null)
+        name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].name" 2>/dev/null | head -1)
+        class=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].class" 2>/dev/null | head -1)
     fi
     
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
@@ -739,30 +742,33 @@ get_category_name() {
 get_category_desc() {
     local cat_id="$1"
     local desc
-    desc=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
-    [ -z "$desc" ] && desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null)
+    
+    desc=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null | head -1)
+    [ -z "$desc" ] && desc=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].description" 2>/dev/null | head -1)
     echo "$desc"
 }
 
 get_category_hidden() {
     local cat_id="$1"
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | grep -q . && echo "false" && return
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | head -1 | grep -q . && echo "false" && return
     local hidden
-    hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null)
+    hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null | head -1)
     echo "$hidden"
 }
 
 get_category_packages() {
     local cat_id="$1"
     local pkgs
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null)
+    
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     echo "$pkgs"
 }
 
 get_package_name() {
     local pkg_id="$1"
     local name
+    
     name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     [ -z "$name" ] && name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     echo "$name"
@@ -771,6 +777,7 @@ get_package_name() {
 get_package_checked() {
     local pkg_id="$1"
     local checked
+    
     checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     echo "$checked"
@@ -779,6 +786,7 @@ get_package_checked() {
 get_package_enablevar() {
     local pkg_id="$1"
     local enable_var
+    
     enable_var=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
     [ -z "$enable_var" ] && enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
     echo "$enable_var"
@@ -863,16 +871,16 @@ get_customfeed_package_restart_service() {
 }
 
 get_customfeed_api_base() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].api_base" 2>/dev/null
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].api_base" 2>/dev/null | head -1
 }
 
 get_customfeed_download_base() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null | head -1
 }
 
 get_customfeed_template_path() {
     local cat_id="$1"
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].template_path" 2>/dev/null
+    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].template_path" 2>/dev/null | head -1
 }
 
 get_customfeed_template_url() {
@@ -899,22 +907,23 @@ get_customscript_all_scripts() {
 get_customscript_name() {
     local script_id="$1"
     local class
-    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].class" 2>/dev/null)
+    
+    class=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].class" 2>/dev/null | head -1)
     if [ -n "$class" ]; then
         translate "$class"
     else
-        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].name" 2>/dev/null
+        jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].name" 2>/dev/null | head -1
     fi
 }
 
 get_customscript_file() {
     local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].script" 2>/dev/null
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].script" 2>/dev/null | head -1
 }
 
 get_customscript_options() {
     local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[*].id" 2>/dev/null
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[*].id" 2>/dev/null | grep -v '^$'
 }
 
 get_customscript_option_label() {
@@ -931,7 +940,7 @@ get_customscript_option_label() {
         idx=$((idx+1))
     done
     
-    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].label" 2>/dev/null)
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].label" 2>/dev/null | head -1)
     translate "$label"
 }
 
@@ -949,7 +958,45 @@ get_customscript_option_args() {
         idx=$((idx+1))
     done
     
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
+}
+
+get_customscript_option_skip_inputs() {
+    local script_id="$1"
+    local option_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
+}
+
+get_customscript_inputs() {
+    local script_id="$1"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[*].id" 2>/dev/null | grep -v '^$'
+}
+
+get_customscript_input_label() {
+    local script_id="$1"
+    local input_id="$2"
+    local label
+    
+    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].label" 2>/dev/null | head -1)
+    translate "$label"
+}
+
+get_customscript_input_default() {
+    local script_id="$1"
+    local input_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].default" 2>/dev/null | head -1
+}
+
+get_customscript_input_envvar() {
+    local script_id="$1"
+    local input_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1
+}
+
+get_customscript_requirement() {
+    local script_id="$1"
+    local req_key="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null | head -1
 }
 
 is_adguardhome_installed() {
@@ -986,43 +1033,6 @@ EOF
     esac
     
     echo "$filtered" | grep -v '^$'
-}
-
-get_customscript_option_skip_inputs() {
-    local script_id="$1"
-    local option_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null
-}
-
-get_customscript_inputs() {
-    local script_id="$1"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[*].id" 2>/dev/null
-}
-
-get_customscript_input_label() {
-    local script_id="$1"
-    local input_id="$2"
-    local label
-    label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].label" 2>/dev/null)
-    translate "$label"
-}
-
-get_customscript_input_default() {
-    local script_id="$1"
-    local input_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].default" 2>/dev/null
-}
-
-get_customscript_input_envvar() {
-    local script_id="$1"
-    local input_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null
-}
-
-get_customscript_requirement() {
-    local script_id="$1"
-    local req_key="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null
 }
 
 check_script_requirements() {
