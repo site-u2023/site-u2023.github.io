@@ -590,7 +590,9 @@ adguardhome_main() {
     printf "\033[1;31mFailed to install dependencies. Aborting.\033[0m\n"
     exit 1
   }
-  prompt_credentials
+  if [ -z "$AGH_USER" ] || [ -z "$AGH_PASS" ]; then
+    prompt_credentials
+  fi
   generate_password_hash || {
     printf "\033[1;31mFailed to generate password hash. Aborting.\033[0m\n"
     exit 1
