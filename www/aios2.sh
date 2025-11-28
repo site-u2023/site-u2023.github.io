@@ -1366,6 +1366,7 @@ EOF
 generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
     local tpl_custom enable_var
+    local script_id script_file template_path script_url
     
     # enableVar処理: 選択されたパッケージのenableVarをSETUP_VARSに追記
     if [ -s "$SELECTED_PACKAGES" ]; then
@@ -1423,7 +1424,6 @@ generate_files() {
             fetch_cached_template "$template_url" "$tpl_custom"
             
             [ ! -f "$tpl_custom" ] && continue
-
             api_url=$(get_customfeed_api_base "$cat_id")
             download_url=$(get_customfeed_download_base "$cat_id")
             
@@ -1467,6 +1467,36 @@ EOF3
             echo "exit 0"
         } > "$CONFIG_DIR/customfeeds-none.sh"
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
+    fi
+    
+    # customscripts-*.sh の生成
+    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
+        for script_vars_file in "$CONFIG_DIR"/script_vars_*.tmp; do
+            [ -f "$script_vars_file" ] || continue
+            
+            script_id=$(basename "$script_vars_file" .tmp | sed 's/^script_vars_//')
+            script_file=$(get_customscript_file "$script_id")
+            
+            [ -z "$script_file" ] && continue
+            
+            script_url="${BASE_URL}/custom-script/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            
+            fetch_cached_template "$script_url" "$template_path"
+            
+            if [ -f "$template_path" ]; then
+                {
+                    sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
+                    
+                    cat "$script_vars_file"
+                    
+                    sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
+                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                
+                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                rm -f "$script_vars_file"
+            fi
+        done
     fi
 }
 
