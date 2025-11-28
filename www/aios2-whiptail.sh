@@ -225,6 +225,62 @@ EOF
     fi
 }
 
+collect_script_inputs() {
+    local script_id="$1"
+    local breadcrumb="$2"
+    local inputs input_id input_label input_default input_envvar value
+    
+    inputs=$(get_customscript_inputs "$script_id")
+    
+    for input_id in $inputs; do
+        input_label=$(get_customscript_input_label "$script_id" "$input_id")
+        input_default=$(get_customscript_input_default "$script_id" "$input_id")
+        input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+        
+        # LAN_ADDRの場合は自動取得値を初期値に
+        if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
+            input_default="$LAN_ADDR"
+        fi
+        
+        value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
+        
+        if ! [ $? -eq 0 ]; then
+            rm -f "$CONFIG_DIR/script_vars.tmp"
+            return 1
+        fi
+        
+        [ -z "$value" ] && value="$input_default"
+        
+        echo "${input_envvar}='${value}'" >> "$CONFIG_DIR/script_vars.tmp"
+    done
+    
+    return 0
+}
+
+generate_customscript_file() {
+    local script_id="$1"
+    local script_file="$2"
+    local option_args="$3"
+    local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
+    
+    {
+        echo "#!/bin/sh"
+        echo "# customscripts-${script_id}.sh (priority: 1024)"
+        
+        if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
+            while read -r line; do
+                echo "export $line"
+            done < "$CONFIG_DIR/script_vars.tmp"
+            rm -f "$CONFIG_DIR/script_vars.tmp"
+        fi
+        
+        echo ""
+        echo "sh \"\$CONFIG_DIR/${script_file}\" $option_args"
+    } > "$output_file"
+    
+    chmod +x "$output_file"
+}
+
 custom_script_options() {
     local script_id="$1"
     local parent_breadcrumb="$2"
