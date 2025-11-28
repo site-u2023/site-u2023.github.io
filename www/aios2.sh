@@ -1499,6 +1499,12 @@ EOF3
                     sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
+                # 引数を追加
+                if [ -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
+                    option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
+                    sed -i "s/adguardhome_main \"\$@\"/adguardhome_main ${option_args}/" "$CONFIG_DIR/customscripts-${script_id}.sh"
+                fi
+                
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
             fi
         done <<SCRIPTS
