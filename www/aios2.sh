@@ -4,8 +4,9 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1128.1524"
+VERSION="R7.1128.1945"
 
+SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
@@ -258,23 +259,13 @@ install_package() {
 }
 
 init() {
-    local script_name
-    script_name=$(basename "$0")
     for pid in $(pidof "$script_name" 2>/dev/null); do
         [ "$pid" != "$$" ] && kill "$pid" 2>/dev/null
     done
     
     mkdir -p "$CONFIG_DIR"
 
-    rm -f "$CONFIG_DIR"/config.js
-    rm -f "$CONFIG_DIR"/*.json
-    rm -f "$CONFIG_DIR"/*.txt
-    rm -f "$CONFIG_DIR"/*.tmp
-    rm -f "$CONFIG_DIR"/*.log
-    rm -f "$CONFIG_DIR"/customfeeds-*.sh
-    rm -f "$CONFIG_DIR"/customscripts-*.sh
-    rm -f "$CONFIG_DIR"/postinst.sh
-    rm -f "$CONFIG_DIR"/setup.sh
+    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" -delete
     
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
