@@ -303,13 +303,17 @@ collect_script_inputs() {
             input_default="$LAN_ADDR"
         fi
         
-        echo ""
-        printf "%s [%s]: " "$input_label" "$input_default"
-        read -r value
+        value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
+        
+        if ! [ $? -eq 0 ]; then
+            rm -f "$CONFIG_DIR/script_vars.tmp"
+            return 1
+        fi
         
         [ -z "$value" ] && value="$input_default"
         
-        echo "${input_envvar}='${value}'" >> "$CONFIG_DIR/script_vars.tmp"
+        # 修正：ラッパーなしの代入形式（テンプレート埋め込み用）
+        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars.tmp"
     done
     
     return 0
