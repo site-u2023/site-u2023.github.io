@@ -217,6 +217,7 @@
     "tr-tui-customscript-resource-ng": "Insufficient resources",
     "tr-tui-customscript-install-openwrt": "Install from OpenWrt packages",
     "tr-tui-customscript-install-official": "Install official binary",
+    "tr-tui-customscript-adguardhome": "AdGuard Home"
     "tr-tui-customscript-remove": "Remove AdGuard Home",
     "tr-tui-customscript-agh-user": "User ID",
     "tr-tui-customscript-agh-password": "Password",
