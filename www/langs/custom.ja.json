@@ -225,5 +225,6 @@
     "tr-tui-customscript-webport": "WEBポート",
     "tr-tui-customscript-dnsport": "DNSポート",
     "tr-tui-customscript-lanaddr": "LANアドレス",
-    "tr-tui-view-customscripts": "customscripts.sh"
+    "tr-tui-view-customscripts": "customscripts.sh",
+    "tr-tui-no-custom-scripts": "スクリプトが選択されていません" 
 }
