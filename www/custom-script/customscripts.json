@@ -38,13 +38,6 @@
           "label": "tr-tui-customscript-dnsport",
           "default": "53",
           "envVar": "DNS_PORT"
-        },
-        {
-          "id": "lan_addr",
-          "type": "text",
-          "label": "tr-tui-customscript-lanaddr",
-          "default": "",
-          "envVar": "LAN_ADDR"
         }
       ],
       "options": [
