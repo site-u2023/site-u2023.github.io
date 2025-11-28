@@ -227,5 +227,6 @@
     "tr-tui-customscript-lanaddr": "LAN Address",
     "tr-tui-view-customscripts": "customscripts.sh",
     "tr-tui-installing-custom-scripts": "Executing custom scripts",
-    "tr-tui-no-custom-scripts":  "No scripts selected" 
+    "tr-tui-no-custom-scripts":  "No scripts selected",
+    "tr-tui-reboot-question": "Do you want to reboot?"
 }
