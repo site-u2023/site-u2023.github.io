@@ -31,6 +31,20 @@
           "label": "tr-tui-customscript-webport",
           "default": "3000",
           "envVar": "WEB_PORT"
+        },
+        {
+          "id": "dns_port",
+          "type": "number",
+          "label": "tr-tui-customscript-dnsport",
+          "default": "53",
+          "envVar": "DNS_PORT"
+        },
+        {
+          "id": "lan_addr",
+          "type": "text",
+          "label": "tr-tui-customscript-lanaddr",
+          "default": "",
+          "envVar": "LAN_ADDR"
         }
       ],
       "options": [
