@@ -20,37 +20,42 @@
     },
     {
       "id": "4",
+      "class": "tr-tui-view-custom-scripts-config",
+      "action": "view_selected_custom_scripts"
+    },
+    {
+      "id": "5",
       "class": "tr-tui-view-config-vars",
       "action": "textbox",
       "file": "SETUP_VARS",
       "empty_class": "tr-tui-no-config-vars"
     },
     {
-      "id": "5",
+      "id": "6",
       "class": "tr-tui-view-postinst",
       "action": "textbox",
       "file": "postinst.sh",
       "notfound_class": "tr-tui-postinst-not-found"
     },
     {
-      "id": "6",
+      "id": "7",
       "class": "tr-tui-view-customfeeds",
       "action": "view_customfeeds"
     },
     {
-      "id": "7",
+      "id": "8",
       "class": "tr-tui-view-customscripts",
       "action": "view_customscripts"
     },
     {
-      "id": "8",
+      "id": "9",
       "class": "tr-tui-view-setup",
       "action": "textbox",
       "file": "setup.sh",
       "notfound_class": "tr-tui-setup-not-found"
     },
     {
-      "id": "9",
+      "id": "10",
       "class": "tr-tui-apply",
       "action": "apply"
     }
