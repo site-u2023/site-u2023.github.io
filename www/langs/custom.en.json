@@ -209,10 +209,20 @@
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository" ,
     "tr-tui-custom-scripts": "Custom Scripts",
-    "tr-tui-view-customscripts": "customscripts.sh",
-    "tr-customscript-dns-blockers": "DNS Blockers",
-    "tr-customscript-adguardhome": "AdGuard Home",
-    "tr-customscript-install-openwrt": "Install from OpenWrt repository",
-    "tr-customscript-install-official": "Install official binary from GitHub",
-    "tr-customscript-remove": "Remove AdGuard Home"
+
+    "tr-tui-customscript-resource-check": "Resource Check",
+    "tr-tui-customscript-memory": "Memory",
+    "tr-tui-customscript-storage": "Storage",
+    "tr-tui-customscript-required": "Required",
+    "tr-tui-customscript-available": "Available",
+    "tr-tui-customscript-resource-ok": "Installation possible",
+    "tr-tui-customscript-resource-ng": "Insufficient resources",
+    "tr-tui-customscript-install-openwrt": "Install from OpenWrt packages",
+    "tr-tui-customscript-install-official": "Install official binary",
+    "tr-tui-customscript-remove": "Remove AdGuard Home",
+    "tr-tui-customscript-agh-user": "User ID",
+    "tr-tui-customscript-agh-password": "Password",
+    "tr-tui-customscript-agh-webport": "WEB Port",
+    "tr-tui-customscript-agh-dnsport": "DNS Port",
+    "tr-tui-customscript-agh-lanaddr": "LAN Address"
 }
