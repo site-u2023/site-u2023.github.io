@@ -3,12 +3,10 @@
 # OpenWrt Device Setup Tool - CLI Version
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
-
-VERSION="R7.1127.2318"
+VERSION="R7.1128.1036"
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
-
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
 PACKAGES_URL=""
@@ -17,7 +15,6 @@ SETUP_TEMPLATE_URL=""
 POSTINST_TEMPLATE_URL=""
 CUSTOMFEEDS_JSON_URL=""
 CUSTOMSCRIPTS_JSON_URL=""
-
 PACKAGES_DB_PATH=""
 SETUP_DB_PATH=""
 SETUP_TEMPLATE_PATH=""
@@ -25,6 +22,11 @@ LANGUAGE_PATH_TEMPLATE=""
 CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
 TRANSLATION_CACHE_DATA=""
+MEM_FREE_MB=""
+FLASH_FREE_MB=""
+LAN_IF=""
+LAN_ADDR=""
+LAN_ADDR6=""
 
 # URL and Path Configuration
 
@@ -439,6 +441,25 @@ get_extended_device_info() {
         DEVICE_USB="Available"
     else
         DEVICE_USB="Not available"
+    fi
+
+    # リソース情報（数値、チェック用）
+    MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+    if [ -z "$MEM_FREE_KB" ]; then
+        BUFFERS_KB=$(awk '/^Buffers:/ {print $2}' /proc/meminfo)
+        CACHED_KB=$(awk '/^Cached:/ {print $2}' /proc/meminfo)
+        MEM_FREE_KB=$((BUFFERS_KB + CACHED_KB))
+    fi
+    MEM_FREE_MB=$((MEM_FREE_KB / 1024))
+    
+    FLASH_FREE_KB=$(df -k / | awk 'NR==2 {print $4}')
+    FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
+    
+    # LANアドレス取得
+    LAN_IF="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
+    if [ -n "$LAN_IF" ]; then
+        LAN_ADDR=$(ip -4 -o addr show dev "$LAN_IF" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
+        LAN_ADDR6=$(ip -6 -o addr show dev "$LAN_IF" scope global 2>/dev/null | grep -v temporary | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
     fi
 }
 
