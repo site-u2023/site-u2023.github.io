@@ -1489,22 +1489,16 @@ EOF3
             fetch_cached_template "$script_url" "$template_path"
             
             if [ -f "$template_path" ]; then
-                {
-                    sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
-                    
-                    if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                        cat "$CONFIG_DIR/script_vars_${script_id}.txt"
-                    fi
-                    
-                    sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path" | sed '$d'
-                    
-                    if [ -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
-                        option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
-                        echo "adguardhome_main ${option_args}"
-                    else
-                        echo "adguardhome_main \"\$@\""
-                    fi
-                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                # 最終行以外を出力
+                head -n -1 "$template_path" > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                
+                # 引数付きで最終行を追加
+                if [ -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
+                    option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
+                    echo "adguardhome_main ${option_args}" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                else
+                    echo "adguardhome_main \"\$@\"" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                fi
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
             fi
