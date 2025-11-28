@@ -952,6 +952,42 @@ get_customscript_option_args() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null
 }
 
+is_adguardhome_installed() {
+    /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || \
+    /usr/bin/AdGuardHome --version >/dev/null 2>&1
+}
+
+filter_script_options() {
+    local script_id="$1"
+    local options="$2"
+    local filtered=""
+    
+    case "$script_id" in
+        adguardhome)
+            local installed="no"
+            is_adguardhome_installed && installed="yes"
+            
+            while read -r option_id; do
+                [ -z "$option_id" ] && continue
+                if [ "$installed" = "yes" ]; then
+                    [ "$option_id" = "remove" ] && filtered="${filtered}${option_id}
+"
+                else
+                    [ "$option_id" != "remove" ] && filtered="${filtered}${option_id}
+"
+                fi
+            done <<EOF
+$options
+EOF
+            ;;
+        *)
+            filtered="$options"
+            ;;
+    esac
+    
+    echo "$filtered" | grep -v '^$'
+}
+
 get_customscript_option_skip_inputs() {
     local script_id="$1"
     local option_id="$2"
