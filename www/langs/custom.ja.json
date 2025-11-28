@@ -207,10 +207,20 @@
     "tr-tui-feed-gspotx2f": "gSpotx2fリポジトリ",
     "tr-tui-feed-jerrykuku": "jerrykukuリポジトリ",
     "tr-tui-custom-scripts": "カスタムスクリプト",
-    "tr-tui-view-customscripts": "customscripts.sh",
-    "tr-customscript-dns-blockers": "DNSブロッカー",
-    "tr-customscript-adguardhome": "AdGuard Home",
-    "tr-customscript-install-openwrt": "OpenWrtパッケージのインストール",
-    "tr-customscript-install-official": "公式バイナリのインストール",
-    "tr-customscript-remove": "AdGuard Homeを削除"
+
+    "tr-tui-customscript-resource-check": "リソースチェック",
+    "tr-tui-customscript-memory": "メモリ",
+    "tr-tui-customscript-storage": "ストレージ",
+    "tr-tui-customscript-required": "必要",
+    "tr-tui-customscript-available": "利用可能",
+    "tr-tui-customscript-resource-ok": "インストール可能です",
+    "tr-tui-customscript-resource-ng": "リソースが不足しています",
+    "tr-tui-customscript-install-openwrt": "OpenWrtパッケージのインストール",
+    "tr-tui-customscript-install-official": "公式バイナリのインストール",
+    "tr-tui-customscript-remove": "AdGuard Homeを削除",
+    "tr-tui-customscript-agh-user": "ユーザーID",
+    "tr-tui-customscript-agh-password": "パスワード",
+    "tr-tui-customscript-agh-webport": "WEBポート",
+    "tr-tui-customscript-agh-dnsport": "DNSポート",
+    "tr-tui-customscript-agh-lanaddr": "LANアドレス"
 }
