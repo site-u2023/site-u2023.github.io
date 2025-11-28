@@ -27,7 +27,7 @@ REQUIRED_FLASH="100"
 LAN="${LAN:-br-lan}"
 DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
-WEB_PORT="${WEB_PORT:-3000}"
+WEB_PORT="${WEB_PORT:-8000}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
 check_system() {
