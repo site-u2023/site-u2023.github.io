@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1127.2231"
+VERSION="R7.1128.0913"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -184,16 +184,24 @@ custom_scripts_selection() {
     download_customscripts_json || return 0
     
     local tr_main_menu tr_custom_scripts breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat
-    local categories
+    local menu_items i script_id script_name choice selected_script
+    local all_scripts cat_id
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_scripts=$(translate "tr-tui-custom-scripts")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
     
-    categories=$(get_customscript_categories)
+    # 全カテゴリから全スクリプトをフラットに取得
+    all_scripts=""
+    for cat_id in $(get_customscript_categories); do
+        for script_id in $(get_customscript_scripts "$cat_id"); do
+            all_scripts="${all_scripts}${script_id}
+"
+        done
+    done
+    all_scripts=$(echo "$all_scripts" | grep -v '^$')
     
-    if [ -z "$categories" ]; then
+    if [ -z "$all_scripts" ]; then
         show_msgbox "$breadcrumb" "No custom scripts available"
         return 0
     fi
@@ -201,54 +209,18 @@ custom_scripts_selection() {
     menu_items="" 
     i=1
     
-    while read -r cat_id; do
-        cat_name=$(get_customscript_category_name "$cat_id")
-        menu_items="$menu_items $i \"$cat_name\""
-        i=$((i+1))
-    done <<EOF
-$categories
-EOF
-    
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
-    
-    if [ -n "$choice" ]; then
-        selected_cat=$(echo "$categories" | sed -n "${choice}p")
-        custom_scripts_category "$selected_cat" "$breadcrumb"
-    fi
-}
-
-custom_scripts_category() {
-    local cat_id="$1"
-    local parent_breadcrumb="$2"
-    local cat_name breadcrumb
-    local menu_items i script_id script_name choice selected_script
-    local scripts
-    
-    cat_name=$(get_customscript_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-    
-    scripts=$(get_customscript_scripts "$cat_id")
-    
-    if [ -z "$scripts" ]; then
-        show_msgbox "$breadcrumb" "No scripts available"
-        return 0
-    fi
-    
-    menu_items=""
-    i=1
-    
     while read -r script_id; do
         script_name=$(get_customscript_name "$script_id")
         menu_items="$menu_items $i \"$script_name\""
         i=$((i+1))
     done <<EOF
-$scripts
+$all_scripts
 EOF
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
     
     if [ -n "$choice" ]; then
-        selected_script=$(echo "$scripts" | sed -n "${choice}p")
+        selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
         custom_script_options "$selected_script" "$breadcrumb"
     fi
 }
