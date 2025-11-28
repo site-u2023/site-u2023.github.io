@@ -540,17 +540,6 @@ remove_adguardhome() {
   /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
 
   printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
-
-  if [ "$auto_confirm" != "auto" ]; then
-    printf "\033[33mPress any key to reboot.\033[0m\n"
-    read -r -n1 -s
-    reboot
-  else
-    printf "\033[1;33mAuto-rebooting\033[0m\n"
-    reboot
-  fi
-
-  exit 0
 }
 
 get_access() {
@@ -597,9 +586,16 @@ get_access() {
 
 adguardhome_main() {
   if [ -n "$REMOVE_MODE" ]; then
+    printf "\n\033[1;34m========================================\033[0m\n"
+    printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
+    printf "\033[1;34m========================================\033[0m\n\n"
     remove_adguardhome "$REMOVE_MODE"
     exit 0
   fi
+  
+  printf "\n\033[1;34m========================================\033[0m\n"
+  printf "\033[1;34m  AdGuard Home Installation\033[0m\n"
+  printf "\033[1;34m========================================\033[0m\n\n"
   
   check_system
   install_prompt
