@@ -22,6 +22,7 @@
           "id": "password",
           "type": "password",
           "label": "tr-tui-customscript-password",
+          "default": "password",
           "minLength": 8,
           "envVar": "AGH_PASS"
         },
