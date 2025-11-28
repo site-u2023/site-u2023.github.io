@@ -1,3 +1,4 @@
+
 #!/bin/sh
 # shellcheck shell=sh disable=SC2034,SC3043
 # OpenWrt 19.07+ configuration
@@ -38,7 +39,7 @@ SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-    remove_adguardhome
+    remove_adguardhome "$1"
     exit 0
   fi
   
@@ -577,7 +578,7 @@ get_access() {
 }
 
 adguardhome_main() {
-  check_system
+  check_system "$@" 
   install_prompt "$@"
 
   printf "\033[1;34mUpdating package lists\033[0m\n"
