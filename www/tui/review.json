@@ -20,7 +20,7 @@
     },
     {
       "id": "4",
-      "class": "tr-tui-view-custom-scripts-config",
+      "class": "tr-tui-view-script-list",
       "action": "view_selected_custom_scripts"
     },
     {
