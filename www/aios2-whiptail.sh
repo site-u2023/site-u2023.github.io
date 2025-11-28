@@ -1200,6 +1200,59 @@ EOF
 }
 
 view_selected_custom_scripts() {
+    local tr_main_menu tr_review tr_scripts breadcrumb
+    local menu_items i script_file script_name choice selected_script script_breadcrumb
+    local scripts
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    tr_scripts=$(translate "tr-tui-view-script-list")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_scripts")
+    
+    # 生成されたcustomscripts-*.shを検索
+    scripts=$(ls "$CONFIG_DIR"/customscripts-*.sh 2>/dev/null | xargs -n1 basename 2>/dev/null)
+    
+    if [ -z "$scripts" ]; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-custom-scripts')"
+        return 0
+    fi
+    
+    while true; do
+        menu_items=""
+        i=1
+        
+        while read -r script_file; do
+            # customscripts-adguardhome.sh -> adguardhome
+            script_name=$(echo "$script_file" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_name")
+            menu_items="$menu_items $i \"$script_name\""
+            i=$((i+1))
+        done <<EOF
+$scripts
+EOF
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_script=$(echo "$scripts" | sed -n "${choice}p")
+            script_name=$(echo "$selected_script" | sed 's/^customscripts-//;s/\.sh$//')
+            script_name=$(get_customscript_name "$script_name")
+            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
+            
+            if [ -f "$CONFIG_DIR/$selected_script" ]; then
+                show_textbox "$script_breadcrumb" "$CONFIG_DIR/$selected_script"
+            else
+                show_msgbox "$script_breadcrumb" "Script not found"
+            fi
+        fi
+    done
+}
+
+view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_script_list breadcrumb
     local temp_view script_id var_file
     
