@@ -993,6 +993,12 @@ get_customscript_input_envvar() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1
 }
 
+get_customscript_input_hidden() {
+    local script_id="$1"
+    local input_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1
+}
+
 get_customscript_requirement() {
     local script_id="$1"
     local req_key="$2"
@@ -1038,7 +1044,7 @@ EOF
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
-    local inputs input_id input_label input_default input_envvar value
+    local inputs input_id input_label input_default input_envvar input_hidden value
     
     inputs=$(get_customscript_inputs "$script_id")
     
@@ -1046,9 +1052,17 @@ collect_script_inputs() {
         input_label=$(get_customscript_input_label "$script_id" "$input_id")
         input_default=$(get_customscript_input_default "$script_id" "$input_id")
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+        input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
         
+        # LAN_ADDRの場合は自動取得値を初期値に
         if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
             input_default="$LAN_ADDR"
+        fi
+        
+        # hidden=trueの場合はインプットボックスをスキップ
+        if [ "$input_hidden" = "true" ]; then
+            echo "${input_envvar}=\"${input_default}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            continue
         fi
         
         value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
