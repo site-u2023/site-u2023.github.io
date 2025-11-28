@@ -284,8 +284,9 @@ EOF
         fi
         
         option_args=$(get_customscript_option_args "$script_id" "$selected_option")
+        script_file=$(get_customscript_file "$script_id")
         
-        touch "$CONFIG_DIR/customscripts-${script_id}.sh"
+        generate_customscript_file "$script_id" "$script_file" "$option_args"
     fi
 }
 
