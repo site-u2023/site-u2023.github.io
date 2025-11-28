@@ -229,7 +229,6 @@ custom_script_options() {
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
-    # リソースチェック
     if ! check_script_requirements "$script_id"; then
         min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
         min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
@@ -252,7 +251,6 @@ $(translate 'tr-tui-customscript-resource-ng')"
         return 0
     fi
     
-    # スクリプト毎のオプションフィルタ
     filtered_options=$(filter_script_options "$script_id" "$options")
     
     if [ -z "$filtered_options" ]; then
@@ -276,26 +274,17 @@ EOF
     if [ -n "$choice" ]; then
         selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
         
-        # skipInputsチェック
         local skip_inputs
         skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
         
         if [ "$skip_inputs" != "true" ]; then
-            # インプットボックス表示して変数収集
             if ! collect_script_inputs "$script_id" "$breadcrumb"; then
                 return 0
-            fi
-            
-            # 変数ファイルをリネーム保存（generate_files()で使用）
-            if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
-                mv "$CONFIG_DIR/script_vars.tmp" "$CONFIG_DIR/script_vars_${script_id}.tmp"
             fi
         fi
         
         option_args=$(get_customscript_option_args "$script_id" "$selected_option")
         
-        # フラグファイルとして空のスクリプトを作成
-        # （実際の内容は generate_files() で生成される）
         touch "$CONFIG_DIR/customscripts-${script_id}.sh"
     fi
 }
