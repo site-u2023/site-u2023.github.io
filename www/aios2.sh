@@ -265,7 +265,7 @@ init() {
     
     mkdir -p "$CONFIG_DIR"
 
-    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" -delete
+    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" -exec rm -f {} \;
     
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
