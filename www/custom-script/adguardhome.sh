@@ -7,14 +7,6 @@
 
 VERSION="R7.1127.1424"
 
-REQUIRED_MEM="50"
-REQUIRED_FLASH="100"
-LAN="${LAN:-br-lan}"
-DNS_PORT="${DNS_PORT:-53}"
-DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
-WEB_PORT="${WEB_PORT:-3000}"
-SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
-
 NET_ADDR=""
 NET_ADDR6_LIST=""
 SERVICE_NAME=""
@@ -26,6 +18,17 @@ FAMILY_TYPE=""
 AGH_USER=""
 AGH_PASS=""
 AGH_PASS_HASH=""
+
+# BEGIN_VARIABLE_DEFINITIONS
+# END_VARIABLE_DEFINITIONS
+
+REQUIRED_MEM="50"
+REQUIRED_FLASH="100"
+LAN="${LAN:-br-lan}"
+DNS_PORT="${DNS_PORT:-53}"
+DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
+WEB_PORT="${WEB_PORT:-3000}"
+SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
