@@ -893,8 +893,6 @@ get_customfeed_template_url() {
 
 # Custom Scripts Management
 
-# Custom Scripts Management
-
 download_customscripts_json() {
     download_file_with_cache "$CUSTOMSCRIPTS_JSON_URL" "$CUSTOMSCRIPTS_JSON"
     return $?
@@ -1033,6 +1031,72 @@ EOF
     esac
     
     echo "$filtered" | grep -v '^$'
+}
+
+collect_script_inputs() {
+    local script_id="$1"
+    local breadcrumb="$2"
+    local inputs input_id input_label input_default input_envvar value
+    
+    inputs=$(get_customscript_inputs "$script_id")
+    
+    for input_id in $inputs; do
+        input_label=$(get_customscript_input_label "$script_id" "$input_id")
+        input_default=$(get_customscript_input_default "$script_id" "$input_id")
+        input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+        
+        # LAN_ADDRの場合は自動取得値を初期値に
+        if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
+            input_default="$LAN_ADDR"
+        fi
+        
+        value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
+        
+        if ! [ $? -eq 0 ]; then
+            rm -f "$CONFIG_DIR/script_vars.tmp"
+            return 1
+        fi
+        
+        [ -z "$value" ] && value="$input_default"
+        
+        # テンプレート埋め込み用の形式
+        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars.tmp"
+    done
+    
+    return 0
+}
+
+generate_customscript_file() {
+    local script_id="$1"
+    local script_file="$2"
+    local option_args="$3"
+    local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
+    local script_url template_path
+    
+    script_url="${BASE_URL}/custom-script/${script_file}"
+    template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+    
+    # テンプレートをダウンロード
+    if ! __download_file_core "$script_url" "$template_path"; then
+        echo "[ERROR] Failed to download script template: $script_file" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    # テンプレートから生成（setup.sh や customfeeds.sh と同じ方式）
+    {
+        sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
+        
+        if [ -f "$CONFIG_DIR/script_vars.tmp" ]; then
+            cat "$CONFIG_DIR/script_vars.tmp"
+            rm -f "$CONFIG_DIR/script_vars.tmp"
+        fi
+        
+        sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
+    } > "$output_file"
+    
+    chmod +x "$output_file"
+    
+    echo "[DEBUG] Generated customscript: $output_file" >> "$CONFIG_DIR/debug.log"
 }
 
 check_script_requirements() {
