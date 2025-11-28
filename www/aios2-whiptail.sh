@@ -1391,10 +1391,9 @@ $(translate 'tr-tui-apply-confirm-question')"
                     done
                     sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
                     for script in "$CONFIG_DIR"/customscripts-*.sh; do
-                        [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
+                        [ -f "$script" ] && sh "$script"
                     done
-                    show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-                    if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                    if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
                         reboot
                     fi
                     return 0
