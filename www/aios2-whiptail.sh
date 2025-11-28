@@ -1213,6 +1213,7 @@ EOF
 view_selected_custom_scripts() {
     local tr_main_menu tr_review tr_script_list breadcrumb
     local temp_view script_id script_name var_file
+    local input_id input_label input_envvar key value display_value
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
@@ -1238,30 +1239,22 @@ view_selected_custom_scripts() {
             echo "$script_name" >> "$temp_view"
             echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" >> "$temp_view"
             
-            while IFS='=' read -r key value; do
-                value=$(echo "$value" | tr -d '"')
+            while read -r input_id; do
+                input_label=$(get_customscript_input_label "$script_id" "$input_id")
+                input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
                 
-                case "$key" in
-                    AGH_USER)
-                        echo "  Username: $value" >> "$temp_view"
-                        ;;
-                    AGH_PASS)
-                        echo "  Password: ********" >> "$temp_view"
-                        ;;
-                    WEB_PORT)
-                        echo "  Web Port: $value" >> "$temp_view"
-                        ;;
-                    DNS_PORT)
-                        echo "  DNS Port: $value" >> "$temp_view"
-                        ;;
-                    LAN_ADDR)
-                        echo "  LAN Address: $value" >> "$temp_view"
-                        ;;
-                    *)
-                        echo "  $key: $value" >> "$temp_view"
-                        ;;
-                esac
-            done < "$var_file"
+                value=$(grep "^${input_envvar}=" "$var_file" 2>/dev/null | cut -d'=' -f2- | tr -d '"')
+                
+                if [ "$(get_customscript_input_type "$script_id" "$input_id")" = "password" ]; then
+                    display_value="********"
+                else
+                    display_value="$value"
+                fi
+                
+                echo "  ${input_label}: ${display_value}" >> "$temp_view"
+            done <<INPUTS
+$(get_customscript_inputs "$script_id")
+INPUTS
             
             echo "" >> "$temp_view"
             has_scripts=1
