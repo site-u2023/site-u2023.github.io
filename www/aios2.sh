@@ -1482,38 +1482,40 @@ EOF3
         echo "[DEBUG] Starting customscripts generation" >> "$CONFIG_DIR/debug.log"
         while read -r script_id; do
             echo "[DEBUG] Processing script_id: $script_id" >> "$CONFIG_DIR/debug.log"
-           
+            
             if [ ! -f "$CONFIG_DIR/script_args_${script_id}.txt" ]; then
                 echo "[DEBUG] No script_args file for $script_id, skipping" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
-           
+            
             script_file=$(get_customscript_file "$script_id")
             echo "[DEBUG] script_file: $script_file" >> "$CONFIG_DIR/debug.log"
             [ -z "$script_file" ] && continue
-           
+            
+            option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
+            echo "[DEBUG] option_args: $option_args" >> "$CONFIG_DIR/debug.log"
+            
             script_url="${BASE_URL}/custom-script/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-           
+            
             fetch_cached_template "$script_url" "$template_path"
-           
+            
             if [ -f "$template_path" ]; then
                 echo "[DEBUG] Template found, generating script" >> "$CONFIG_DIR/debug.log"
                 {
                     sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
-                   
+                    
                     if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                         cat "$CONFIG_DIR/script_vars_${script_id}.txt"
                     fi
-                   
+                    
                     sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
-                   
-                    option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
-                    echo "adguardhome_main ${option_args}"
+                    
+                    echo "${script_id}_main ${option_args}"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
-               
+                
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-                echo "[DEBUG] Script generated successfully" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] Script generated successfully with args: ${option_args}" >> "$CONFIG_DIR/debug.log"
             fi
         done <<SCRIPTS
 $(get_customscript_all_scripts)
