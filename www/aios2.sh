@@ -1506,7 +1506,7 @@ EOF3
                         cat "$CONFIG_DIR/script_vars_${script_id}.txt"
                     fi
                    
-                    sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path" | sed '$d'
+                    sed -n '/^# END_VARIABLE_DEFINITIONS/,$p' "$template_path"
                    
                     option_args=$(cat "$CONFIG_DIR/script_args_${script_id}.txt")
                     echo "adguardhome_main ${option_args}"
