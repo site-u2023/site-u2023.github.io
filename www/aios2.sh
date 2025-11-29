@@ -1462,8 +1462,6 @@ generate_files() {
     local script_id script_file template_path script_url
     local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
     
-    # ===== enableVar処理の最適化 =====
-    # 一時ファイルに集約してから一度だけ追記
     : > "$temp_enablevars"
     
     if [ -s "$SELECTED_PACKAGES" ]; then
@@ -1474,23 +1472,19 @@ generate_files() {
             fi
         done < "$SELECTED_PACKAGES"
         
-        # 一度だけ追記
         [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
     fi
     rm -f "$temp_enablevars"
     
-    # ===== postinst.sh生成の最適化 =====
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            # tr + sed を1回のawkに統合
             pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$SELECTED_PACKAGES" | sed 's/ $//')
         else
             pkgs=""
         fi
         
-        # awkで一度に処理（sedの複数呼び出しを削減）
         awk -v packages="$pkgs" '
             /^# BEGIN_VARIABLE_DEFINITIONS/ {
                 print
@@ -1507,11 +1501,9 @@ generate_files() {
         chmod +x "$CONFIG_DIR/postinst.sh"
     fi
     
-    # ===== setup.sh生成の最適化 =====
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
     
     if [ -f "$TPL_SETUP" ]; then
-        # BEGIN_VARS と END_VARS の間にSETUP_VARSを挿入
         awk '
             /^# BEGIN_VARS/ {
                 print
@@ -1533,67 +1525,73 @@ generate_files() {
         chmod +x "$CONFIG_DIR/setup.sh"
     fi
     
-    # ===== customfeeds-*.sh生成の最適化 =====
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        local pids=""
+        
         while read -r cat_id; do
-            template_url=$(get_customfeed_template_url "$cat_id")
-            
-            [ -z "$template_url" ] && continue
-            
-            tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
-            
-            fetch_cached_template "$template_url" "$tpl_custom"
-            
-            [ ! -f "$tpl_custom" ] && continue
-            
-            api_url=$(get_customfeed_api_base "$cat_id")
-            download_url=$(get_customfeed_download_base "$cat_id")
-            
-            temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
-            : > "$temp_pkg_file"
-            
-            # 選択されたパッケージのpatternを収集
-            while read -r pkg_id; do
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    echo "$pattern" >> "$temp_pkg_file"
-                fi
-            done <<EOF2
+            (
+                template_url=$(get_customfeed_template_url "$cat_id")
+                
+                [ -z "$template_url" ] && exit 0
+                
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                
+                fetch_cached_template "$template_url" "$tpl_custom"
+                
+                [ ! -f "$tpl_custom" ] && exit 0
+                
+                api_url=$(get_customfeed_api_base "$cat_id")
+                download_url=$(get_customfeed_download_base "$cat_id")
+                
+                temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
+                : > "$temp_pkg_file"
+                
+                while read -r pkg_id; do
+                    if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                        pattern=$(get_customfeed_package_pattern "$pkg_id")
+                        echo "$pattern" >> "$temp_pkg_file"
+                    fi
+                done <<EOF2
 $(get_category_packages "$cat_id")
 EOF2
-            
-            selected_pkgs=""
-            if [ -s "$temp_pkg_file" ]; then
-                # awk で一度に処理
-                selected_pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$temp_pkg_file" | sed 's/ $//')
-            fi
-            
-            # awkで一度に処理
-            awk -v packages="$selected_pkgs" \
-                -v api="$api_url" \
-                -v download="$download_url" '
-                /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                    print
-                    print "PACKAGES=\"" packages "\""
-                    print "API_URL=\"" api "\""
-                    print "DOWNLOAD_BASE_URL=\"" download "\""
-                    print "RUN_OPKG_UPDATE=\"0\""
-                    skip=1
-                    next
-                }
-                /^# END_VARIABLE_DEFINITIONS/ {
-                    skip=0
-                }
-                !skip
-            ' "$tpl_custom" > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-            
-            chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-            rm -f "$temp_pkg_file"
+                
+                selected_pkgs=""
+                if [ -s "$temp_pkg_file" ]; then
+                    selected_pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$temp_pkg_file" | sed 's/ $//')
+                fi
+                
+                awk -v packages="$selected_pkgs" \
+                    -v api="$api_url" \
+                    -v download="$download_url" '
+                    /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                        print
+                        print "PACKAGES=\"" packages "\""
+                        print "API_URL=\"" api "\""
+                        print "DOWNLOAD_BASE_URL=\"" download "\""
+                        print "RUN_OPKG_UPDATE=\"0\""
+                        skip=1
+                        next
+                    }
+                    /^# END_VARIABLE_DEFINITIONS/ {
+                        skip=0
+                    }
+                    !skip
+                ' "$tpl_custom" > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+                
+                chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+                rm -f "$temp_pkg_file"
+            ) &
+            pids="$pids $!"
         done <<EOF3
 $(get_customfeed_categories)
 EOF3
+        
+        for pid in $pids; do
+            wait $pid
+        done
+        
+        echo "[DEBUG] customfeeds generation completed in parallel" >> "$CONFIG_DIR/debug.log"
     else
-        # フォールバック処理
         {
             echo "#!/bin/sh"
             echo "# No custom feeds configured"
@@ -1602,47 +1600,56 @@ EOF3
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
     
-    # ===== customscripts-*.sh生成の最適化 =====
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
+        local pids=""
+        
         while read -r script_id; do
-            script_file=$(get_customscript_file "$script_id")
-            [ -z "$script_file" ] && continue
-            
-            script_url="${BASE_URL}/custom-script/${script_file}"
-            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
-            fetch_cached_template "$script_url" "$template_path"
-            
-            if [ -f "$template_path" ]; then
-                # awkで一度に処理
-                {
-                    awk '
-                        /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                            print
-                            if (vars_file != "") {
-                                while ((getline line < vars_file) > 0) {
-                                    print line
-                                }
-                                close(vars_file)
-                            }
-                            skip=1
-                            next
-                        }
-                        /^# END_VARIABLE_DEFINITIONS/ {
-                            skip=0
-                        }
-                        !skip
-                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
-                    
-                    echo ""
-                    echo "${script_id}_main"
-                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+            (
+                script_file=$(get_customscript_file "$script_id")
+                [ -z "$script_file" ] && exit 0
                 
-                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-            fi
+                script_url="${BASE_URL}/custom-script/${script_file}"
+                template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+                
+                fetch_cached_template "$script_url" "$template_path"
+                
+                if [ -f "$template_path" ]; then
+                    {
+                        awk '
+                            /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                                print
+                                if (vars_file != "") {
+                                    while ((getline line < vars_file) > 0) {
+                                        print line
+                                    }
+                                    close(vars_file)
+                                }
+                                skip=1
+                                next
+                            }
+                            /^# END_VARIABLE_DEFINITIONS/ {
+                                skip=0
+                            }
+                            !skip
+                        ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
+                        
+                        echo ""
+                        echo "${script_id}_main"
+                    } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                    
+                    chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                fi
+            ) &
+            pids="$pids $!"
         done <<SCRIPTS
 $(get_customscript_all_scripts)
 SCRIPTS
+        
+        for pid in $pids; do
+            wait $pid
+        done
+        
+        echo "[DEBUG] customscripts generation completed in parallel" >> "$CONFIG_DIR/debug.log"
     fi
 }
 
