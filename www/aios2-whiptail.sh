@@ -955,10 +955,14 @@ package_selection() {
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     packages=$(get_category_packages "$cat_id")
+    echo "[DEBUG] packages count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] packages content: $packages" >> "$CONFIG_DIR/debug.log"
     checklist_items=""
     
     idx=1
     while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
         if [ "$caller" = "custom_feeds" ]; then
             if ! package_compatible "$pkg_id"; then
                 continue
@@ -966,7 +970,7 @@ package_selection() {
         fi
         
         pkg_name=$(get_package_name "$pkg_id")
-        echo "[DEBUG] pkg_id=$pkg_id pkg_name=$pkg_name" >> "$CONFIG_DIR/debug.log"
+        [ -z "$pkg_name" ] && continue
         
         if is_package_selected "$pkg_id" "$caller"; then
             status="ON"
@@ -990,6 +994,7 @@ EOF
         fi
         
         while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
             sed -i "/^${pkg_id}\$/d" "$target_file"
         done <<EOF2
 $packages
