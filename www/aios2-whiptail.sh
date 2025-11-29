@@ -966,6 +966,7 @@ package_selection() {
         fi
         
         pkg_name=$(get_package_name "$pkg_id")
+        echo "[DEBUG] pkg_id=$pkg_id pkg_name=$pkg_name" >> "$CONFIG_DIR/debug.log"
         
         if is_package_selected "$pkg_id" "$caller"; then
             status="ON"
