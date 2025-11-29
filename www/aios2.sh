@@ -308,22 +308,27 @@ init() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url
-    lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    local lang_url en_url
     
-    if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-        echo "Warning: Failed to download language file for ${lang}"
-        if [ "$lang" != "en" ]; then
-            echo "Attempting fallback to English..."
-            lang_url="${BASE_URL}/www/langs/custom.en.json"
-            if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-                echo "Warning: Failed to download English fallback"
-                return 1
-            fi
-        else
-            return 1
-        fi
+    en_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/en/")"
+    LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
+    
+    if ! __download_file_core "$en_url" "$LANG_JSON_EN"; then
+        echo "Warning: Failed to download English language file"
+        return 1
     fi
+    
+    if [ "$lang" != "en" ]; then
+        lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+        
+        if ! __download_file_core "$lang_url" "$LANG_JSON"; then
+            echo "Warning: Failed to download language file for ${lang}, using English only"
+            cp "$LANG_JSON_EN" "$LANG_JSON"
+        fi
+    else
+        cp "$LANG_JSON_EN" "$LANG_JSON"
+    fi
+    
     return 0
 }
 
@@ -337,9 +342,20 @@ translate() {
         return 0
     fi
     
+    local translation
+    
     if [ -f "$LANG_JSON" ]; then
-        local translation
         translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
+        if [ -n "$translation" ]; then
+            TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
+${key}=${translation}"
+            echo "$translation"
+            return 0
+        fi
+    fi
+    
+    if [ -f "$LANG_JSON_EN" ] && [ "$LANG_JSON" != "$LANG_JSON_EN" ]; then
+        translation=$(jsonfilter -i "$LANG_JSON_EN" -e "@['$key']" 2>/dev/null)
         if [ -n "$translation" ]; then
             TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
 ${key}=${translation}"
