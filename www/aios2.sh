@@ -423,8 +423,7 @@ get_extended_device_info() {
     
     reset_detected_conn_type
     
-    # デバイス情報（特殊処理のためそのまま）
-    DEVICE_MEM=$(awk '/MemTotal/{printf "%.0f MB", $2/1024}' /proc/meminfo 2>/dev/null)
+    # デバイス情報（CPU, Storage, USB）
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
@@ -448,6 +447,11 @@ get_extended_device_info() {
     
     FLASH_FREE_KB=$(df -k / | awk 'NR==2 {print $4}')
     FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
+    
+    # メモリ情報（表示用）
+    MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+    MEM_TOTAL_MB=$((MEM_TOTAL_KB / 1024))
+    DEVICE_MEM="${MEM_TOTAL_MB} MB"
     
     # LANアドレス取得
     LAN_IF="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
