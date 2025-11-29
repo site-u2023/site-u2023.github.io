@@ -234,5 +234,14 @@
     "tr-tui-summary-variables": "設定変数",
     "tr-tui-summary-customscripts": "カスタムスクリプト",
     "tr-tui-no-config": "設定項目がありません",
-    "tr-tui-reboot-question": "再起動しますか？"
+    "tr-tui-reboot-question": "再起動しますか？",
+
+    "tr-tui-restore-point": "復元ポイント",
+    "tr-tui-no-restore-points": "復元ポイントがありません",
+    "tr-tui-restore-confirm": "この復元ポイントに戻しますか？",
+    "tr-tui-restore-warning": "現在の設定は復元前に自動的にバックアップされます。",
+    "tr-tui-restore-success": "正常に復元されました",
+    "tr-tui-restore-failed": "復元に失敗しました",
+    "tr-tui-creating-backup": "バックアップを作成中...",
+    "tr-tui-backup-failed": "バックアップの作成に失敗しました"
 }
