@@ -417,7 +417,8 @@ review_and_apply() {
     echo "----------------------------------------"
     
     if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
-        echo ""
+        clear
+        
         echo "$(translate 'tr-tui-installing-packages')"
         sh "$CONFIG_DIR/postinst.sh"
         
@@ -436,23 +437,18 @@ review_and_apply() {
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] || continue
             
-            # スクリプトIDを抽出
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
-            # 対応する script_vars ファイルが存在する場合のみ実行
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                 sh "$script"
             fi
         done
         
-        # キュー削除（再起動前）
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
-        # 再起動が必要かチェック
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
         
-        # 完了メッセージと再起動確認
         echo ""
         if [ "$needs_reboot" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
