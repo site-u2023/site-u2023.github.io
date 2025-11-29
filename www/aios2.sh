@@ -1542,13 +1542,13 @@ generate_config_summary() {
     fi
     
     if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-        printf "🔴 %s\n\n" "$tr_customfeeds" >> "$summary_file"
+        printf "🟢 %s\n\n" "$tr_customfeeds" >> "$summary_file"
         cat "$SELECTED_CUSTOM_PACKAGES" >> "$summary_file"
         echo "" >> "$summary_file"
     fi
     
     if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
-        printf "🔵 %s\n\n" "$tr_variables" >> "$summary_file"
+        printf "🟡 %s\n\n" "$tr_variables" >> "$summary_file"
         cat "$SETUP_VARS" >> "$summary_file"
         echo "" >> "$summary_file"
     fi
