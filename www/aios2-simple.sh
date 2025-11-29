@@ -403,99 +403,47 @@ review_and_apply() {
     generate_files
     
     local tr_main_menu tr_review breadcrumb
+    local summary_file
+    
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
-    while true; do
-        show_menu_header "$breadcrumb"
+    summary_file=$(generate_config_summary)
+    
+    show_menu_header "$breadcrumb"
+    cat "$summary_file"
+    echo ""
+    echo "----------------------------------------"
+    
+    if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
+        echo ""
+        echo "$(translate 'tr-tui-installing-packages')"
+        sh "$CONFIG_DIR/postinst.sh"
         
-        local i=1
-        for item_id in $(get_review_items); do
-            show_numbered_item "$i" "$(get_review_item_label "$i")"
-            i=$((i+1))
+        echo ""
+        echo "$(translate 'tr-tui-installing-custom-packages')"
+        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+            [ -f "$script" ] && sh "$script"
         done
         
         echo ""
-        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo "$(translate 'tr-tui-applying-config')"
+        sh "$CONFIG_DIR/setup.sh"
+        
         echo ""
-        printf "%s: " "$(translate 'tr-tui-ui-choice')"
-        read -r choice
+        echo "$(translate 'tr-tui-installing-custom-scripts')"
+        for script in "$CONFIG_DIR"/customscripts-*.sh; do
+            [ -f "$script" ] && sh "$script"
+        done
         
-        [ "$choice" = "$CHOICE_BACK" ] && return 0
-        
-        local action
-        action=$(get_review_item_action "$choice")
-        
-        case "$action" in
-            device_info) 
-                device_info 
-                ;;
-            textbox)
-                local file item_label item_breadcrumb
-                file=$(get_review_item_file "$choice")
-                item_label=$(get_review_item_label "$choice")
-                item_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$item_label")
-                
-                if [ -f "$file" ] && [ -s "$file" ]; then
-                    show_textbox "$item_breadcrumb" "$file"
-                else
-                    local empty_class
-                    empty_class=$(get_review_item_empty_class "$choice")
-                    if [ -n "$empty_class" ]; then
-                        show_msgbox "$item_breadcrumb" "$(translate "$empty_class")"
-                    else
-                        show_msgbox "$item_breadcrumb" "Empty"
-                    fi
-                fi
-                ;;
-            view_selected_custom_packages|view_customfeeds|view_selected_custom_scripts)
-                $action
-                ;;
-            apply)
-                local apply_label apply_breadcrumb
-                apply_label=$(translate "tr-tui-apply")
-                apply_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$apply_label")
-                
-                show_menu_header "$apply_breadcrumb"
-                echo "$(translate 'tr-tui-apply-confirm-step1')"
-                echo "$(translate 'tr-tui-apply-confirm-step2')"
-                echo "$(translate 'tr-tui-apply-confirm-step3')"
-                echo "$(translate 'tr-tui-apply-confirm-step4')"
-                echo "$(translate 'tr-tui-apply-confirm-step5')"
-                echo ""
-                
-                if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
-                    echo ""
-                    echo "$(translate 'tr-tui-installing-packages')"
-                    sh "$CONFIG_DIR/postinst.sh"
-                    
-                    echo "$(translate 'tr-tui-installing-custom-packages')"
-                    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                        [ -f "$script" ] && sh "$script"
-                    done
-                    
-                    echo ""
-                    echo "$(translate 'tr-tui-applying-config')"
-                    sh "$CONFIG_DIR/setup.sh"
-                    
-                    echo ""
-                    echo "$(translate 'tr-tui-installing-custom-scripts')"
-                    for script in "$CONFIG_DIR"/customscripts-*.sh; do
-                        [ -f "$script" ] && sh "$script"
-                    done
-                    
-                    echo ""
-                    if show_yesno "$apply_breadcrumb" "$(translate 'tr-tui-config-applied')
-
-$(translate 'tr-tui-reboot-question')"; then
-                        reboot
-                    fi
-                    return 0
-                fi
-                ;;
-        esac
-    done
+        echo ""
+        if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
+            reboot
+        fi
+    fi
+    
+    return 0
 }
 
 device_info() {
