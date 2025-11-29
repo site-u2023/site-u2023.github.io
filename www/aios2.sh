@@ -1834,7 +1834,7 @@ aios2_main() {
     
     ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
-    echo "\033[32mLoaded in ${ELAPSED_TIME}s\033[0m"
+    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
     echo ""
     
     select_ui_mode
