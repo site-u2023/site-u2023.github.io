@@ -913,26 +913,6 @@ get_customfeed_template_url() {
 
 # Custom Feeds/Scripts UI Functions (Common)
 
-custom_feeds_selection() {
-    download_customfeeds_json || return 0
-    
-    local tr_main_menu tr_custom_feeds breadcrumb
-    local cat_id
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
-    
-    cat_id=$(get_customfeed_categories | head -1)
-    
-    if [ -z "$cat_id" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    package_selection "$cat_id" "custom_feeds" "$breadcrumb"
-}
-
 custom_scripts_selection() {
     download_customscripts_json || return 0
     
