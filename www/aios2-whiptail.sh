@@ -111,6 +111,50 @@ show_textbox() {
 
 # Package Compatibility Check for Custom Feeds
 
+custom_feeds_selection() {
+    download_customfeeds_json || return 0
+    
+    local tr_main_menu tr_custom_feeds breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat
+    local categories
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+    
+    categories=$(get_customfeed_categories)
+    
+    if [ -z "$categories" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    while true; do
+        menu_items="" 
+        i=1
+        
+        while read -r cat_id; do
+            cat_name=$(get_category_name "$cat_id")
+            menu_items="$menu_items $i \"$cat_name\""
+            i=$((i+1))
+        done <<EOF
+$categories
+EOF
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0  # キャンセル → メインメニューへ戻る
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_cat=$(echo "$categories" | sed -n "${choice}p")
+            package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
+            # package_selection() から戻ってきたら、再びカテゴリ選択画面へ
+        fi
+    done
+}
+
 custom_scripts_selection_ui() {
     local breadcrumb="$1"
     local all_scripts="$2"
@@ -836,12 +880,6 @@ EOF2
             pkg_id=$(echo "$packages" | sed -n "${idx_clean}p")
             [ -n "$pkg_id" ] && echo "$pkg_id" >> "$target_file"
         done
-    fi
-    
-    if [ "$caller" = "custom_feeds" ]; then
-        custom_feeds_selection
-    else
-        package_categories
     fi
 }
 
