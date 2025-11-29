@@ -1799,15 +1799,6 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     
-    TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
-    
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
-    
-    echo ""
-    echo "${ELAPSED_TIME}s"
-    echo ""
-    
     if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
         echo "Warning: Failed to fetch auto-config API"
         echo "   https://www.cloudflarestatus.com/"
@@ -1837,6 +1828,14 @@ aios2_main() {
     fi
 
     echo "Fetching UI modules"
+    echo ""
+    
+    TIME_END=$(cut -d' ' -f1 /proc/uptime)
+    echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
+    
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
+    
+    echo "${ELAPSED_TIME}s"
     echo ""
     
     select_ui_mode
