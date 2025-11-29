@@ -35,6 +35,11 @@ LAN_ADDR6=""
 
 BREADCRUMB_SEP=" > "
 
+_PACKAGE_ENABLEVAR_CACHE=""
+_PACKAGE_ENABLEVAR_LOADED=0
+_PACKAGE_NAME_CACHE=""
+_PACKAGE_NAME_LOADED=0
+
 # URL and Path Configuration
 
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
@@ -320,6 +325,11 @@ init() {
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
     : > "$CONFIG_DIR/debug.log"
+
+    unset _PACKAGE_ENABLEVAR_CACHE
+    unset _PACKAGE_NAME_CACHE
+    _PACKAGE_ENABLEVAR_LOADED=0
+    _PACKAGE_NAME_LOADED=0
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
 }
@@ -818,9 +828,23 @@ get_package_name() {
     local pkg_id="$1"
     local name
     
-    name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
-    [ -z "$name" ] && name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
-    printf '%s\n' "$name" 
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+        
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${custom_cache}"
+        fi
+        
+        _PACKAGE_NAME_LOADED=1
+    fi
+    
+    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
+    printf '%s\n' "$name"
 }
 
 get_package_checked() {
@@ -836,8 +860,22 @@ get_package_enablevar() {
     local pkg_id="$1"
     local enable_var
     
-    enable_var=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
-    [ -z "$enable_var" ] && enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+    if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
+        _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '/"id":/ {id=$4} /"enableVar":/ {print id "=" $4}')
+        
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '/"id":/ {id=$4} /"enableVar":/ {print id "=" $4}')
+            _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
+${custom_cache}"
+        fi
+        
+        _PACKAGE_ENABLEVAR_LOADED=1
+    fi
+    
+    enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
     echo "$enable_var"
 }
 
