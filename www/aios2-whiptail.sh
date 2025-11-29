@@ -1342,34 +1342,39 @@ review_and_apply() {
 $(translate 'tr-tui-apply-confirm-question')"
     
     if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
-        # postinst.sh, customfeeds, setup.sh はログへ
-        sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
-        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
-        done
-        sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
+        clear
         
-        # customscripts はコンソールに表示
+        echo "$(translate 'tr-tui-installing-packages')"
+        sh "$CONFIG_DIR/postinst.sh"
+        
+        echo ""
+        echo "$(translate 'tr-tui-installing-custom-packages')"
+        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+            [ -f "$script" ] && sh "$script"
+        done
+        
+        echo ""
+        echo "$(translate 'tr-tui-applying-config')"
+        sh "$CONFIG_DIR/setup.sh"
+        
+        echo ""
+        echo "$(translate 'tr-tui-installing-custom-scripts')"
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] || continue
             
-            # スクリプトIDを抽出
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
-            # 対応する script_vars ファイルが存在する場合のみ実行
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                 sh "$script"
             fi
         done
         
-        # キュー削除（再起動前）
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
-        # 再起動が必要かチェック
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
         
-        # 完了メッセージと再起動確認
+        echo ""
         if [ "$needs_reboot" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
