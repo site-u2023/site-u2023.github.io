@@ -570,22 +570,28 @@ get_access() {
   printf "\033[1;32m  AdGuard Home is ready!\033[0m\n"
   printf "\033[1;32m========================================\033[0m\n"
   printf "\033[1;33m  Username: %s\033[0m\n" "$AGH_USER"
-  printf "\033[1;33m  Password: (as you entered)\033[0m\n"
+  printf "\033[1;33m  Password: %s\033[0m\n" "$AGH_PASS"
   printf "\033[1;32m========================================\033[0m\n"
   
+  # IPv4アドレス表示
+  printf "\033[1;32mWeb interface IPv4:\033[0m\n"
+  printf "  http://%s:%s/\n" "$NET_ADDR" "$port"
+  
+  # IPv6アドレス表示（複数ある場合は最初の1つだけ）
+  if [ -n "$NET_ADDR6_LIST" ]; then
+    set -- $NET_ADDR6_LIST
+    printf "\033[1;32mWeb interface IPv6:\033[0m\n"
+    printf "  http://[%s]:%s/\n" "$1" "$port"
+  fi
+  
+  # QRコード表示（オプション）
   if command -v qrencode >/dev/null 2>&1; then
-    printf "\033[1;32mWeb interface IPv4: http://${NET_ADDR}:${port}/\033[0m\n"
-    printf "http://${NET_ADDR}:${port}/\n" | qrencode -t UTF8 -v 3
+    printf "\n\033[1;34mQR Code for IPv4:\033[0m\n"
+    printf "http://%s:%s/\n" "$NET_ADDR" "$port" | qrencode -t UTF8 -v 3
     if [ -n "$NET_ADDR6_LIST" ]; then
       set -- $NET_ADDR6_LIST
-      printf "\033[1;32mWeb interface IPv6: http://[%s]:%s/\033[0m\n" "$1" "$port"
+      printf "\n\033[1;34mQR Code for IPv6:\033[0m\n"
       printf "http://[%s]:%s/\n" "$1" "$port" | qrencode -t UTF8 -v 3
-    fi
-  else
-    printf "\033[1;32mWeb interface IPv4: http://${NET_ADDR}:${port}/\033[0m\n"
-    if [ -n "$NET_ADDR6_LIST" ]; then
-      set -- $NET_ADDR6_LIST
-      printf "\033[1;32mWeb interface IPv6: http://[%s]:%s/\033[0m\n" "$1" "$port"
     fi
   fi
 }
@@ -609,10 +615,31 @@ adguardhome_main() {
   check_system
   install_prompt
 
-  printf "\033[1;34mUpdating package lists\033[0m\n"
   case "$PACKAGE_MANAGER" in
-    opkg) opkg update || { printf "\033[1;31mPackage update failed\033[0m\n"; exit 1; } ;;
-    apk) apk update || { printf "\033[1;31mPackage update failed\033[0m\n"; exit 1; } ;;
+    opkg)
+      printf "Updating package lists (opkg)... "
+      if opkg update >/dev/null 2>&1; then
+        printf "Done\n"
+      else
+        printf "Failed\n"
+        printf "\033[1;33mShowing detailed output:\033[0m\n"
+        opkg update
+        printf "\033[1;31mPackage update failed\033[0m\n"
+        exit 1
+      fi
+      ;;
+    apk)
+      printf "Updating package lists (apk)... "
+      if apk update >/dev/null 2>&1; then
+        printf "Done\n"
+      else
+        printf "Failed\n"
+        printf "\033[1;33mShowing detailed output:\033[0m\n"
+        apk update
+        printf "\033[1;31mPackage update failed\033[0m\n"
+        exit 1
+      fi
+      ;;
   esac
   
   install_dependencies || {
