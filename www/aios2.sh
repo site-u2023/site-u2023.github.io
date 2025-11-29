@@ -4,13 +4,13 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1129.1240"
+VERSION="R7.1129.1816"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BACKUP_DIR="/etc/aios2/backup"
-MAX_BACKUPS=10
+MAX_BACKUPS="5"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
