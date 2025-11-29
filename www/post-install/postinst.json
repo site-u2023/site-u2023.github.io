@@ -136,22 +136,26 @@
             "uqmi",
             "mbim-utils",
             "screen"
-          ]
+          ],
+          "reboot": true
         },
         {
           "id": "kmod-usb-wdm",
           "name": "kmod-usb-wdm",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "kmod-usb-net-cdc-mbim",
           "name": "kmod-usb-net-cdc-mbim",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "kmod-usb-net-qmi-wwan",
           "name": "kmod-usb-net-qmi-wwan",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "uqmi",
@@ -422,7 +426,8 @@
             "block-mount",
             "usbutils",
             "gdisk"
-          ]
+          ],
+          "reboot": true
         },
         {
           "id": "block-mount",
@@ -447,7 +452,8 @@
         {
           "id": "kmod-fs-vfat",
           "name": "kmod-fs-vfat",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "e2fsprogs",
@@ -457,7 +463,8 @@
         {
           "id": "kmod-fs-ext4",
           "name": "kmod-fs-ext4",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "f2fs-tools",
@@ -467,7 +474,8 @@
         {
           "id": "kmod-fs-f2fs",
           "name": "kmod-fs-f2fs",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "exfat-fsck",
@@ -477,7 +485,8 @@
         {
           "id": "kmod-fs-exfat",
           "name": "kmod-fs-exfat",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "ntfs-3g",
@@ -487,7 +496,8 @@
         {
           "id": "kmod-fs-ntfs3",
           "name": "kmod-fs-ntfs3",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "hfsfsck",
@@ -497,12 +507,14 @@
         {
           "id": "kmod-fs-hfs",
           "name": "kmod-fs-hfs",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "kmod-fs-hfsplus",
           "name": "kmod-fs-hfsplus",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "luci-app-hd-idle",
@@ -510,29 +522,34 @@
         },
         {
           "id": "kmod-usb-ledtrig-usbport",
-          "name": "kmod-usb-ledtrig-usbport"
+          "name": "kmod-usb-ledtrig-usbport",
+          "reboot": true
         },
         {
           "id": "kmod-usb-net-rndis",
           "name": "kmod-usb-net-rndis",
           "dependencies": ["kmod-usb-net-cdc-ether"],
-          "enableVar": "enable_usb_rndis"
+          "enableVar": "enable_usb_rndis",
+          "reboot": true
         },
         {
           "id": "kmod-usb-net-cdc-ether",
           "name": "kmod-usb-net-cdc-ether",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "kmod-usb-gadget-eth",
           "name": "kmod-usb-gadget-eth (requires reboot)",
           "dependencies": ["kmod-usb-dwc2"],
-          "enableVar": "enable_usb_gadget"
+          "enableVar": "enable_usb_gadget",
+          "reboot": true
         },
         {
           "id": "kmod-usb-dwc2",
           "name": "kmod-usb-dwc2",
-          "hidden": true
+          "hidden": true,
+          "reboot": true
         },
         {
           "id": "resize2fs",
@@ -624,7 +641,8 @@
           "id": "map",
           "name": "map",
           "hidden": true,
-          "description": "MAP-E support package"
+          "description": "MAP-E support package",
+          "reboot": true
         },
         {
             "id": "coreutils-sha1sum",
@@ -636,7 +654,8 @@
           "id": "ds-lite", 
           "name": "ds-lite",
           "hidden": true,
-          "description": "DS-Lite support package"
+          "description": "DS-Lite support package",
+          "reboot": true
         },
         {
           "id": "luci-app-usteer",
