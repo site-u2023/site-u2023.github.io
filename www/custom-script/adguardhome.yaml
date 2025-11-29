@@ -25,6 +25,11 @@ dns:
   upstream_dns:
     - '# LAN domain intercept'
     - '[/lan/]127.0.0.1:54'
+    - '# NTP service'
+    - '[/*.pool.ntp.org/]1.1.1.1'
+    - '[/*.pool.ntp.org/]1.0.0.1'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
     - '# DNS-over-QUIC'
     - quic://unfiltered.adguard-dns.com
     - '# DNS-over-TLS'
@@ -44,11 +49,6 @@ dns:
     - '# https://unfiltered.adguard-dns.com/dns-query'
     - '# https://jp.tiar.app/dns-query'
     - '# https://dns.nextdns.io'
-    - '# NTP service'
-    - '[/*.pool.ntp.org/]1.1.1.1'
-    - '[/*.pool.ntp.org/]1.0.0.1'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
   upstream_dns_file: ""
   bootstrap_dns:
     - 1.1.1.1
