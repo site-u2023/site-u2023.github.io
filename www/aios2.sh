@@ -9,6 +9,8 @@ VERSION="R7.1129.1240"
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
+BACKUP_DIR="/etc/aios2/backup"
+MAX_BACKUPS=10
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
@@ -266,6 +268,7 @@ init() {
     done
     
     mkdir -p "$CONFIG_DIR"
+    mkdir -p "$BACKUP_DIR"
 
     find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" -exec rm -f {} \;
     
@@ -1159,6 +1162,15 @@ get_effective_connection_type() {
 
 should_show_item() {
     local item_id="$1"
+
+        local is_hidden
+    is_hidden=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].hidden" 2>/dev/null | head -1)
+    
+    if [ -z "$is_hidden" ]; then
+        is_hidden=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].hidden" 2>/dev/null | head -1)
+    fi
+    
+    [ "$is_hidden" = "true" ] && return 1
     
     local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
@@ -1728,6 +1740,151 @@ needs_reboot_check() {
     fi
     
     echo "$needs_reboot"
+}
+
+# Backup and Restore Functions
+
+create_backup() {
+    local trigger="${1:-manual}"
+    local timestamp backup_dir
+    
+    timestamp=$(date +%Y%m%d_%H%M%S)
+    backup_dir="$BACKUP_DIR/$timestamp"
+    
+    mkdir -p "$backup_dir"
+    
+    # 必要なファイルをコピー
+    [ -f "$SELECTED_PACKAGES" ] && cp "$SELECTED_PACKAGES" "$backup_dir/"
+    [ -f "$SELECTED_CUSTOM_PACKAGES" ] && cp "$SELECTED_CUSTOM_PACKAGES" "$backup_dir/"
+    [ -f "$SETUP_VARS" ] && cp "$SETUP_VARS" "$backup_dir/"
+    
+    # script_vars_*.txt をコピー
+    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+        [ -f "$var_file" ] && cp "$var_file" "$backup_dir/"
+    done
+    
+    # 生成済みスクリプトもバックアップ（オプション）
+    [ -f "$CONFIG_DIR/postinst.sh" ] && cp "$CONFIG_DIR/postinst.sh" "$backup_dir/"
+    [ -f "$CONFIG_DIR/setup.sh" ] && cp "$CONFIG_DIR/setup.sh" "$backup_dir/"
+    
+    # メタデータ作成
+    cat > "$backup_dir/metadata.json" <<EOF
+{
+  "timestamp": "$(date -Iseconds)",
+  "trigger": "$trigger",
+  "packages": $([ -f "$SELECTED_PACKAGES" ] && wc -l < "$SELECTED_PACKAGES" || echo 0),
+  "custom_packages": $([ -f "$SELECTED_CUSTOM_PACKAGES" ] && wc -l < "$SELECTED_CUSTOM_PACKAGES" || echo 0),
+  "variables": $([ -f "$SETUP_VARS" ] && grep -c '=' "$SETUP_VARS" 2>/dev/null || echo 0),
+  "device_model": "$DEVICE_MODEL",
+  "openwrt_version": "$OPENWRT_VERSION"
+}
+EOF
+    
+    # 10世代を超えたら古いものを削除
+    cleanup_old_backups
+    
+    echo "[BACKUP] Created: $backup_dir" >> "$CONFIG_DIR/debug.log"
+    return 0
+}
+
+cleanup_old_backups() {
+    local backup_count
+    backup_count=$(ls -1d "$BACKUP_DIR"/* 2>/dev/null | wc -l)
+    
+    if [ "$backup_count" -gt "$MAX_BACKUPS" ]; then
+        ls -1dt "$BACKUP_DIR"/* | tail -n +$((MAX_BACKUPS + 1)) | xargs rm -rf
+        echo "[BACKUP] Cleaned up old backups, keeping $MAX_BACKUPS generations" >> "$CONFIG_DIR/debug.log"
+    fi
+}
+
+restore_from_backup() {
+    local backup_dir="$1"
+    
+    [ ! -d "$backup_dir" ] && return 1
+    
+    # 復元前に現在の設定を自動バックアップ
+    create_backup "before_restore"
+    
+    # バックアップから復元
+    [ -f "$backup_dir/selected_packages.txt" ] && cp "$backup_dir/selected_packages.txt" "$SELECTED_PACKAGES"
+    [ -f "$backup_dir/selected_custom_packages.txt" ] && cp "$backup_dir/selected_custom_packages.txt" "$SELECTED_CUSTOM_PACKAGES"
+    [ -f "$backup_dir/setup_vars.sh" ] && cp "$backup_dir/setup_vars.sh" "$SETUP_VARS"
+    
+    # script_vars_*.txt を復元
+    rm -f "$CONFIG_DIR"/script_vars_*.txt
+    for var_file in "$backup_dir"/script_vars_*.txt; do
+        [ -f "$var_file" ] && cp "$var_file" "$CONFIG_DIR/"
+    done
+    
+    echo "[BACKUP] Restored from: $backup_dir" >> "$CONFIG_DIR/debug.log"
+    return 0
+}
+
+restore_point_menu() {
+    local tr_main_menu tr_restore_point breadcrumb
+    local backups backup_dir menu_items i choice
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_restore_point=$(translate "tr-tui-restore-point")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_restore_point")
+    
+    backups=$(ls -1dt "$BACKUP_DIR"/* 2>/dev/null)
+    
+    if [ -z "$backups" ]; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-restore-points')"
+        return 0
+    fi
+    
+    menu_items=""
+    i=1
+    
+    while read -r backup_dir; do
+        local timestamp metadata_file pkg_count custom_pkg_count var_count label
+        local display_date
+        
+        timestamp=$(basename "$backup_dir")
+        # YYYYMMDD_HHMMSS を YYYY-MM-DD HH:MM:SS に変換
+        display_date=$(echo "$timestamp" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)_\([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
+        
+        metadata_file="$backup_dir/metadata.json"
+        
+        if [ -f "$metadata_file" ]; then
+            pkg_count=$(jsonfilter -i "$metadata_file" -e '@.packages' 2>/dev/null)
+            custom_pkg_count=$(jsonfilter -i "$metadata_file" -e '@.custom_packages' 2>/dev/null)
+            var_count=$(jsonfilter -i "$metadata_file" -e '@.variables' 2>/dev/null)
+            label="$display_date (P:$pkg_count C:$custom_pkg_count V:$var_count)"
+        else
+            label="$display_date"
+        fi
+        
+        menu_items="$menu_items $i \"$label\""
+        i=$((i+1))
+    done <<EOF
+$backups
+EOF
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+    
+    if ! [ $? -eq 0 ] || [ -z "$choice" ]; then
+        return 0
+    fi
+    
+    local selected_backup
+    selected_backup=$(echo "$backups" | sed -n "${choice}p")
+    
+    # 確認ダイアログ
+    local confirm_msg
+    confirm_msg="$(translate 'tr-tui-restore-confirm')
+
+$(translate 'tr-tui-restore-warning')"
+    
+    if show_yesno "$breadcrumb" "$confirm_msg"; then
+        if restore_from_backup "$selected_backup"; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-restore-success')"
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-restore-failed')"
+        fi
+    fi
 }
 
 # Main Entry Point
