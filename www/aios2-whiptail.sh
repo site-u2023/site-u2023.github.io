@@ -1298,6 +1298,12 @@ EOF
         menu_items="$menu_items $i \"$custom_scripts_label\""
         custom_scripts_choice=$i
         i=$((i+1))
+
+        local restore_point_label
+        restore_point_label=$(translate "tr-tui-restore-point")
+        menu_items="$menu_items $i \"$restore_point_label\""
+        restore_point_choice=$i
+        i=$((i+1))
         
         menu_items="$menu_items $i \"$review_label\""
         review_choice=$i
@@ -1324,6 +1330,16 @@ EOF
 }
 
 review_and_apply() {
+    echo "$(translate 'tr-tui-creating-backup')"
+    if ! create_backup "before_apply"; then
+        local tr_main_menu tr_review breadcrumb
+        tr_main_menu=$(translate "tr-tui-main-menu")
+        tr_review=$(translate "tr-tui-review-configuration")
+        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+        return 1
+    fi
+    
     generate_files
     
     local tr_main_menu tr_review breadcrumb
