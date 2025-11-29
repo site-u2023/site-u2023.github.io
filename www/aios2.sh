@@ -1467,6 +1467,7 @@ generate_files() {
             fetch_cached_template "$template_url" "$tpl_custom"
            
             [ ! -f "$tpl_custom" ] && continue
+            
             api_url=$(get_customfeed_api_base "$cat_id")
             download_url=$(get_customfeed_download_base "$cat_id")
            
@@ -1481,11 +1482,6 @@ generate_files() {
             done <<EOF2
 $(get_category_packages "$cat_id")
 EOF2
-            
-            selected_pkgs=""
-            if [ -s "$temp_pkg_file" ]; then
-                selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
-            fi
            
             selected_pkgs=""
             if [ -s "$temp_pkg_file" ]; then
@@ -1518,12 +1514,8 @@ EOF3
     fi
    
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        echo "[DEBUG] Starting customscripts generation" >> "$CONFIG_DIR/debug.log"
         while read -r script_id; do
-            echo "[DEBUG] Processing script_id: $script_id" >> "$CONFIG_DIR/debug.log"
-            
             script_file=$(get_customscript_file "$script_id")
-            echo "[DEBUG] script_file: $script_file" >> "$CONFIG_DIR/debug.log"
             [ -z "$script_file" ] && continue
             
             script_url="${BASE_URL}/custom-script/${script_file}"
@@ -1532,7 +1524,6 @@ EOF3
             fetch_cached_template "$script_url" "$template_path"
             
             if [ -f "$template_path" ]; then
-                echo "[DEBUG] Template found, generating script" >> "$CONFIG_DIR/debug.log"
                 {
                     sed -n '1,/^# BEGIN_VARIABLE_DEFINITIONS/p' "$template_path"
                     
@@ -1546,7 +1537,6 @@ EOF3
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-                echo "[DEBUG] Script generated successfully with args: ${option_args}" >> "$CONFIG_DIR/debug.log"
             fi
         done <<SCRIPTS
 $(get_customscript_all_scripts)
