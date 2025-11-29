@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1128.1046"
+VERSION="R7.1129.0936"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -436,6 +436,9 @@ review_and_apply() {
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] && sh "$script"
         done
+        
+        # キュー削除（再起動前）
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
         if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
