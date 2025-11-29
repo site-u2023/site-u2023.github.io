@@ -172,6 +172,54 @@ show_msgbox() {
     read -r _ 2>/dev/null
 }
 
+custom_feeds_selection() {
+    download_customfeeds_json || return 0
+    
+    local tr_main_menu tr_custom_feeds breadcrumb
+    local categories
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+    
+    categories=$(get_customfeed_categories)
+    
+    if [ -z "$categories" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    while true; do
+        show_menu_header "$breadcrumb"
+        
+        local i=1
+        while read -r cat_id; do
+            local cat_name
+            cat_name=$(get_category_name "$cat_id")
+            show_numbered_item "$i" "$cat_name"
+            i=$((i+1))
+        done <<EOF
+$categories
+EOF
+        
+        echo ""
+        echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+        echo ""
+        printf "%s: " "$(translate 'tr-tui-ui-choice')"
+        read -r choice
+        
+        if [ "$choice" = "$CHOICE_BACK" ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            local selected_cat
+            selected_cat=$(echo "$categories" | sed -n "${choice}p")
+            [ -n "$selected_cat" ] && package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
+        fi
+    done
+}
+
 custom_scripts_selection_ui() {
     local breadcrumb="$1"
     local all_scripts="$2"
