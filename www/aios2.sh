@@ -261,14 +261,38 @@ install_package() {
 }
 
 init() {
-    for pid in $(pidof "$script_name" 2>/dev/null); do
-        [ "$pid" != "$$" ] && kill "$pid" 2>/dev/null
-    done
+    local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
+    local count=0
     
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$BACKUP_DIR"
-
-    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" -exec rm -f {} \;
+    
+    while [ -f "$LOCK_FILE" ]; do
+        if [ $count -eq 0 ]; then
+            echo "Another instance is running. Waiting..."
+        fi
+        
+        if [ $count -ge 5 ]; then
+            echo ""
+            echo "Error: Another instance may be stuck."
+            printf "Kill the other instance and retry? (y/n): "
+            read -r answer
+            if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
+                rm -f "$LOCK_FILE"
+                break
+            else
+                exit 1
+            fi
+        fi
+        
+        sleep 1
+        count=$((count + 1))
+    done
+    
+    echo "$$" > "$LOCK_FILE"
+    trap "rm -f '$LOCK_FILE'" EXIT INT TERM
+    
+    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" ! -name ".aios2.lock" -exec rm -f {} \;
     
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
