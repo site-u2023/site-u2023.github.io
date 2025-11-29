@@ -19,8 +19,6 @@ DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
-BREADCRUMB_SEP=" > "
-
 show_menu_header() {
     local breadcrumb="$1"
     
