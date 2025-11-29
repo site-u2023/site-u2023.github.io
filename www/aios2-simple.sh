@@ -411,6 +411,12 @@ review_and_apply() {
     
     summary_file=$(generate_config_summary)
     
+    # 設定が空の場合は早期リターン
+    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ] || grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
+        return 0
+    fi
+    
     show_menu_header "$breadcrumb"
     cat "$summary_file"
     echo ""
