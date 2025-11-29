@@ -434,7 +434,15 @@ review_and_apply() {
         echo ""
         echo "$(translate 'tr-tui-installing-custom-scripts')"
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
-            [ -f "$script" ] && sh "$script"
+            [ -f "$script" ] || continue
+            
+            # スクリプトIDを抽出
+            script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
+            
+            # 対応する script_vars ファイルが存在する場合のみ実行
+            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                sh "$script"
+            fi
         done
         
         # キュー削除（再起動前）
