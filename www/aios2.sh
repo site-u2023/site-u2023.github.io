@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1129.1135"
+VERSION="R7.1129.1145"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1572,61 +1572,152 @@ generate_config_summary() {
 needs_reboot_check() {
     local needs_reboot=0
     
-    # パッケージの reboot フラグチェック
-    if [ -s "$SELECTED_PACKAGES" ]; then
-        while read -r pkg_id; do
-            local reboot_flag
-            reboot_flag=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].reboot" 2>/dev/null | head -1)
-            if [ "$reboot_flag" = "true" ]; then
-                needs_reboot=1
-                break
-            fi
-        done < "$SELECTED_PACKAGES"
+    # Setup.json の変更チェック
+    
+    if [ -s "$SETUP_VARS" ]; then
+        # ファイルレベルの reboot フラグ
+        local file_reboot
+        file_reboot=$(jsonfilter -i "$SETUP_JSON" -e "@.reboot" 2>/dev/null)
+        if [ "$file_reboot" = "true" ]; then
+            needs_reboot=1
+        fi
+        
+        # カテゴリレベル/項目レベルのチェック（ファイルレベルがfalseの場合）
+        if [ "$needs_reboot" -eq 0 ]; then
+            while read -r line; do
+                # コメント行と空行をスキップ
+                case "$line" in
+                    \#*|'') continue ;;
+                esac
+                
+                local var_name
+                var_name=$(echo "$line" | cut -d= -f1)
+                
+                # カテゴリレベルの reboot フラグをチェック
+                local cat_reboot
+                cat_reboot=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.items[*].variable='$var_name'].reboot" 2>/dev/null | head -1)
+                if [ "$cat_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+                
+                # 項目レベル（トップレベル）の reboot フラグ
+                local item_reboot
+                item_reboot=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
+                if [ "$item_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+                
+                # 項目レベル（section内）の reboot フラグ
+                if [ -z "$item_reboot" ] || [ "$item_reboot" = "null" ]; then
+                    item_reboot=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
+                    if [ "$item_reboot" = "true" ]; then
+                        needs_reboot=1
+                        break
+                    fi
+                fi
+            done < "$SETUP_VARS"
+        fi
     fi
     
-    # Setup変数の reboot フラグチェック
-    if [ "$needs_reboot" -eq 0 ] && [ -s "$SETUP_VARS" ]; then
-        while read -r line; do
-            # コメント行と空行をスキップ
-            case "$line" in
-                \#*|'') continue ;;
-            esac
-            
-            local var_name
-            var_name=$(echo "$line" | cut -d= -f1)
-            
-            # その変数を持つitemのrebootフラグを確認
-            local reboot_flag
-            reboot_flag=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
-            
-            # sectionの中も確認
-            if [ -z "$reboot_flag" ] || [ "$reboot_flag" = "null" ]; then
-                reboot_flag=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
-            fi
-            
-            if [ "$reboot_flag" = "true" ]; then
-                needs_reboot=1
-                break
-            fi
-        done < "$SETUP_VARS"
+    # postinst.json のパッケージチェック
+
+    if [ "$needs_reboot" -eq 0 ] && [ -s "$SELECTED_PACKAGES" ]; then
+        # ファイルレベルの reboot フラグ
+        local file_reboot
+        file_reboot=$(jsonfilter -i "$PACKAGES_JSON" -e "@.reboot" 2>/dev/null)
+        if [ "$file_reboot" = "true" ]; then
+            needs_reboot=1
+        fi
+        
+        # カテゴリレベル/項目レベルのチェック
+        if [ "$needs_reboot" -eq 0 ]; then
+            while read -r pkg_id; do
+                # カテゴリレベルの reboot フラグ
+                local cat_reboot
+                cat_reboot=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].reboot" 2>/dev/null | head -1)
+                if [ "$cat_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+                
+                # 項目レベルの reboot フラグ
+                local pkg_reboot
+                pkg_reboot=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].reboot" 2>/dev/null | head -1)
+                if [ "$pkg_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+            done < "$SELECTED_PACKAGES"
+        fi
     fi
     
-    # Custom Scripts の reboot フラグチェック
+    # customfeeds.json のパッケージチェック
+
+    if [ "$needs_reboot" -eq 0 ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+        # ファイルレベルの reboot フラグ
+        local file_reboot
+        file_reboot=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.reboot" 2>/dev/null)
+        if [ "$file_reboot" = "true" ]; then
+            needs_reboot=1
+        fi
+        
+        # カテゴリレベル/項目レベルのチェック
+        if [ "$needs_reboot" -eq 0 ]; then
+            while read -r pkg_id; do
+                # カテゴリレベルの reboot フラグ
+                local cat_reboot
+                cat_reboot=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].reboot" 2>/dev/null | head -1)
+                if [ "$cat_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+                
+                # 項目レベルの reboot フラグ
+                local pkg_reboot
+                pkg_reboot=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].reboot" 2>/dev/null | head -1)
+                if [ "$pkg_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+            done < "$SELECTED_CUSTOM_PACKAGES"
+        fi
+    fi
+    
+    # customscripts.json のスクリプトチェック
+    
     if [ "$needs_reboot" -eq 0 ]; then
-        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-            [ -f "$var_file" ] || continue
-            
-            local script_id
-            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-            
-            local reboot_flag
-            reboot_flag=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].reboot" 2>/dev/null | head -1)
-            
-            if [ "$reboot_flag" = "true" ]; then
-                needs_reboot=1
-                break
-            fi
-        done
+        # ファイルレベルの reboot フラグ
+        local file_reboot
+        file_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.reboot" 2>/dev/null)
+        if [ "$file_reboot" = "true" ]; then
+            # script_vars_*.txt が1つでもあれば再起動必要
+            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                if [ -f "$var_file" ]; then
+                    needs_reboot=1
+                    break
+                fi
+            done
+        fi
+        
+        # 項目レベルのチェック（ファイルレベルがfalseの場合）
+        if [ "$needs_reboot" -eq 0 ]; then
+            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                [ -f "$var_file" ] || continue
+                
+                local script_id
+                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                
+                local script_reboot
+                script_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].reboot" 2>/dev/null | head -1)
+                
+                if [ "$script_reboot" = "true" ]; then
+                    needs_reboot=1
+                    break
+                fi
+            done
+        fi
     fi
     
     echo "$needs_reboot"
