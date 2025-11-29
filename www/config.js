@@ -52,9 +52,6 @@ var config = {
 
   // Custom scripts database URL
   customscripts_db_path: "custom-script/customscripts.json",
-  
-  // Review menu configuration
-  review_json_path: "tui/review.json",
 
   // UI modules paths
   whiptail_ui_path: "aios2-whiptail.sh",
