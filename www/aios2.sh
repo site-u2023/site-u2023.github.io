@@ -2016,7 +2016,7 @@ EOF
     
     selected_backup=$(echo "$backups" | sed -n "${choice}p")
     
-    if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-confirm')"; then
+    if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-confirm')\n\n$(translate 'tr-tui-restore-warning')"; then
         if restore_from_backup "$selected_backup"; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-success')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
