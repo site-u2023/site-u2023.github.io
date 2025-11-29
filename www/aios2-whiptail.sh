@@ -955,8 +955,6 @@ package_selection() {
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     packages=$(get_category_packages "$cat_id")
-    echo "[DEBUG] packages count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] packages content: $packages" >> "$CONFIG_DIR/debug.log"
     checklist_items=""
     
     idx=1
