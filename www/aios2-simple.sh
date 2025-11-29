@@ -423,32 +423,55 @@ review_and_apply() {
     echo "----------------------------------------"
     
     if show_yesno "$breadcrumb" "🟣 $(translate 'tr-tui-apply-confirm-question')"; then
+        echo "$(translate 'tr-tui-creating-backup')"
+        if ! create_backup "before_apply"; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+            return 1
+        fi
+        
         clear
         
         echo "$(translate 'tr-tui-installing-packages')"
         sh "$CONFIG_DIR/postinst.sh"
         
-        # 以下同じなので省略
-
-device_info() {
-    local tr_main_menu tr_device_info breadcrumb
+        echo ""
+        echo "$(translate 'tr-tui-installing-custom-packages')"
+        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+            [ -f "$script" ] && sh "$script"
+        done
+        
+        echo ""
+        echo "$(translate 'tr-tui-applying-config')"
+        sh "$CONFIG_DIR/setup.sh"
+        
+        echo ""
+        echo "$(translate 'tr-tui-installing-custom-scripts')"
+        for script in "$CONFIG_DIR"/customscripts-*.sh; do
+            [ -f "$script" ] || continue
+            
+            script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
+            
+            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                sh "$script"
+            fi
+        done
+        
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        
+        local needs_reboot
+        needs_reboot=$(needs_reboot_check)
+        
+        echo ""
+        if [ "$needs_reboot" -eq 1 ]; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+        fi
+    fi
     
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_device_info=$(translate "tr-tui-view-device-info")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
-    
-    show_menu_header "$breadcrumb"
-    
-    echo "Model: $DEVICE_MODEL"
-    echo "Target: $DEVICE_TARGET"
-    echo "Version: $OPENWRT_VERSION"
-    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && echo "Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)"
-    [ -n "$DEVICE_STORAGE" ] && echo "Storage: ${DEVICE_STORAGE_AVAIL} / ${DEVICE_STORAGE} (available / total)"
-    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
-    
-    echo ""
-    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
-    read -r _
+    return 0
 }
 
 show_network_info() {
