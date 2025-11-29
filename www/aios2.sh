@@ -61,7 +61,7 @@ XXX_print_banner_unicode() {
     printf "\n"
 }
 
-print_banner_emoji() {
+print_banner_unicode() {
     printf "\n"
     printf "       🟪🟪 🟪\n"
     printf " 🟦🟦🟦🟦  🟦🟦🟦   🟦🟦🟦🟦   🟦🟦🟦🟦🟦  ⬜⬜⬜⬜⬜\n"
