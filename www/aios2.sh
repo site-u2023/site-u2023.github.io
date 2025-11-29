@@ -138,6 +138,25 @@ load_config_from_js() {
     return 0
 }
 
+# UI Common Functions
+
+build_breadcrumb() {
+    local result=""
+    local first=1
+    
+    for level in "$@"; do
+        [ -z "$level" ] && continue
+        if [ $first -eq 1 ]; then
+            result="$level"
+            first=0
+        else
+            result="${result} > ${level}"
+        fi
+    done
+    
+    echo "$result"
+}
+
 # UI Mode Selection
 
 select_ui_mode() {
@@ -487,6 +506,19 @@ get_extended_device_info() {
 }
 
 # Package Management
+
+package_compatible() {
+    local pkg_id="$1"
+    local pkg_managers
+    
+    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
+    
+    [ -z "$pkg_managers" ] && return 0
+    
+    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
+    
+    return 1
+}
 
 load_default_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
@@ -870,6 +902,92 @@ get_customfeed_template_url() {
     local template_path
     template_path=$(get_customfeed_template_path "$cat_id")
     [ -n "$template_path" ] && echo "${BASE_URL}/${template_path}"
+}
+
+# Custom Feeds/Scripts UI Functions (Common)
+
+custom_feeds_selection() {
+    download_customfeeds_json || return 0
+    
+    local tr_main_menu tr_custom_feeds breadcrumb
+    local cat_id
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+    
+    cat_id=$(get_customfeed_categories | head -1)
+    
+    if [ -z "$cat_id" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 0
+    fi
+    
+    package_selection "$cat_id" "custom_feeds" "$breadcrumb"
+}
+
+custom_scripts_selection() {
+    download_customscripts_json || return 0
+    
+    local tr_main_menu tr_custom_scripts breadcrumb
+    local all_scripts
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_scripts=$(translate "tr-tui-custom-scripts")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
+    
+    all_scripts=$(get_customscript_all_scripts)
+    
+    if [ -z "$all_scripts" ]; then
+        show_msgbox "$breadcrumb" "No custom scripts available"
+        return 0
+    fi
+    
+    # UIモード別の実装を呼び出す
+    custom_scripts_selection_ui "$breadcrumb" "$all_scripts"
+}
+
+custom_script_options() {
+    local script_id="$1"
+    local parent_breadcrumb="$2"
+    local script_name breadcrumb
+    local options filtered_options
+    local min_mem min_flash msg
+    
+    script_name=$(get_customscript_name "$script_id")
+    breadcrumb="${parent_breadcrumb} > ${script_name}"
+    
+    if ! check_script_requirements "$script_id"; then
+        min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
+        min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
+        
+        msg="$(translate 'tr-tui-customscript-resource-check')
+
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-required')
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-required')
+
+$(translate 'tr-tui-customscript-resource-ng')"
+        
+        show_msgbox "$breadcrumb" "$msg"
+        return 0
+    fi
+    
+    options=$(get_customscript_options "$script_id")
+    
+    if [ -z "$options" ]; then
+        show_msgbox "$breadcrumb" "No options available"
+        return 0
+    fi
+    
+    filtered_options=$(filter_script_options "$script_id" "$options")
+    
+    if [ -z "$filtered_options" ]; then
+        show_msgbox "$breadcrumb" "No options available"
+        return 0
+    fi
+    
+    # UIモード別の実装を呼び出す
+    custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
 }
 
 # Custom Scripts Management
@@ -1940,6 +2058,12 @@ aios2_main() {
     echo ""
     
     select_ui_mode
+
+    if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
+    fi
+
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
     aios2_${UI_MODE}_main
 }
