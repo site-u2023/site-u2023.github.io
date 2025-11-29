@@ -31,6 +31,16 @@ LAN_IF=""
 LAN_ADDR=""
 LAN_ADDR6=""
 
+COLOR_RED="\033[1;31m"
+COLOR_GREEN="\033[1;32m"
+COLOR_YELLOW="\033[1;33m"
+COLOR_BLUE="\033[1;34m"
+COLOR_MAGENTA="\033[1;35m"
+COLOR_CYAN="\033[1;36m"
+COLOR_WHITE="\033[1;37m"
+COLOR_BLACK="\033[1;30m"
+COLOR_RESET="\033[0m"
+
 # URL and Path Configuration
 
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
@@ -47,7 +57,7 @@ CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
-print_banner_unicode() {
+XXX_print_banner_unicode() {
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
     printf       "\033[34m ████  ███   ████   █████\033[0m  \033[37m█████\033[0m\n"
@@ -57,6 +67,19 @@ print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     printf       "\033[37m         Vr.%s\033[0m\n" "$VERSION"
+    printf "\n"
+}
+
+print_banner_unicode() {
+    printf "\n"
+    printf       "${COLOR_MAGENTA}       ██ █${COLOR_RESET}\n"
+    printf       "${COLOR_BLUE} ████  ███   ████   █████${COLOR_RESET}  ${COLOR_WHITE}█████${COLOR_RESET}\n"
+    printf       "${COLOR_GREEN}    ██  ██  ██  ██ ██${COLOR_RESET}          ${COLOR_WHITE}██${COLOR_RESET}\n"
+    printf       "${COLOR_YELLOW} █████  ██  ██  ██  █████${COLOR_RESET}   ${COLOR_WHITE}████${COLOR_RESET}\n"
+    printf "\033[38;5;208m██  ██  ██  ██  ██      ██${COLOR_RESET}${COLOR_WHITE} ██${COLOR_RESET}\n"
+    printf       "${COLOR_RED} █████ ████  ████  ██████${COLOR_RESET}  ${COLOR_WHITE}██████${COLOR_RESET}\n"
+    printf "\n"
+    printf       "${COLOR_WHITE}         Vr.%s${COLOR_RESET}\n" "$VERSION"
     printf "\n"
 }
 
