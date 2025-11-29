@@ -1732,6 +1732,9 @@ needs_reboot_check() {
 
 aios2_main() {
     clear
+
+    TIME_START=$(cut -d' ' -f1 /proc/uptime)
+    
     print_banner
     
     init
@@ -1739,8 +1742,6 @@ aios2_main() {
     
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
-    
-    TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
     download_language_json "en"
     
