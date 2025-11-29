@@ -1216,10 +1216,7 @@ EOF
             should_add=0
             if echo "$expected" | grep -qx "$current_val"; then
                 should_add=1
-                echo "[DEBUG] Match found in array!" >> "$CONFIG_DIR/debug.log"
-            elif [ "$expected" = "$current_val" ]; then
-                should_add=1
-                echo "[DEBUG] Match found as single value!" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] Match found!" >> "$CONFIG_DIR/debug.log"
             fi
             
             if [ "$should_add" -eq 1 ]; then
@@ -1697,14 +1694,24 @@ save_restore_path() {
 
 create_backup() {
     local trigger="${1:-manual}"
-    local timestamp
+    local timestamp backup_file
     
     timestamp=$(date +%Y%m%d_%H%M%S)
-    mkdir -p "$BACKUP_DIR"
+    backup_file="$BACKUP_DIR/backup-${timestamp}.tar.gz"
     
-    sysupgrade -b "$BACKUP_DIR/backup-${timestamp}.tar.gz"
+    mkdir -p "$BACKUP_DIR" || return 1
+    
+    if ! sysupgrade -b "$backup_file"; then
+        echo "Error: sysupgrade backup failed" >&2
+        return 1
+    fi
+    
+    if [ ! -f "$backup_file" ] || [ ! -s "$backup_file" ]; then
+        echo "Error: Backup file not created or empty" >&2
+        return 1
+    fi
+    
     cleanup_old_backups
-    
     return 0
 }
 
@@ -1720,10 +1727,20 @@ cleanup_old_backups() {
 restore_from_backup() {
     local backup_file="$1"
     
-    [ ! -f "$backup_file" ] && return 1
+    if [ ! -f "$backup_file" ]; then
+        echo "Error: Backup file not found: $backup_file" >&2
+        return 1
+    fi
     
-    create_backup "before_restore"
-    sysupgrade -r "$backup_file"
+    if ! create_backup "before_restore"; then
+        echo "Error: Failed to create backup before restore" >&2
+        return 1
+    fi
+    
+    if ! sysupgrade -r "$backup_file"; then
+        echo "Error: sysupgrade restore failed" >&2
+        return 1
+    fi
     
     return 0
 }
