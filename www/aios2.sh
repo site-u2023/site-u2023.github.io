@@ -113,7 +113,6 @@ load_config_from_js() {
     _set_path_url 'setup_template_path'     'SETUP_TEMPLATE_PATH'     'SETUP_TEMPLATE_URL'
     _set_path_url 'customfeeds_db_path'     'CUSTOMFEEDS_DB_PATH'     'CUSTOMFEEDS_JSON_URL'
     _set_path_url 'customscripts_db_path'   'CUSTOMSCRIPTS_DB_PATH'   'CUSTOMSCRIPTS_JSON_URL'
-    _set_path_url 'review_json_path'        'REVIEW_DB_PATH'          'REVIEW_JSON_URL'
     _set_path_url 'language_path_template'  'LANGUAGE_PATH_TEMPLATE'  ''
     _set_path_url 'whiptail_ui_path'        'WHIPTAIL_UI_PATH'        ''
     _set_path_url 'simple_ui_path'          'SIMPLE_UI_PATH'          ''
@@ -134,7 +133,6 @@ load_config_from_js() {
         echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH"
         echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL"
         echo "[DEBUG] REVIEW_DB_PATH=$REVIEW_DB_PATH"
-        echo "[DEBUG] REVIEW_JSON_URL=$REVIEW_JSON_URL"
         echo "[DEBUG] WHIPTAIL_UI_URL=$WHIPTAIL_UI_URL"
         echo "[DEBUG] SIMPLE_UI_URL=$SIMPLE_UI_URL"
     } >> "$CONFIG_DIR/debug.log"
@@ -820,46 +818,6 @@ is_package_selected() {
     else
         grep -q "^${pkg_id}\$" "$SELECTED_PACKAGES" 2>/dev/null
     fi
-}
-
-download_review_json() {
-    download_file_with_cache "$REVIEW_JSON_URL" "$REVIEW_JSON"
-    return $?
-}
-
-get_review_items() {
-    jsonfilter -i "$REVIEW_JSON" -e '@.items[*].id' 2>/dev/null
-}
-
-get_review_item_label() {
-    local idx=$((${1}-1))
-    local class
-    class=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].class" 2>/dev/null)
-    translate "$class"
-}
-
-get_review_item_action() {
-    local idx=$((${1}-1))
-    jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].action" 2>/dev/null
-}
-
-get_review_item_file() {
-    local idx=$((${1}-1))
-    local file
-    file=$(jsonfilter -i "$REVIEW_JSON" -e "@.items[$idx].file" 2>/dev/null)
-    
-    case "$file" in
-        "SELECTED_PACKAGES") echo "$SELECTED_PACKAGES" ;;
-        "SETUP_VARS") echo "$SETUP_VARS" ;;
-        "postinst.sh") echo "$CONFIG_DIR/postinst.sh" ;;
-        "setup.sh") echo "$CONFIG_DIR/setup.sh" ;;
-        *) echo "$file" ;;
-    esac
-}
-
-get_review_item_empty_class() {
-    local item_id="$1"
-    jsonfilter -i "$REVIEW_JSON" -e "@.items[@.id='$item_id'].empty_class" 2>/dev/null | head -1
 }
 
 # Custom Feeds Management
