@@ -1342,7 +1342,6 @@ review_and_apply() {
     
     confirm_msg="${summary_content}
 
-----------------------------------------
 $(translate 'tr-tui-apply-confirm-question')"
     
     if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
