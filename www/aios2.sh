@@ -43,7 +43,6 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
-REVIEW_JSON="$CONFIG_DIR/review.json"
 
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
@@ -1607,13 +1606,6 @@ aios2_main() {
         fi
     ) &
     POSTINST_PID=$!
-    
-    (
-        if ! download_review_json; then
-            echo "Warning: Failed to download review.json" >&2
-        fi
-    ) &
-    REVIEW_PID=$!
     
     (
         if ! download_customfeeds_json; then
