@@ -1338,6 +1338,13 @@ review_and_apply() {
         echo "Error: Failed to generate summary"
         return 1
     fi
+    
+    # 設定が空の場合は早期リターン
+    if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
+        return 0
+    fi
+    
     summary_content=$(cat "$summary_file")
     
     confirm_msg="${summary_content}
