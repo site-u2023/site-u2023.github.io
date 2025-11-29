@@ -1731,10 +1731,9 @@ needs_reboot_check() {
 # Main Entry Point
 
 aios2_main() {
-    clear
-
     TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
+    clear
     print_banner
     
     init
@@ -1743,13 +1742,18 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
+    echo "Fetching English language file"
     download_language_json "en"
     
+    echo "Fetching auto-config"
     get_extended_device_info
     
     if [ "${AUTO_LANGUAGE:-en}" != "en" ]; then
+        echo "Fetching language file: ${AUTO_LANGUAGE}"
         download_language_json "${AUTO_LANGUAGE}"
     fi
+    
+    echo "Fetching essential files in parallel"
     
     (
         if ! download_setup_json; then
@@ -1803,6 +1807,7 @@ aios2_main() {
     echo ""
     echo "${ELAPSED_TIME}s"
     echo ""
+    
     if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
         echo "Warning: Failed to fetch auto-config API"
         echo "   https://www.cloudflarestatus.com/"
