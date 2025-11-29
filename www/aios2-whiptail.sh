@@ -1332,16 +1332,6 @@ EOF
 }
 
 review_and_apply() {
-    echo "$(translate 'tr-tui-creating-backup')"
-    if ! create_backup "before_apply"; then
-        local tr_main_menu tr_review breadcrumb
-        tr_main_menu=$(translate "tr-tui-main-menu")
-        tr_review=$(translate "tr-tui-review-configuration")
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-        show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
-        return 1
-    fi
-    
     generate_files
     
     local tr_main_menu tr_review breadcrumb
@@ -1357,7 +1347,6 @@ review_and_apply() {
         return 1
     fi
     
-    # 設定が空の場合は早期リターン
     if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
         return 0
@@ -1370,6 +1359,12 @@ review_and_apply() {
 🟣 $(translate 'tr-tui-apply-confirm-question')"
     
     if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
+        echo "$(translate 'tr-tui-creating-backup')"
+        if ! create_backup "before_apply"; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+            return 1
+        fi
+        
         clear
         
         echo "$(translate 'tr-tui-installing-packages')"
