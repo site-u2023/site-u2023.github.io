@@ -31,23 +31,6 @@ title=black,lightgray
 
 BREADCRUMB_SEP=" > "
 
-build_breadcrumb() {
-    local result=""
-    local first=1
-    
-    for level in "$@"; do
-        [ -z "$level" ] && continue
-        if [ $first -eq 1 ]; then
-            result="$level"
-            first=0
-        else
-            result="${result}${BREADCRUMB_SEP}${level}"
-        fi
-    done
-    
-    echo "$result"
-}
-
 show_menu() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -129,56 +112,6 @@ show_textbox() {
 }
 
 # Package Compatibility Check for Custom Feeds
-
-package_compatible() {
-    local pkg_id="$1"
-    local pkg_managers
-    
-    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
-    
-    [ -z "$pkg_managers" ] && return 0
-    
-    echo "$pkg_managers" | grep -q "^${PKG_MGR}\$" && return 0
-    
-    return 1
-}
-
-custom_feeds_selection() {
-    download_customfeeds_json || return 0
-    
-    local tr_main_menu tr_custom_feeds breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat
-    local categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
-    
-    categories=$(get_customfeed_categories)
-    
-    menu_items="" 
-    i=1
-    
-    while read -r cat_id; do
-        cat_name=$(get_category_name "$cat_id")
-        menu_items="$menu_items $i \"$cat_name\""
-        i=$((i+1))
-    done <<EOF
-$categories
-EOF
-    
-    if [ -z "$menu_items" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
-    
-    if [ -n "$choice" ]; then
-        selected_cat=$(echo "$categories" | sed -n "${choice}p")
-        package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
-    fi
-}
 
 custom_scripts_selection() {
     download_customscripts_json || return 0
