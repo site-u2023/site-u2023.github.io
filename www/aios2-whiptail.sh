@@ -861,7 +861,7 @@ package_selection() {
 $packages
 EOF
         
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-ok')\" \"$(translate 'tr-tui-back')\" $checklist_items")
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
         
         if [ $? -ne 0 ]; then
             return 0
@@ -882,7 +882,7 @@ EOF2
         
         for idx_str in $selected; do
             idx_clean=$(echo "$idx_str" | tr -d '"')
-
+            
             local current_idx=1
             while read -r pkg_id; do
                 [ -z "$pkg_id" ] && continue
@@ -901,7 +901,6 @@ $packages
 EOF3
         done
         
-        return 0
     done
 }
 
