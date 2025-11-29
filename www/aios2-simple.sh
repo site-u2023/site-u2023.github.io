@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1129.0936"
+VERSION="R7.1129.1801"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -1239,6 +1239,12 @@ main_menu() {
         show_numbered_item "$i" "$custom_scripts_label"
         local custom_scripts_choice=$i
         i=$((i+1))
+
+        local restore_point_label
+        restore_point_label=$(translate "tr-tui-restore-point")
+        show_numbered_item "$i" "$restore_point_label"
+        local restore_point_choice=$i
+        i=$((i+1))
         
         show_numbered_item "$i" "$(translate 'tr-tui-review-configuration')"
         local review_choice=$i
@@ -1274,6 +1280,9 @@ main_menu() {
             continue
         elif [ "$choice" -eq "$custom_scripts_choice" ] 2>/dev/null; then
             custom_scripts_selection
+            continue
+        elif [ "$choice" -eq "$restore_point_choice" ] 2>/dev/null; then
+            restore_point_menu
             continue
         elif [ "$choice" -eq "$review_choice" ] 2>/dev/null; then
             review_and_apply
