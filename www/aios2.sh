@@ -27,7 +27,6 @@ SETUP_TEMPLATE_PATH=""
 LANGUAGE_PATH_TEMPLATE=""
 CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
-TRANSLATION_CACHE_FILE="$CONFIG_DIR/translation_cache.txt"
 MEM_FREE_MB=""
 FLASH_FREE_MB=""
 LAN_IF=""
@@ -279,7 +278,6 @@ init() {
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
-    : > "$TRANSLATION_CACHE_FILE"
     : > "$CONFIG_DIR/debug.log"
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
@@ -317,36 +315,16 @@ download_language_json() {
 
 translate() {
     local key="$1"
-    local cached translation
+    local translation
 
-    if [ -f "$TRANSLATION_CACHE_FILE" ]; then
-        cached=$(grep "^${key}=" "$TRANSLATION_CACHE_FILE" 2>/dev/null | cut -d= -f2-)
-        if [ -n "$cached" ]; then
-            echo "$cached"
-            return 0
-        fi
+    if [ -z "$_TRANSLATIONS_LOADED" ]; then
+        _TRANSLATIONS_DATA=$(cat "$LANG_JSON" 2>/dev/null)
+        _TRANSLATIONS_LOADED=1
     fi
     
-    if [ -f "$LANG_JSON" ]; then
-        translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
-        if [ -n "$translation" ]; then
-            echo "${key}=${translation}" >> "$TRANSLATION_CACHE_FILE"
-            echo "$translation"
-            return 0
-        fi
-    fi
-
-    if [ -f "$LANG_JSON_EN" ] && [ "$LANG_JSON" != "$LANG_JSON_EN" ]; then
-        translation=$(jsonfilter -i "$LANG_JSON_EN" -e "@['$key']" 2>/dev/null)
-        if [ -n "$translation" ]; then
-            echo "${key}=${translation}" >> "$TRANSLATION_CACHE_FILE"
-            echo "$translation"
-            return 0
-        fi
-    fi
+    translation=$(echo "$_TRANSLATIONS_DATA" | jsonfilter -e "@['$key']" 2>/dev/null)
     
-    echo "$key"
-    return 1
+    [ -n "$translation" ] && echo "$translation" || echo "$key"
 }
 
 # File Downloads
