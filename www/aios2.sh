@@ -1739,6 +1739,8 @@ aios2_main() {
     
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
+
+    TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
     echo "Fetching English language file"
     download_language_json "en"
@@ -1752,8 +1754,6 @@ aios2_main() {
     fi
     
     echo "Fetching essential files in parallel"
-    
-    TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
     (
         if ! download_setup_json; then
