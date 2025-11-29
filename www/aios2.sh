@@ -68,6 +68,8 @@ banner_supported() {
 print_banner() {
     if banner_supported; then
         print_banner_unicode
+    else
+        printf "\naios2 Vr.%s\n\n" "$VERSION"
     fi
 }
 
