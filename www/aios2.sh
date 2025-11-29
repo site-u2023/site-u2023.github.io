@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1128.1945"
+VERSION="R7.1129.1135"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1567,6 +1567,69 @@ generate_config_summary() {
     fi
     
     echo "$summary_file"
+}
+
+needs_reboot_check() {
+    local needs_reboot=0
+    
+    # パッケージの reboot フラグチェック
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r pkg_id; do
+            local reboot_flag
+            reboot_flag=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].reboot" 2>/dev/null | head -1)
+            if [ "$reboot_flag" = "true" ]; then
+                needs_reboot=1
+                break
+            fi
+        done < "$SELECTED_PACKAGES"
+    fi
+    
+    # Setup変数の reboot フラグチェック
+    if [ "$needs_reboot" -eq 0 ] && [ -s "$SETUP_VARS" ]; then
+        while read -r line; do
+            # コメント行と空行をスキップ
+            case "$line" in
+                \#*|'') continue ;;
+            esac
+            
+            local var_name
+            var_name=$(echo "$line" | cut -d= -f1)
+            
+            # その変数を持つitemのrebootフラグを確認
+            local reboot_flag
+            reboot_flag=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
+            
+            # sectionの中も確認
+            if [ -z "$reboot_flag" ] || [ "$reboot_flag" = "null" ]; then
+                reboot_flag=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.variable='$var_name'].reboot" 2>/dev/null | head -1)
+            fi
+            
+            if [ "$reboot_flag" = "true" ]; then
+                needs_reboot=1
+                break
+            fi
+        done < "$SETUP_VARS"
+    fi
+    
+    # Custom Scripts の reboot フラグチェック
+    if [ "$needs_reboot" -eq 0 ]; then
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local script_id
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            
+            local reboot_flag
+            reboot_flag=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].reboot" 2>/dev/null | head -1)
+            
+            if [ "$reboot_flag" = "true" ]; then
+                needs_reboot=1
+                break
+            fi
+        done
+    fi
+    
+    echo "$needs_reboot"
 }
 
 # Main Entry Point
