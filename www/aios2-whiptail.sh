@@ -1327,86 +1327,40 @@ review_and_apply() {
     generate_files
     
     local tr_main_menu tr_review breadcrumb
-    local review_items menu_items i choice action file
-    local confirm_msg
+    local summary_file summary_content confirm_msg
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
-    review_items=$(get_review_items)
+    summary_file=$(generate_config_summary)
+    summary_content=$(cat "$summary_file")
     
-    while true; do
-        menu_items=""
-        for i in $review_items; do
-            menu_items="$menu_items $i \"$(get_review_item_label "$i")\""
+    confirm_msg="${summary_content}
 
+----------------------------------------
+$(translate 'tr-tui-apply-confirm-question')"
+    
+    if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
+        # postinst.sh, customfeeds, setup.sh はログへ
+        sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
+        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+            [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
+        done
+        sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
+        
+        # customscripts はコンソールに表示
+        for script in "$CONFIG_DIR"/customscripts-*.sh; do
+            [ -f "$script" ] && sh "$script"
         done
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
+        # 完了 + 再起動確認を1枚で
+        if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
+            reboot
         fi
-        
-        action=$(get_review_item_action "$choice")
-        
-        case "$action" in
-            device_info)
-                device_info_titled "$breadcrumb"
-                ;;
-            textbox)
-                file=$(get_review_item_file "$choice")
-                if [ -f "$file" ] && [ -s "$file" ]; then
-                    show_textbox "$breadcrumb" "$file"
-                else
-                    local empty_class
-                    empty_class=$(get_review_item_empty_class "$choice")
-                    if [ -n "$empty_class" ]; then
-                        show_msgbox "$breadcrumb" "$(translate "$empty_class")"
-                    else
-                        show_msgbox "$breadcrumb" "Empty"
-                    fi
-                fi
-                ;;
-            view_selected_custom_packages|view_customfeeds)
-                $action
-                ;;
-            view_selected_custom_packages|view_customfeeds|view_customscripts|view_selected_custom_scripts)
-                $action
-                ;;
-            apply)
-                confirm_msg="$(translate 'tr-tui-apply-confirm-step1')
-$(translate 'tr-tui-apply-confirm-step2')
-$(translate 'tr-tui-apply-confirm-step3')
-$(translate 'tr-tui-apply-confirm-step4')
-$(translate 'tr-tui-apply-confirm-step5')
-
-$(translate 'tr-tui-apply-confirm-question')"
-                
-                if show_yesno "$breadcrumb" "$confirm_msg"; then
-                    sh "$CONFIG_DIR/postinst.sh" > "$CONFIG_DIR/apply.log" 2>&1
-                    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                        [ -f "$script" ] && sh "$script" >> "$CONFIG_DIR/apply.log" 2>&1
-                    done
-                    sh "$CONFIG_DIR/setup.sh" >> "$CONFIG_DIR/apply.log" 2>&1
-                    for script in "$CONFIG_DIR"/customscripts-*.sh; do
-                        [ -f "$script" ] && sh "$script"
-                    done
-                    if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
-                        reboot
-                    fi
-                    return 0
-                fi
-                ;;
-        esac
-    done
-}
-
-XX_aios2_whiptail_main() {
-    export NEWT_COLORS
-    device_info
-    main_menu
+    fi
+    
+    return 0
 }
 
 aios2_whiptail_main() {
