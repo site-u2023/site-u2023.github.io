@@ -54,23 +54,6 @@ show_numbered_item() {
     fi
 }
 
-build_breadcrumb() {
-    local result=""
-    local first=1
-    
-    for level in "$@"; do
-        [ -z "$level" ] && continue
-        if [ $first -eq 1 ]; then
-            result="$level"
-            first=0
-        else
-            result="${result}${BREADCRUMB_SEP}${level}"
-        fi
-    done
-    
-    echo "$result"
-}
-
 show_menu() {
     local breadcrumb="$1"
     local prompt="$2"
@@ -189,42 +172,6 @@ show_msgbox() {
     echo ""
     echo "[$ok_btn]"
     read -r _ 2>/dev/null
-}
-
-package_compatible() {
-    local pkg_id="$1"
-    local pkg_managers
-    
-    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
-    
-    [ -z "$pkg_managers" ] && return 0
-    
-    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
-    
-    return 1
-}
-
-custom_feeds_selection() {
-    local tr_main_menu tr_custom_feeds breadcrumb
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
-    
-    download_customfeeds_json || {
-        show_msgbox "$breadcrumb" "Failed to load custom feeds"
-        return 0
-    }
-    
-    local cat_id
-    cat_id=$(get_customfeed_categories | head -1)
-    
-    if [ -z "$cat_id" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    package_selection "$cat_id" "custom_feeds" "$breadcrumb"
 }
 
 custom_scripts_selection() {
