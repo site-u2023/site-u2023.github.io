@@ -1738,8 +1738,18 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
+    # en言語ファイルを先にDL
+    echo "Fetching English language file"
+    download_language_json "en"
+    
     echo "Fetching auto-config"
     get_extended_device_info
+    
+    # 母国語言語ファイルDL
+    if [ "${AUTO_LANGUAGE:-en}" != "en" ]; then
+        echo "Fetching language file: ${AUTO_LANGUAGE}"
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
     
     echo "Fetching essential files in parallel"
     
@@ -1752,13 +1762,6 @@ aios2_main() {
         fi
     ) &
     SETUP_PID=$!
-    
-    (
-        if ! download_language_json "${AUTO_LANGUAGE:-en}"; then
-            echo "Warning: Using English as fallback language" >&2
-        fi
-    ) &
-    LANG_PID=$!
     
     (
         if ! download_postinst_json; then
@@ -1787,8 +1790,6 @@ aios2_main() {
     
     wait $SETUP_PID
     SETUP_STATUS=$?
-    
-    wait $LANG_PID
     
     wait $POSTINST_PID
     POSTINST_STATUS=$?
@@ -1827,7 +1828,6 @@ aios2_main() {
         return 1
     fi
 
-    # DEBUG用ログのみ
     if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
         if [ -n "$MAPE_GUA_PREFIX" ]; then
             echo "[DEBUG] Detected mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
