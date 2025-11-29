@@ -796,28 +796,30 @@ package_categories() {
 $categories
 EOF
     
-    menu_items="" 
-    i=1
-    
-    while read -r cat_id; do
-        [ -z "$cat_id" ] && continue
-        cat_name=$(get_category_name "$cat_id")
-        menu_items="$menu_items $i \"$cat_name\""
-        i=$((i+1))
-    done <<EOF
+    while true; do
+        menu_items="" 
+        i=1
+        
+        while read -r cat_id; do
+            [ -z "$cat_id" ] && continue
+            cat_name=$(get_category_name "$cat_id")
+            menu_items="$menu_items $i \"$cat_name\""
+            i=$((i+1))
+        done <<EOF
 $visible_categories
 EOF
-    
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-    
-    if ! [ $? -eq 0 ]; then
-        return 0
-    fi
-    
-    if [ -n "$choice" ]; then
-        selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
-        package_selection "$selected_cat" "normal" "$breadcrumb"
-    fi
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
+            package_selection "$selected_cat" "normal" "$breadcrumb"
+        fi
+    done
 }
 
 package_selection() {
@@ -833,8 +835,8 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     checklist_items=""
-    
     idx=1
+    
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
@@ -861,26 +863,43 @@ EOF
     
     selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
     
-    if [ $? -eq 0 ]; then
-        if [ "$caller" = "custom_feeds" ]; then
-            target_file="$SELECTED_CUSTOM_PACKAGES"
-        else
-            target_file="$SELECTED_PACKAGES"
-        fi
-        
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            sed -i "/^${pkg_id}\$/d" "$target_file"
-        done <<EOF2
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        sed -i "/^${pkg_id}\$/d" "$target_file"
+    done <<EOF2
 $packages
 EOF2
+    
+    for idx_str in $selected; do
+        idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        for idx_str in $selected; do
-            idx_clean=$(echo "$idx_str" | tr -d '"')
-            pkg_id=$(echo "$packages" | sed -n "${idx_clean}p")
-            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$target_file"
-        done
-    fi
+        local current_idx=1
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            
+            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
+                continue
+            fi
+            
+            if [ "$current_idx" -eq "$idx_clean" ]; then
+                echo "$pkg_id" >> "$target_file"
+                break
+            fi
+            current_idx=$((current_idx+1))
+        done <<EOF3
+$packages
+EOF3
+    done
 }
 
 view_selected_custom_packages() {
