@@ -1361,9 +1361,17 @@ $(translate 'tr-tui-apply-confirm-question')"
         # キュー削除（再起動前）
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
-        # 完了 + 再起動確認を1枚で
-        if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
-            reboot
+        # 再起動が必要かチェック
+        local needs_reboot
+        needs_reboot=$(needs_reboot_check)
+        
+        # 完了メッセージと再起動確認
+        if [ "$needs_reboot" -eq 1 ]; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
         fi
     fi
     
