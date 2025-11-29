@@ -289,36 +289,6 @@ EOF
     fi
 }
 
-run_custom_script() {
-    local script_file="$1"
-    local args="$2"
-    local breadcrumb="$3"
-    local script_url script_path
-    
-    script_url="${BASE_URL}/custom-script/${script_file}"
-    script_path="$CONFIG_DIR/${script_file}"
-    
-    if ! __download_file_core "$script_url" "$script_path"; then
-        show_msgbox "$breadcrumb" "Failed to download script: $script_file"
-        return 1
-    fi
-    
-    chmod +x "$script_path"
-    
-    clear
-    printf "\033[1;34mExecuting: %s %s\033[0m\n\n" "$script_file" "$args"
-    
-    if [ -n "$args" ]; then
-        sh "$script_path" "$args"
-    else
-        sh "$script_path"
-    fi
-    
-    printf "\n\033[1;32mScript execution completed.\033[0m\n"
-    printf "Press [Enter] to continue..."
-    read -r _
-}
-
 device_info() {
     local tr_main_menu tr_device_info breadcrumb info
     
@@ -340,26 +310,6 @@ device_info() {
 "
     
     show_msgbox "$breadcrumb" "$info"
-}
-
-device_info_titled() {
-    local title="$1"
-    local info
-    
-    info="Model: $DEVICE_MODEL
-"
-    info="${info}Target: $DEVICE_TARGET
-"
-    info="${info}Version: $OPENWRT_VERSION
-"
-    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && info="${info}Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)
-"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: ${DEVICE_STORAGE_AVAIL} / ${DEVICE_STORAGE} (available / total)
-"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
-"
-    
-    show_msgbox "$title" "$info"
 }
 
 show_network_info() {
