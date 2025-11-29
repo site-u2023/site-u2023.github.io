@@ -233,5 +233,14 @@
     "tr-tui-summary-variables": "Configuration Variables",
     "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-no-config": "No configuration items",
-    "tr-tui-reboot-question": "Do you want to reboot?"
+    "tr-tui-reboot-question": "Do you want to reboot?",
+
+    "tr-tui-restore-point": "Restore Point",
+    "tr-tui-no-restore-points": "No restore points available",
+    "tr-tui-restore-confirm": "Restore to this point?",
+    "tr-tui-restore-warning": "Current settings will be automatically backed up before restoration",
+    "tr-tui-restore-success": "Successfully restored",
+    "tr-tui-restore-failed": "Failed to restore",
+    "tr-tui-creating-backup": "Creating backup...",
+    "tr-tui-backup-failed": "Backup creation failed"
 }
