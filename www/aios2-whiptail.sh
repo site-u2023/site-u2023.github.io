@@ -113,24 +113,10 @@ show_textbox() {
 
 # Package Compatibility Check for Custom Feeds
 
-custom_scripts_selection() {
-    download_customscripts_json || return 0
-    
-    local tr_main_menu tr_custom_scripts breadcrumb
+custom_scripts_selection_ui() {
+    local breadcrumb="$1"
+    local all_scripts="$2"
     local menu_items i script_id script_name choice selected_script
-    local all_scripts
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_scripts=$(translate "tr-tui-custom-scripts")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
-    
-    # 全スクリプトを直接取得
-    all_scripts=$(get_customscript_all_scripts)
-    
-    if [ -z "$all_scripts" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts available"
-        return 0
-    fi
     
     menu_items="" 
     i=1
@@ -151,45 +137,11 @@ EOF
     fi
 }
 
-custom_script_options() {
+custom_script_options_ui() {
     local script_id="$1"
-    local parent_breadcrumb="$2"
-    local script_name breadcrumb
+    local breadcrumb="$2"
+    local filtered_options="$3"
     local menu_items i option_id option_label choice selected_option
-    local options filtered_options script_file option_args
-    local min_mem min_flash msg
-    
-    script_name=$(get_customscript_name "$script_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${script_name}"
-    
-    if ! check_script_requirements "$script_id"; then
-        min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
-        min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
-        
-        msg="$(translate 'tr-tui-customscript-resource-check')
-
-$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-required')
-$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-required')
-
-$(translate 'tr-tui-customscript-resource-ng')"
-        
-        show_msgbox "$breadcrumb" "$msg"
-        return 0
-    fi
-    
-    options=$(get_customscript_options "$script_id")
-    
-    if [ -z "$options" ]; then
-        show_msgbox "$breadcrumb" "No options available"
-        return 0
-    fi
-    
-    filtered_options=$(filter_script_options "$script_id" "$options")
-    
-    if [ -z "$filtered_options" ]; then
-        show_msgbox "$breadcrumb" "No options available"
-        return 0
-    fi
     
     menu_items=""
     i=1
@@ -206,18 +158,18 @@ EOF
     
     if [ -n "$choice" ]; then
         selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-        option_args=$(get_customscript_option_args "$script_id" "$selected_option")
         
-        local skip_inputs
-        skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-        
-        if [ "$skip_inputs" != "true" ]; then
-            if ! collect_script_inputs "$script_id" "$breadcrumb"; then
-                return 0
+        if [ -n "$selected_option" ]; then
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            
+            if [ "$skip_inputs" != "true" ]; then
+                if ! collect_script_inputs "$script_id" "$breadcrumb"; then
+                    return 0
+                fi
+            else
+                echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
             fi
-            echo "INSTALL_MODE='$option_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-        else
-            echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
     fi
 }
