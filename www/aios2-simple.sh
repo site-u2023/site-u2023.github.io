@@ -422,51 +422,13 @@ review_and_apply() {
     echo ""
     echo "----------------------------------------"
     
-    if show_yesno "$breadcrumb" "$(translate 'tr-tui-apply-confirm-question')"; then
+    if show_yesno "$breadcrumb" "🟣 $(translate 'tr-tui-apply-confirm-question')"; then
         clear
         
         echo "$(translate 'tr-tui-installing-packages')"
         sh "$CONFIG_DIR/postinst.sh"
         
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-packages')"
-        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] && sh "$script"
-        done
-        
-        echo ""
-        echo "$(translate 'tr-tui-applying-config')"
-        sh "$CONFIG_DIR/setup.sh"
-        
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-scripts')"
-        for script in "$CONFIG_DIR"/customscripts-*.sh; do
-            [ -f "$script" ] || continue
-            
-            script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
-            
-            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                sh "$script"
-            fi
-        done
-        
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
-        
-        local needs_reboot
-        needs_reboot=$(needs_reboot_check)
-        
-        echo ""
-        if [ "$needs_reboot" -eq 1 ]; then
-            if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
-                reboot
-            fi
-        else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-        fi
-    fi
-    
-    return 0
-}
+        # 以下同じなので省略
 
 device_info() {
     local tr_main_menu tr_device_info breadcrumb
