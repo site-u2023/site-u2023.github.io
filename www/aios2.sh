@@ -1472,16 +1472,20 @@ generate_files() {
            
             temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
             : > "$temp_pkg_file"
-           
+            
             while read -r pkg_id; do
                 if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    echo "$pattern"
+                    echo "$pattern" >> "$temp_pkg_file"
                 fi
             done <<EOF2
 $(get_category_packages "$cat_id")
 EOF2
-            > "$temp_pkg_file"
+            
+            selected_pkgs=""
+            if [ -s "$temp_pkg_file" ]; then
+                selected_pkgs=$(cat "$temp_pkg_file" | tr '\n' ' ' | sed 's/ $//')
+            fi
            
             selected_pkgs=""
             if [ -s "$temp_pkg_file" ]; then
