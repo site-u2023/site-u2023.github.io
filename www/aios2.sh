@@ -1828,14 +1828,13 @@ aios2_main() {
     fi
 
     echo "Fetching UI modules"
-    echo ""
     
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
     echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
     
     ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
-    echo "${ELAPSED_TIME}s"
+    echo "\033[32mLoaded in ${ELAPSED_TIME}s\033[0m"
     echo ""
     
     select_ui_mode
