@@ -4,13 +4,14 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1129.1816"
+VERSION="R7.1129.1928"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
 BACKUP_DIR="/etc/aios2/backup"
-MAX_BACKUPS="5"
+RESTORE_PATH_CONFIG="/etc/aios2/restore_path.txt"
+MAX_BACKUPS="10"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 BASE_URL=""
 AUTO_CONFIG_API_URL=""
@@ -1744,7 +1745,19 @@ needs_reboot_check() {
 
 # Backup and Restore Functions
 
-# Backup and Restore Functions
+load_restore_path() {
+    if [ -f "$RESTORE_PATH_CONFIG" ]; then
+        cat "$RESTORE_PATH_CONFIG"
+    else
+        echo "$BACKUP_DIR"
+    fi
+}
+
+save_restore_path() {
+    local path="$1"
+    mkdir -p "$(dirname "$RESTORE_PATH_CONFIG")"
+    echo "$path" > "$RESTORE_PATH_CONFIG"
+}
 
 create_backup() {
     local trigger="${1:-manual}"
@@ -1781,13 +1794,23 @@ restore_from_backup() {
 
 restore_point_menu() {
     local tr_main_menu tr_restore_point breadcrumb
-    local backups backup_file menu_items i choice
+    local current_path custom_path backups menu_items i choice selected_backup
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_restore_point=$(translate "tr-tui-restore-point")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_restore_point")
     
-    backups=$(ls -1t "$BACKUP_DIR"/backup-*.tar.gz 2>/dev/null)
+    current_path=$(load_restore_path)
+    
+    custom_path=$(show_inputbox "$breadcrumb" "$(translate 'tr-restore-backup-path')" "$current_path")
+    
+    if ! [ $? -eq 0 ] || [ -z "$custom_path" ]; then
+        return 0
+    fi
+    
+    save_restore_path "$custom_path"
+    
+    backups=$(ls -1t "${custom_path}"/backup-*.tar.gz 2>/dev/null)
     
     if [ -z "$backups" ]; then
         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-restore-points')"
@@ -1815,7 +1838,6 @@ EOF
         return 0
     fi
     
-    local selected_backup
     selected_backup=$(echo "$backups" | sed -n "${choice}p")
     
     if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-confirm')"; then
