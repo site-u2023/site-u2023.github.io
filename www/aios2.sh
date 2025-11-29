@@ -24,23 +24,12 @@ SETUP_TEMPLATE_PATH=""
 LANGUAGE_PATH_TEMPLATE=""
 CUSTOMFEEDS_DB_PATH=""
 POSTINST_TEMPLATE_PATH=""
-TRANSLATION_CACHE_DATA=""
+TRANSLATION_CACHE_FILE="$CONFIG_DIR/translation_cache.txt"
 MEM_FREE_MB=""
 FLASH_FREE_MB=""
 LAN_IF=""
 LAN_ADDR=""
 LAN_ADDR6=""
-
-COLOR_RED="\033[31m"
-COLOR_GREEN="\033[32m"
-COLOR_YELLOW="\033[33m"
-COLOR_BLUE="\033[34m"
-COLOR_MAGENTA="\033[35m"
-COLOR_CYAN="\033[36m"
-COLOR_WHITE="\033[37m"
-COLOR_BLACK="\033[30m"
-COLOR_ORANGE="\033[38;5;208m"
-COLOR_RESET="\033[0m"
 
 # URL and Path Configuration
 
@@ -59,7 +48,7 @@ CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
-XXX_print_banner_unicode() {
+print_banner_unicode() {
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
     printf       "\033[34m ████  ███   ████   █████\033[0m  \033[37m█████\033[0m\n"
@@ -69,19 +58,6 @@ XXX_print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     printf       "\033[37m         Vr.%s\033[0m\n" "$VERSION"
-    printf "\n"
-}
-
-print_banner_unicode() {
-    printf "\n"
-    printf       "${COLOR_MAGENTA}       ██ █${COLOR_RESET}\n"
-    printf       "${COLOR_BLUE} ████  ███   ████   █████${COLOR_RESET}  ${COLOR_WHITE}█████${COLOR_RESET}\n"
-    printf       "${COLOR_GREEN}    ██  ██  ██  ██ ██${COLOR_RESET}          ${COLOR_WHITE}██${COLOR_RESET}\n"
-    printf       "${COLOR_YELLOW} █████  ██  ██  ██  █████${COLOR_RESET}   ${COLOR_WHITE}████${COLOR_RESET}\n"
-    printf "\033[38;5;208m██  ██  ██  ██  ██      ██${COLOR_RESET}${COLOR_WHITE} ██${COLOR_RESET}\n"
-    printf       "${COLOR_RED} █████ ████  ████  ██████${COLOR_RESET}  ${COLOR_WHITE}██████${COLOR_RESET}\n"
-    printf "\n"
-    printf       "${COLOR_WHITE}         Vr.%s${COLOR_RESET}\n" "$VERSION"
     printf "\n"
 }
 
@@ -299,7 +275,7 @@ init() {
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
-    : > "$TRANSLATION_CACHE"
+    : > "$TRANSLATION_CACHE_FILE"
     : > "$CONFIG_DIR/debug.log"
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
@@ -335,31 +311,29 @@ download_language_json() {
 
 translate() {
     local key="$1"
-    
-    local cached
-    cached=$(echo "$TRANSLATION_CACHE_DATA" | grep "^${key}=" | cut -d= -f2-)
-    if [ -n "$cached" ]; then
-        echo "$cached"
-        return 0
-    fi
-    
-    local translation
-    
-    if [ -f "$LANG_JSON" ]; then
-        translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
-        if [ -n "$translation" ]; then
-            TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
-${key}=${translation}"
-            echo "$translation"
+    local cached translation
+
+    if [ -f "$TRANSLATION_CACHE_FILE" ]; then
+        cached=$(grep "^${key}=" "$TRANSLATION_CACHE_FILE" 2>/dev/null | cut -d= -f2-)
+        if [ -n "$cached" ]; then
+            echo "$cached"
             return 0
         fi
     fi
     
+    if [ -f "$LANG_JSON" ]; then
+        translation=$(jsonfilter -i "$LANG_JSON" -e "@['$key']" 2>/dev/null)
+        if [ -n "$translation" ]; then
+            echo "${key}=${translation}" >> "$TRANSLATION_CACHE_FILE"
+            echo "$translation"
+            return 0
+        fi
+    fi
+
     if [ -f "$LANG_JSON_EN" ] && [ "$LANG_JSON" != "$LANG_JSON_EN" ]; then
         translation=$(jsonfilter -i "$LANG_JSON_EN" -e "@['$key']" 2>/dev/null)
         if [ -n "$translation" ]; then
-            TRANSLATION_CACHE_DATA="${TRANSLATION_CACHE_DATA}
-${key}=${translation}"
+            echo "${key}=${translation}" >> "$TRANSLATION_CACHE_FILE"
             echo "$translation"
             return 0
         fi
@@ -1361,12 +1335,18 @@ compute_dslite_aftr() {
 __download_file_core() {
     local url="$1"
     local output_path="$2"
-    # SC2155: Declare and assign separately
-    local cache_buster
-    cache_buster="?t=$(date +%s)"
+    local cache_buster full_url
     
-    if ! wget -q -O "$output_path" "${url}${cache_buster}"; then
-        echo "[ERROR] Failed to download file: $url to $output_path" >> "$CONFIG_DIR/debug.log"
+    if echo "$url" | grep -q '?'; then
+        cache_buster="&_t=$(date +%s)"
+    else
+        cache_buster="?_t=$(date +%s)"
+    fi
+    
+    full_url="${url}${cache_buster}"
+    
+    if ! wget -q -O "$output_path" "$full_url"; then
+        echo "[ERROR] Failed to download: $url to $output_path" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     return 0
