@@ -17,7 +17,7 @@ dns:
     - 0.0.0.0
   port: {{DNS_PORT}}
   anonymize_client_ip: false
-  ratelimit: 20
+  ratelimit: 0
   ratelimit_subnet_len_ipv4: 24
   ratelimit_subnet_len_ipv6: 56
   ratelimit_whitelist: []
@@ -82,7 +82,7 @@ dns:
   trusted_proxies:
     - 127.0.0.0/8
     - ::1/128
-  cache_size: 4194304
+  cache_size: 1048576
   cache_ttl_min: 0
   cache_ttl_max: 0
   cache_optimistic: false
@@ -155,8 +155,13 @@ filters:
     id: 1764215106
 whitelist_filters: []
 user_rules:
-  - '# google analytecs'
-  - '@@||analytics.google.com'
+  - '# 日本の主要サービス'
+  - '@@||amazon.co.jp^$important'
+  - '@@||rakuten.co.jp^$important'
+  - '@@||yahoo.co.jp^$important'
+  - '# LINE関連'
+  - '@@||line.me^$important'
+  - '@@||line-scdn.net^$important'  
 dhcp:
   enabled: false
   interface_name: ""
