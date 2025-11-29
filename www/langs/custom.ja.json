@@ -233,6 +233,6 @@
     "tr-tui-summary-customfeeds": "カスタムフィードパッケージ",
     "tr-tui-summary-variables": "設定変数",
     "tr-tui-summary-customscripts": "カスタムスクリプト",
-    "tr-tui-no-config": "設定項目がありません"    
+    "tr-tui-no-config": "設定項目がありません",
     "tr-tui-reboot-question": "再起動しますか？"
 }
