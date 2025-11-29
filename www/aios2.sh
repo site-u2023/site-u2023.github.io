@@ -285,25 +285,25 @@ init() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url en_url
+    local lang_url
     
-    en_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/en/")"
-    LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
-    
-    if ! __download_file_core "$en_url" "$LANG_JSON_EN"; then
-        echo "Warning: Failed to download English language file"
-        return 1
-    fi
-    
-    if [ "$lang" != "en" ]; then
+    if [ "$lang" = "en" ]; then
+        en_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/en/")"
+        LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
+        
+        if ! __download_file_core "$en_url" "$LANG_JSON_EN"; then
+            echo "Warning: Failed to download English language file"
+            return 1
+        fi
+        
+        cp "$LANG_JSON_EN" "$LANG_JSON"
+    else
         lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
         
         if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-            echo "Warning: Failed to download language file for ${lang}, using English only"
+            echo "Warning: Failed to download language file for ${lang}, using English"
             cp "$LANG_JSON_EN" "$LANG_JSON"
         fi
-    else
-        cp "$LANG_JSON_EN" "$LANG_JSON"
     fi
     
     return 0
@@ -1738,14 +1738,12 @@ aios2_main() {
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
     
-    # en言語ファイルを先にDL
     echo "Fetching English language file"
     download_language_json "en"
     
     echo "Fetching auto-config"
     get_extended_device_info
     
-    # 母国語言語ファイルDL
     if [ "${AUTO_LANGUAGE:-en}" != "en" ]; then
         echo "Fetching language file: ${AUTO_LANGUAGE}"
         download_language_json "${AUTO_LANGUAGE}"
