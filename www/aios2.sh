@@ -2035,6 +2035,11 @@ aios2_main() {
     
     select_ui_mode
 
+    if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
+    fi
+
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
     aios2_${UI_MODE}_main
 }
