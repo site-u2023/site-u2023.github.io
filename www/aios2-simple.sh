@@ -440,6 +440,27 @@ review_and_apply() {
     return 0
 }
 
+device_info() {
+    local tr_main_menu tr_device_info breadcrumb
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_device_info=$(translate "tr-tui-view-device-info")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
+    
+    show_menu_header "$breadcrumb"
+    
+    echo "Model: $DEVICE_MODEL"
+    echo "Target: $DEVICE_TARGET"
+    echo "Version: $OPENWRT_VERSION"
+    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && echo "Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)"
+    [ -n "$DEVICE_STORAGE" ] && echo "Storage: ${DEVICE_STORAGE_AVAIL} / ${DEVICE_STORAGE} (available / total)"
+    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
+    
+    echo ""
+    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
+    read -r _
+}
+
 show_network_info() {
     local tr_main_menu tr_internet_connection conn_type_label breadcrumb
     local tr_isp tr_as
