@@ -233,7 +233,26 @@
 
 </details>
 
-<details><summary>7 設定確認と適用</summary>
+<details><summary>7 カスタムスクリプト</summary>
+
+- AdGuard Home
+  - OpenWrtパッケージのインストール
+  - 公式バイナリのインストール
+  - 削除
+
+</details>
+
+<details><summary>8 復元ポイント</summary>
+
+- バックアップ復元パス [/etc/aios2/backup]
+- 復元ポイント一覧
+  - backup-YYYYMMDD_HHMMSS.tar.gz
+  - 最大保存数: 10個
+  - 復元時に現在の設定を自動バックアップ
+
+</details>
+
+<details><summary>9 設定確認と適用</summary>
 
 - Select/Exit
   - デバイス情報
