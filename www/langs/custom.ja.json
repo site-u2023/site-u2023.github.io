@@ -228,5 +228,11 @@
     "tr-tui-view-customscripts": "customscripts.sh",
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
+    
+    "tr-tui-summary-packages": "パッケージ",
+    "tr-tui-summary-customfeeds": "カスタムフィードパッケージ",
+    "tr-tui-summary-variables": "設定変数",
+    "tr-tui-summary-customscripts": "カスタムスクリプト",
+    "tr-tui-no-config": "設定項目がありません"    
     "tr-tui-reboot-question": "再起動しますか？"
 }
