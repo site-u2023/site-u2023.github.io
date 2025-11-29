@@ -808,7 +808,7 @@ get_package_name() {
     
     name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     [ -z "$name" ] && name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
-    echo "$name"
+    printf '%s\n' "$name" 
 }
 
 get_package_checked() {
