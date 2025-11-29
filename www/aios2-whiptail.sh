@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1128.0913"
+VERSION="R7.1129.0935"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -1353,6 +1353,9 @@ $(translate 'tr-tui-apply-confirm-question')"
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] && sh "$script"
         done
+        
+        # ★★★ キュー削除を追加（再起動前） ★★★
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         # 完了 + 再起動確認を1枚で
         if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
