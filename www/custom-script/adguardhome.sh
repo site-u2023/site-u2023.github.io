@@ -1,4 +1,3 @@
-
 #!/bin/sh
 # shellcheck shell=sh disable=SC2034,SC3043
 # OpenWrt 19.07+ configuration
@@ -6,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1128.1922"
+VERSION="R7.1129.1006"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -113,7 +112,7 @@ install_prompt() {
   if [ -n "$INSTALL_MODE" ]; then
     case "$INSTALL_MODE" in
       official|openwrt) return ;;
-      *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '$INSTALL_MODE'. Proceeding with interactive prompt.\033[0m\n" ;;
+      *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" ;;
     esac
   fi
 
@@ -131,7 +130,7 @@ install_prompt() {
         printf "\033[1;33mInstallation cancelled.\033[0m\n"
         return 0
         ;;
-      *) printf "\033[1;31mInvalid choice '$choice'. Please enter 1, 2, or 0.\033[0m\n" ;;
+      *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
     esac
   done
 }
@@ -144,12 +143,12 @@ install_packages() {
   case "$PACKAGE_MANAGER" in
     opkg)
       for p in $pkgs; do
-        opkg install $opts "$p" >/dev/null 2>&1
+        opkg install "$opts" "$p" >/dev/null 2>&1
       done
       ;;
     apk)
       for p in $pkgs; do
-        apk add $opts "$p" >/dev/null 2>&1
+        apk add "$opts" "$p" >/dev/null 2>&1
       done
       ;;
   esac
@@ -430,16 +429,16 @@ common_config_firewall() {
     printf "\033[1;31mNo valid IP address family detected. Skipping firewall rule setup.\033[0m\n"
     return
   fi
-  uci set firewall."$rule_name"=redirect
-  uci set firewall."$rule_name".name="AdGuardHome DNS Redirect (${FAMILY_TYPE})"
-  uci set firewall."$rule_name".family="$FAMILY_TYPE"
-  uci set firewall."$rule_name".src="lan"
-  uci set firewall."$rule_name".dest="lan"
-  uci add_list firewall."$rule_name".proto="tcp"
-  uci add_list firewall."$rule_name".proto="udp"
-  uci set firewall."$rule_name".src_dport="$DNS_PORT"
-  uci set firewall."$rule_name".dest_port="$DNS_PORT"
-  uci set firewall."$rule_name".target="DNAT"
+  uci set "firewall.${rule_name}=redirect"
+  uci set "firewall.${rule_name}.name=AdGuardHome DNS Redirect (${FAMILY_TYPE})"
+  uci set "firewall.${rule_name}.family=${FAMILY_TYPE}"
+  uci set "firewall.${rule_name}.src=lan"
+  uci set "firewall.${rule_name}.dest=lan"
+  uci add_list "firewall.${rule_name}.proto=tcp"
+  uci add_list "firewall.${rule_name}.proto=udp"
+  uci set "firewall.${rule_name}.src_dport=${DNS_PORT}"
+  uci set "firewall.${rule_name}.dest_port=${DNS_PORT}"
+  uci set "firewall.${rule_name}.target=DNAT"
   uci commit firewall
   /etc/init.d/firewall restart || {
     printf "\033[1;31mFailed to restart firewall\033[0m\n"
@@ -494,10 +493,16 @@ remove_adguardhome() {
       printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
       read -r cfg
       case "$cfg" in
-        [yY]*) rm -rf "/etc/${AGH}" /etc/adguardhome.yaml ;;
+        [yY]*) 
+          [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
+          [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
+          rm -f /etc/adguardhome.yaml
+          ;;
       esac
     else
-      rm -rf "/etc/${AGH}" /etc/adguardhome.yaml
+      [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
+      [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
+      rm -f /etc/adguardhome.yaml
     fi
   fi
 
