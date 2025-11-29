@@ -156,7 +156,7 @@ filters:
 whitelist_filters: []
 user_rules:
   - '# google analytecs'
-  - '@@||www.google-analytics.com'
+  - '@@||analytics.google.com'
 dhcp:
   enabled: false
   interface_name: ""
