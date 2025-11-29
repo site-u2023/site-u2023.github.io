@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1129.1145"
+VERSION="R7.1129.1240"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -48,6 +48,7 @@ PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
 LANG_JSON="$CONFIG_DIR/lang.json"
+LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
