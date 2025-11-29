@@ -832,41 +832,36 @@ package_selection() {
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     packages=$(get_category_packages "$cat_id")
+    checklist_items=""
     
-    while true; do
-        checklist_items=""
-        idx=1
+    idx=1
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
         
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            
-            if [ "$caller" = "custom_feeds" ]; then
-                if ! package_compatible "$pkg_id"; then
-                    continue
-                fi
+        if [ "$caller" = "custom_feeds" ]; then
+            if ! package_compatible "$pkg_id"; then
+                continue
             fi
-            
-            pkg_name=$(get_package_name "$pkg_id")
-            [ -z "$pkg_name" ] && continue
-            
-            if is_package_selected "$pkg_id" "$caller"; then
-                status="ON"
-            else
-                status="OFF"
-            fi
-            
-            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
-            idx=$((idx+1))
-        done <<EOF
-$packages
-EOF
-        
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
-        
-        if [ $? -ne 0 ]; then
-            return 0
         fi
         
+        pkg_name=$(get_package_name "$pkg_id")
+        [ -z "$pkg_name" ] && continue
+        
+        if is_package_selected "$pkg_id" "$caller"; then
+            status="ON"
+        else
+            status="OFF"
+        fi
+        
+        checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+        idx=$((idx+1))
+    done <<EOF
+$packages
+EOF
+    
+    selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+    
+    if [ $? -eq 0 ]; then
         if [ "$caller" = "custom_feeds" ]; then
             target_file="$SELECTED_CUSTOM_PACKAGES"
         else
@@ -882,26 +877,10 @@ EOF2
         
         for idx_str in $selected; do
             idx_clean=$(echo "$idx_str" | tr -d '"')
-            
-            local current_idx=1
-            while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                
-                if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-                    continue
-                fi
-                
-                if [ "$current_idx" -eq "$idx_clean" ]; then
-                    echo "$pkg_id" >> "$target_file"
-                    break
-                fi
-                current_idx=$((current_idx+1))
-            done <<EOF3
-$packages
-EOF3
+            pkg_id=$(echo "$packages" | sed -n "${idx_clean}p")
+            [ -n "$pkg_id" ] && echo "$pkg_id" >> "$target_file"
         done
-        
-    done
+    fi
 }
 
 view_selected_custom_packages() {
