@@ -1506,6 +1506,66 @@ SCRIPTS
     fi
 }
 
+generate_config_summary() {
+    local summary_file="$CONFIG_DIR/config_summary.txt"
+    local tr_packages tr_customfeeds tr_variables tr_customscripts
+    
+    tr_packages=$(translate "tr-tui-summary-packages")
+    [ -z "$tr_packages" ] || [ "$tr_packages" = "tr-tui-summary-packages" ] && tr_packages="Packages"
+    
+    tr_customfeeds=$(translate "tr-tui-summary-customfeeds")
+    [ -z "$tr_customfeeds" ] || [ "$tr_customfeeds" = "tr-tui-summary-customfeeds" ] && tr_customfeeds="Custom Feed Packages"
+    
+    tr_variables=$(translate "tr-tui-summary-variables")
+    [ -z "$tr_variables" ] || [ "$tr_variables" = "tr-tui-summary-variables" ] && tr_variables="Configuration Variables"
+    
+    tr_customscripts=$(translate "tr-tui-summary-customscripts")
+    [ -z "$tr_customscripts" ] || [ "$tr_customscripts" = "tr-tui-summary-customscripts" ] && tr_customscripts="Custom Script"
+    
+    : > "$summary_file"
+    
+    # === パッケージ ===
+    if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
+        echo "=== $tr_packages ===" >> "$summary_file"
+        cat "$SELECTED_PACKAGES" >> "$summary_file"
+        echo "" >> "$summary_file"
+    fi
+    
+    # === カスタムフィードパッケージ ===
+    if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+        echo "=== $tr_customfeeds ===" >> "$summary_file"
+        cat "$SELECTED_CUSTOM_PACKAGES" >> "$summary_file"
+        echo "" >> "$summary_file"
+    fi
+    
+    # === 設定変数 ===
+    if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+        echo "=== $tr_variables ===" >> "$summary_file"
+        cat "$SETUP_VARS" >> "$summary_file"
+        echo "" >> "$summary_file"
+    fi
+    
+    # === カスタムスクリプト変数 ===
+    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+        [ -f "$var_file" ] || continue
+        local script_id script_name
+        script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+        script_name=$(get_customscript_name "$script_id")
+        [ -z "$script_name" ] && script_name="$script_id"
+        
+        echo "=== $tr_customscripts [$script_name] ===" >> "$summary_file"
+        cat "$var_file" >> "$summary_file"
+        echo "" >> "$summary_file"
+    done
+    
+    # 空の場合
+    if [ ! -s "$summary_file" ]; then
+        echo "$(translate 'tr-tui-no-config')" >> "$summary_file"
+    fi
+    
+    echo "$summary_file"
+}
+
 # Main Entry Point
 
 aios2_main() {
