@@ -350,11 +350,6 @@ download_language_json() {
             fi
         fi
     fi
-
-    if [ -f "$LANG_JSON" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
-    fi
     
     return 0
 }
