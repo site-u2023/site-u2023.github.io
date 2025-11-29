@@ -48,7 +48,7 @@ CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
-XXX_print_banner_unicode() {
+print_banner_unicode() {
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
     printf       "\033[34m ████  ███   ████   █████\033[0m  \033[37m█████\033[0m\n"
@@ -58,19 +58,6 @@ XXX_print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     printf       "\033[37m         Vr.%s\033[0m\n" "$VERSION"
-    printf "\n"
-}
-
-print_banner_unicode() {
-    printf "\n"
-    printf "       🟪🟪 🟪\n"
-    printf " 🟦🟦🟦🟦  🟦🟦🟦   🟦🟦🟦🟦   🟦🟦🟦🟦🟦  ⬜⬜⬜⬜⬜\n"
-    printf "    🟩🟩  🟩🟩  🟩🟩  🟩🟩 🟩🟩          ⬜⬜\n"
-    printf " 🟨🟨🟨🟨🟨  🟨🟨  🟨🟨  🟨🟨  🟨🟨🟨🟨🟨   ⬜⬜⬜⬜\n"
-    printf "🟧🟧  🟧🟧  🟧🟧  🟧🟧  🟧🟧      🟧🟧 ⬜⬜\n"
-    printf " 🟥🟥🟥🟥🟥 🟥🟥🟥🟥  🟥🟥🟥🟥  🟥🟥🟥🟥🟥🟥  ⬜⬜⬜⬜⬜⬜\n"
-    printf "\n"
-    printf "         Vr.%s\n" "$VERSION"
     printf "\n"
 }
 
