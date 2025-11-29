@@ -29,8 +29,6 @@ NEWT_COLORS='
 title=black,lightgray
 '
 
-BREADCRUMB_SEP=" > "
-
 show_menu() {
     local breadcrumb="$1"
     local prompt="$2"
