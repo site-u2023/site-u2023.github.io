@@ -1354,7 +1354,7 @@ $(translate 'tr-tui-apply-confirm-question')"
             [ -f "$script" ] && sh "$script"
         done
         
-        # ★★★ キュー削除を追加（再起動前） ★★★
+        # キュー削除（再起動前）
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         # 完了 + 再起動確認を1枚で
