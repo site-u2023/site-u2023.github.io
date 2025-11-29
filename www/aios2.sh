@@ -282,32 +282,26 @@ install_package() {
 
 init() {
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
-    local count=0
     
     mkdir -p "$CONFIG_DIR"
     mkdir -p "$BACKUP_DIR"
     
-    while [ -f "$LOCK_FILE" ]; do
-        if [ $count -eq 0 ]; then
-            echo "Another instance is running. Waiting..."
-        fi
+    if [ -f "$LOCK_FILE" ]; then
+        local old_pid
+        old_pid=$(cat "$LOCK_FILE" 2>/dev/null)
         
-        if [ $count -ge 5 ]; then
-            echo ""
-            echo "Error: Another instance may be stuck."
-            printf "Kill the other instance and retry? (y/n): "
+        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+            echo "Another instance (PID: $old_pid) is running."
+            echo "Multiple instances can run simultaneously, but may overwrite each other's configuration."
+            printf "Continue anyway? (y/n): "
             read -r answer
-            if [ "$answer" = "y" ] || [ "$answer" = "Y" ]; then
-                rm -f "$LOCK_FILE"
-                break
-            else
+            if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
                 exit 1
             fi
+        else
+            rm -f "$LOCK_FILE"
         fi
-        
-        sleep 1
-        count=$((count + 1))
-    done
+    fi
     
     echo "$$" > "$LOCK_FILE"
     trap "rm -f '$LOCK_FILE'" EXIT INT TERM
