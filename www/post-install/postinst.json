@@ -125,6 +125,7 @@
       "name": "Modem Support",
       "class": "tr-modem-support",
       "description": "4G/5G modem management (ModemManager includes SMS support)",
+      "reboot": true,
       "packages": [
         {
           "id": "luci-proto-modemmanager",
@@ -136,26 +137,22 @@
             "uqmi",
             "mbim-utils",
             "screen"
-          ],
-          "reboot": true
+          ]
         },
         {
           "id": "kmod-usb-wdm",
           "name": "kmod-usb-wdm",
-          "hidden": true,
-          "reboot": true
+          "hidden": true
         },
         {
           "id": "kmod-usb-net-cdc-mbim",
           "name": "kmod-usb-net-cdc-mbim",
-          "hidden": true,
-          "reboot": true
+          "hidden": true
         },
         {
           "id": "kmod-usb-net-qmi-wwan",
           "name": "kmod-usb-net-qmi-wwan",
-          "hidden": true,
-          "reboot": true
+          "hidden": true
         },
         {
           "id": "uqmi",
