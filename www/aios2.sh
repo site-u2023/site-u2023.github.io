@@ -1597,47 +1597,53 @@ SCRIPTS
 generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
+    local has_content=0
     
     tr_packages=$(translate "tr-tui-summary-packages")
     tr_customfeeds=$(translate "tr-tui-summary-customfeeds")
     tr_variables=$(translate "tr-tui-summary-variables")
     tr_customscripts=$(translate "tr-tui-summary-customscripts")
     
-    : > "$summary_file"
-    
-    if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
-        printf "🔵 %s\n\n" "$tr_packages" >> "$summary_file"
-        cat "$SELECTED_PACKAGES" >> "$summary_file"
-        echo "" >> "$summary_file"
-    fi
-    
-    if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-        printf "🟢 %s\n\n" "$tr_customfeeds" >> "$summary_file"
-        cat "$SELECTED_CUSTOM_PACKAGES" >> "$summary_file"
-        echo "" >> "$summary_file"
-    fi
-    
-    if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
-        printf "🟡 %s\n\n" "$tr_variables" >> "$summary_file"
-        cat "$SETUP_VARS" >> "$summary_file"
-        echo "" >> "$summary_file"
-    fi
-    
-    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-        [ -f "$var_file" ] || continue
-        local script_id script_name
-        script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-        script_name=$(get_customscript_name "$script_id")
-        [ -z "$script_name" ] && script_name="$script_id"
+    {
+        if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
+            printf "🔵 %s\n\n" "$tr_packages"
+            cat "$SELECTED_PACKAGES"
+            echo ""
+            has_content=1
+        fi
         
-        printf "🔴 %s [%s]\n\n" "$tr_customscripts" "$script_name" >> "$summary_file"
-        cat "$var_file" >> "$summary_file"
-        echo "" >> "$summary_file"
-    done
-    
-    if [ ! -s "$summary_file" ]; then
-        echo "$(translate 'tr-tui-no-config')" >> "$summary_file"
-    fi
+        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            printf "🟢 %s\n\n" "$tr_customfeeds"
+            cat "$SELECTED_CUSTOM_PACKAGES"
+            echo ""
+            has_content=1
+        fi
+        
+        if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+            printf "🟡 %s\n\n" "$tr_variables"
+            cat "$SETUP_VARS"
+            echo ""
+            has_content=1
+        fi
+        
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local script_id script_name
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            script_name=$(get_customscript_name "$script_id")
+            [ -z "$script_name" ] && script_name="$script_id"
+            
+            printf "🔴 %s [%s]\n\n" "$tr_customscripts" "$script_name"
+            cat "$var_file"
+            echo ""
+            has_content=1
+        done
+        
+        if [ "$has_content" -eq 0 ]; then
+            echo "$(translate 'tr-tui-no-config')"
+        fi
+    } > "$summary_file"
     
     echo "$summary_file"
 }
