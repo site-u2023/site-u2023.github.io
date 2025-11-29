@@ -43,7 +43,6 @@ LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
-TRANSLATION_CACHE="$CONFIG_DIR/translation_cache.txt"
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 
