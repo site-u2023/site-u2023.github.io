@@ -1334,6 +1334,10 @@ review_and_apply() {
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
     summary_file=$(generate_config_summary)
+    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
+        echo "Error: Failed to generate summary"
+        return 1
+    fi
     summary_content=$(cat "$summary_file")
     
     confirm_msg="${summary_content}
