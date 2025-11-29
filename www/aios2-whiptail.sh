@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1129.0935"
+VERSION="R7.1129.1757"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -1323,6 +1323,8 @@ EOF
             custom_feeds_selection
         elif [ "$choice" -eq "$custom_scripts_choice" ]; then
             custom_scripts_selection
+        elif [ "$choice" -eq "$restore_point_choice" ]; then
+            restore_point_menu
         elif [ "$choice" -eq "$review_choice" ]; then
             review_and_apply
         fi
