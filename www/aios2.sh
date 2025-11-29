@@ -1820,7 +1820,9 @@ EOF
     
     if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-confirm')"; then
         if restore_from_backup "$selected_backup"; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-restore-success')"
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-success')\n\n$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
         else
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-restore-failed')"
         fi
