@@ -33,6 +33,8 @@ LAN_IF=""
 LAN_ADDR=""
 LAN_ADDR6=""
 
+BREADCRUMB_SEP=" > "
+
 # URL and Path Configuration
 
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
@@ -150,7 +152,7 @@ build_breadcrumb() {
             result="$level"
             first=0
         else
-            result="${result} > ${level}"
+            result="${result}${BREADCRUMB_SEP}${level}"
         fi
     done
     
