@@ -1203,6 +1203,35 @@ EOF
 }
 
 review_and_apply() {
+    local need_fetch=0
+    
+    [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
+    [ ! -f "$TPL_SETUP" ] || [ ! -s "$TPL_SETUP" ] && need_fetch=1
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ] && [ "$need_fetch" -eq 0 ]; then
+        while read -r cat_id; do
+            local template_url tpl_custom
+            template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -n "$template_url" ]; then
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                if [ ! -f "$tpl_custom" ] || [ ! -s "$tpl_custom" ]; then
+                    need_fetch=1
+                    break
+                fi
+            fi
+        done <<EOF
+$(get_customfeed_categories)
+EOF
+    fi
+    
+    if [ "$need_fetch" -eq 1 ]; then
+        echo "[DEBUG] Fetching missing templates..." >> "$CONFIG_DIR/debug.log"
+        prefetch_templates
+    else
+        echo "[DEBUG] All templates already cached" >> "$CONFIG_DIR/debug.log"
+    fi
+    
     generate_files
     
     local tr_main_menu tr_review breadcrumb
