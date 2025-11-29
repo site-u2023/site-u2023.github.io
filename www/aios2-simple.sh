@@ -19,9 +19,6 @@ DEFAULT_BTN_NO="tr-tui-no"
 DEFAULT_BTN_OK="tr-tui-ok"
 DEFAULT_BTN_CANCEL="tr-tui-cancel"
 
-sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
-sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
-
 BREADCRUMB_SEP=" > "
 
 show_menu_header() {
