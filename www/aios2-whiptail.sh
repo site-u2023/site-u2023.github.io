@@ -332,11 +332,11 @@ device_info() {
 "
     info="${info}Version: $OPENWRT_VERSION
 "
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM
+    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && info="${info}Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)
 "
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU
 "
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: ${DEVICE_STORAGE_AVAIL}/${DEVICE_STORAGE} (${DEVICE_STORAGE_USED} used)
 "
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
 "
@@ -354,11 +354,11 @@ device_info_titled() {
 "
     info="${info}Version: $OPENWRT_VERSION
 "
-    [ -n "$DEVICE_MEM" ] && info="${info}Memory: $DEVICE_MEM
+    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && info="${info}Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)
 "
     [ -n "$DEVICE_CPU" ] && info="${info}CPU: $DEVICE_CPU
 "
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: $DEVICE_STORAGE_USED/$DEVICE_STORAGE (${DEVICE_STORAGE_AVAIL} free)
+    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: ${DEVICE_STORAGE_AVAIL}/${DEVICE_STORAGE} (${DEVICE_STORAGE_USED} used)
 "
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
 "
