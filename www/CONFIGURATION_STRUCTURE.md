@@ -15,7 +15,7 @@
 - SSHインターフェース [lan]
 - SSHポート [22]
 - フローオフロード方式 [無効]
-- バックアップ復元パス [/root/backup.tar.gz]
+- バックアップ復元パス [/root/backup.tar.gz] [GUI版]
 
 </details>
 
@@ -101,8 +101,8 @@
 <details><summary>5 パッケージインストール</summary>
 
 - 基本システム機能
-  - luci-app-ttyd [✓]
-  - openssh-sftp-server [✓]
+  - luci-app-ttyd [✓ GUI版]
+  - openssh-sftp-server [✓ GUI版]
   - luci-app-commands
   - luci-app-filebrowser
 - システム管理
@@ -157,12 +157,12 @@
   - curl
   - netdata
 - テーマとダッシュボード
-  - luci-mod-dashboard [✓]
+  - luci-mod-dashboard [✓ GUI版]
   - luci-theme-openwrt
     - luci-theme-material
     - luci-theme-openwrt-2020
 - ユーティリティ
-  - luci-app-attendedsysupgrade [✓]
+  - luci-app-attendedsysupgrade [✓ GUI版]
     - owut
     - auc
   - luci-proto-wireguard
@@ -242,7 +242,7 @@
 
 </details>
 
-<details><summary>8 復元ポイント</summary>
+<details><summary>8 復元ポイント [TUI版]</summary>
 
 - バックアップ復元パス [/etc/aios2/backup]
 - 復元ポイント一覧
