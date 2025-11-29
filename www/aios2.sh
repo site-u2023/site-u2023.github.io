@@ -297,6 +297,9 @@ init() {
         echo "Fatal: Cannot load configuration"
         return 1
     }
+
+    unset _TRANSLATIONS_LOADED
+    unset _TRANSLATIONS_DATA
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
