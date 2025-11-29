@@ -228,5 +228,10 @@
     "tr-tui-view-customscripts": "customscripts.sh",
     "tr-tui-installing-custom-scripts": "Executing custom scripts",
     "tr-tui-no-custom-scripts":  "No scripts selected",
+    "tr-tui-summary-packages": "Packages",
+    "tr-tui-summary-customfeeds": "Custom Feed Packages",
+    "tr-tui-summary-variables": "Configuration Variables",
+    "tr-tui-summary-customscripts": "Custom Scripts",
+    "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?"
 }
