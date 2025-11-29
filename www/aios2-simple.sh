@@ -57,10 +57,6 @@ show_numbered_item() {
     fi
 }
 
-show_separator() {
-    echo "----------------------------------------"
-}
-
 build_breadcrumb() {
     local result=""
     local first=1
@@ -367,36 +363,6 @@ EOF
             fi
         fi
     done
-}
-
-run_custom_script() {
-    local script_file="$1"
-    local args="$2"
-    local breadcrumb="$3"
-    local script_url script_path
-    
-    script_url="${BASE_URL}/custom-script/${script_file}"
-    script_path="$CONFIG_DIR/${script_file}"
-    
-    if ! __download_file_core "$script_url" "$script_path"; then
-        show_msgbox "$breadcrumb" "Failed to download script: $script_file"
-        return 1
-    fi
-    
-    chmod +x "$script_path"
-    
-    clear
-    printf "\033[1;34mExecuting: %s %s\033[0m\n\n" "$script_file" "$args"
-    
-    if [ -n "$args" ]; then
-        sh "$script_path" "$args"
-    else
-        sh "$script_path"
-    fi
-    
-    printf "\n\033[1;32mScript execution completed.\033[0m\n"
-    printf "Press [Enter] to continue..."
-    read -r _
 }
 
 review_and_apply() {
