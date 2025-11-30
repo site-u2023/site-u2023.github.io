@@ -4,34 +4,47 @@
 # Reference: https://openwrt.org/docs/guide-user/services/dns/adguard-home
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
-
-# INSTALLATION MODES:
-# This script supports eight distinct installation modes combining three configuration axes:
 #
-# 1. Package Source (2 options):
+# INSTALLATION MODES:
+# This script supports sixteen distinct installation modes combining four configuration axes:
+#
+# 1. Package Manager (2 options):
+#    - opkg: Traditional package manager for OpenWrt Release versions
+#    - apk: Modern package manager for OpenWrt SNAPSHOT versions (24.x and later)
+#    Note: The script automatically detects which package manager is available on the system
+#
+# 2. Package Source (2 options):
 #    - OpenWrt Package: Installs AdGuard Home from the system package repository (opkg/apk)
 #    - Official Binary: Downloads and installs the latest official binary from GitHub releases
 #
-# 2. Configuration Method (2 options):
+# 3. Configuration Method (2 options):
 #    - Automatic YAML Setup: Downloads a configuration template, prompts for credentials,
 #      generates a bcrypt password hash using htpasswd, and creates a preconfigured
 #      AdGuardHome.yaml file with the specified settings
 #    - Manual Setup (NO_YAML=1): Skips all YAML configuration steps, dependency installation,
 #      and credential setup. Initial configuration must be completed through the web interface
 #
-# 3. Execution Context (2 options):
+# 4. Execution Context (2 options):
 #    - Standalone Mode: Runs independently with interactive prompts and automatic reboot
 #    - Integrated Mode: Called by another script with predefined environment variables
 #
-# The eight resulting combinations are:
-# 1. OpenWrt Package + Automatic YAML + Standalone
-# 2. OpenWrt Package + Automatic YAML + Integrated
-# 3. OpenWrt Package + Manual Setup + Standalone
-# 4. OpenWrt Package + Manual Setup + Integrated
-# 5. Official Binary + Automatic YAML + Standalone
-# 6. Official Binary + Automatic YAML + Integrated
-# 7. Official Binary + Manual Setup + Standalone
-# 8. Official Binary + Manual Setup + Integrated
+# The sixteen resulting combinations are:
+# 1. opkg + OpenWrt Package + Automatic YAML + Standalone
+# 2. opkg + OpenWrt Package + Automatic YAML + Integrated
+# 3. opkg + OpenWrt Package + Manual Setup + Standalone
+# 4. opkg + OpenWrt Package + Manual Setup + Integrated
+# 5. opkg + Official Binary + Automatic YAML + Standalone
+# 6. opkg + Official Binary + Automatic YAML + Integrated
+# 7. opkg + Official Binary + Manual Setup + Standalone
+# 8. opkg + Official Binary + Manual Setup + Integrated
+# 9. apk + OpenWrt Package + Automatic YAML + Standalone
+# 10. apk + OpenWrt Package + Automatic YAML + Integrated
+# 11. apk + OpenWrt Package + Manual Setup + Standalone
+# 12. apk + OpenWrt Package + Manual Setup + Integrated
+# 13. apk + Official Binary + Automatic YAML + Standalone
+# 14. apk + Official Binary + Automatic YAML + Integrated
+# 15. apk + Official Binary + Manual Setup + Standalone
+# 16. apk + Official Binary + Manual Setup + Integrated
 #
 # Usage Examples:
 #   Default (interactive with YAML): sh adguardhome.sh
