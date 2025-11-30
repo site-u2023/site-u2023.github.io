@@ -54,23 +54,27 @@
         {
           "id": "openwrt",
           "label": "tr-tui-customscript-install-openwrt",
-          "args": "openwrt"
+          "args": "openwrt",
+          "requireNotInstalled": true
         },
         {
           "id": "official",
           "label": "tr-tui-customscript-install-official",
-          "args": "official"
+          "args": "official",
+          "requireNotInstalled": true
         },
         {
           "id": "change-password",
           "label": "tr-tui-customscript-change-password",
-          "args": "change-password"
+          "args": "change-password",
+          "requireInstalled": true
         },
         {
           "id": "remove",
           "label": "tr-tui-customscript-remove",
           "args": "remove auto",
-          "skipInputs": true
+          "skipInputs": true,
+          "requireInstalled": true
         }
       ]
     }
