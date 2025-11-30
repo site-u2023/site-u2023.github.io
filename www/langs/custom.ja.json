@@ -220,6 +220,7 @@
     "tr-tui-customscript-install-official": "公式バイナリのインストール",
     "tr-tui-customscript-adguardhome": "アドガードホーム",
     "tr-tui-customscript-remove": "アドガードホームを削除",
+    "tr-tui-customscript-change-password": "パスワード変更",
     "tr-tui-customscript-username": "ユーザーID",
     "tr-tui-customscript-password": "パスワード",
     "tr-tui-customscript-webport": "WEBポート",
