@@ -220,7 +220,7 @@
     "tr-tui-customscript-install-official": "Install official binary",
     "tr-tui-customscript-adguardhome": "AdGuard Home",
     "tr-tui-customscript-remove": "Remove AdGuard Home",
-    "tr-tui-customscript-change-password": "Change Password",
+    "tr-tui-customscript-change-credentials": "Change Username and Password",
     "tr-tui-customscript-username": "User ID",
     "tr-tui-customscript-password": "Password",
     "tr-tui-customscript-webport": "WEB Port",
