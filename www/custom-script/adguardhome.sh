@@ -5,6 +5,39 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
+# INSTALLATION MODES:
+# This script supports eight distinct installation modes combining three configuration axes:
+#
+# 1. Package Source (2 options):
+#    - OpenWrt Package: Installs AdGuard Home from the system package repository (opkg/apk)
+#    - Official Binary: Downloads and installs the latest official binary from GitHub releases
+#
+# 2. Configuration Method (2 options):
+#    - Automatic YAML Setup: Downloads a configuration template, prompts for credentials,
+#      generates a bcrypt password hash using htpasswd, and creates a preconfigured
+#      AdGuardHome.yaml file with the specified settings
+#    - Manual Setup (NO_YAML=1): Skips all YAML configuration steps, dependency installation,
+#      and credential setup. Initial configuration must be completed through the web interface
+#
+# 3. Execution Context (2 options):
+#    - Standalone Mode: Runs independently with interactive prompts and automatic reboot
+#    - Integrated Mode: Called by another script with predefined environment variables
+#
+# The eight resulting combinations are:
+# 1. OpenWrt Package + Automatic YAML + Standalone
+# 2. OpenWrt Package + Automatic YAML + Integrated
+# 3. OpenWrt Package + Manual Setup + Standalone
+# 4. OpenWrt Package + Manual Setup + Integrated
+# 5. Official Binary + Automatic YAML + Standalone
+# 6. Official Binary + Automatic YAML + Integrated
+# 7. Official Binary + Manual Setup + Standalone
+# 8. Official Binary + Manual Setup + Integrated
+#
+# Usage Examples:
+#   Default (interactive with YAML): sh adguardhome.sh
+#   Manual setup mode: NO_YAML=1 sh adguardhome.sh
+#   Automated installation: INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh
+
 VERSION="R7.1130.1047"
 
 NET_ADDR=""
