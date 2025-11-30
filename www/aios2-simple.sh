@@ -1213,7 +1213,6 @@ main_menu() {
         i=$((i+1))
         
         custom_scripts_label=$(translate "tr-tui-custom-scripts")
-        [ -z "$custom_scripts_label" ] || [ "$custom_scripts_label" = "tr-tui-custom-scripts" ] && custom_scripts_label="Custom Scripts"
         show_numbered_item "$i" "$custom_scripts_label"
         local custom_scripts_choice=$i
         i=$((i+1))
