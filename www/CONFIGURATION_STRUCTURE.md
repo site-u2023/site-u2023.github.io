@@ -228,15 +228,15 @@
 
 <details><summary>6 カスタムフィードパッケージインストール</summary>
 
-- 1 gSpotx2fリポジトリ
-- 2 jerrykukuリポジトリ
+- [1 gSpotx2fリポジトリ](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-feeds/gSpotx2f.sh)
+- [2 jerrykukuリポジトリ](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-feeds/jerrykuku.sh)
 
 </details>
 
 <details><summary>7 カスタムスクリプト</summary>
 
-- AdGuard Home
-  - OpenWrtパッケージのインストール
+- [アドガードホーム](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-script/adguardhome.sh)
+  - OpenWrtパッケージのインストール    
   - 公式バイナリのインストール
   - 削除
 
