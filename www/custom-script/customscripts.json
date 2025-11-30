@@ -64,9 +64,9 @@
           "requireNotInstalled": true
         },
         {
-          "id": "change-password",
-          "label": "tr-tui-customscript-change-password",
-          "args": "change-password",
+          "id": "change-credentials",
+          "label": "tr-tui-customscript-change-credentials",
+          "args": "change-credentials",
           "requireInstalled": true
         },
         {
