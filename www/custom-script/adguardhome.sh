@@ -51,7 +51,7 @@
 #   Manual setup mode: NO_YAML=1 sh adguardhome.sh
 #   Automated installation: INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh
 
-VERSION="R7.1130.1047"
+VERSION="R7.1130.1230"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -429,24 +429,29 @@ common_config() {
   cp /etc/config/network  /etc/config/network.adguard.bak
   cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
   cp /etc/config/firewall /etc/config/firewall.adguard.bak
-  uci set dhcp.@dnsmasq[0].noresolv="1"
-  uci set dhcp.@dnsmasq[0].cachesize="0"
-  uci set dhcp.@dnsmasq[0].rebind_protection='0'
-  uci set dhcp.@dnsmasq[0].port="${DNS_BACKUP_PORT}"
-  uci set dhcp.@dnsmasq[0].domain="lan"
-  uci set dhcp.@dnsmasq[0].local="/lan/"
-  uci set dhcp.@dnsmasq[0].expandhosts="1"
-  uci -q del dhcp.@dnsmasq[0].server || true
-  uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#${DNS_PORT}"
-  uci add_list dhcp.@dnsmasq[0].server="::1#${DNS_PORT}"
-  uci -q del dhcp.lan.dhcp_option || true
-  uci add_list dhcp.lan.dhcp_option="6,${NET_ADDR}"
-  uci -q del dhcp.lan.dhcp_option6 || true
+  
+  uci batch <<EOF
+set dhcp.@dnsmasq[0].noresolv='1'
+set dhcp.@dnsmasq[0].cachesize='0'
+set dhcp.@dnsmasq[0].rebind_protection='0'
+set dhcp.@dnsmasq[0].port='${DNS_BACKUP_PORT}'
+set dhcp.@dnsmasq[0].domain='lan'
+set dhcp.@dnsmasq[0].local='/lan/'
+set dhcp.@dnsmasq[0].expandhosts='1'
+del dhcp.@dnsmasq[0].server
+add_list dhcp.@dnsmasq[0].server='127.0.0.1#${DNS_PORT}'
+add_list dhcp.@dnsmasq[0].server='::1#${DNS_PORT}'
+del dhcp.lan.dhcp_option
+add_list dhcp.lan.dhcp_option='6,${NET_ADDR}'
+del dhcp.lan.dhcp_option6
+EOF
+
   if [ -n "$NET_ADDR6_LIST" ]; then
     for ip in $NET_ADDR6_LIST; do
       uci add_list dhcp.lan.dhcp_option6="option6:dns=[${ip}]"
     done
   fi
+  
   uci commit dhcp
   /etc/init.d/dnsmasq restart || {
     printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"
@@ -476,17 +481,21 @@ common_config_firewall() {
     printf "\033[1;31mNo valid IP address family detected. Skipping firewall rule setup.\033[0m\n"
     return
   fi
-  uci set "firewall.${rule_name}=redirect"
-  uci set "firewall.${rule_name}.name=AdGuardHome DNS Redirect (${FAMILY_TYPE})"
-  uci set "firewall.${rule_name}.family=${FAMILY_TYPE}"
-  uci set "firewall.${rule_name}.src=lan"
-  uci set "firewall.${rule_name}.dest=lan"
-  uci add_list "firewall.${rule_name}.proto=tcp"
-  uci add_list "firewall.${rule_name}.proto=udp"
-  uci set "firewall.${rule_name}.src_dport=${DNS_PORT}"
-  uci set "firewall.${rule_name}.dest_port=${DNS_PORT}"
-  uci set "firewall.${rule_name}.target=DNAT"
-  uci commit firewall
+  
+  uci batch <<EOF
+set firewall.${rule_name}=redirect
+set firewall.${rule_name}.name='AdGuardHome DNS Redirect (${FAMILY_TYPE})'
+set firewall.${rule_name}.family='${FAMILY_TYPE}'
+set firewall.${rule_name}.src='lan'
+set firewall.${rule_name}.dest='lan'
+add_list firewall.${rule_name}.proto='tcp'
+add_list firewall.${rule_name}.proto='udp'
+set firewall.${rule_name}.src_dport='${DNS_PORT}'
+set firewall.${rule_name}.dest_port='${DNS_PORT}'
+set firewall.${rule_name}.target='DNAT'
+commit firewall
+EOF
+
   /etc/init.d/firewall restart || {
     printf "\033[1;31mFailed to restart firewall\033[0m\n"
     exit 1
@@ -497,9 +506,7 @@ common_config_firewall() {
 
 remove_adguardhome() {
   local auto_confirm="$1"
-
   printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
-
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
     INSTALL_TYPE="official"; AGH="AdGuardHome"
   elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
@@ -508,7 +515,6 @@ remove_adguardhome() {
     printf "\033[1;31mAdGuard Home not found\033[0m\n"
     return 1
   fi
-
   printf "Found AdGuard Home (%s version)\n" "$INSTALL_TYPE"
   
   if [ "$auto_confirm" != "auto" ]; then
@@ -524,7 +530,6 @@ remove_adguardhome() {
   
   /etc/init.d/"${AGH}" stop    2>/dev/null || true
   /etc/init.d/"${AGH}" disable 2>/dev/null || true
-
   if [ "$INSTALL_TYPE" = "official" ]; then
     "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null || true
   else
@@ -534,7 +539,6 @@ remove_adguardhome() {
       opkg remove --verbosity=0 "$AGH" 2>/dev/null || true
     fi
   fi
-
   if [ -d "/etc/${AGH}" ] || [ -f "/etc/adguardhome.yaml" ]; then
     if [ "$auto_confirm" != "auto" ]; then
       printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
@@ -552,7 +556,6 @@ remove_adguardhome() {
       rm -f /etc/adguardhome.yaml
     fi
   fi
-
   for cfg in network dhcp firewall; do
     bak="/etc/config/${cfg}.adguard.bak"
     if [ -f "$bak" ]; then
@@ -562,35 +565,34 @@ remove_adguardhome() {
     fi
   done
   
-  # Restore defaults if no backup (manual install or backup missing)
   if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
     printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-    uci -q del dhcp.@dnsmasq[0].noresolv
-    uci -q del dhcp.@dnsmasq[0].cachesize
-    uci -q del dhcp.@dnsmasq[0].rebind_protection
-    uci set dhcp.@dnsmasq[0].port="53"
-    uci -q del dhcp.@dnsmasq[0].server
-    uci -q del dhcp.lan.dhcp_option
-    uci -q del dhcp.lan.dhcp_option6
-    uci commit dhcp
+    uci batch <<EOF
+del dhcp.@dnsmasq[0].noresolv
+del dhcp.@dnsmasq[0].cachesize
+del dhcp.@dnsmasq[0].rebind_protection
+set dhcp.@dnsmasq[0].port='53'
+del dhcp.@dnsmasq[0].server
+del dhcp.lan.dhcp_option
+del dhcp.lan.dhcp_option6
+commit dhcp
+EOF
   fi
   
-  # Remove firewall rule if exists
   rule_name="adguardhome_dns_${DNS_PORT}"
   if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
     printf "\033[1;34mRemoving firewall rule\033[0m\n"
-    uci -q delete firewall."$rule_name"
-    uci commit firewall
+    uci batch <<EOF
+delete firewall.${rule_name}
+commit firewall
+EOF
   fi
-
   uci commit network
   uci commit dhcp
   uci commit firewall
-
   /etc/init.d/dnsmasq restart  || { printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"; exit 1; }
   /etc/init.d/odhcpd restart   || { printf "\033[1;31mFailed to restart odhcpd\033[0m\n"; exit 1; }
   /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
-
   printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
   
   if [ -z "$REMOVE_MODE" ]; then
