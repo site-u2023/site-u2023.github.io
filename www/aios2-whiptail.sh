@@ -196,7 +196,7 @@ custom_script_options_ui() {
 $filtered_options
 EOF
     
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 1
     
     if [ -n "$choice" ]; then
         selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
@@ -207,7 +207,7 @@ EOF
             
             if [ "$skip_inputs" != "true" ]; then
                 if ! collect_script_inputs "$script_id" "$breadcrumb"; then
-                    return 0
+                    return 1
                 fi
             else
                 echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
