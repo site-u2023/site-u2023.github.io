@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1129.1928"
+VERSION="R7.1130.1237"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1125,29 +1125,36 @@ filter_script_options() {
     local script_id="$1"
     local options="$2"
     local filtered=""
+    local installed="no"
     
     case "$script_id" in
         adguardhome)
-            local installed="no"
             is_adguardhome_installed && installed="yes"
-            
-            while read -r option_id; do
-                [ -z "$option_id" ] && continue
-                if [ "$installed" = "yes" ]; then
-                    [ "$option_id" = "remove" ] && filtered="${filtered}${option_id}
-"
-                else
-                    [ "$option_id" != "remove" ] && filtered="${filtered}${option_id}
-"
-                fi
-            done <<EOF
-$options
-EOF
             ;;
         *)
-            filtered="$options"
             ;;
     esac
+    
+    while read -r option_id; do
+        [ -z "$option_id" ] && continue
+        
+        local require_installed require_not_installed
+        require_installed=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].requireInstalled" 2>/dev/null | head -1)
+        require_not_installed=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].requireNotInstalled" 2>/dev/null | head -1)
+        
+        if [ "$require_installed" = "true" ] && [ "$installed" != "yes" ]; then
+            continue
+        fi
+        
+        if [ "$require_not_installed" = "true" ] && [ "$installed" = "yes" ]; then
+            continue
+        fi
+        
+        filtered="${filtered}${option_id}
+"
+    done <<EOF
+$options
+EOF
     
     echo "$filtered" | grep -v '^$'
 }
