@@ -1178,6 +1178,26 @@ EOF
     echo "$filtered" | grep -v '^$'
 }
 
+get_adguardhome_current_user() {
+    local yaml_file
+    
+    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
+        yaml_file="/etc/AdGuardHome/AdGuardHome.yaml"
+    elif [ -f "/etc/adguardhome.yaml" ]; then
+        yaml_file="/etc/adguardhome.yaml"
+    else
+        echo ""
+        return 1
+    fi
+    
+    awk '/^users:$/,/^[^ ]/ {
+        if ($1 == "-" && $2 == "name:") {
+            print $3
+            exit
+        }
+    }' "$yaml_file"
+}
+
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
@@ -1191,12 +1211,16 @@ collect_script_inputs() {
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
         input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
         
-        # LAN_ADDRの場合は自動取得値を初期値に
+        if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
+            local current_user
+            current_user=$(get_adguardhome_current_user)
+            [ -n "$current_user" ] && input_default="$current_user"
+        fi
+        
         if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
             input_default="$LAN_ADDR"
         fi
         
-        # hidden=trueの場合はインプットボックスをスキップ
         if [ "$input_hidden" = "true" ]; then
             echo "${input_envvar}=\"${input_default}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             continue
