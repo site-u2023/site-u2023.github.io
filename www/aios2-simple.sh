@@ -292,14 +292,10 @@ EOF
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
                 if [ "$skip_inputs" != "true" ]; then
-                    if ! collect_script_inputs "$script_id" "$breadcrumb"; then
-                        return 0
-                    fi
+                    collect_script_inputs "$script_id" "$breadcrumb"
                 else
                     echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
-                
-                return 0
             fi
         fi
     done
