@@ -43,22 +43,22 @@ YAML自動セットアップモードを使用する場合、追加でApache関�
 ## 使用方法
 
 最も基本的な使用方法は、スクリプトファイルをルーターにダウンロードし、シェルコマンドで実行することです。
-```bash
-wget https://raw.githubusercontent.com/[username]/[repository]/main/adguardhome.sh
+```sh
+wget https://raw.githubusercontent.com/site-u2023/site-u2023.github.io/refs/heads/main/www/custom-script/adguardhome.sh
 sh adguardhome.sh
 ```
 
 この方法では、対話的なプロンプトが表示され、OpenWrtパッケージ版と公式バイナリ版のどちらをインストールするかを選択できます。その後、管理者のユーザー名とパスワードの入力を求められ、YAML設定ファイルが自動生成されます。すべての処理が完了すると、Webインターフェースへのアクセス情報とQRコードが表示され、Enterキーを押すことでシステムが再起動されます。
 
 手動セットアップモードを使用する場合は、環境変数NO_YAMLを設定します。
-```bash
+```sh
 NO_YAML=1 sh adguardhome.sh
 ```
 
 この方法では、htpasswdのインストール、認証情報の入力、YAML設定ファイルの生成がすべてスキップされ、AdGuard Homeのインストールのみが実行されます。初期設定は、インストール完了後にWebブラウザからアクセスして手動で行います。
 
 完全に自動化された無人インストールを行う場合は、すべての設定を環境変数で指定します。
-```bash
+```sh
 INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh
 ```
 
@@ -143,3 +143,5 @@ AdGuard Homeは、デフォルト設定でも優れたパフォーマンスを�
 機能の追加や改善の提案も歓迎します。Pull Requestを提出する前に、既存のIssuesを確認し、重複する提案がないことを確認してください。コードの変更を含むPull Requestは、ShellCheckによる静的解析をパスし、既存の機能に影響を与えないことを確認してから提出してください。
 
 本スクリプトは、コミュニティの貢献により継続的に改善されています。貢献者の皆様に感謝いたします。
+
+※AI記述の為、不明瞭また誤記がある場合があります。
