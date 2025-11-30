@@ -183,37 +183,44 @@ custom_script_options_ui() {
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
-    local menu_items i option_id option_label choice selected_option
     
-    menu_items=""
-    i=1
-    
-    while read -r option_id; do
-        option_label=$(get_customscript_option_label "$script_id" "$option_id")
-        menu_items="$menu_items $i \"$option_label\""
-        i=$((i+1))
-    done <<EOF
+    while true; do
+        local menu_items i option_id option_label choice selected_option
+        
+        menu_items=""
+        i=1
+        
+        while read -r option_id; do
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
+            menu_items="$menu_items $i \"$option_label\""
+            i=$((i+1))
+        done <<EOF
 $filtered_options
 EOF
-    
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 1
-    
-    if [ -n "$choice" ]; then
-        selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
         
-        if [ -n "$selected_option" ]; then
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            if [ "$skip_inputs" != "true" ]; then
-                if ! collect_script_inputs "$script_id" "$breadcrumb"; then
-                    return 1
+            if [ -n "$selected_option" ]; then
+                local skip_inputs
+                skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+                
+                if [ "$skip_inputs" != "true" ]; then
+                    if collect_script_inputs "$script_id" "$breadcrumb"; then
+                        continue
+                    fi
+                else
+                    echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
-            else
-                echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
             fi
         fi
-    fi
+    done
 }
 
 device_info() {
