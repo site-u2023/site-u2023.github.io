@@ -1189,13 +1189,15 @@ get_adguardhome_current_user() {
         echo ""
         return 1
     fi
-    
-    awk '/^users:$/,/^[^ ]/ {
-        if ($1 == "-" && $2 == "name:") {
-            print $3
-            exit
-        }
-    }' "$yaml_file"
+
+    awk '
+    /^users:/ { in_users=1; next }
+    in_users && /^[^ ]/ { exit }
+    in_users && $1 == "-" && $2 == "name:" {
+        print $3
+        exit
+    }
+    ' "$yaml_file"
 }
 
 collect_script_inputs() {
