@@ -375,7 +375,26 @@ translate() {
     
     translation=$(echo "$_TRANSLATIONS_DATA" | jsonfilter -e "@['$key']" 2>/dev/null)
     
-    [ -n "$translation" ] && echo "$translation" || echo "$key"
+    if [ -n "$translation" ]; then
+        echo "$translation"
+        return 0
+    fi
+    
+    if [ -f "$LANG_JSON_EN" ]; then
+        if [ -z "$_TRANSLATIONS_EN_LOADED" ]; then
+            _TRANSLATIONS_EN_DATA=$(cat "$LANG_JSON_EN" 2>/dev/null)
+            _TRANSLATIONS_EN_LOADED=1
+        fi
+        
+        translation=$(echo "$_TRANSLATIONS_EN_DATA" | jsonfilter -e "@['$key']" 2>/dev/null)
+        
+        if [ -n "$translation" ]; then
+            echo "$translation"
+            return 0
+        fi
+    fi
+    
+    echo "$key"
 }
 
 # File Downloads
