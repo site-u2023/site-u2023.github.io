@@ -1156,10 +1156,8 @@ main_menu() {
     tr_select=$(translate "tr-tui-select")
     tr_exit=$(translate "tr-tui-exit")
     packages_label=$(translate "tr-tui-packages")
-    custom_feeds_label=$(translate "tr-tui-custom-feeds")
-    [ -z "$custom_feeds_label" ] || [ "$custom_feeds_label" = "tr-tui-custom-feeds" ] && custom_feeds_label="Custom Feeds"
+    ccustom_feeds_label=$(translate "tr-tui-custom-feeds")
     custom_scripts_label=$(translate "tr-tui-custom-scripts")
-    [ -z "$custom_scripts_label" ] || [ "$custom_scripts_label" = "tr-tui-custom-scripts" ] && custom_scripts_label="Custom Scripts"
     review_label=$(translate "tr-tui-review-configuration")
     
     setup_categories=$(get_setup_categories)
