@@ -160,23 +160,29 @@ custom_scripts_selection_ui() {
     local all_scripts="$2"
     local menu_items i script_id script_name choice selected_script
     
-    menu_items="" 
-    i=1
-    
-    while read -r script_id; do
-        script_name=$(get_customscript_name "$script_id")
-        menu_items="$menu_items $i \"$script_name\""
-        i=$((i+1))
-    done <<EOF
+    while true; do
+        menu_items="" 
+        i=1
+        
+        while read -r script_id; do
+            script_name=$(get_customscript_name "$script_id")
+            menu_items="$menu_items $i \"$script_name\""
+            i=$((i+1))
+        done <<EOF
 $all_scripts
 EOF
-    
-    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
-    
-    if [ -n "$choice" ]; then
-        selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
-        custom_script_options "$selected_script" "$breadcrumb"
-    fi
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
+            custom_script_options "$selected_script" "$breadcrumb"
+        fi
+    done
 }
 
 custom_script_options_ui() {
