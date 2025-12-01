@@ -221,14 +221,19 @@ EOF
 }
 
 install_prompt() {
-  printf "\033[1;34mSystem resources are sufficient for AdGuard Home installation. Proceeding with setup.\033[0m\n"
-
   if [ -n "$INSTALL_MODE" ]; then
     case "$INSTALL_MODE" in
-      official|openwrt) return ;;
-      *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" ;;
+      official|openwrt) 
+        printf "\033[1;34mUsing preset installation mode: %s\033[0m\n" "$INSTALL_MODE"
+        return 
+        ;;
+      *) 
+        printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" 
+        ;;
     esac
   fi
+
+  printf "\033[1;34mSystem resources are sufficient for AdGuard Home installation. Proceeding with setup.\033[0m\n"
 
   while true; do
     printf "[1] Install OpenWrt package\n"
