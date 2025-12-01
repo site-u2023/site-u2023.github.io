@@ -657,6 +657,8 @@ init_adguardhome() {
 }
 
 adguardhome_main() {
+  printf "\033[1;32mAdGuardHome Installer Script Version: %s\033[0m\n" "$VERSION"
+
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
   
