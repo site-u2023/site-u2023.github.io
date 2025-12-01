@@ -1604,7 +1604,7 @@ EOF
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
             
-            script_url="${BASE_URL}/custom-script/${script_file}"
+            script_url="${BASE_URL}/custom-scripts/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
             
             fetch_cached_template "$script_url" "$template_path"
