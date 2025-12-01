@@ -988,7 +988,8 @@ custom_script_options() {
     
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb} > ${script_name}"
-    
+
+    . "$CONFIG_DIR/tpl_customscript_${script_id}.sh"
     if ! check_script_requirements "$script_id"; then
         min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
         min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
