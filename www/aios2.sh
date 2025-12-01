@@ -1202,7 +1202,7 @@ get_adguardhome_current_user() {
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
-    local inputs input_id input_label input_default input_envvar input_hidden value
+    local inputs input_id input_label input_default input_envvar input_hidden min_length value
     
     inputs=$(get_customscript_inputs "$script_id")
     
@@ -1211,6 +1211,7 @@ collect_script_inputs() {
         input_default=$(get_customscript_input_default "$script_id" "$input_id")
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
         input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
+        min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1227,14 +1228,22 @@ collect_script_inputs() {
             continue
         fi
         
-        value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
-        
-        if ! [ $? -eq 0 ]; then
-            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-            return 1
-        fi
-        
-        [ -z "$value" ] && value="$input_default"
+        while true; do
+            value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
+            
+            if ! [ $? -eq 0 ]; then
+                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+                return 1
+            fi
+            
+            [ -z "$value" ] && value="$input_default"
+            
+            if [ -n "$min_length" ] && [ ${#value} -lt "$min_length" ]; then
+                continue
+            fi
+            
+            break
+        done
         
         echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
     done
