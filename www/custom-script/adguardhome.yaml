@@ -1,0 +1,101 @@
+http:
+  address: 0.0.0.0:{{WEB_PORT}}
+  session_ttl: 720h
+users:
+  - name: {{AGH_USER}}
+    password: {{AGH_PASS_HASH}}
+auth_attempts: 5
+block_auth_min: 15
+
+dns:
+  port: {{DNS_PORT}}
+  refuse_any: true
+  upstream_dns:
+    - '# LAN domain intercept'
+    - '[/lan/]127.0.0.1:54'
+    - '# NTP service'
+    - '[/*.pool.ntp.org/]1.1.1.1'
+    - '[/*.pool.ntp.org/]1.0.0.1'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
+    - '# DNS-over-QUIC'
+    - quic://unfiltered.adguard-dns.com
+    - '# DNS-over-TLS'
+    - tls://1dot1dot1dot1.cloudflare-dns.com
+    - tls://dns.google
+    - tls://jp.tiar.app
+    - tls://dns.nextdns.io
+    - '# DNS-over-HTTPS(coercion HTTP/3)'
+    - h3://cloudflare-dns.com/dns-query
+    - h3://dns.google/dns-query
+    - h3://unfiltered.adguard-dns.com/dns-query
+    - h3://jp.tiarap.org/dns-query
+    - h3://dns.nextdns.io
+  bootstrap_dns:
+    - 1.1.1.1
+    - 1.0.0.1
+    - 8.8.8.8
+    - 8.8.4.4
+    - 172.104.93.80
+    - 129.250.35.250
+    - 129.250.35.251
+    - 2606:4700:4700::1111
+    - 2606:4700:4700::1001
+    - 2001:4860:4860::8888
+    - 2001:4860:4860::8844
+    - 2400:8902::f03c:91ff:feda:c514
+    - 2001:418:3ff::53
+    - 2001:418:3ff::1:53
+  fallback_dns:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - https://unfiltered.adguard-dns.com/dns-query
+    - https://jp.tiar.app/dns-query
+    - https://dns.nextdns.io
+  cache_size: 1048576
+  enable_dnssec: false
+  use_private_ptr_resolvers: true
+  local_ptr_upstreams:
+    - 127.0.0.1:{{DNS_BACKUP_PORT}}
+
+tls:
+  enabled: false
+
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+    name: AdGuard DNS filter
+    id: 1
+  - enabled: false
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+    name: AdAway Default Blocklist
+    id: 2
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
+    name: AdGuard Japanese filter
+    id: 1764215105
+  - enabled: false
+    url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
+    name: 豆腐フィルタ
+    id: 1764215106
+
+user_rules:
+  - '# 日本の主要サービス'
+  - '@@||amazon.co.jp^$important'
+  - '@@||rakuten.co.jp^$important'
+  - '@@||yahoo.co.jp^$important'
+  - '# LINE関連'
+  - '@@||line.me^$important'
+  - '@@||line-scdn.net^$important'
+
+dhcp:
+  enabled: false
+
+filtering:
+  parental_enabled: false
+  safebrowsing_enabled: false
+
+log:
+  file: ""
+
+schema_version: 29
