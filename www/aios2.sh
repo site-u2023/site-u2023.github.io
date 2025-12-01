@@ -1250,6 +1250,12 @@ generate_customscript_file() {
     local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
     local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     
+    local script_args=""
+    
+    [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="$script_args -c"
+    
+    [ -n "$option_args" ] && script_args="$script_args $option_args"
+    
     {
         echo "#!/bin/sh"
         echo "# customscripts-${script_id}.sh (priority: 1024)"
@@ -1262,12 +1268,12 @@ generate_customscript_file() {
         fi
         
         echo ""
-        echo "sh \"\${CONFIG_DIR}/${script_file}\" ${option_args}"
+        echo "sh \"\${CONFIG_DIR}/${script_file}\"${script_args}"
     } > "$output_file"
     
     chmod +x "$output_file"
     
-    echo "[DEBUG] Generated customscript: $output_file with args: ${option_args}" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Generated customscript: $output_file with args:${script_args}" >> "$CONFIG_DIR/debug.log"
 }
 
 check_script_requirements() {
