@@ -98,6 +98,19 @@ check_package_manager() {
   printf "\033[1;32mUsing: %s\033[0m\n" "$PACKAGE_MANAGER"
 }
 
+detect_install_type() {
+    if opkg list-installed | grep -q "^${PKG_ADGUARDHOME_OPENWRT} "; then
+        INSTALL_TYPE="openwrt"
+        AGH="$PKG_ADGUARDHOME_OPENWRT"
+    elif [ -x "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}" ]; then
+        INSTALL_TYPE="official"
+        AGH="$PKG_ADGUARDHOME_OFFICIAL"
+    else
+        INSTALL_TYPE=""
+        AGH=""
+    fi
+}
+
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
@@ -535,70 +548,70 @@ EOF
 }
 
 remove_adguardhome() {
-  local auto_confirm="$1"
-  printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
-  if /etc/$PKG_ADGUARDHOME_OFFICIAL/$PKG_ADGUARDHOME_OFFICIAL --version >/dev/null 2>&1; then
-    INSTALL_TYPE="official"; AGH="$PKG_ADGUARDHOME_OFFICIAL"
-  elif /usr/bin/$PKG_ADGUARDHOME_OFFICIAL --version >/dev/null 2>&1; then
-    INSTALL_TYPE="openwrt"; AGH="$PKG_ADGUARDHOME_OPENWRT"
-  else
-    printf "\033[1;31mAdGuard Home not found\033[0m\n"
-    return 1
-  fi
-  printf "Found AdGuard Home (%s version)\n" "$INSTALL_TYPE"
-  
-  if [ "$auto_confirm" != "auto" ]; then
-    printf "Do you want to remove it? (y/N): "
-    read -r confirm
-    case "$confirm" in
-      [yY]*) ;;
-      *) printf "\033[1;33mCancelled\033[0m\n"; return 0 ;;
-    esac
-  else
-    printf "\033[1;33mAuto-removing due to installation error\033[0m\n"
-  fi
-  
-  /etc/init.d/"${AGH}" stop    2>/dev/null || true
-  /etc/init.d/"${AGH}" disable 2>/dev/null || true
-  if [ "$INSTALL_TYPE" = "official" ]; then
-    "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null || true
-  else
-    remove_package "" "$AGH"
-  fi
-  if [ -d "/etc/${AGH}" ] || [ -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml" ]; then
+    local auto_confirm="$1"
+    printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
+
+    detect_install_type
+    if [ -z "$INSTALL_TYPE" ]; then
+        printf "\033[1;31mAdGuard Home not found\033[0m\n"
+        return 1
+    fi
+    printf "Found AdGuard Home (%s version)\n" "$INSTALL_TYPE"
+
     if [ "$auto_confirm" != "auto" ]; then
-      printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
-      read -r cfg
-      case "$cfg" in
-        [yY]*) 
-          [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
-          [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
-          rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
-          ;;
-      esac
+        printf "Do you want to remove it? (y/N): "
+        read -r confirm
+        case "$confirm" in
+            [yY]*) ;;
+            *) printf "\033[1;33mCancelled\033[0m\n"; return 0 ;;
+        esac
     else
-      [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
-      [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
-      rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
+        printf "\033[1;33mAuto-removing due to installation error\033[0m\n"
     fi
-  fi
-  
-  printf "\033[1;34mRemoving htpasswd and dependencies\033[0m\n"
-  rm -f /usr/bin/htpasswd
-  remove_package "--force-depends" $PKG_HTPASSWD_DEPS
-  
-  for cfg in network dhcp firewall; do
-    bak="/etc/config/${cfg}.adguard.bak"
-    if [ -f "$bak" ]; then
-      printf "\033[1;34mRestoring %s configuration from backup\033[0m\n" "$cfg"
-      cp "$bak" "/etc/config/${cfg}"
-      rm -f "$bak"
+
+    /etc/init.d/"${AGH}" stop    2>/dev/null || true
+    /etc/init.d/"${AGH}" disable 2>/dev/null || true
+
+    if [ "$INSTALL_TYPE" = "official" ]; then
+        "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null || true
+    else
+        remove_package "" "$AGH"
     fi
-  done
-  
-  if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
-    printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-    uci batch <<EOF 2>/dev/null
+
+    if [ -d "/etc/${AGH}" ] || [ -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml" ]; then
+        if [ "$auto_confirm" != "auto" ]; then
+            printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
+            read -r cfg
+            case "$cfg" in
+                [yY]*)
+                    [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
+                    [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
+                    rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
+                    ;;
+            esac
+        else
+            [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
+            [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
+            rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
+        fi
+    fi
+
+    printf "\033[1;34mRemoving htpasswd and dependencies\033[0m\n"
+    rm -f /usr/bin/htpasswd
+    remove_package "--force-depends" $PKG_HTPASSWD_DEPS
+
+    for cfg in network dhcp firewall; do
+        bak="/etc/config/${cfg}.adguard.bak"
+        if [ -f "$bak" ]; then
+            printf "\033[1;34mRestoring %s configuration from backup\033[0m\n" "$cfg"
+            cp "$bak" "/etc/config/${cfg}"
+            rm -f "$bak"
+        fi
+    done
+
+    if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
+        printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
+        uci batch <<EOF 2>/dev/null
 del dhcp.@dnsmasq[0].noresolv
 del dhcp.@dnsmasq[0].cachesize
 del dhcp.@dnsmasq[0].rebind_protection
@@ -608,29 +621,31 @@ del dhcp.lan.dhcp_option
 del dhcp.lan.dhcp_option6
 commit dhcp
 EOF
-  fi
-  
-  rule_name="adguardhome_dns_${DNS_PORT}"
-  if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
-    printf "\033[1;34mRemoving firewall rule\033[0m\n"
-    uci batch <<EOF
+    fi
+
+    rule_name="adguardhome_dns_${DNS_PORT}"
+    if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
+        printf "\033[1;34mRemoving firewall rule\033[0m\n"
+        uci batch <<EOF
 delete firewall.${rule_name}
 commit firewall
 EOF
-  fi
-  uci commit network
-  uci commit dhcp
-  uci commit firewall
-  /etc/init.d/dnsmasq restart  || { printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"; exit 1; }
-  /etc/init.d/odhcpd restart   || { printf "\033[1;31mFailed to restart odhcpd\033[0m\n"; exit 1; }
-  /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
-  printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
-  
-  if [ -z "$REMOVE_MODE" ]; then
-    printf "\033[33mPress [Enter] to reboot.\033[0m\n"
-    read -r _
-    reboot
-  fi
+    fi
+
+    uci commit network
+    uci commit dhcp
+    uci commit firewall
+    /etc/init.d/dnsmasq restart  || { printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"; exit 1; }
+    /etc/init.d/odhcpd restart   || { printf "\033[1;31mFailed to restart odhcpd\033[0m\n"; exit 1; }
+    /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
+
+    printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
+
+    if [ -z "$REMOVE_MODE" ]; then
+        printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+        read -r _
+        reboot
+    fi
 }
 
 get_access() {
