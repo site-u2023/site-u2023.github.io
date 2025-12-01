@@ -288,13 +288,25 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+
+                local opt_args
+                opt_args=$(get_customscript_option_args "$script_id" "$selected_option")
+                
+                case "$opt_args" in
+                    openwrt|official)
+                        echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        ;;
+                    "remove auto")
+                        echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        ;;
+                esac
+
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
                 if [ "$skip_inputs" != "true" ]; then
                     collect_script_inputs "$script_id" "$breadcrumb"
-                else
-                    echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
                 return 0
             fi
