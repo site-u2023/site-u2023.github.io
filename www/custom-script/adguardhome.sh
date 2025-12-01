@@ -203,39 +203,43 @@ remove_package() {
     for pkg in $pkgs; do
         if [ "$pkg" = "$PKG_ADGUARDHOME_OPENWRT" ] || [ "$pkg" = "$PKG_ADGUARDHOME_OFFICIAL" ]; then
             printf "Removing: %s " "$pkg"
-            $REMOVE_CMD $opts "$pkg"
+            opkg remove "$pkg"
             printf "\033[1;32mDone\033[0m\n"
             continue
         fi
 
-        local dep_output
-        dep_output=$($DEPENDS_CMD "$pkg" 2>/dev/null)
-
-        local has_other_deps=0
-        if [ -n "$dep_output" ]; then
-            while IFS= read -r line; do
-                [ -z "$line" ] && continue
-                case "$line" in
-                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*)
-                        continue
-                        ;;
-                    *)
-                        has_other_deps=1
-                        break
-                        ;;
-                esac
-            done <<EOF
-$dep_output
-EOF
+        if [ "$pkg" = "htpasswd" ]; then
+            if opkg list-installed | grep -q "^apache"; then
+                printf "Skipping removal of htpasswd: apache is installed\n"
+                continue
+            fi
         fi
 
+        local dep_output
+        dep_output=$(opkg depends "$pkg" 2>/dev/null)
+        local has_other_deps=0
+        while IFS= read -r line; do
+            [ -z "$line" ] && continue
+            case "$line" in
+                *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*) 
+                    continue 
+                    ;;
+                *)
+                    has_other_deps=1
+                    break
+                    ;;
+            esac
+        done <<EOF
+$dep_output
+EOF
+
         if [ "$has_other_deps" -eq 1 ]; then
-            printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
+            printf "Skipping removal of %s: other packages depend on it\n" "$pkg"
             continue
         fi
 
         printf "Removing: %s " "$pkg"
-        $REMOVE_CMD $opts "$pkg"
+        opkg remove "$pkg"
         printf "\033[1;32mDone\033[0m\n"
     done
 }
