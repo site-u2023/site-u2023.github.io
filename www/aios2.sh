@@ -976,7 +976,6 @@ custom_scripts_selection() {
         return 0
     fi
     
-    # UIモード別の実装を呼び出す
     custom_scripts_selection_ui "$breadcrumb" "$all_scripts"
 }
 
@@ -996,8 +995,8 @@ custom_script_options() {
         
         msg="$(translate 'tr-tui-customscript-resource-check')
 
-$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-required')
-$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-required')
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-minimum')
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-minimum')
 
 $(translate 'tr-tui-customscript-resource-ng')"
         
@@ -1019,7 +1018,6 @@ $(translate 'tr-tui-customscript-resource-ng')"
         return 0
     fi
     
-    # UIモード別の実装を呼び出す
     custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
 }
 
