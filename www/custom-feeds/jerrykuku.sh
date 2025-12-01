@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2034,SC3043
+# shellcheck shell=sh disable=SC2034,SC2086,SC3043
 
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
