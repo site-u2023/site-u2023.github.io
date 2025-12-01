@@ -61,6 +61,7 @@ export MINIMUM_FLASH="25"
 export RECOMMENDED_MEM="50"
 export RECOMMENDED_FLASH="100"
 
+SCRIPT_NAME=${0##*/}
 AGH_USER="${AGH_USER:-admin}"
 AGH_PASS="${AGH_PASS:-password}"
 WEB_PORT="${WEB_PORT:-8000}"
@@ -641,7 +642,7 @@ init_adguardhome() {
       r) REMOVE_MODE="$OPTARG" ;;
       i) INSTALL_MODE="$OPTARG" ;;
       *) 
-        printf "Usage: %s [-c] [-n] [-r auto|manual] [-i openwrt|official]\n" "$(basename "$0")"
+        printf "Usage: %s [-c] [-n] [-r auto|manual] [-i openwrt|official]\n" "$SCRIPT_NAME"
         printf "  -c: Skip resource check (forced installation)\n"
         printf "  -n: Skip YAML configuration generation (manual web setup)\n"
         printf "  -r: Remove mode (auto: auto-confirm, manual: interactive)\n"
@@ -708,6 +709,6 @@ adguardhome_main() {
   fi
 }
 
-if [ "$(basename "$0")" = "adguardhome.sh" ]; then
+if [ "$SCRIPT_NAME" = "adguardhome.sh" ]; then
     adguardhome_main "$@"
 fi
