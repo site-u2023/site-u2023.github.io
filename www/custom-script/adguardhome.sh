@@ -201,16 +201,23 @@ remove_package() {
     [ -z "$pkgs" ] && return 1
 
     for pkg in $pkgs; do
+        if [ "$pkg" = "$PKG_ADGUARDHOME_OPENWRT" ] || [ "$pkg" = "$PKG_ADGUARDHOME_OFFICIAL" ]; then
+            printf "Removing: %s " "$pkg"
+            $REMOVE_CMD $opts "$pkg"
+            printf "\033[1;32mDone\033[0m\n"
+            continue
+        fi
+
         local dep_output
         dep_output=$($DEPENDS_CMD "$pkg" 2>/dev/null)
-        
+
         local has_other_deps=0
         if [ -n "$dep_output" ]; then
             while IFS= read -r line; do
                 [ -z "$line" ] && continue
                 case "$line" in
-                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*) 
-                        continue 
+                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*)
+                        continue
                         ;;
                     *)
                         has_other_deps=1
@@ -228,11 +235,8 @@ EOF
         fi
 
         printf "Removing: %s " "$pkg"
-        if $REMOVE_CMD $opts "$pkg" 2>/dev/null; then
-            printf "\033[1;32mDone\033[0m\n"
-        else
-            printf "\033[1;33mSkipped (not installed)\033[0m\n"
-        fi
+        $REMOVE_CMD $opts "$pkg"
+        printf "\033[1;32mDone\033[0m\n"
     done
 }
 
