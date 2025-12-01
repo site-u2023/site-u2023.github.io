@@ -659,9 +659,11 @@ init_adguardhome() {
 print_banner() {
   local mode="$1"  # "Installation" or "Removal"
   printf "\n\033[1;34m========================================\033[0m\n"
-  printf "\033[1;34m  AdGuard Home %s (Version: %s)\033[0m\n" "$mode" "$VERSION"
+  printf "\033[1;34m           AdGuard Home %s\033[0m\n" "$mode"
+  printf "\033[1;34m           Version: %s\033[0m\n" "$VERSION"
   printf "\033[1;34m========================================\033[0m\n\n"
 }
+
 
 adguardhome_main() {
   local standalone_mode=""
