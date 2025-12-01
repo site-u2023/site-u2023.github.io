@@ -168,7 +168,7 @@ install_dependencies() {
     apk)
       install_packages "--force" libaprutil libapr libexpat libuuid1 apache
       cp /usr/bin/htpasswd /tmp/htpasswd
-      apk del --force apache2 >/dev/null 2>&1
+      apk del --force apache >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
@@ -186,7 +186,7 @@ install_dependencies() {
 install_cacertificates() {
   case "$PACKAGE_MANAGER" in
     apk)
-      install_packages "" ca-certificates
+      install_packages "" ca-bundle
       ;;
     opkg)
       install_packages "--verbosity=0" ca-bundle
