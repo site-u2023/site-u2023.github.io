@@ -228,7 +228,11 @@ EOF
         fi
 
         printf "Removing: %s " "$pkg"
-        $REMOVE_CMD $opts "$pkg"
+        $REMOVE_CMD "$pkg" $opts
+        if [ $? -ne 0 ]; then
+            printf "\033[1;31mFailed to remove %s\033[0m\n" "$pkg"
+            return 1
+        fi
         printf "\033[1;32mDone\033[0m\n"
     done
 }
