@@ -1274,7 +1274,6 @@ generate_customscript_file() {
     echo "[DEBUG] Generated customscript: $output_file with args:${script_args}" >> "$CONFIG_DIR/debug.log"
 }
 
-
 check_script_requirements() {
     local script_id="$1"
     local min_mem="${MINIMUM_MEM}"
@@ -1293,7 +1292,13 @@ $(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB
 
 $(translate 'tr-tui-customscript-resource-ng')"
         show_msgbox "$breadcrumb" "$msg"
-        return 1
+        
+        if show_yesno "$breadcrumb" "$(translate 'tr-tui-customscript-force-install-question')"; then
+            export SKIP_RESOURCE_CHECK=1
+            return 0
+        else
+            return 1
+        fi
     fi
     
     msg="${msg}
