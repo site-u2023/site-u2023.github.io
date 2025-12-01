@@ -672,10 +672,11 @@ adguardhome_main() {
     remove_adguardhome "$REMOVE_MODE"
     return 0
   else
-  print_banner "Installation"
-  check_system
-  install_prompt
-
+    print_banner "Installation"
+    check_system
+    install_prompt
+  fi
+  
   case "$PACKAGE_MANAGER" in
     opkg)
       printf "Updating package lists (opkg)... "
