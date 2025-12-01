@@ -6,50 +6,34 @@
 # This script file can be used standalone.
 #
 # INSTALLATION MODES:
-# This script supports sixteen distinct installation modes combining four configuration axes:
+# This script supports sixteen installation modes (2×2×2×2) by combining:
+#   Package Manager: opkg (Release) / apk (SNAPSHOT 24.x+) - auto-detected
+#   Package Source: OpenWrt repository / Official GitHub binary
+#   Configuration: Automatic YAML setup / Manual web-based setup (NO_YAML=1)
+#   Execution: Standalone (interactive) / Integrated (environment variables)
 #
-# 1. Package Manager (2 options):
-#    - opkg: Traditional package manager for OpenWrt Release versions
-#    - apk: Modern package manager for OpenWrt SNAPSHOT versions (24.x and later)
-#    Note: The script automatically detects which package manager is available on the system
+# COMMAND-LINE OPTIONS:
+#   -c              Skip system resource checks (force installation)
+#   -r <mode>       Removal mode: 'auto' (silent) / 'manual' (interactive)
+#   -i <source>     Installation source: 'openwrt' / 'official'
 #
-# 2. Package Source (2 options):
-#    - OpenWrt Package: Installs AdGuard Home from the system package repository (opkg/apk)
-#    - Official Binary: Downloads and installs the latest official binary from GitHub releases
-#
-# 3. Configuration Method (2 options):
-#    - Automatic YAML Setup: Downloads a configuration template, prompts for credentials,
-#      generates a bcrypt password hash using htpasswd, and creates a preconfigured
-#      AdGuardHome.yaml file with the specified settings
-#    - Manual Setup (NO_YAML=1): Skips all YAML configuration steps, dependency installation,
-#      and credential setup. Initial configuration must be completed through the web interface
-#
-# 4. Execution Context (2 options):
-#    - Standalone Mode: Runs independently with interactive prompts and automatic reboot
-#    - Integrated Mode: Called by another script with predefined environment variables
-#
-# The sixteen resulting combinations are:
-# 1. opkg + OpenWrt Package + Automatic YAML + Standalone
-# 2. opkg + OpenWrt Package + Automatic YAML + Integrated
-# 3. opkg + OpenWrt Package + Manual Setup + Standalone
-# 4. opkg + OpenWrt Package + Manual Setup + Integrated
-# 5. opkg + Official Binary + Automatic YAML + Standalone
-# 6. opkg + Official Binary + Automatic YAML + Integrated
-# 7. opkg + Official Binary + Manual Setup + Standalone
-# 8. opkg + Official Binary + Manual Setup + Integrated
-# 9. apk + OpenWrt Package + Automatic YAML + Standalone
-# 10. apk + OpenWrt Package + Automatic YAML + Integrated
-# 11. apk + OpenWrt Package + Manual Setup + Standalone
-# 12. apk + OpenWrt Package + Manual Setup + Integrated
-# 13. apk + Official Binary + Automatic YAML + Standalone
-# 14. apk + Official Binary + Automatic YAML + Integrated
-# 15. apk + Official Binary + Manual Setup + Standalone
-# 16. apk + Official Binary + Manual Setup + Integrated
+# ENVIRONMENT VARIABLES:
+#   INSTALL_MODE       'openwrt' or 'official' (skips interactive prompt)
+#   NO_YAML            '1' = skip YAML generation, use web interface for setup
+#   AGH_USER           Admin username (default: admin)
+#   AGH_PASS           Admin password (default: password, min 8 chars)
+#   WEB_PORT           Web interface port (default: 8000)
+#   DNS_PORT           DNS service port (default: 53)
+#   DNS_BACKUP_PORT    dnsmasq port (default: 54)
+#   SCRIPT_BASE_URL    Custom YAML template URL
+#   REMOVE_MODE        'auto' for non-interactive removal
 #
 # Usage Examples:
-#   Default (interactive with YAML): sh adguardhome.sh
-#   Manual setup mode: NO_YAML=1 sh adguardhome.sh
-#   Automated installation: INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh
+#   sh adguardhome.sh                                    # Interactive with YAML
+#   NO_YAML=1 sh adguardhome.sh                          # Manual setup
+#   INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh    # Automated install
+#   sh adguardhome.sh -c                                 # Force install
+#   sh adguardhome.sh -r auto                            # Auto-remove
 
 VERSION="R7.1201.1206"
 
