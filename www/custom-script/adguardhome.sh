@@ -78,6 +78,26 @@ PKG_CA_BUNDLE="ca-bundle"
 PKG_ADGUARDHOME_OPENWRT="adguardhome"
 PKG_ADGUARDHOME_OFFICIAL="AdGuardHome"
 
+check_package_manager() {
+  if command -v opkg >/dev/null 2>&1; then
+      PACKAGE_MANAGER="opkg"
+      UPDATE_CMD="opkg update"
+      INSTALL_CMD="opkg install"
+      REMOVE_CMD="opkg remove"
+      DEPENDS_CMD="opkg whatdepends"
+  elif command -v apk >/dev/null 2>&1; then
+      PACKAGE_MANAGER="apk"
+      UPDATE_CMD="apk update"
+      INSTALL_CMD="apk add"
+      REMOVE_CMD="apk del"
+      DEPENDS_CMD="apk info -R"
+  else
+      printf "\033[1;31mError: No supported package manager found.\033[0m\n"
+      exit 1
+  fi
+  printf "\033[1;32mUsing: %s\033[0m\n" "$PACKAGE_MANAGER"
+}
+
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
@@ -92,22 +112,8 @@ check_system() {
     printf "\033[1;31mLAN interface not found. Aborting.\033[0m\n"
     exit 1
   fi
-  
-  if command -v opkg >/dev/null 2>&1; then
-      PACKAGE_MANAGER="opkg"
-      UPDATE_CMD="opkg update"
-      INSTALL_CMD="opkg install"
-      REMOVE_CMD="opkg remove"
-  elif command -v apk >/dev/null 2>&1; then
-      PACKAGE_MANAGER="apk"
-      UPDATE_CMD="apk update"
-      INSTALL_CMD="apk add"
-      REMOVE_CMD="apk del"
-  else
-      printf "\033[1;31mError: No supported package manager found.\033[0m\n"
-      exit 1
-  fi
-  printf "\033[1;32mUsing: %s\033[0m\n" "$PACKAGE_MANAGER"
+
+  check_package_manager
   
   MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
   MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
@@ -177,12 +183,22 @@ install_package() {
 }
 
 remove_package() {
+    check_package_manager
+    
     local opts="$1"; shift
     local pkgs="$*"
     [ -z "$pkgs" ] && return 1
-    printf "Removing: %s " "$pkgs"
-    $REMOVE_CMD $opts $pkgs >/dev/null 2>&1 || true
-    printf "\033[1;32mDone\033[0m\n"
+
+    for pkg in $pkgs; do
+        if $DEPENDS_CMD "$pkg" 2>/dev/null | grep -qv "^adguardhome"; then
+            printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
+            continue
+        fi
+
+        printf "Removing: %s " "$pkg"
+        $REMOVE_CMD $opts "$pkg" >/dev/null 2>&1 || true
+        printf "\033[1;32mDone\033[0m\n"
+    done
 }
 
 install_prompt() {
