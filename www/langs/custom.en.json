@@ -224,7 +224,7 @@
     "tr-tui-customscript-remove": "Remove AdGuard Home",
     "tr-tui-customscript-change-credentials": "Change Username and Password",
     "tr-tui-customscript-username": "User ID",
-    "tr-tui-customscript-password": "Password",
+    "tr-tui-customscript-password": "Password (min 8 characters)",
     "tr-tui-customscript-webport": "WEB Port",
     "tr-tui-customscript-dnsport": "DNS Port",
     "tr-tui-customscript-lanaddr": "LAN Address",
