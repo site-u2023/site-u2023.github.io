@@ -35,7 +35,7 @@
 #   sh adguardhome.sh -c                                 # Force install
 #   sh adguardhome.sh -r auto                            # Auto-remove
 
-VERSION="R7.1201.2348"
+VERSION="R7.1202.0044"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -710,6 +710,8 @@ print_banner() {
 
 
 adguardhome_main() {
+  init_adguardhome "$@"
+
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
   
