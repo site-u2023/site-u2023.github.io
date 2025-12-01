@@ -223,13 +223,8 @@ EOF
 install_prompt() {
   if [ -n "$INSTALL_MODE" ]; then
     case "$INSTALL_MODE" in
-      official|openwrt) 
-        printf "\033[1;34mUsing preset installation mode: %s\033[0m\n" "$INSTALL_MODE"
-        return 
-        ;;
-      *) 
-        printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" 
-        ;;
+      official|openwrt) return ;;
+      *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" ;;
     esac
   fi
 
