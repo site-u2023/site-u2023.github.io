@@ -35,7 +35,7 @@
 #   sh adguardhome.sh -c                                 # Force install
 #   sh adguardhome.sh -r auto                            # Auto-remove
 
-VERSION="R7.1202.0044"
+VERSION="R7.1202.0050"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
