@@ -653,6 +653,23 @@ get_access() {
   fi
 }
 
+init_adguardhome() {
+  while getopts "cr:i:" opt; do
+    case $opt in
+      c) SKIP_RESOURCE_CHECK=1 ;;
+      r) REMOVE_MODE="$OPTARG" ;;
+      i) INSTALL_MODE="$OPTARG" ;;
+      *) 
+        printf "Usage: %s [-c] [-r auto|manual] [-i openwrt|official]\n" "$(basename "$0")"
+        printf "  -c: Skip resource check (forced installation)\n"
+        printf "  -r: Remove mode (auto: auto-confirm, manual: interactive)\n"
+        printf "  -i: Installation mode (openwrt: package, official: binary)\n"
+        exit 1
+        ;;
+    esac
+  done
+}
+
 adguardhome_main() {
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
