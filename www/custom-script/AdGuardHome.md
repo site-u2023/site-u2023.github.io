@@ -79,44 +79,158 @@ YAMLテンプレートダウンロード元URLを指定する。デフォルト�
 
 コマンドラインオプション`-c`により自動設定される内部変数である。
 
-## YAML設定ファイル仕様
+## YAML設定ファイル仕様（カスタム仕様）
 
-本スクリプトはインストール時に `AdGuardHome.yaml` を自動生成する。  
-以下の設定項目が含まれ、環境変数により値が置換される。
+本スクリプトは `-n` オプションまたは `NO_YAML=1` が指定されていない場合、`https://site-u.pages.dev/www/custom-script/adguardhome.yaml` からテンプレートを取得し、以下のプレースホルダーを環境変数で置換して `AdGuardHome.yaml` を生成します。
+
+| プレースホルダー         | 置換される値                   | デフォルト値 |
+|---------------------------|--------------------------------|--------------|
+| `{{AGH_USER}}`            | 管理者ユーザー名               | `admin`      |
+| `{{AGH_PASS_HASH}}`       | bcryptハッシュ化パスワード     | （入力値）   |
+| `{{WEB_PORT}}`            | Web管理画面ポート              | `8000`       |
+| `{{DNS_PORT}}`            | DNSサービスポート              | `53`         |
+| `{{DNS_BACKUP_PORT}}`     | dnsmasqバックアップポート      | `54`         |
+
+### schema_version
+```yaml
+schema_version: 29
+```
 
 ### http セクション
-- `address`: Webインターフェースの待受アドレスとポート（`WEB_PORT`）
-- `users`: 管理者ユーザー名（`AGH_USER`）と bcrypt ハッシュ化済みパスワード（`AGH_PASS_HASH`）
-- `session_ttl`: セッション有効期間（デフォルト 720h）
-- `auth_attempts`: 認証試行回数制限（デフォルト 5）
-- `block_auth_min`: 認証失敗時のブロック時間（デフォルト 15分）
+```yaml
+http:
+  address: 0.0.0.0:{{WEB_PORT}}
+  session_ttl: 720h
+```
+
+### users セクション
+```yaml
+users:
+  - name: {{AGH_USER}}
+    password: {{AGH_PASS_HASH}}
+auth_attempts: 5
+block_auth_min: 15
+```
 
 ### dns セクション
-- `port`: DNSサービスの待受ポート（`DNS_PORT`）
-- `upstream_dns`: 上流DNSサーバー一覧  
-  - LANドメイン用バックアップポート（`DNS_BACKUP_PORT`）  
-  - DoH/DoT/DoQ サーバー（Cloudflare, Google, NextDNS 等）
-- `bootstrap_dns`: 初期解決用DNSサーバー（例: 1.1.1.1, 8.8.8.8）
-- `fallback_dns`: 上流が利用不可の場合のフォールバックDNS
-- `cache_size`: DNSキャッシュサイズ（デフォルト 1048576）
-- `enable_dnssec`: DNSSEC有効化フラグ（デフォルト false）
+```yaml
+dns:
+  port: {{DNS_PORT}}
+  refuse_any: true
+  upstream_dns:
+    - '# LAN domain intercept'
+    - '[/lan/]127.0.0.1:54'
+    - '# NTP service'
+    - '[/*.pool.ntp.org/]1.1.1.1'
+    - '[/*.pool.ntp.org/]1.0.0.1'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
+    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
+    - '# DNS-over-QUIC'
+    - quic://unfiltered.adguard-dns.com
+    - '# DNS-over-TLS'
+    - tls://1dot1dot1dot1.cloudflare-dns.com
+    - tls://dns.google
+    - tls://jp.tiar.app
+    - tls://dns.nextdns.io
+    - '# DNS-over-HTTPS(coercion HTTP/3)'
+    - h3://cloudflare-dns.com/dns-query
+    - h3://dns.google/dns-query
+    - h3://unfiltered.adguard-dns.com/dns-query
+    - h3://jp.tiarap.org/dns-query
+    - h3://dns.nextdns.io
+```
+
+### bootstrap_dns セクション
+```yaml
+  bootstrap_dns:
+    - 1.1.1.1
+    - 1.0.0.1
+    - 8.8.8.8
+    - 8.8.4.4
+    - 172.104.93.80
+    - 129.250.35.250
+    - 129.250.35.251
+    - 2606:4700:4700::1111
+    - 2606:4700:4700::1001
+    - 2001:4860:4860::8888
+    - 2001:4860:4860::8844
+    - 2400:8902::f03c:91ff:feda:c514
+    - 2001:418:3ff::53
+    - 2001:418:3ff::1:53
+```
+
+### fallback_dns セクション
+```yaml
+  fallback_dns:
+    - https://cloudflare-dns.com/dns-query
+    - https://dns.google/dns-query
+    - https://unfiltered.adguard-dns.com/dns-query
+    - https://jp.tiar.app/dns-query
+    - https://dns.nextdns.io
+  cache_size: 1048576
+  enable_dnssec: false
+  use_private_ptr_resolvers: true
+  local_ptr_upstreams:
+    - 127.0.0.1:{{DNS_BACKUP_PORT}}
+```
+
+### tls セクション
+```yaml
+tls:
+  enabled: false
+```
 
 ### filters セクション
-- 広告ブロック用フィルタリストの定義  
-  - AdGuard公式フィルタ（有効）  
-  - AdAway、AdGuard日本語フィルタ、豆腐フィルタ（無効）
+```yaml
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+    name: AdGuard DNS filter
+    id: 1
+  - enabled: false
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
+    name: AdAway Default Blocklist
+    id: 2
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
+    name: AdGuard Japanese filter
+    id: 1764215105
+  - enabled: false
+    url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
+    name: 豆腐フィルタ
+    id: 1764215106
+```
 
 ### user_rules セクション
-- ユーザー定義のホワイトリストルール  
-  - 日本主要サービス（Amazon、楽天、Yahoo）  
-  - LINE関連ドメイン（line.me, line-scdn.net）
+```yaml
+user_rules:
+  - '# 日本の主要サービス'
+  - '@@||amazon.co.jp^$important'
+  - '@@||rakuten.co.jp^$important'
+  - '@@||yahoo.co.jp^$important'
+  - '# LINE関連'
+  - '@@||line.me^$important'
+  - '@@||line-scdn.net^$important'
+```
 
-### その他主要設定
-- **tls**: TLS関連設定（デフォルト無効、ポート番号 443/853）  
-- **querylog/statistics**: クエリログと統計情報の保存（デフォルト有効）  
-- **dhcp**: DHCPサーバー機能（デフォルト無効）  
-- **filtering**: セーフサーチ、セーフブラウジング、ペアレンタルコントロール（デフォルト無効）  
-- **log**: ログ出力設定（ファイル未指定、標準出力利用）
+### dhcp セクション
+```yaml
+dhcp:
+  enabled: false
+```
+
+### filtering セクション
+```yaml
+filtering:
+  parental_enabled: false
+  safebrowsing_enabled: false
+```
+
+### log セクション
+```yaml
+log:
+  file: ""
+```
 
 ## 非対話モード実行
 
