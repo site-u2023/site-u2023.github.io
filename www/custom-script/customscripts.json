@@ -24,9 +24,9 @@
           "type": "password",
           "label": "tr-tui-customscript-password",
           "default": "password",
-          "minLength": 8,
+          "minlength": 8,
           "envVar": "AGH_PASS"
-        },
+        }
         {
           "id": "web_port",
           "type": "number",
