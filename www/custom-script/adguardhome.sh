@@ -710,16 +710,12 @@ print_banner() {
 }
 
 adguardhome_main() {
-  # --- デバッグ表示開始 ---
-  printf "\033[1;35m[DEBUG] Args received: %s\033[0m\n" "$*"
-  
   init_adguardhome "$@"
-  
-  printf "\033[1;35m[DEBUG] INSTALL_MODE set to: '%s'\033[0m\n" "$INSTALL_MODE"
-  # --- デバッグ表示終了 ---
 
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
+  
+  if [ -n "$REMOVE_MODE" ]; then
   
   if [ -n "$REMOVE_MODE" ]; then
     print_banner "Removal"
