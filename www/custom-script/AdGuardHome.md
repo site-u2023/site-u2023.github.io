@@ -79,6 +79,45 @@ YAMLテンプレートダウンロード元URLを指定する。デフォルト�
 
 コマンドラインオプション`-c`により自動設定される内部変数である。
 
+## YAML設定ファイル仕様
+
+本スクリプトはインストール時に `AdGuardHome.yaml` を自動生成する。  
+以下の設定項目が含まれ、環境変数により値が置換される。
+
+### http セクション
+- `address`: Webインターフェースの待受アドレスとポート（`WEB_PORT`）
+- `users`: 管理者ユーザー名（`AGH_USER`）と bcrypt ハッシュ化済みパスワード（`AGH_PASS_HASH`）
+- `session_ttl`: セッション有効期間（デフォルト 720h）
+- `auth_attempts`: 認証試行回数制限（デフォルト 5）
+- `block_auth_min`: 認証失敗時のブロック時間（デフォルト 15分）
+
+### dns セクション
+- `port`: DNSサービスの待受ポート（`DNS_PORT`）
+- `upstream_dns`: 上流DNSサーバー一覧  
+  - LANドメイン用バックアップポート（`DNS_BACKUP_PORT`）  
+  - DoH/DoT/DoQ サーバー（Cloudflare, Google, NextDNS 等）
+- `bootstrap_dns`: 初期解決用DNSサーバー（例: 1.1.1.1, 8.8.8.8）
+- `fallback_dns`: 上流が利用不可の場合のフォールバックDNS
+- `cache_size`: DNSキャッシュサイズ（デフォルト 1048576）
+- `enable_dnssec`: DNSSEC有効化フラグ（デフォルト false）
+
+### filters セクション
+- 広告ブロック用フィルタリストの定義  
+  - AdGuard公式フィルタ（有効）  
+  - AdAway、AdGuard日本語フィルタ、豆腐フィルタ（無効）
+
+### user_rules セクション
+- ユーザー定義のホワイトリストルール  
+  - 日本主要サービス（Amazon、楽天、Yahoo）  
+  - LINE関連ドメイン（line.me, line-scdn.net）
+
+### その他主要設定
+- **tls**: TLS関連設定（デフォルト無効、ポート番号 443/853）  
+- **querylog/statistics**: クエリログと統計情報の保存（デフォルト有効）  
+- **dhcp**: DHCPサーバー機能（デフォルト無効）  
+- **filtering**: セーフサーチ、セーフブラウジング、ペアレンタルコントロール（デフォルト無効）  
+- **log**: ログ出力設定（ファイル未指定、標準出力利用）
+
 ## 非対話モード実行
 
 全ての環境変数を指定することで非対話モード実行が可能である。`AGH_USER`、`AGH_PASS`、`WEB_PORT`、`DNS_PORT`を指定した場合、対話的入力は実行されない。
