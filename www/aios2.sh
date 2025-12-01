@@ -1276,18 +1276,14 @@ generate_customscript_file() {
 
 check_script_requirements() {
     local script_id="$1"
-    local min_mem="${MINIMUM_MEM}"
-    local min_flash="${MINIMUM_FLASH}"
-    local rec_mem="${RECOMMENDED_MEM}"
-    local rec_flash="${RECOMMENDED_FLASH}"
     
     local msg="$(translate 'tr-tui-customscript-resource-check')
 $(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
+  $(translate 'tr-tui-customscript-minimum'): ${MINIMUM_MEM}MB / $(translate 'tr-tui-customscript-recommended'): ${RECOMMENDED_MEM}MB
 $(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB"
+  $(translate 'tr-tui-customscript-minimum'): ${MINIMUM_FLASH}MB / $(translate 'tr-tui-customscript-recommended'): ${RECOMMENDED_FLASH}MB"
     
-    if [ "$MEM_FREE_MB" -lt "$min_mem" ] || [ "$FLASH_FREE_MB" -lt "$min_flash" ]; then
+    if [ "$MEM_FREE_MB" -lt "$MINIMUM_MEM" ] || [ "$FLASH_FREE_MB" -lt "$MINIMUM_FLASH" ]; then
         msg="${msg}
 
 $(translate 'tr-tui-customscript-resource-ng')"
