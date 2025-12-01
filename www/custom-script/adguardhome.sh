@@ -656,23 +656,23 @@ init_adguardhome() {
   done
 }
 
-adguardhome_main() {
+print_banner() {
+  local mode="$1"  # "Installation" or "Removal"
+  printf "\n\033[1;34m========================================\033[0m\n"
+  printf "\033[1;34m  AdGuard Home %s (Version: %s)\033[0m\n" "$mode" "$VERSION"
+  printf "\033[1;34m========================================\033[0m\n\n"
+}
 
+adguardhome_main() {
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
   
   if [ -n "$REMOVE_MODE" ]; then
-    printf "\n\033[1;34m========================================\033[0m\n"
-    printf "\033[1;34m  AdGuard Home Removal (Version: %s)\033[0m\n" "$VERSION"
-    printf "\033[1;34m========================================\033[0m\n\n"
+    print_banner "Removal"
     remove_adguardhome "$REMOVE_MODE"
     return 0
-  fi
-  
-  printf "\n\033[1;34m========================================\033[0m\n"
-  printf "\033[1;34m  AdGuard Home Installation (Version: %s)\033[0m\n" "$VERSION"
-  printf "\033[1;34m========================================\033[0m\n\n"
-  
+  else
+  print_banner "Installation"
   check_system
   install_prompt
 
