@@ -159,7 +159,7 @@ install_prompt() {
       2|official) INSTALL_MODE="official"; break ;;
       0|exit)
         printf "\033[1;33mInstallation cancelled.\033[0m\n"
-        return 0
+        exit 0
         ;;
       *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
     esac
