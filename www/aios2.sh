@@ -1274,6 +1274,7 @@ generate_customscript_file() {
     echo "[DEBUG] Generated customscript: $output_file with args:${script_args}" >> "$CONFIG_DIR/debug.log"
 }
 
+
 check_script_requirements() {
     local script_id="$1"
     local min_mem="${MINIMUM_MEM}"
@@ -1282,18 +1283,23 @@ check_script_requirements() {
     local rec_flash="${RECOMMENDED_FLASH}"
     
     local msg="$(translate 'tr-tui-customscript-resource-check')
-
 $(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB
   $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
-
 $(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB
   $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB"
     
     if [ "$MEM_FREE_MB" -lt "$min_mem" ] || [ "$FLASH_FREE_MB" -lt "$min_flash" ]; then
+        msg="${msg}
+
+$(translate 'tr-tui-customscript-resource-ng')"
         show_msgbox "$breadcrumb" "$msg"
         return 1
     fi
     
+    msg="${msg}
+
+$(translate 'tr-tui-customscript-resource-ok')"
+    show_msgbox "$breadcrumb" "$msg"
     return 0
 }
 
