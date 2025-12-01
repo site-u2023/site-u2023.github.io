@@ -168,10 +168,12 @@ install_package() {
     local pkgs="$*"
     [ -z "$pkgs" ] && return 1
     printf "Installing: %s " "$pkgs"
-    $INSTALL_CMD $opts $pkgs >/dev/null 2>&1 && printf "\033[1;32mDone\033[0m\n" || {
+    if $INSTALL_CMD "$opts" $pkgs >/dev/null 2>&1; then
+        printf "\033[1;32mDone\033[0m\n"
+    else
         printf "\033[1;31mFailed\033[0m\n"
         return 1
-    }
+    fi
 }
 
 remove_package() {
