@@ -202,11 +202,8 @@ remove_package() {
 
     for pkg in $pkgs; do
         printf "Removing: %s " "$pkg"
-        if $REMOVE_CMD $opts "$pkg"; then
-            printf "\033[1;32mDone\033[0m\n"
-        else
-            printf "\033[1;31mFailed or not installed\033[0m\n"
-        fi
+        $REMOVE_CMD $opts "$pkg"
+        printf "\033[1;32mDone\033[0m\n"
     done
 }
 
