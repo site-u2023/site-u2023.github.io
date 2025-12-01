@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1130.1237"
+VERSION="R7.1130.1312"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1546,6 +1546,7 @@ fetch_cached_template() {
 
 prefetch_templates() {
     local cat_id template_url tpl_custom
+    local script_id script_file script_url template_path
     
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
@@ -1560,6 +1561,20 @@ prefetch_templates() {
             fi
         done <<EOF
 $(get_customfeed_categories)
+EOF
+    fi
+    
+    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
+        while read -r script_id; do
+            script_file=$(get_customscript_file "$script_id")
+            [ -z "$script_file" ] && continue
+            
+            script_url="${BASE_URL}/custom-script/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            
+            fetch_cached_template "$script_url" "$template_path"
+        done <<EOF
+$(get_customscript_all_scripts)
 EOF
     fi
 }
@@ -1709,55 +1724,44 @@ EOF3
     fi
     
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        local pids=""
-        
         while read -r script_id; do
-            (
-                script_file=$(get_customscript_file "$script_id")
-                [ -z "$script_file" ] && exit 0
-                
-                script_url="${BASE_URL}/custom-script/${script_file}"
-                template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-                
-                fetch_cached_template "$script_url" "$template_path"
-                
-                if [ -f "$template_path" ]; then
-                    {
-                        awk '
-                            /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                                print
-                                if (vars_file != "") {
-                                    while ((getline line < vars_file) > 0) {
-                                        print line
-                                    }
-                                    close(vars_file)
+            script_file=$(get_customscript_file "$script_id")
+            [ -z "$script_file" ] && continue
+            
+            script_url="${BASE_URL}/custom-script/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            
+            if [ -f "$template_path" ]; then
+                {
+                    awk '
+                        /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                            print
+                            if (vars_file != "") {
+                                while ((getline line < vars_file) > 0) {
+                                    print line
                                 }
-                                skip=1
-                                next
+                                close(vars_file)
                             }
-                            /^# END_VARIABLE_DEFINITIONS/ {
-                                skip=0
-                            }
-                            !skip
-                        ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
-                        
-                        echo ""
-                        echo "${script_id}_main"
-                    } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                            skip=1
+                            next
+                        }
+                        /^# END_VARIABLE_DEFINITIONS/ {
+                            skip=0
+                        }
+                        !skip
+                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
                     
-                    chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-                fi
-            ) &
-            pids="$pids $!"
+                    echo ""
+                    echo "${script_id}_main"
+                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                
+                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+            fi
         done <<SCRIPTS
 $(get_customscript_all_scripts)
 SCRIPTS
         
-        for pid in $pids; do
-            wait $pid
-        done
-        
-        echo "[DEBUG] customscripts generation completed in parallel" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
     fi
 }
 
