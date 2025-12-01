@@ -228,7 +228,7 @@ EOF
         fi
 
         printf "Removing: %s " "$pkg"
-        $REMOVE_CMD $opts "$pkg" >/dev/null 2>&1 || true
+        $REMOVE_CMD $opts "$pkg"
         printf "\033[1;32mDone\033[0m\n"
     done
 }
@@ -569,11 +569,11 @@ remove_adguardhome() {
         printf "\033[1;33mAuto-removing due to installation error\033[0m\n"
     fi
 
-    /etc/init.d/"${AGH}" stop    2>/dev/null || true
-    /etc/init.d/"${AGH}" disable 2>/dev/null || true
+    /etc/init.d/"${AGH}" stop
+    /etc/init.d/"${AGH}" disable
 
     if [ "$INSTALL_TYPE" = "official" ]; then
-        "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null || true
+        "/etc/${AGH}/${AGH}" -s uninstall
     else
         remove_package "" "$AGH"
     fi
