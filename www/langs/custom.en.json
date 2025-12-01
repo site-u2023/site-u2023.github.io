@@ -217,6 +217,7 @@
     "tr-tui-customscript-available": "Available",
     "tr-tui-customscript-resource-ok": "Installation possible",
     "tr-tui-customscript-resource-ng": "Insufficient resources",
+    "tr-tui-customscript-force-install-question": "Force install anyway?",
     "tr-tui-customscript-install-openwrt": "Install from OpenWrt packages",
     "tr-tui-customscript-install-official": "Install official binary",
     "tr-tui-customscript-adguardhome": "AdGuard Home",
