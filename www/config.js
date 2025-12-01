@@ -51,7 +51,7 @@ var config = {
   customfeeds_db_path: "custom-feeds/customfeeds.json",
 
   // Custom scripts database URL
-  customscripts_db_path: "custom-script/customscripts.json",
+  customscripts_db_path: "custom-scripts/customscripts.json",
 
   // UI modules paths
   whiptail_ui_path: "aios2-whiptail.sh",
