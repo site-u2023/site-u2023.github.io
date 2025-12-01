@@ -51,7 +51,7 @@
 #   Manual setup mode: NO_YAML=1 sh adguardhome.sh
 #   Automated installation: INSTALL_MODE=official NO_YAML=1 sh adguardhome.sh
 
-VERSION="R7.1130.1230"
+VERSION="R7.1201.1206"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -125,32 +125,30 @@ check_system() {
   FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
   FLASH_TOTAL_MB=$((FLASH_TOTAL_KB / 1024))
   
-  if [ "$MEM_FREE_MB" -lt "$REQUIRED_MEM" ]; then
+  if [ "$MEM_FREE_MB" -lt "$MINIMUM_MEM" ]; then
     mem_col="1;31"
   else
     mem_col="1;32"
   fi
-  if [ "$FLASH_FREE_MB" -lt "$REQUIRED_FLASH" ]; then
+  if [ "$FLASH_FREE_MB" -lt "$MINIMUM_FLASH" ]; then
     flash_col="1;31"
   else
     flash_col="1;32"
   fi
-  
-  printf "Memory: Free \033[%sm%s MB\033[0m / Total %s MB\n" \
-    "$mem_col" "$MEM_FREE_MB" "$MEM_TOTAL_MB"
-  printf "Flash: Free \033[%sm%s MB\033[0m / Total %s MB\n" \
-    "$flash_col" "$FLASH_FREE_MB" "$FLASH_TOTAL_MB"
-  printf "LAN interface: %s\n" "$LAN"
-  printf "Package manager: %s\n" "$PACKAGE_MANAGER"
-  
-  if [ "$MEM_FREE_MB" -lt "$REQUIRED_MEM" ]; then
+
+  printf "Memory: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: %s MB)\n" \
+    "$mem_col" "$MEM_FREE_MB" "$MEM_TOTAL_MB" "$MINIMUM_MEM" "$RECOMMENDED_MEM"
+  printf "Flash: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: %s MB)\n" \
+    "$flash_col" "$FLASH_FREE_MB" "$FLASH_TOTAL_MB" "$MINIMUM_FLASH" "$RECOMMENDED_FLASH"
+
+  if [ "$MEM_FREE_MB" -lt "$MINIMUM_MEM" ]; then
     printf "\033[1;31mError: Insufficient memory. At least %sMB RAM is required.\033[0m\n" \
-      "$REQUIRED_MEM"
+      "$MINIMUM_MEM"
     exit 1
   fi
-  if [ "$FLASH_FREE_MB" -lt "$REQUIRED_FLASH" ]; then
+  if [ "$FLASH_FREE_MB" -lt "$MINIMUM_FLASH" ]; then
     printf "\033[1;31mError: Insufficient flash storage. At least %sMB free space is required.\033[0m\n" \
-      "$REQUIRED_FLASH"
+      "$MINIMUM_FLASH"
     exit 1
   fi
 }
