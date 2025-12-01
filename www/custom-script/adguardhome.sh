@@ -68,6 +68,12 @@ LAN_ADDR="${LAN_ADDR:-192.168.1.1}"
 LAN="${LAN:-br-lan}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
 
+PKG_HTPASSWD_DEPS="libaprutil libapr libexpat libuuid1"
+PKG_APACHE="apache"
+PKG_CA_BUNDLE="ca-bundle"
+PKG_ADGUARDHOME_OPENWRT="adguardhome"
+PKG_ADGUARDHOME_OFFICIAL="AdGuardHome"
+
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
     printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
