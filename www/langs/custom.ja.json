@@ -217,7 +217,7 @@
     "tr-tui-customscript-available": "利用可能",
     "tr-tui-customscript-resource-ok": "インストール可能です",
     "tr-tui-customscript-resource-ng": "リソースが不足しています",
-    "tr-tui-customscript-force-install-question": "強制インストールしますか？".
+    "tr-tui-customscript-force-install-question": "強制インストールしますか？",
     "tr-tui-customscript-install-openwrt": "OpenWrtパッケージのインストール",
     "tr-tui-customscript-install-official": "公式バイナリのインストール",
     "tr-tui-customscript-adguardhome": "アドガードホーム",
