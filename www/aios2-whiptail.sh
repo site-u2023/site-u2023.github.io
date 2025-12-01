@@ -214,23 +214,15 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
-                local skip_inputs option_args script_file
+                local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
                 if [ "$skip_inputs" != "true" ]; then
-                    if collect_script_inputs "$script_id" "$breadcrumb"; then
-                        option_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                        script_file=$(get_customscript_file "$script_id")
-                        generate_customscript_file "$script_id" "$script_file" "$option_args"
-                        return 0
-                    fi
+                    collect_script_inputs "$script_id" "$breadcrumb"
                 else
                     echo "REMOVE_MODE='auto'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                    option_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                    script_file=$(get_customscript_file "$script_id")
-                    generate_customscript_file "$script_id" "$script_file" "$option_args"
-                    return 0
                 fi
+                return 0
             fi
         fi
     done
