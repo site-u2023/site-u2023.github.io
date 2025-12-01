@@ -201,46 +201,12 @@ remove_package() {
     [ -z "$pkgs" ] && return 1
 
     for pkg in $pkgs; do
-        if [ "$pkg" = "$PKG_ADGUARDHOME_OPENWRT" ] || [ "$pkg" = "$PKG_ADGUARDHOME_OFFICIAL" ]; then
-            printf "Removing: %s " "$pkg"
-            opkg remove "$pkg"
-            printf "\033[1;32mDone\033[0m\n"
-            continue
-        fi
-
-        if [ "$pkg" = "htpasswd" ]; then
-            if opkg list-installed | grep -q "^apache"; then
-                printf "Skipping removal of htpasswd: apache is installed\n"
-                continue
-            fi
-        fi
-
-        local dep_output
-        dep_output=$(opkg depends "$pkg" 2>/dev/null)
-        local has_other_deps=0
-        while IFS= read -r line; do
-            [ -z "$line" ] && continue
-            case "$line" in
-                *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*) 
-                    continue 
-                    ;;
-                *)
-                    has_other_deps=1
-                    break
-                    ;;
-            esac
-        done <<EOF
-$dep_output
-EOF
-
-        if [ "$has_other_deps" -eq 1 ]; then
-            printf "Skipping removal of %s: other packages depend on it\n" "$pkg"
-            continue
-        fi
-
         printf "Removing: %s " "$pkg"
-        opkg remove "$pkg"
-        printf "\033[1;32mDone\033[0m\n"
+        if $REMOVE_CMD $opts "$pkg"; then
+            printf "\033[1;32mDone\033[0m\n"
+        else
+            printf "\033[1;31mFailed or not installed\033[0m\n"
+        fi
     done
 }
 
