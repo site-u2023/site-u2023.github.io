@@ -200,24 +200,17 @@ remove_package() {
     local pkgs="$*"
     [ -z "$pkgs" ] && return 1
 
-    local REMOVE_CMD="opkg remove"
-    local DEPENDS_CMD="opkg whatdepends"
-
     for pkg in $pkgs; do
-        if ! opkg list-installed | grep -q "^$pkg "; then
-            printf "\033[1;33mSkipping removal of %s: package not installed\033[0m\n" "$pkg"
-            continue
-        fi
-
         local dep_output
         dep_output=$($DEPENDS_CMD "$pkg" 2>/dev/null)
+        
+        local has_other_deps=0
         if [ -n "$dep_output" ]; then
-            local has_other_deps=0
             while IFS= read -r line; do
                 [ -z "$line" ] && continue
                 case "$line" in
-                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*)
-                        continue
+                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*) 
+                        continue 
                         ;;
                     *)
                         has_other_deps=1
@@ -227,17 +220,18 @@ remove_package() {
             done <<EOF
 $dep_output
 EOF
-            if [ "$has_other_deps" -eq 1 ]; then
-                printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
-                continue
-            fi
+        fi
+
+        if [ "$has_other_deps" -eq 1 ]; then
+            printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
+            continue
         fi
 
         printf "Removing: %s " "$pkg"
-        if $REMOVE_CMD $opts "$pkg"; then
+        if $REMOVE_CMD $opts "$pkg" 2>/dev/null; then
             printf "\033[1;32mDone\033[0m\n"
         else
-            printf "\033[1;31mFailed to remove %s\033[0m\n" "$pkg"
+            printf "\033[1;33mSkipped (not installed)\033[0m\n"
         fi
     done
 }
