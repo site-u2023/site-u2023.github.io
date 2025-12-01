@@ -1236,10 +1236,19 @@ collect_script_inputs() {
                 return 1
             fi
             
-            [ -z "$value" ] && value="$input_default"
+            if [ -z "$value" ]; then
+                if [ -n "$min_length" ]; then
+                    continue
+                else
+                    value="$input_default"
+                fi
+            fi
             
-            if [ -n "$min_length" ] && [ ${#value} -lt "$min_length" ]; then
-                continue
+            if [ -n "$min_length" ]; then
+                local value_length="${#value}"
+                if [ "$value_length" -lt "$min_length" ]; then
+                    continue
+                fi
             fi
             
             break
