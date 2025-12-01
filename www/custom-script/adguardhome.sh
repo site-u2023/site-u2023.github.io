@@ -202,7 +202,7 @@ remove_package() {
 
     for pkg in $pkgs; do
         printf "Removing: %s " "$pkg"
-        $REMOVE_CMD $opts "$pkg"
+        $REMOVE_CMD $opts "$pkg" >/dev/null 2>&1
         printf "\033[1;32mDone\033[0m\n"
     done
 }
