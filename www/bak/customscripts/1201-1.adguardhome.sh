@@ -90,13 +90,18 @@ check_system() {
   fi
   
   if command -v opkg >/dev/null 2>&1; then
-    PACKAGE_MANAGER="opkg"
+      PACKAGE_MANAGER="opkg"
+      UPDATE_CMD="opkg update"
+      INSTALL_CMD="opkg install"
+      REMOVE_CMD="opkg remove"
   elif command -v apk >/dev/null 2>&1; then
-    PACKAGE_MANAGER="apk"
+      PACKAGE_MANAGER="apk"
+      UPDATE_CMD="apk update"
+      INSTALL_CMD="apk add"
+      REMOVE_CMD="apk del"
   else
-    printf "\033[1;31mNo supported package manager (apk or opkg) found.\033[0m\n"
-    printf "\033[1;31mThis script is designed for OpenWrt systems only.\033[0m\n"
-    exit 1
+      printf "\033[1;31mError: No supported package manager found.\033[0m\n"
+      exit 1
   fi
   
   MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
@@ -141,6 +146,38 @@ check_system() {
       "$MINIMUM_FLASH"
     exit 1
   fi
+}
+
+update_packages() {
+    printf "Updating package lists... "
+    $UPDATE_CMD >/dev/null 2>&1 || {
+        printf "\033[1;31mFailed\033[0m\n"
+        $UPDATE_CMD
+        exit 1
+    }
+    printf "\033[1;32mDone\033[0m\n"
+}
+
+install_package() {
+    local opts="$1"; shift
+    local pkgs="$*"
+    [ -z "$pkgs" ] && return 1
+
+    printf "Installing: %s " "$pkgs"
+    $INSTALL_CMD $opts $pkgs >/dev/null 2>&1 && printf "\033[1;32mDone\033[0m\n" || {
+        printf "\033[1;31mFailed\033[0m\n"
+        return 1
+    }
+}
+
+remove_package() {
+    local opts="$1"; shift
+    local pkgs="$*"
+    [ -z "$pkgs" ] && return 1
+
+    printf "Removing: %s " "$pkgs"
+    $REMOVE_CMD $opts $pkgs >/dev/null 2>&1 || true
+    printf "\033[1;32mDone\033[0m\n"
 }
 
 install_prompt() {
