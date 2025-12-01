@@ -682,6 +682,7 @@ get_access() {
 }
 
 init_adguardhome() {
+  OPTIND=1
   while getopts "cnr:i:" opt; do
     case $opt in
       c) SKIP_RESOURCE_CHECK=1 ;;
@@ -708,9 +709,14 @@ print_banner() {
   printf "\033[1;34m========================================\033[0m\n\n"
 }
 
-
 adguardhome_main() {
+  # --- デバッグ表示開始 ---
+  printf "\033[1;35m[DEBUG] Args received: %s\033[0m\n" "$*"
+  
   init_adguardhome "$@"
+  
+  printf "\033[1;35m[DEBUG] INSTALL_MODE set to: '%s'\033[0m\n" "$INSTALL_MODE"
+  # --- デバッグ表示終了 ---
 
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
