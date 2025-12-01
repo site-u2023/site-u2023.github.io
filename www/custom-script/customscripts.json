@@ -26,7 +26,7 @@
           "default": "password",
           "minlength": 8,
           "envVar": "AGH_PASS"
-        }
+        },
         {
           "id": "web_port",
           "type": "number",
