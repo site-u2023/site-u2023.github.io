@@ -245,24 +245,15 @@ install_packages() {
 }
 
 install_dependencies() {
-  printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
-  
-  local apache_existed=0
-  if $PACKAGE_MANAGER list-installed 2>/dev/null | grep -q "^${PKG_APACHE} "; then
-    apache_existed=1
-    printf "\033[1;33mApache is already installed, preserving existing installation\033[0m\n"
+  printf "\033[1;34mEnsuring htpasswd is available\033[0m\n"
+
+  if command -v htpasswd >/dev/null 2>&1; then
+    printf "\033[1;32mhtpasswd already available, skipping Apache installation\033[0m\n"
+    return 0
   fi
-  
-  install_package "" $PKG_HTPASSWD_DEPS $PKG_APACHE
-  cp /usr/bin/htpasswd /tmp/htpasswd
-  
-  if [ "$apache_existed" -eq 0 ]; then
-    remove_package "--force-depends" $PKG_APACHE
-  fi
-  
-  mv /tmp/htpasswd /usr/bin/htpasswd
-  chmod +x /usr/bin/htpasswd
-  
+
+  install_package "" $PKG_APACHE $PKG_HTPASSWD_DEPS || return 1
+
   if command -v htpasswd >/dev/null 2>&1; then
     printf "\033[1;32mhtpasswd installed successfully\033[0m\n"
     return 0
