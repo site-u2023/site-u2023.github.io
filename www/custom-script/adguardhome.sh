@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2086,SC2034,SC3043
+# shellcheck shell=sh disable=SC2034,SC2086,SC3043
 # OpenWrt 19.07+ configuration
 # Reference: https://openwrt.org/docs/guide-user/services/dns/adguard-home
 #            https://github.com/AdguardTeam/AdGuardHome
