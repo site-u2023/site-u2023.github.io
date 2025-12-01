@@ -638,14 +638,16 @@ get_access() {
 }
 
 init_adguardhome() {
-  while getopts "cr:i:" opt; do
+  while getopts "cnr:i:" opt; do
     case $opt in
       c) SKIP_RESOURCE_CHECK=1 ;;
+      n) NO_YAML=1 ;;
       r) REMOVE_MODE="$OPTARG" ;;
       i) INSTALL_MODE="$OPTARG" ;;
       *) 
-        printf "Usage: %s [-c] [-r auto|manual] [-i openwrt|official]\n" "$(basename "$0")"
+        printf "Usage: %s [-c] [-n] [-r auto|manual] [-i openwrt|official]\n" "$(basename "$0")"
         printf "  -c: Skip resource check (forced installation)\n"
+        printf "  -n: Skip YAML configuration generation (manual web setup)\n"
         printf "  -r: Remove mode (auto: auto-confirm, manual: interactive)\n"
         printf "  -i: Installation mode (openwrt: package, official: binary)\n"
         exit 1
