@@ -33,7 +33,7 @@ DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
 LAN_ADDR="${LAN_ADDR:-192.168.1.1}"
 
 LAN="${LAN:-br-lan}"
-SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-script}"
+SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-scripts}"
 
 check_system() {
   if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
