@@ -716,8 +716,6 @@ adguardhome_main() {
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
   
   if [ -n "$REMOVE_MODE" ]; then
-  
-  if [ -n "$REMOVE_MODE" ]; then
     print_banner "Removal"
     remove_adguardhome "$REMOVE_MODE"
     return 0
