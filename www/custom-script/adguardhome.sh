@@ -35,7 +35,7 @@
 #   sh adguardhome.sh -c                                 # Force install
 #   sh adguardhome.sh -r auto                            # Auto-remove
 
-VERSION="R7.1201.2035"
+VERSION="R7.1201.2348"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -260,9 +260,19 @@ install_packages() {
 install_dependencies() {
   printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
   
+  local apache_existed=0
+  if $PACKAGE_MANAGER list-installed 2>/dev/null | grep -q "^${PKG_APACHE} "; then
+    apache_existed=1
+    printf "\033[1;33mApache is already installed, preserving existing installation\033[0m\n"
+  fi
+  
   install_package "" $PKG_HTPASSWD_DEPS $PKG_APACHE
   cp /usr/bin/htpasswd /tmp/htpasswd
-  remove_package "--force-depends" $PKG_APACHE
+  
+  if [ "$apache_existed" -eq 0 ]; then
+    remove_package "--force-depends" $PKG_APACHE
+  fi
+  
   mv /tmp/htpasswd /usr/bin/htpasswd
   chmod +x /usr/bin/htpasswd
   
