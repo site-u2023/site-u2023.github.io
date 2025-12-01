@@ -224,7 +224,7 @@
     "tr-tui-customscript-remove": "アドガードホームを削除",
     "tr-tui-customscript-change-credentials": "ID及びパスワード変更",
     "tr-tui-customscript-username": "ユーザーID",
-    "tr-tui-customscript-password": "パスワード",
+    ""tr-tui-customscript-password": "パスワード（8文字以上）",
     "tr-tui-customscript-webport": "WEBポート",
     "tr-tui-customscript-dnsport": "DNSポート",
     "tr-tui-customscript-lanaddr": "LANアドレス",
