@@ -196,16 +196,16 @@ install_dependencies() {
   
   case "$PACKAGE_MANAGER" in
     opkg)
-      install_packages "--nodeps" libaprutil libapr libexpat libuuid1 apache
+      install_packages "--nodeps" $PKG_HTPASSWD_DEPS $PKG_APACHE
       cp /usr/bin/htpasswd /tmp/htpasswd
-      opkg remove --force-depends apache >/dev/null 2>&1
+      opkg remove --force-depends $PKG_APACHE >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
     apk)
-      install_packages "--force" libaprutil libapr libexpat libuuid1 apache
+      install_packages "--force" $PKG_HTPASSWD_DEPS $PKG_APACHE
       cp /usr/bin/htpasswd /tmp/htpasswd
-      apk del --force apache2 >/dev/null 2>&1
+      apk del --force $PKG_APACHE >/dev/null 2>&1
       mv /tmp/htpasswd /usr/bin/htpasswd
       chmod +x /usr/bin/htpasswd
       ;;
@@ -223,49 +223,49 @@ install_dependencies() {
 install_cacertificates() {
   case "$PACKAGE_MANAGER" in
     apk)
-      install_packages "" ca-certificates
+      install_packages "" $PKG_CA_BUNDLE
       ;;
     opkg)
-      install_packages "--verbosity=0" ca-bundle
+      install_packages "--verbosity=0" $PKG_CA_BUNDLE
       ;;
   esac
 }
 
 install_openwrt() {
-  printf "Installing adguardhome (OpenWrt package)\n"
+  printf "Installing %s (OpenWrt package)\n" "$PKG_ADGUARDHOME_OPENWRT"
   
   case "$PACKAGE_MANAGER" in
     apk)
-      PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
+      PKG_VER=$(apk search $PKG_ADGUARDHOME_OPENWRT | grep "^${PKG_ADGUARDHOME_OPENWRT}-" | sed "s/^${PKG_ADGUARDHOME_OPENWRT}-//" | sed 's/-r[0-9]*$//')
       if [ -n "$PKG_VER" ]; then
-        apk add adguardhome || {
+        apk add $PKG_ADGUARDHOME_OPENWRT || {
           printf "\033[1;31mNetwork error during apk add. Aborting.\033[0m\n"
           exit 1
         }
-        printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
+        printf "\033[1;32m%s %s has been installed\033[0m\n" "$PKG_ADGUARDHOME_OPENWRT" "$PKG_VER"
       else
-        printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official\033[0m\n"
+        printf "\033[1;31mPackage '%s' not found in apk repository, falling back to official\033[0m\n" "$PKG_ADGUARDHOME_OPENWRT"
         install_official
         return
       fi
       ;;
     opkg)
-      PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
+      PKG_VER=$(opkg list | grep "^${PKG_ADGUARDHOME_OPENWRT} " | awk '{print $3}')
       if [ -n "$PKG_VER" ]; then
-        opkg install --verbosity=0 adguardhome || {
+        opkg install --verbosity=0 $PKG_ADGUARDHOME_OPENWRT || {
           printf "\033[1;31mNetwork error during opkg install. Aborting.\033[0m\n"
           exit 1
         }
-        printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
+        printf "\033[1;32m%s %s has been installed\033[0m\n" "$PKG_ADGUARDHOME_OPENWRT" "$PKG_VER"
       else
-        printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
+        printf "\033[1;31mPackage '%s' not found in opkg repository, falling back to official\033[0m\n" "$PKG_ADGUARDHOME_OPENWRT"
         install_official
         return
       fi
       ;;
   esac
   
-  SERVICE_NAME="adguardhome"
+  SERVICE_NAME="$PKG_ADGUARDHOME_OPENWRT"
 }
 
 install_official() {
@@ -274,7 +274,7 @@ install_official() {
   VER=$( { wget -q -O - "$URL" || wget -q "$CA" -O - "$URL"; } | jsonfilter -e '@.tag_name' )
   [ -n "$VER" ] || { printf "\033[1;31mError: Failed to get AdGuardHome version from GitHub API.\033[0m\n"; exit 1; }
   
-  mkdir -p /etc/AdGuardHome
+  mkdir -p /etc/$PKG_ADGUARDHOME_OFFICIAL
   case "$(uname -m)" in
     aarch64|arm64) ARCH=arm64 ;;
     armv7l)        ARCH=armv7 ;;
@@ -286,23 +286,23 @@ install_official() {
     mips64)        ARCH=mips64le ;;
     *) printf "Unsupported arch: %s\n" "$(uname -m)"; exit 1 ;;
   esac
-  TAR="AdGuardHome_linux_${ARCH}.tar.gz"
+  TAR="${PKG_ADGUARDHOME_OFFICIAL}_linux_${ARCH}.tar.gz"
   URL2="https://github.com/AdguardTeam/AdGuardHome/releases/download/${VER}/${TAR}"
-  DEST="/etc/AdGuardHome/${TAR}"
+  DEST="/etc/${PKG_ADGUARDHOME_OFFICIAL}/${TAR}"
   
-  printf "Downloading AdGuardHome (official binary)\n"
+  printf "Downloading %s (official binary)\n" "$PKG_ADGUARDHOME_OFFICIAL"
   if ! { wget -q -O "$DEST" "$URL2" || wget -q "$CA" -O "$DEST" "$URL2"; }; then
     printf '\033[1;31mDownload failed. Please check network connection.\033[0m\n'
     exit 1
   fi
-  printf "\033[1;32mAdGuardHome %s has been downloaded\033[0m\n" "$VER"
+  printf "\033[1;32m%s %s has been downloaded\033[0m\n" "$PKG_ADGUARDHOME_OFFICIAL" "$VER"
   
-  tar -C /etc/ -xzf "/etc/AdGuardHome/${TAR}"
-  rm "/etc/AdGuardHome/${TAR}"
-  chmod +x /etc/AdGuardHome/AdGuardHome
-  SERVICE_NAME="AdGuardHome"
+  tar -C /etc/ -xzf "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${TAR}"
+  rm "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${TAR}"
+  chmod +x /etc/$PKG_ADGUARDHOME_OFFICIAL/$PKG_ADGUARDHOME_OFFICIAL
+  SERVICE_NAME="$PKG_ADGUARDHOME_OFFICIAL"
   
-  /etc/AdGuardHome/AdGuardHome -s install >/dev/null 2>&1 || {
+  /etc/$PKG_ADGUARDHOME_OFFICIAL/$PKG_ADGUARDHOME_OFFICIAL -s install >/dev/null 2>&1 || {
     printf "\033[1;31mInitialization failed. Check AdGuardHome.yaml and port availability.\033[0m\n"
     exit 1
   }
@@ -362,10 +362,10 @@ generate_password_hash() {
 generate_yaml() {
   local yaml_path yaml_template_url yaml_tmp
   
-  if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
-    yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
+  if [ "$SERVICE_NAME" = "$PKG_ADGUARDHOME_OFFICIAL" ]; then
+    yaml_path="/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}.yaml"
   else
-    yaml_path="/etc/adguardhome.yaml"
+    yaml_path="/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml"
   fi
   
   yaml_template_url="${SCRIPT_BASE_URL}/adguardhome.yaml"
@@ -497,10 +497,10 @@ EOF
 remove_adguardhome() {
   local auto_confirm="$1"
   printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
-  if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
-    INSTALL_TYPE="official"; AGH="AdGuardHome"
-  elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
-    INSTALL_TYPE="openwrt"; AGH="adguardhome"
+  if /etc/$PKG_ADGUARDHOME_OFFICIAL/$PKG_ADGUARDHOME_OFFICIAL --version >/dev/null 2>&1; then
+    INSTALL_TYPE="official"; AGH="$PKG_ADGUARDHOME_OFFICIAL"
+  elif /usr/bin/$PKG_ADGUARDHOME_OFFICIAL --version >/dev/null 2>&1; then
+    INSTALL_TYPE="openwrt"; AGH="$PKG_ADGUARDHOME_OPENWRT"
   else
     printf "\033[1;31mAdGuard Home not found\033[0m\n"
     return 1
@@ -529,23 +529,32 @@ remove_adguardhome() {
       opkg remove --verbosity=0 "$AGH" 2>/dev/null || true
     fi
   fi
-  if [ -d "/etc/${AGH}" ] || [ -f "/etc/adguardhome.yaml" ]; then
+  if [ -d "/etc/${AGH}" ] || [ -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml" ]; then
     if [ "$auto_confirm" != "auto" ]; then
       printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
       read -r cfg
       case "$cfg" in
         [yY]*) 
-          [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
-          [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
-          rm -f /etc/adguardhome.yaml
+          [ -d "/etc/$PKG_ADGUARDHOME_OFFICIAL" ] && rm -rf /etc/$PKG_ADGUARDHOME_OFFICIAL
+          [ -d "/etc/$PKG_ADGUARDHOME_OPENWRT" ] && rm -rf /etc/$PKG_ADGUARDHOME_OPENWRT
+          rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
           ;;
       esac
     else
-      [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
-      [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
-      rm -f /etc/adguardhome.yaml
+      [ -d "/etc/$PKG_ADGUARDHOME_OFFICIAL" ] && rm -rf /etc/$PKG_ADGUARDHOME_OFFICIAL
+      [ -d "/etc/$PKG_ADGUARDHOME_OPENWRT" ] && rm -rf /etc/$PKG_ADGUARDHOME_OPENWRT
+      rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
     fi
   fi
+  
+  printf "\033[1;34mRemoving htpasswd and dependencies\033[0m\n"
+  rm -f /usr/bin/htpasswd
+  if command -v opkg >/dev/null 2>&1; then
+    opkg remove --force-depends $PKG_HTPASSWD_DEPS 2>/dev/null || true
+  elif command -v apk >/dev/null 2>&1; then
+    apk del --force $PKG_HTPASSWD_DEPS 2>/dev/null || true
+  fi
+  
   for cfg in network dhcp firewall; do
     bak="/etc/config/${cfg}.adguard.bak"
     if [ -f "$bak" ]; then
@@ -594,10 +603,10 @@ EOF
 
 get_access() {
   local cfg port addr
-  if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
-    cfg="/etc/AdGuardHome/AdGuardHome.yaml"
-  elif [ -f "/etc/adguardhome.yaml" ]; then
-    cfg="/etc/adguardhome.yaml"
+  if [ -f "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}.yaml" ]; then
+    cfg="/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}.yaml"
+  elif [ -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml" ]; then
+    cfg="/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml"
   fi
   if [ -n "$cfg" ]; then
     addr=$(awk '
@@ -620,18 +629,15 @@ get_access() {
     printf "\033[1;32m========================================\033[0m\n"
   fi
   
-  # IPv4アドレス表示
   printf "\033[1;32mWeb interface IPv4:\033[0m\n"
   printf "  http://%s:%s/\n" "$NET_ADDR" "$port"
   
-  # IPv6アドレス表示（複数ある場合は最初の1つだけ）
   if [ -n "$NET_ADDR6_LIST" ]; then
     set -- $NET_ADDR6_LIST
     printf "\033[1;32mWeb interface IPv6:\033[0m\n"
     printf "  http://[%s]:%s/\n" "$1" "$port"
   fi
   
-  # QRコード表示（オプション）
   if command -v qrencode >/dev/null 2>&1; then
     printf "\n\033[1;34mQR Code for IPv4:\033[0m\n"
     printf "http://%s:%s/\n" "$NET_ADDR" "$port" | qrencode -t UTF8 -v 3
