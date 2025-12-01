@@ -245,22 +245,44 @@ install_packages() {
 }
 
 install_dependencies() {
-  printf "\033[1;34mEnsuring htpasswd is available\033[0m\n"
+  printf "\033[1;34mEnsuring htpasswd and dependencies are available\033[0m\n"
+
+  local apache_existed=0
+  local all_deps_installed=1
+
+  if opkg list-installed | grep -q '^apache '; then
+    apache_existed=1
+    printf "\033[1;33mApache is already installed, preserving existing installation\033[0m\n"
+  fi
+
+  for pkg in $PKG_HTPASSWD_DEPS; do
+    if ! opkg list-installed | grep -q "^$pkg "; then
+      all_deps_installed=0
+      break
+    fi
+  done
 
   if command -v htpasswd >/dev/null 2>&1; then
-    printf "\033[1;32mhtpasswd already available, skipping Apache installation\033[0m\n"
+    printf "\033[1;32mhtpasswd is already present\033[0m\n"
     return 0
   fi
 
-  install_package "" $PKG_APACHE $PKG_HTPASSWD_DEPS || return 1
+  local install_list="$PKG_HTPASSWD_DEPS"
+  [ "$apache_existed" -eq 0 ] && install_list="$install_list $PKG_APACHE"
 
-  if command -v htpasswd >/dev/null 2>&1; then
-    printf "\033[1;32mhtpasswd installed successfully\033[0m\n"
-    return 0
-  else
-    printf "\033[1;31mhtpasswd installation failed\033[0m\n"
+  install_package "" $install_list || {
+    printf "\033[1;31mFailed to install dependencies\033[0m\n"
+    return 1
+  }
+
+  if [ ! -f /usr/bin/htpasswd ] && [ "$apache_existed" -eq 0 ]; then
+    printf "\033[1;31mhtpasswd not found after installing Apache. Aborting.\033[0m\n"
     return 1
   fi
+
+  chmod +x /usr/bin/htpasswd
+  printf "\033[1;32mhtpasswd is ready\033[0m\n"
+  return 0
 }
 
 install_cacertificates() {
