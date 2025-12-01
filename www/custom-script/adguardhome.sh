@@ -183,16 +183,35 @@ install_package() {
 }
 
 remove_package() {
-    check_package_manager
-    
     local opts="$1"; shift
     local pkgs="$*"
     [ -z "$pkgs" ] && return 1
 
     for pkg in $pkgs; do
-        if $DEPENDS_CMD "$pkg" 2>/dev/null | grep -qv "^adguardhome"; then
-            printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
-            continue
+        local dep_output
+        dep_output=$($DEPENDS_CMD "$pkg" 2>/dev/null)
+        
+        if [ -n "$dep_output" ]; then
+            local has_other_deps=0
+            while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                case "$line" in
+                    *"$PKG_ADGUARDHOME_OPENWRT"*|*"$PKG_ADGUARDHOME_OFFICIAL"*|"$pkg"*) 
+                        continue 
+                        ;;
+                    *)
+                        has_other_deps=1
+                        break
+                        ;;
+                esac
+            done <<EOF
+$dep_output
+EOF
+            
+            if [ "$has_other_deps" -eq 1 ]; then
+                printf "\033[1;33mSkipping removal of %s: other packages depend on it\033[0m\n" "$pkg"
+                continue
+            fi
         fi
 
         printf "Removing: %s " "$pkg"
