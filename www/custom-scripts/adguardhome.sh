@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1202.1639"
+VERSION="R7.1202.1709"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -53,6 +53,15 @@ check_package_manager() {
 }
 
 check_system() {
+    if [ "$INSTALL_MODE" = "change-credentials" ]; then
+        check_package_manager || exit 1
+        return 0
+    fi
+    
+    if [ "$INSTALL_MODE" = "uninstall" ]; then
+        return 0
+    fi
+    
     if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
         printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
         remove_adguardhome
@@ -117,33 +126,122 @@ check_system() {
     fi
 }
 
+execute_credential_change() {
+    check_package_manager || exit 1
+    
+    local yaml_path
+    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
+        yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
+        SERVICE_NAME="AdGuardHome"
+    elif [ -f "/etc/adguardhome.yaml" ]; then
+        yaml_path="/etc/adguardhome.yaml"
+        SERVICE_NAME="adguardhome"
+    else
+        printf "\033[1;31mAdGuard Home configuration not found\033[0m\n"
+        exit 1
+    fi
+    
+    install_dependencies || exit 1
+    
+    if [ -z "$AGH_USER" ] || [ -z "$AGH_PASS" ]; then
+        prompt_credentials
+    fi
+    
+    if [ -z "$WEB_PORT" ]; then
+        printf "Enter Web UI port [8000]: "
+        read -r WEB_PORT
+        WEB_PORT="${WEB_PORT:-8000}"
+    fi
+    
+    if [ -z "$DNS_PORT" ]; then
+        printf "Enter DNS port [53]: "
+        read -r DNS_PORT
+        DNS_PORT="${DNS_PORT:-53}"
+    fi
+    
+    generate_password_hash || exit 1
+    
+    printf "\033[1;34mUpdating configuration in: %s\033[0m\n" "$yaml_path"
+    
+    awk -v user="$AGH_USER" -v hash="$AGH_PASS_HASH" '
+        BEGIN { in_users=0; user_block=0 }
+        /^users:/ { in_users=1; print; next }
+        in_users && /^[^ ]/ { in_users=0 }
+        in_users && /^[[:space:]]*-[[:space:]]*name:/ {
+            user_block=1
+            print "  - name: " user
+            next
+        }
+        in_users && user_block && /^[[:space:]]*password:/ {
+            print "    password: " hash
+            user_block=0
+            next
+        }
+        { print }
+    ' "$yaml_path" > "${yaml_path}.tmp" && mv "${yaml_path}.tmp" "$yaml_path"
+    
+    sed -i "s|^  address: .*|  address: 0.0.0.0:${WEB_PORT}|" "$yaml_path"
+    sed -i "/^dns:/,/^[^ ]/ s|^  port: .*|  port: ${DNS_PORT}|" "$yaml_path"
+    
+    chmod 600 "$yaml_path"
+    
+    /etc/init.d/"$SERVICE_NAME" restart || {
+        printf "\033[1;31mFailed to restart AdGuard Home\033[0m\n"
+        exit 1
+    }
+    
+    get_iface_addrs
+    printf "\n\033[1;32mConfiguration updated successfully\033[0m\n\n"
+    get_access
+}
+
 install_prompt() {
     printf "\033[1;34mSystem resources are sufficient for AdGuard Home installation. Proceeding with setup.\033[0m\n"
 
     if [ -n "$INSTALL_MODE" ]; then
         case "$INSTALL_MODE" in
-            official|openwrt) return ;;
+            official|openwrt|change-credentials) return ;;
             *) printf "\033[1;31mWarning: Unrecognized INSTALL_MODE '%s'. Proceeding with interactive prompt.\033[0m\n" "$INSTALL_MODE" ;;
         esac
     fi
 
-    while true; do
-        printf "[1] Install OpenWrt package\n"
-        printf "[2] Install Official binary\n"
-        printf "[0] Exit\n"
-        printf "Please select (1, 2 or 0): "
-        read -r choice
+    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
+        while true; do
+            printf "[1] Change credentials and ports\n"
+            printf "[2] Uninstall\n"
+            printf "[0] Exit\n"
+            printf "Please select (1, 2 or 0): "
+            read -r choice
 
-        case "$choice" in
-            1|openwrt) INSTALL_MODE="openwrt"; break ;;
-            2|official) INSTALL_MODE="official"; break ;;
-            0|exit)
-                printf "\033[1;33mInstallation cancelled.\033[0m\n"
-                return 0
-                ;;
-            *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
-        esac
-    done
+            case "$choice" in
+                1|change-credentials) INSTALL_MODE="change-credentials"; break ;;
+                2|uninstall) INSTALL_MODE="uninstall"; break ;;
+                0|exit)
+                    printf "\033[1;33mOperation cancelled.\033[0m\n"
+                    exit 0
+                    ;;
+                *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
+            esac
+        done
+    else
+        while true; do
+            printf "[1] Install OpenWrt package\n"
+            printf "[2] Install Official binary\n"
+            printf "[0] Exit\n"
+            printf "Please select (1, 2 or 0): "
+            read -r choice
+
+            case "$choice" in
+                1|openwrt) INSTALL_MODE="openwrt"; break ;;
+                2|official) INSTALL_MODE="official"; break ;;
+                0|exit)
+                    printf "\033[1;33mInstallation cancelled.\033[0m\n"
+                    exit 0
+                    ;;
+                *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
+            esac
+        done
+    fi
 }
 
 install_packages() {
@@ -792,41 +890,39 @@ execute_credential_change() {
 }
 
 adguardhome_main() {
-    local standalone_mode="" mode_label operation_mode
+    local standalone_mode="" mode_label="Installation"
     [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
-    
-    operation_mode=$(determine_operation_mode)
-    
-    case "$operation_mode" in
-        remove)
-            mode_label="Removal"
-            ;;
-        change-credentials)
-            mode_label="Credential Change"
-            ;;
-        *)
-            mode_label="Installation"
-            ;;
-    esac
+    [ -n "$REMOVE_MODE" ] && mode_label="Removal"
+    [ "$INSTALL_MODE" = "change-credentials" ] && mode_label="Configuration Change"
+    [ "$INSTALL_MODE" = "uninstall" ] && mode_label="Removal" && REMOVE_MODE="manual"
     
     printf "\n\033[1;34m========================================\033[0m\n"
     printf "\033[1;34m  AdGuard Home %s\033[0m\n" "$mode_label"
     printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
     printf "\033[1;34m========================================\033[0m\n\n"
     
-    case "$operation_mode" in
-        remove)
-            remove_adguardhome "$REMOVE_MODE"
-            return 0
-            ;;
-        change-credentials)
-            execute_credential_change
-            return 0
-            ;;
-    esac
+    if [ -n "$REMOVE_MODE" ]; then
+        remove_adguardhome "$REMOVE_MODE"
+        return 0
+    fi
+    
+    if [ "$INSTALL_MODE" = "change-credentials" ]; then
+        execute_credential_change
+        return 0
+    fi
     
     check_system
     install_prompt
+    
+    if [ "$INSTALL_MODE" = "change-credentials" ]; then
+        execute_credential_change
+        return 0
+    fi
+    
+    if [ "$INSTALL_MODE" = "uninstall" ]; then
+        remove_adguardhome "manual"
+        return 0
+    fi
     
     case "$PACKAGE_MANAGER" in
         opkg)
