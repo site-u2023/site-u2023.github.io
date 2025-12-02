@@ -632,7 +632,7 @@ remove_adguardhome() {
     # Restore defaults if no backup (manual install or backup missing)
     if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
         printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-        uci batch <<EOF
+        uci batch <<EOF 2>/dev/null
 delete dhcp.@dnsmasq[0].noresolv
 delete dhcp.@dnsmasq[0].cachesize
 delete dhcp.@dnsmasq[0].rebind_protection
