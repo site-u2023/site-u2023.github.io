@@ -75,6 +75,9 @@ DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
 LAN_ADDR="${LAN_ADDR:-192.168.1.1}"
 
+[ -n "${AGH_USER+x}" ] && [ "$AGH_USER" != "admin" ] && AGH_USER_SET=1
+[ -n "${AGH_PASS+x}" ] && [ "$AGH_PASS" != "password" ] && AGH_PASS_SET=1
+
 LAN="${LAN:-br-lan}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-scripts}"
 
