@@ -68,13 +68,6 @@ check_system() {
         return 0
     fi
     
-    # INSTALL_MODEが設定済み（openwrt/official）の場合のみインストール済みチェック
-    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
-        printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-        remove_adguardhome
-        return 0
-    fi
-    
     printf "\033[1;34mChecking system requirements\033[0m\n"
     
     LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
