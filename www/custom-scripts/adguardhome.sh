@@ -733,12 +733,6 @@ determine_operation_mode() {
             printf "\033[1;31mError: Username and password are required for credential change\033[0m\n"
             exit 1
         fi
-        
-        if [ ! -f "/etc/AdGuardHome/AdGuardHome.yaml" ] && [ ! -f "/etc/adguardhome.yaml" ]; then
-            printf "\033[1;31mError: AdGuard Home is not installed\033[0m\n"
-            exit 1
-        fi
-        
         echo "change-credentials"
         return 0
     fi
