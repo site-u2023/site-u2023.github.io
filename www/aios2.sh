@@ -1202,16 +1202,34 @@ get_adguardhome_current_user() {
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
+    local selected_option="$3"
     local inputs input_id input_label input_default input_envvar input_hidden min_length value
     
-    inputs=$(get_customscript_inputs "$script_id")
+    local use_credential_inputs
+    use_credential_inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].useCredentialInputs" 2>/dev/null | head -1)
+    
+    if [ "$use_credential_inputs" = "true" ]; then
+        inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[*].id" 2>/dev/null | grep -v '^$')
+    else
+        inputs=$(get_customscript_inputs "$script_id")
+    fi
     
     for input_id in $inputs; do
-        input_label=$(get_customscript_input_label "$script_id" "$input_id")
-        input_default=$(get_customscript_input_default "$script_id" "$input_id")
-        input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
-        input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
-        min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
+        if [ "$use_credential_inputs" = "true" ]; then
+            input_label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].label" 2>/dev/null | head -1)
+            input_default=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].default" 2>/dev/null | head -1)
+            input_envvar=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1)
+            input_hidden=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1)
+            min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
+        else
+            input_label=$(get_customscript_input_label "$script_id" "$input_id")
+            input_default=$(get_customscript_input_default "$script_id" "$input_id")
+            input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+            input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
+            min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
+        fi
+        
+        input_label=$(translate "$input_label")
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1224,7 +1242,6 @@ collect_script_inputs() {
         fi
         
         if [ "$input_hidden" = "true" ]; then
-            echo "${input_envvar}=\"${input_default}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             continue
         fi
         
