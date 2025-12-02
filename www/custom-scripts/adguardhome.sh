@@ -610,14 +610,23 @@ execute_credential_change() {
   printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  if [ -z "$AGH_USER" ] || [ "$AGH_USER" = "admin" -a -z "$AGH_PASS" ]; then
-    AGH_USER=""
-    AGH_PASS=""
-    
+  local need_interactive=0
+  
+  if [ "${AGH_USER_SET:-0}" != "1" ]; then
+    need_interactive=1
+  fi
+  
+  if [ "${AGH_PASS_SET:-0}" != "1" ]; then
+    need_interactive=1
+  fi
+  
+  if [ "$need_interactive" = "1" ]; then
     printf "Enter new username [%s]: " "$current_user"
-    read -r AGH_USER
-    [ -z "$AGH_USER" ] && AGH_USER="$current_user"
+    read -r new_user
+    [ -z "$new_user" ] && new_user="$current_user"
+    AGH_USER="$new_user"
     
+    AGH_PASS=""
     while [ -z "$AGH_PASS" ] || [ ${#AGH_PASS} -lt 8 ]; do
       printf "Enter new password (min 8 chars): "
       stty -echo 2>/dev/null
