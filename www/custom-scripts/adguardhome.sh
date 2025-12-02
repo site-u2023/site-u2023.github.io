@@ -68,15 +68,16 @@ export RECOMMENDED_MEM="50"
 export RECOMMENDED_FLASH="100"
 
 SCRIPT_NAME=${0##*/}
+
+[ -n "${AGH_USER+x}" ] && AGH_USER_FROM_ENV=1
+[ -n "${AGH_PASS+x}" ] && AGH_PASS_FROM_ENV=1
+
 AGH_USER="${AGH_USER:-admin}"
 AGH_PASS="${AGH_PASS:-password}"
 WEB_PORT="${WEB_PORT:-8000}"
 DNS_PORT="${DNS_PORT:-53}"
 DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-54}"
 LAN_ADDR="${LAN_ADDR:-192.168.1.1}"
-
-[ -n "${AGH_USER+x}" ] && [ "$AGH_USER" != "admin" ] && AGH_USER_SET=1
-[ -n "${AGH_PASS+x}" ] && [ "$AGH_PASS" != "password" ] && AGH_PASS_SET=1
 
 LAN="${LAN:-br-lan}"
 SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-scripts}"
@@ -613,17 +614,7 @@ execute_credential_change() {
   printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  local need_interactive=0
-  
-  if [ "${AGH_USER_SET:-0}" != "1" ]; then
-    need_interactive=1
-  fi
-  
-  if [ "${AGH_PASS_SET:-0}" != "1" ]; then
-    need_interactive=1
-  fi
-  
-  if [ "$need_interactive" = "1" ]; then
+  if [ -z "${AGH_USER_FROM_ENV}" ]; then
     printf "Enter new username [%s]: " "$current_user"
     read -r new_user
     [ -z "$new_user" ] && new_user="$current_user"
