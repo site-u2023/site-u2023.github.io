@@ -792,7 +792,7 @@ EOF
 
     printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
 
-    if [ -z "$REMOVE_MODE" ]; then
+    if [ -z "$REMOVE_MODE" ] || [ "$REMOVE_MODE" = "manual" ]; then
         printf "\033[33mPress [Enter] to reboot.\033[0m\n"
         read -r _
         reboot
