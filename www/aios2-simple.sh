@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1129.1801"
+VERSION="R7.1202.1348"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -374,18 +374,35 @@ EOF
         
         clear
         
+        # 失敗カウンタ
+        local failed_count=0
+        local failed_scripts=""
+        
         echo "$(translate 'tr-tui-installing-packages')"
         sh "$CONFIG_DIR/postinst.sh"
+        if [ $? -ne 0 ]; then
+            failed_count=$((failed_count + 1))
+            failed_scripts="${failed_scripts}postinst.sh "
+        fi
         
         echo ""
         echo "$(translate 'tr-tui-installing-custom-packages')"
         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] && sh "$script"
+            [ -f "$script" ] || continue
+            sh "$script"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}$(basename "$script") "
+            fi
         done
         
         echo ""
         echo "$(translate 'tr-tui-applying-config')"
         sh "$CONFIG_DIR/setup.sh"
+        if [ $? -ne 0 ]; then
+            failed_count=$((failed_count + 1))
+            failed_scripts="${failed_scripts}setup.sh "
+        fi
         
         echo ""
         echo "$(translate 'tr-tui-installing-custom-scripts')"
@@ -396,21 +413,38 @@ EOF
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                 sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
             fi
         done
         
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
-        
+        # needs_reboot_check を rm の前に実行
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
         
+        # script_vars を削除（needs_reboot_check の後）
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        
         echo ""
+        
+        # 失敗があった場合はエラー表示
+        if [ "$failed_count" -gt 0 ]; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
+
+Warning: $failed_count script(s) failed:
+$failed_scripts"
+        fi
+        
         if [ "$needs_reboot" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
             fi
         else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+            if [ "$failed_count" -eq 0 ]; then
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+            fi
         fi
     fi
     
@@ -1158,44 +1192,6 @@ EOF
             read -r _
         fi
     done
-}
-
-view_selected_custom_scripts() {
-    local tr_main_menu tr_review tr_script_list breadcrumb
-    local script_id var_file has_scripts
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_script_list=$(translate "tr-tui-view-script-list")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_script_list")
-    
-    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts configured"
-        return 0
-    fi
-    
-    show_menu_header "$breadcrumb"
-    
-    has_scripts=0
-    
-    while read -r script_id; do
-        var_file="$CONFIG_DIR/script_vars_${script_id}.txt"
-        
-        if [ -f "$var_file" ]; then
-            cat "$var_file"
-            has_scripts=1
-        fi
-    done <<EOF
-$(get_customscript_all_scripts)
-EOF
-    
-    if [ "$has_scripts" -eq 0 ]; then
-        echo "  $(translate 'tr-tui-no-custom-scripts')"
-    fi
-    
-    echo ""
-    printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
-    read -r _
 }
 
 main_menu() {
