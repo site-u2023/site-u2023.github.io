@@ -69,9 +69,6 @@ export RECOMMENDED_FLASH="100"
 
 SCRIPT_NAME=${0##*/}
 
-[ -n "${AGH_USER+x}" ] && AGH_USER_FROM_ENV=1
-[ -n "${AGH_PASS+x}" ] && AGH_PASS_FROM_ENV=1
-
 AGH_USER="${AGH_USER:-admin}"
 AGH_PASS="${AGH_PASS:-password}"
 WEB_PORT="${WEB_PORT:-8000}"
@@ -614,13 +611,11 @@ execute_credential_change() {
   printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  if [ -z "${AGH_USER_FROM_ENV}" ]; then
+  if [ -z "$AGH_USER" ] && [ -z "$AGH_PASS" ] && [ -z "$WEB_PORT" ]; then
     printf "Enter new username [%s]: " "$current_user"
-    read -r new_user
-    [ -z "$new_user" ] && new_user="$current_user"
-    AGH_USER="$new_user"
+    read -r AGH_USER
+    [ -z "$AGH_USER" ] && AGH_USER="$current_user"
     
-    AGH_PASS=""
     while [ -z "$AGH_PASS" ] || [ ${#AGH_PASS} -lt 8 ]; do
       printf "Enter new password (min 8 chars): "
       stty -echo 2>/dev/null
@@ -649,6 +644,9 @@ execute_credential_change() {
     read -r new_port
     [ -z "$new_port" ] && new_port="$current_port"
     WEB_PORT="$new_port"
+  else
+    [ -z "$AGH_USER" ] && AGH_USER="$current_user"
+    [ -z "$WEB_PORT" ] && WEB_PORT="$current_port"
   fi
   
   if ! command -v htpasswd >/dev/null 2>&1; then
