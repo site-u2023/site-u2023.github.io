@@ -398,10 +398,12 @@ EOF
         
         echo ""
         echo "$(translate 'tr-tui-applying-config')"
-        sh "$CONFIG_DIR/setup.sh"
-        if [ $? -ne 0 ]; then
-            failed_count=$((failed_count + 1))
-            failed_scripts="${failed_scripts}setup.sh "
+        if [ -f "$CONFIG_DIR/setup.sh" ] && [ -s "$SETUP_VARS" ]; then
+            sh "$CONFIG_DIR/setup.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}setup.sh "
+            fi
         fi
         
         echo ""
