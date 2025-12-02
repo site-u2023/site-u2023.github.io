@@ -221,31 +221,22 @@ EOF
                 
                 case "$opt_args" in
                     openwrt)
-                        echo "INSTALL_MODE='openwrt'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo "ACTION_MODE='install'"  >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -i openwrt" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "INSTALL_MODE='openwrt'"       >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='install'"       >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     official)
-                        echo "INSTALL_MODE='official'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo "ACTION_MODE='install'"   >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -i official" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "INSTALL_MODE='official'"     >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='install'"       >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     change-credentials)
                         echo "ACTION_MODE='change_credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -m" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "NEW_USERNAME='${opt_args_username}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "NEW_PASSWORD='${opt_args_password}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "NEW_PORT='${opt_args_port}'"         >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     "remove auto")
-                        echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo "ACTION_MODE='remove'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -r auto" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
-                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "REMOVE_MODE='auto'"          >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='remove'"        >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                 esac
 
