@@ -1783,10 +1783,24 @@ EOF3
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
             
-            script_url="${BASE_URL}/custom-script/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
             
-            if [ -f "$template_path" ]; then
+            if [ -f "$template_path" ] && [ -f "$vars_file" ]; then
+                local script_args=""
+                
+                if grep -q "^INSTALL_MODE='change-credentials'" "$vars_file" 2>/dev/null; then
+                    script_args="-m"
+                elif grep -q "^INSTALL_MODE='openwrt'" "$vars_file" 2>/dev/null; then
+                    script_args="-i openwrt"
+                elif grep -q "^INSTALL_MODE='official'" "$vars_file" 2>/dev/null; then
+                    script_args="-i official"
+                elif grep -q "^REMOVE_MODE='auto'" "$vars_file" 2>/dev/null; then
+                    script_args="-r auto"
+                fi
+                
+                [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="-c $script_args"
+                
                 {
                     awk '
                         /^# BEGIN_VARIABLE_DEFINITIONS/ {
@@ -1804,10 +1818,14 @@ EOF3
                             skip=0
                         }
                         !skip
-                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
+                    ' vars_file="$vars_file" "$template_path"
                     
                     echo ""
-                    echo "${script_id}_main"
+                    if [ -n "$script_args" ]; then
+                        echo "${script_id}_main $script_args"
+                    else
+                        echo "${script_id}_main"
+                    fi
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
