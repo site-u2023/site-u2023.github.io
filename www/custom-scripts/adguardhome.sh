@@ -610,7 +610,6 @@ execute_credential_change() {
   printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  # TUI経由（環境変数設定済み）の場合は対話入力をスキップ
   if [ -z "$AGH_USER" ] || [ "$AGH_USER" = "admin" -a -z "$AGH_PASS" ]; then
     AGH_USER=""
     AGH_PASS=""
@@ -670,10 +669,21 @@ execute_credential_change() {
   sed -i "s/^\([[:space:]]*address:[[:space:]]*[0-9.]*:\)[0-9]*/\1${WEB_PORT}/" "$YAML_PATH"
   
   printf "\033[1;34mRestarting AdGuard Home service\033[0m\n"
-  /etc/init.d/"$SERVICE_NAME" restart || {
+  
+  /etc/init.d/"$SERVICE_NAME" stop
+  sleep 2
+  
+  if pgrep -f "$SERVICE_NAME" >/dev/null 2>&1; then
+    pkill -9 -f "$SERVICE_NAME"
+    sleep 1
+  fi
+  
+  /etc/init.d/"$SERVICE_NAME" start || {
     printf "\033[1;31mFailed to restart service\033[0m\n"
     return 1
   }
+  
+  sleep 3
   
   printf "\n"
   printf "\033[1;32m========================================\033[0m\n"
