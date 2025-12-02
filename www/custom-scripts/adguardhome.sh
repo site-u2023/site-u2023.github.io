@@ -504,7 +504,11 @@ common_config() {
   cp /etc/config/network  /etc/config/network.adguard.bak
   cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
   cp /etc/config/firewall /etc/config/firewall.adguard.bak
-  
+
+  uci -q get dhcp.@dnsmasq[0].server >/dev/null 2>&1 && uci delete dhcp.@dnsmasq[0].server
+  uci -q get dhcp.lan.dhcp_option >/dev/null 2>&1 && uci delete dhcp.lan.dhcp_option  
+  uci -q get dhcp.lan.dhcp_option6 >/dev/null 2>&1 && uci delete dhcp.lan.dhcp_option6
+
   uci batch <<EOF
 set dhcp.@dnsmasq[0].noresolv='1'
 set dhcp.@dnsmasq[0].cachesize='0'
@@ -762,7 +766,7 @@ remove_adguardhome() {
 
     if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
         printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-        uci batch <<EOF 2>/dev/null
+        uci batch <<EOF
 del dhcp.@dnsmasq[0].noresolv
 del dhcp.@dnsmasq[0].cachesize
 del dhcp.@dnsmasq[0].rebind_protection
