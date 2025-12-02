@@ -174,6 +174,11 @@ dns:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
 ```
 
+### upstream_mod セクション
+```yaml
+  upstream_mode: parallel
+```
+
 ### tls セクション
 ```yaml
 tls:
