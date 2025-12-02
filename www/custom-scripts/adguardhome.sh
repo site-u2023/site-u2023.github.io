@@ -722,20 +722,114 @@ get_access() {
     fi
 }
 
+determine_operation_mode() {
+    if [ -n "$REMOVE_MODE" ]; then
+        echo "remove"
+        return 0
+    fi
+    
+    if [ "$INSTALL_MODE" = "change-credentials" ]; then
+        if [ -z "$AGH_USER" ] || [ -z "$AGH_PASS" ]; then
+            printf "\033[1;31mError: Username and password are required for credential change\033[0m\n"
+            exit 1
+        fi
+        
+        if [ ! -f "/etc/AdGuardHome/AdGuardHome.yaml" ] && [ ! -f "/etc/adguardhome.yaml" ]; then
+            printf "\033[1;31mError: AdGuard Home is not installed\033[0m\n"
+            exit 1
+        fi
+        
+        echo "change-credentials"
+        return 0
+    fi
+    
+    if [ "$INSTALL_MODE" = "openwrt" ] || [ "$INSTALL_MODE" = "official" ]; then
+        echo "install"
+        return 0
+    fi
+    
+    echo "interactive"
+    return 0
+}
+
+execute_credential_change() {
+    check_package_manager || exit 1
+    install_dependencies || exit 1
+    generate_password_hash || exit 1
+    
+    local yaml_path
+    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
+        yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
+        SERVICE_NAME="AdGuardHome"
+    elif [ -f "/etc/adguardhome.yaml" ]; then
+        yaml_path="/etc/adguardhome.yaml"
+        SERVICE_NAME="adguardhome"
+    fi
+    
+    printf "\033[1;34mUpdating credentials in: %s\033[0m\n" "$yaml_path"
+    
+    awk -v user="$AGH_USER" -v hash="$AGH_PASS_HASH" '
+        BEGIN { in_users=0; user_block=0 }
+        /^users:/ { in_users=1; print; next }
+        in_users && /^[^ ]/ { in_users=0 }
+        in_users && /^[[:space:]]*-[[:space:]]*name:/ {
+            user_block=1
+            print "  - name: " user
+            next
+        }
+        in_users && user_block && /^[[:space:]]*password:/ {
+            print "    password: " hash
+            user_block=0
+            next
+        }
+        { print }
+    ' "$yaml_path" > "${yaml_path}.tmp" && mv "${yaml_path}.tmp" "$yaml_path"
+    
+    chmod 600 "$yaml_path"
+    
+    /etc/init.d/"$SERVICE_NAME" restart || {
+        printf "\033[1;31mFailed to restart AdGuard Home\033[0m\n"
+        exit 1
+    }
+    
+    get_iface_addrs
+    printf "\033[1;32mCredentials updated successfully\033[0m\n\n"
+    get_access
+}
+
 adguardhome_main() {
-    local standalone_mode="" mode_label="Installation"
+    local standalone_mode="" mode_label operation_mode
     [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
-    [ -n "$REMOVE_MODE" ] && mode_label="Removal"
+    
+    operation_mode=$(determine_operation_mode)
+    
+    case "$operation_mode" in
+        remove)
+            mode_label="Removal"
+            ;;
+        change-credentials)
+            mode_label="Credential Change"
+            ;;
+        *)
+            mode_label="Installation"
+            ;;
+    esac
     
     printf "\n\033[1;34m========================================\033[0m\n"
     printf "\033[1;34m  AdGuard Home %s\033[0m\n" "$mode_label"
     printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
     printf "\033[1;34m========================================\033[0m\n\n"
     
-    if [ -n "$REMOVE_MODE" ]; then
-        remove_adguardhome "$REMOVE_MODE"
-        return 0
-    fi
+    case "$operation_mode" in
+        remove)
+            remove_adguardhome "$REMOVE_MODE"
+            return 0
+            ;;
+        change-credentials)
+            execute_credential_change
+            return 0
+            ;;
+    esac
     
     check_system
     install_prompt
