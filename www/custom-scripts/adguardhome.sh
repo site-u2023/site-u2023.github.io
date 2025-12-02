@@ -433,7 +433,7 @@ common_config() {
     cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
     cp /etc/config/firewall /etc/config/firewall.adguard.bak
     
-    uci batch <<EOF
+    uci batch 2>/dev/null <<EOF
 set dhcp.@dnsmasq[0].noresolv='1'
 set dhcp.@dnsmasq[0].cachesize='0'
 set dhcp.@dnsmasq[0].rebind_protection='0'
@@ -487,7 +487,7 @@ common_config_firewall() {
         return
     fi
     
-    uci batch <<EOF
+    uci batch 2>/dev/null <<EOF
 set firewall.${rule_name}=redirect
 set firewall.${rule_name}.name='AdGuardHome DNS Redirect (${FAMILY_TYPE})'
 set firewall.${rule_name}.family='${FAMILY_TYPE}'
