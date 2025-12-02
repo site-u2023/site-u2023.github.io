@@ -1312,7 +1312,7 @@ EOF
         local failed_count=0
         local failed_scripts=""
         
-        if [ -f "$CONFIG_DIR/postinst.sh" ] && [ -s "$SELECTED_PACKAGES" ]; then
+        if [ -s "$SELECTED_PACKAGES" ]; then
             echo "$(translate 'tr-tui-installing-packages')"
             sh "$CONFIG_DIR/postinst.sh"
             if [ $? -ne 0 ]; then
@@ -1332,7 +1332,7 @@ EOF
             fi
         done
         
-        if [ -f "$CONFIG_DIR/setup.sh" ] && [ -s "$SETUP_VARS" ]; then
+        if [ -s "$SETUP_VARS" ]; then
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
             sh "$CONFIG_DIR/setup.sh"
