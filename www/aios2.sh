@@ -55,8 +55,6 @@ CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 
 TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
-GENERATED_POSTINST="$CONFIG_DIR/postinst_apply.sh"
-GENERATED_SETUP="$CONFIG_DIR/setup_apply.sh"
 
 print_banner_unicode() {
     printf "\n"
@@ -1656,9 +1654,9 @@ generate_files() {
                 skip=0
             }
             !skip
-        ' "$TPL_POSTINST" > "$GENERATED_POSTINST"
+        ' "$TPL_POSTINST" > "$CONFIG_DIR/postinst.sh"
         
-        chmod +x "$GENERATED_POSTINST"
+        chmod +x "$CONFIG_DIR/postinst.sh"
     fi
     
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
@@ -1680,9 +1678,9 @@ generate_files() {
                 skip=0
             }
             !skip
-        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$GENERATED_SETUP"
+        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh"
         
-        chmod +x "$GENERATED_SETUP"
+        chmod +x "$CONFIG_DIR/setup.sh"
     fi
     
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
