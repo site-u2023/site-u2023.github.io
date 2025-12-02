@@ -1283,6 +1283,9 @@ generate_customscript_file() {
             remove)
                 script_args="$script_args -r auto"
                 ;;
+            change-credentials)
+                script_args="$script_args -m"
+                ;;
             *)
                 script_args="$script_args $option_args"
                 ;;
