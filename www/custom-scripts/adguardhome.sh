@@ -38,7 +38,7 @@
 #   sh adguardhome.sh -r auto                            # Auto-remove
 #   sh adguardhome.sh -m                                 # Change credentials
 
-VERSION="R7.1202.2303"
+VERSION="R7.1203.0108"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -921,7 +921,7 @@ adguardhome_main() {
         printf "\033[1;31mFailed to install dependencies. Aborting.\033[0m\n"
         exit 1
       }
-      if [ -z "$AGH_USER" ] || [ -z "$AGH_PASS" ]; then
+      if [ -n "$standalone_mode" ]; then
         prompt_credentials
       fi
       generate_password_hash || {
