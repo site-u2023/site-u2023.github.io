@@ -620,17 +620,24 @@ remove_adguardhome() {
 
     remove_installed_dependencies
 
+    local dhcp_backup_existed=0
+    local firewall_backup_existed=0
+    
     for cfg in network dhcp firewall; do
         bak="/etc/config/${cfg}.adguard.bak"
         if [ -f "$bak" ]; then
             printf "\033[1;34mRestoring %s configuration from backup\033[0m\n" "$cfg"
             cp "$bak" "/etc/config/${cfg}"
             rm -f "$bak"
+            case "$cfg" in
+                dhcp) dhcp_backup_existed=1 ;;
+                firewall) firewall_backup_existed=1 ;;
+            esac
         fi
     done
     
-    # Restore defaults if no backup (manual install or backup missing)
-    if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
+    # Restore defaults only if backup did not exist
+    if [ "$dhcp_backup_existed" -eq 0 ]; then
         printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
         uci batch <<EOF 2>/dev/null
 delete dhcp.@dnsmasq[0].noresolv
@@ -644,12 +651,13 @@ commit dhcp
 EOF
     fi
     
-    # Remove firewall rule if exists
-    rule_name="adguardhome_dns_${DNS_PORT}"
-    if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
-        printf "\033[1;34mRemoving firewall rule\033[0m\n"
-        uci -q delete firewall."$rule_name"
-        uci commit firewall
+    if [ "$firewall_backup_existed" -eq 0 ]; then
+        rule_name="adguardhome_dns_${DNS_PORT}"
+        if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
+            printf "\033[1;34mRemoving firewall rule\033[0m\n"
+            uci -q delete firewall."$rule_name"
+            uci commit firewall
+        fi
     fi
 
     uci commit network
