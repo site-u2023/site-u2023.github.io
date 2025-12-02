@@ -38,7 +38,7 @@
 #   sh adguardhome.sh -r auto                            # Auto-remove
 #   sh adguardhome.sh -m                                 # Change credentials
 
-VERSION="R7.1202.0100"
+VERSION="R7.1202.1826"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
