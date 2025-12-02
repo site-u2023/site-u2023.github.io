@@ -6,7 +6,6 @@
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
-      "reboot": true,
       "requirements": {
         "minMemoryMB": 50,
         "minFlashMB": 100
@@ -55,26 +54,30 @@
           "id": "openwrt",
           "label": "tr-tui-customscript-install-openwrt",
           "args": "openwrt",
-          "requireNotInstalled": true
+          "requireNotInstalled": true,
+          "reboot": true
         },
         {
           "id": "official",
           "label": "tr-tui-customscript-install-official",
           "args": "official",
-          "requireNotInstalled": true
+          "requireNotInstalled": true,
+          "reboot": true
         },
         {
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
           "args": "change-credentials",
-          "requireInstalled": true
+          "requireInstalled": true,
+          "reboot": false
         },
         {
           "id": "remove",
           "label": "tr-tui-customscript-remove",
           "args": "remove auto",
           "skipInputs": true,
-          "requireInstalled": true
+          "requireInstalled": true,
+          "reboot": true
         }
       ]
     }
