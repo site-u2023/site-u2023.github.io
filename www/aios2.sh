@@ -1224,6 +1224,7 @@ collect_script_inputs() {
         fi
         
         if [ "$input_hidden" = "true" ]; then
+            echo "${input_envvar}=\"${input_default}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             continue
         fi
         
