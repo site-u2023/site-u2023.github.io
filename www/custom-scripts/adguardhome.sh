@@ -38,7 +38,7 @@
 #   sh adguardhome.sh -r auto                            # Auto-remove
 #   sh adguardhome.sh -m                                 # Change credentials
 
-VERSION="R7.1202.1826"
+VERSION="R7.1202.2303"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -610,41 +610,44 @@ execute_credential_change() {
   printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  AGH_USER=""
-  AGH_PASS=""
-  
-  printf "Enter new username [%s]: " "$current_user"
-  read -r AGH_USER
-  [ -z "$AGH_USER" ] && AGH_USER="$current_user"
-  
-  while [ -z "$AGH_PASS" ] || [ ${#AGH_PASS} -lt 8 ]; do
-    printf "Enter new password (min 8 chars): "
+  # TUI経由（環境変数設定済み）の場合は対話入力をスキップ
+  if [ -z "$AGH_USER" ] || [ "$AGH_USER" = "admin" -a -z "$AGH_PASS" ]; then
+    AGH_USER=""
+    AGH_PASS=""
+    
+    printf "Enter new username [%s]: " "$current_user"
+    read -r AGH_USER
+    [ -z "$AGH_USER" ] && AGH_USER="$current_user"
+    
+    while [ -z "$AGH_PASS" ] || [ ${#AGH_PASS} -lt 8 ]; do
+      printf "Enter new password (min 8 chars): "
+      stty -echo 2>/dev/null
+      read -r AGH_PASS
+      stty echo 2>/dev/null
+      printf "\n"
+      
+      if [ ${#AGH_PASS} -lt 8 ]; then
+        printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
+        AGH_PASS=""
+      fi
+    done
+    
+    printf "Confirm password: "
     stty -echo 2>/dev/null
-    read -r AGH_PASS
+    read -r pass_confirm
     stty echo 2>/dev/null
     printf "\n"
     
-    if [ ${#AGH_PASS} -lt 8 ]; then
-      printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
-      AGH_PASS=""
+    if [ "$AGH_PASS" != "$pass_confirm" ]; then
+      printf "\033[1;31mPasswords do not match. Aborting.\033[0m\n"
+      return 1
     fi
-  done
-  
-  printf "Confirm password: "
-  stty -echo 2>/dev/null
-  read -r pass_confirm
-  stty echo 2>/dev/null
-  printf "\n"
-  
-  if [ "$AGH_PASS" != "$pass_confirm" ]; then
-    printf "\033[1;31mPasswords do not match. Aborting.\033[0m\n"
-    return 1
+    
+    printf "Enter WEB port [%s]: " "$current_port"
+    read -r new_port
+    [ -z "$new_port" ] && new_port="$current_port"
+    WEB_PORT="$new_port"
   fi
-  
-  printf "Enter WEB port [%s]: " "$current_port"
-  read -r new_port
-  [ -z "$new_port" ] && new_port="$current_port"
-  WEB_PORT="$new_port"
   
   if ! command -v htpasswd >/dev/null 2>&1; then
     check_package_manager
