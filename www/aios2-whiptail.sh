@@ -1312,11 +1312,13 @@ EOF
         local failed_count=0
         local failed_scripts=""
         
-        echo "$(translate 'tr-tui-installing-packages')"
-        sh "$CONFIG_DIR/postinst.sh"
-        if [ $? -ne 0 ]; then
-            failed_count=$((failed_count + 1))
-            failed_scripts="${failed_scripts}postinst.sh "
+        if [ -f "$CONFIG_DIR/postinst.sh" ] && [ -s "$SELECTED_PACKAGES" ]; then
+            echo "$(translate 'tr-tui-installing-packages')"
+            sh "$CONFIG_DIR/postinst.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}postinst.sh "
+            fi
         fi
         
         echo ""
@@ -1330,9 +1332,9 @@ EOF
             fi
         done
         
-        echo ""
-        echo "$(translate 'tr-tui-applying-config')"
         if [ -f "$CONFIG_DIR/setup.sh" ] && [ -s "$SETUP_VARS" ]; then
+            echo ""
+            echo "$(translate 'tr-tui-applying-config')"
             sh "$CONFIG_DIR/setup.sh"
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
