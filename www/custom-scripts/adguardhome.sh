@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2034,SC3043
+# shellcheck shell=sh disable=SC2034,SC3043,SC2086
 # OpenWrt 19.07+ configuration
 # Reference: https://openwrt.org/docs/guide-user/services/dns/adguard-home
 #            https://github.com/AdguardTeam/AdGuardHome
@@ -190,89 +190,95 @@ record_installed_dep() {
 install_dependencies() {
     printf "\033[1;34mInstalling dependencies for password hashing\033[0m\n"
     
-    local dep_pkgs="libaprutil libapr libexpat libuuid1 ca-bundle"
-    
     : > "$INSTALLED_DEPS_FILE"
     
     case "$PACKAGE_MANAGER" in
         opkg)
-            if opkg list-installed | grep -q "^apache "; then
-                printf "\033[1;33mapache is already installed, skipping htpasswd setup\033[0m\n"
+            # 1. apache の存在確認
+            apache_exists=$(opkg list-installed | grep -q "^apache " && echo 1 || echo 0)
+            
+            # 2. htpasswd の存在確認
+            htpasswd_exists=$(command -v htpasswd >/dev/null 2>&1 && echo 1 || echo 0)
+            
+            if [ "$apache_exists" -eq 1 ] && [ "$htpasswd_exists" -eq 1 ]; then
+                # 両方有り → スキップ
+                printf "\033[1;33mapache and htpasswd already exist, skipping\033[0m\n"
             else
-                for pkg in $dep_pkgs; do
-                    install_packages "--nodeps" "$pkg"
-                    record_installed_dep "$pkg"
+                # 3. ライブラリの個別確認とインストール
+                for pkg in libaprutil libapr libexpat libuuid1 ca-bundle; do
+                    if ! opkg list-installed | grep -q "^${pkg} "; then
+                        install_packages "--nodeps" "$pkg"
+                        record_installed_dep "$pkg"
+                    fi
                 done
-                install_packages "--nodeps" "apache"
-                cp /usr/bin/htpasswd /tmp/htpasswd
-                opkg remove --force-depends apache >/dev/null 2>&1
-                mv /tmp/htpasswd /usr/bin/htpasswd
-                chmod +x /usr/bin/htpasswd
-                echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                
+                # 4. apache と htpasswd の処理
+                if [ "$apache_exists" -eq 0 ]; then
+                    # apache 無し → 通常インストール
+                    install_packages "--nodeps" "apache"
+                    cp /usr/bin/htpasswd /tmp/htpasswd
+                    opkg remove --force-depends apache >/dev/null 2>&1
+                    mv /tmp/htpasswd /usr/bin/htpasswd
+                    chmod +x /usr/bin/htpasswd
+                    echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                elif [ "$htpasswd_exists" -eq 0 ]; then
+                    # apache 有り、htpasswd 無し → 強制再インストール
+                    install_packages "--force" "apache"
+                    cp /usr/bin/htpasswd /tmp/htpasswd
+                    opkg remove --force-depends apache >/dev/null 2>&1
+                    mv /tmp/htpasswd /usr/bin/htpasswd
+                    chmod +x /usr/bin/htpasswd
+                    echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                fi
             fi
             ;;
         apk)
-            if apk info -e apache >/dev/null 2>&1; then
-                printf "\033[1;33mapache is already installed, skipping htpasswd setup\033[0m\n"
+            # 1. apache の存在確認
+            apache_exists=$(apk info -e apache >/dev/null 2>&1 && echo 1 || echo 0)
+            
+            # 2. htpasswd の存在確認
+            htpasswd_exists=$(command -v htpasswd >/dev/null 2>&1 && echo 1 || echo 0)
+            
+            if [ "$apache_exists" -eq 1 ] && [ "$htpasswd_exists" -eq 1 ]; then
+                # 両方有り → スキップ
+                printf "\033[1;33mapache and htpasswd already exist, skipping\033[0m\n"
             else
-                for pkg in $dep_pkgs; do
-                    install_packages "--force" "$pkg"
-                    record_installed_dep "$pkg"
+                # 3. ライブラリの個別確認とインストール
+                for pkg in libaprutil libapr libexpat libuuid1 ca-bundle; do
+                    if ! apk info -e "$pkg" >/dev/null 2>&1; then
+                        install_packages "--force" "$pkg"
+                        record_installed_dep "$pkg"
+                    fi
                 done
-                install_packages "--force" "apache"
-                cp /usr/bin/htpasswd /tmp/htpasswd
-                apk del --force apache >/dev/null 2>&1
-                mv /tmp/htpasswd /usr/bin/htpasswd
-                chmod +x /usr/bin/htpasswd
-                echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                
+                # 4. apache と htpasswd の処理
+                if [ "$apache_exists" -eq 0 ]; then
+                    # apache 無し → 通常インストール
+                    install_packages "--force" "apache"
+                    cp /usr/bin/htpasswd /tmp/htpasswd
+                    apk del --force apache >/dev/null 2>&1
+                    mv /tmp/htpasswd /usr/bin/htpasswd
+                    chmod +x /usr/bin/htpasswd
+                    echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                elif [ "$htpasswd_exists" -eq 0 ]; then
+                    # apache 有り、htpasswd 無し → 強制再インストール
+                    install_packages "--force-overwrite" "apache"
+                    cp /usr/bin/htpasswd /tmp/htpasswd
+                    apk del --force apache >/dev/null 2>&1
+                    mv /tmp/htpasswd /usr/bin/htpasswd
+                    chmod +x /usr/bin/htpasswd
+                    echo "FILE:/usr/bin/htpasswd" >> "$INSTALLED_DEPS_FILE"
+                fi
             fi
             ;;
     esac
     
-    if command -v htpasswd >/dev/null 2>&1; then
-        printf "\033[1;32mhtpasswd installed successfully\033[0m\n"
-        return 0
-    else
-        printf "\033[1;31mhtpasswd installation failed\033[0m\n"
+    if ! command -v htpasswd >/dev/null 2>&1; then
+        printf "\033[1;31mhtpasswd not available\033[0m\n"
         return 1
     fi
-}
-
-install_openwrt() {
-    printf "Installing adguardhome (OpenWrt package)\n"
-    
-    case "$PACKAGE_MANAGER" in
-        apk)
-            PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
-            if [ -n "$PKG_VER" ]; then
-                apk add adguardhome || {
-                    printf "\033[1;31mNetwork error during apk add. Aborting.\033[0m\n"
-                    exit 1
-                }
-                printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
-            else
-                printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official\033[0m\n"
-                install_official
-                return
-            fi
-            ;;
-        opkg)
-            PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
-            if [ -n "$PKG_VER" ]; then
-                opkg install --verbosity=0 adguardhome || {
-                    printf "\033[1;31mNetwork error during opkg install. Aborting.\033[0m\n"
-                    exit 1
-                }
-                printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
-            else
-                printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
-                install_official
-                return
-            fi
-            ;;
-    esac
-    
-    SERVICE_NAME="adguardhome"
+    printf "\033[1;32mhtpasswd is ready\033[0m\n"
+    return 0
 }
 
 install_official() {
@@ -696,23 +702,23 @@ get_access() {
 }
 
 adguardhome_main() {
-  local standalone_mode="" mode_label="Installation"
-  [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
-  [ -n "$REMOVE_MODE" ] && mode_label="Removal"
-  
-  printf "\n\033[1;34m========================================\033[0m\n"
-  printf "\033[1;34m  AdGuard Home %s\033[0m\n" "$mode_label"
-  printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
-  printf "\033[1;34m========================================\033[0m\n\n"
-  
-  if [ -n "$REMOVE_MODE" ]; then
-    remove_adguardhome "$REMOVE_MODE"
-    return 0
-  fi
+    local standalone_mode="" mode_label="Installation"
+    [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
+    [ -n "$REMOVE_MODE" ] && mode_label="Removal"
+    
+    printf "\n\033[1;34m========================================\033[0m\n"
+    printf "\033[1;34m  AdGuard Home %s\033[0m\n" "$mode_label"
+    printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
+    printf "\033[1;34m========================================\033[0m\n\n"
+    
+    if [ -n "$REMOVE_MODE" ]; then
+        remove_adguardhome "$REMOVE_MODE"
+        return 0
+    fi
     
     check_system
     install_prompt
-
+    
     case "$PACKAGE_MANAGER" in
         opkg)
             printf "Updating package lists (opkg)... "
