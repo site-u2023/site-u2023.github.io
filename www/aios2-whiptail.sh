@@ -220,14 +220,32 @@ EOF
                 opt_args=$(get_customscript_option_args "$script_id" "$selected_option")
                 
                 case "$opt_args" in
-                    openwrt|official)
-                        echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                    openwrt)
+                        echo "INSTALL_MODE='openwrt'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='install'"  >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -i openwrt" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        ;;
+                    official)
+                        echo "INSTALL_MODE='official'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='install'"   >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -i official" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
                         ;;
                     change-credentials)
-                        echo "INSTALL_MODE='change-credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='change_credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -m" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
                         ;;
                     "remove auto")
                         echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "ACTION_MODE='remove'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo '#!/bin/sh' > "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        echo "sh /etc/aios2/custom-scripts/adguardhome.sh -r auto" >> "$CONFIG_DIR/customscripts-${script_id}.sh"
+                        chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
                         ;;
                 esac
 
