@@ -69,7 +69,8 @@
           "label": "tr-tui-customscript-change-credentials",
           "args": "change-credentials",
           "requireInstalled": true,
-          "reboot": false
+          "reboot": false,
+          "skipInputs": true
         },
         {
           "id": "remove",
