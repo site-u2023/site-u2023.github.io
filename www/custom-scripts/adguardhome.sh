@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1202.1439"
+VERSION="R7.1202.1639"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
