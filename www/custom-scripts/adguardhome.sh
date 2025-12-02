@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1202.2228"
+VERSION="R7.1202.2300"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -601,72 +601,26 @@ get_access() {
   fi
 }
 
-detect_installed_version() {
-  if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
-    SERVICE_NAME="AdGuardHome"
-    printf "\033[1;33mAdGuard Home is already installed (official version)\033[0m\n"
-    return 0
-  elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
-    SERVICE_NAME="adguardhome"
-    printf "\033[1;33mAdGuard Home is already installed (openwrt version)\033[0m\n"
-    return 0
-  fi
-  return 1
-}
-
-get_current_credentials() {
-  local yaml_file current_user current_port
-  
-  if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
-    yaml_file="/etc/AdGuardHome/AdGuardHome.yaml"
-  elif [ -f "/etc/adguardhome.yaml" ]; then
-    yaml_file="/etc/adguardhome.yaml"
-  else
-    printf "\033[1;31mAdGuard Home configuration file not found\033[0m\n"
-    return 1
-  fi
-  
-  current_user=$(awk '
-    /^users:/ { in_users=1; next }
-    in_users && /^[^ ]/ { exit }
-    in_users && $1 == "-" && $2 == "name:" {
-        print $3
-        exit
-    }
-  ' "$yaml_file")
-  
-  current_port=$(awk '
-    $1=="http:" {flag=1; next}
-    flag && /^[[:space:]]*address:/ {
-        split($2, a, ":")
-        print a[2]
-        exit
-    }
-  ' "$yaml_file")
-  
-  CURRENT_USER="${current_user:-admin}"
-  CURRENT_PORT="${current_port:-8000}"
-  
-  return 0
-}
-
 change_credentials() {
   local yaml_file new_user new_pass new_port
+  local current_user current_port
   
   printf "\n\033[1;34m========================================\033[0m\n"
   printf "\033[1;34m  AdGuard Home Credential Change\033[0m\n"
   printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
   printf "\033[1;34m========================================\033[0m\n\n"
   
-  if ! detect_installed_version; then
+  if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
+    SERVICE_NAME="AdGuardHome"
+    yaml_file="/etc/AdGuardHome/AdGuardHome.yaml"
+    printf "\033[1;33mAdGuard Home is already installed (official version)\033[0m\n"
+  elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
+    SERVICE_NAME="adguardhome"
+    yaml_file="/etc/adguardhome.yaml"
+    printf "\033[1;33mAdGuard Home is already installed (openwrt version)\033[0m\n"
+  else
     printf "\033[1;31mAdGuard Home is not installed\033[0m\n"
     return 1
-  fi
-  
-  if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
-    yaml_file="/etc/AdGuardHome/AdGuardHome.yaml"
-  else
-    yaml_file="/etc/adguardhome.yaml"
   fi
   
   if [ ! -f "$yaml_file" ]; then
@@ -674,111 +628,65 @@ change_credentials() {
     return 1
   fi
   
-  get_current_credentials || return 1
+  current_user=$(awk '
+    /^users:/ { in_users=1; next }
+    in_users && /^[^ ]/ { exit }
+    in_users && $1 == "-" && $2 == "name:" { print $3; exit }
+  ' "$yaml_file")
+  
+  current_port=$(awk '
+    $1=="http:" {flag=1; next}
+    flag && /^[[:space:]]*address:/ { split($2, a, ":"); print a[2]; exit }
+  ' "$yaml_file")
+  
+  current_user="${current_user:-admin}"
+  current_port="${current_port:-8000}"
   
   printf "\033[1;34mChanging AdGuard Home credentials\033[0m\n"
-  printf "Current username: %s\n" "$CURRENT_USER"
-  printf "Current WEB port: %s\n" "$CURRENT_PORT"
+  printf "Current username: %s\n" "$current_user"
+  printf "Current WEB port: %s\n" "$current_port"
   printf "\n"
   
-  # AGH_USER が環境変数で設定されているか確認（TUIからの非対話型）
-  if [ -n "$AGH_USER" ] && [ "$AGH_USER" != "admin" ]; then
-    new_user="$AGH_USER"
-    printf "New username: %s (from environment)\n" "$new_user"
-  else
-    printf "Enter new username [%s]: " "$CURRENT_USER"
-    read -r new_user
-    new_user="${new_user:-$CURRENT_USER}"
-  fi
+  new_user="$AGH_USER"
+  new_pass="$AGH_PASS"
+  new_port="$WEB_PORT"
   
-  # AGH_PASS が環境変数で設定されているか確認（TUIからの非対話型）
-  if [ -n "$AGH_PASS" ] && [ "$AGH_PASS" != "password" ]; then
-    new_pass="$AGH_PASS"
-    printf "New password: ******** (from environment)\n"
-  else
-    while true; do
-      printf "Enter new password (min 8 chars, empty to keep current): "
-      stty -echo 2>/dev/null
-      read -r new_pass
-      stty echo 2>/dev/null
-      printf "\n"
-      
-      if [ -z "$new_pass" ]; then
-        printf "\033[1;33mKeeping current password\033[0m\n"
-        break
-      fi
-      
-      if [ ${#new_pass} -lt 8 ]; then
-        printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
-        continue
-      fi
-      
-      printf "Confirm password: "
-      stty -echo 2>/dev/null
-      read -r confirm_pass
-      stty echo 2>/dev/null
-      printf "\n"
-      
-      if [ "$new_pass" != "$confirm_pass" ]; then
-        printf "\033[1;31mPasswords do not match\033[0m\n"
-        continue
-      fi
-      
-      break
-    done
-  fi
+  printf "New username: %s\n" "$new_user"
+  printf "New password: ********\n"
+  printf "New WEB port: %s\n" "$new_port"
   
-  # WEB_PORT が環境変数で設定されているか確認（TUIからの非対話型）
-  if [ -n "$WEB_PORT" ] && [ "$WEB_PORT" != "8000" ]; then
-    new_port="$WEB_PORT"
-    printf "New WEB port: %s (from environment)\n" "$new_port"
-  else
-    printf "Enter new WEB port [%s]: " "$CURRENT_PORT"
-    read -r new_port
-    new_port="${new_port:-$CURRENT_PORT}"
-  fi
-  
-  # htpasswd が必要かチェック
-  if [ -n "$new_pass" ]; then
-    if ! command -v htpasswd >/dev/null 2>&1; then
-      printf "\033[1;34mInstalling htpasswd for password hashing...\033[0m\n"
-      
-      if command -v opkg >/dev/null 2>&1; then
-        PACKAGE_MANAGER="opkg"
-      elif command -v apk >/dev/null 2>&1; then
-        PACKAGE_MANAGER="apk"
-      fi
-      
-      install_dependencies || {
-        printf "\033[1;31mFailed to install htpasswd\033[0m\n"
-        return 1
-      }
+  if ! command -v htpasswd >/dev/null 2>&1; then
+    printf "\033[1;34mInstalling htpasswd for password hashing...\033[0m\n"
+    
+    if command -v opkg >/dev/null 2>&1; then
+      PACKAGE_MANAGER="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+      PACKAGE_MANAGER="apk"
     fi
     
-    AGH_PASS_HASH=$(htpasswd -B -n -b "" "$new_pass" 2>/dev/null | cut -d: -f2)
-    
-    if [ -z "$AGH_PASS_HASH" ]; then
-      printf "\033[1;31mFailed to generate password hash\033[0m\n"
+    install_dependencies || {
+      printf "\033[1;31mFailed to install htpasswd\033[0m\n"
       return 1
-    fi
+    }
+  fi
+  
+  AGH_PASS_HASH=$(htpasswd -B -n -b "" "$new_pass" 2>/dev/null | cut -d: -f2)
+  
+  if [ -z "$AGH_PASS_HASH" ]; then
+    printf "\033[1;31mFailed to generate password hash\033[0m\n"
+    return 1
   fi
   
   printf "\n\033[1;34mUpdating configuration...\033[0m\n"
   
   /etc/init.d/"$SERVICE_NAME" stop 2>/dev/null
   
-  # ユーザー名を更新
   sed -i "s/^  - name: .*/  - name: ${new_user}/" "$yaml_file"
   
-  # パスワードハッシュを更新（新しいパスワードが指定された場合）
-  if [ -n "$AGH_PASS_HASH" ]; then
-    # パスワード行のエスケープ処理
-    local escaped_hash
-    escaped_hash=$(printf '%s\n' "$AGH_PASS_HASH" | sed 's/[&/\]/\\&/g')
-    sed -i "s|^    password: .*|    password: ${escaped_hash}|" "$yaml_file"
-  fi
+  local escaped_hash
+  escaped_hash=$(printf '%s\n' "$AGH_PASS_HASH" | sed 's/[&/\]/\\&/g')
+  sed -i "s|^    password: .*|    password: ${escaped_hash}|" "$yaml_file"
   
-  # WEB ポートを更新
   sed -i "s/^  address: 0\.0\.0\.0:[0-9]*/  address: 0.0.0.0:${new_port}/" "$yaml_file"
   
   /etc/init.d/"$SERVICE_NAME" start 2>/dev/null
@@ -787,15 +695,10 @@ change_credentials() {
   printf "\n"
   printf "\033[1;32m========================================\033[0m\n"
   printf "\033[1;33m  Username: %s\033[0m\n" "$new_user"
-  if [ -n "$new_pass" ]; then
-    printf "\033[1;33m  Password: (changed)\033[0m\n"
-  else
-    printf "\033[1;33m  Password: (unchanged)\033[0m\n"
-  fi
+  printf "\033[1;33m  Password: (changed)\033[0m\n"
   printf "\033[1;33m  WEB Port: %s\033[0m\n" "$new_port"
   printf "\033[1;32m========================================\033[0m\n"
   
-  # LAN インターフェースのアドレスを取得して表示
   LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
   if [ -n "$LAN" ]; then
     get_iface_addrs
@@ -810,7 +713,6 @@ adguardhome_main() {
   local standalone_mode=""
   [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ] && standalone_mode="1"
   
-  # 削除モード
   if [ -n "$REMOVE_MODE" ]; then
     printf "\n\033[1;34m========================================\033[0m\n"
     printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
@@ -819,7 +721,6 @@ adguardhome_main() {
     return 0
   fi
   
-  # 認証情報変更モード
   if [ "$INSTALL_MODE" = "change-credentials" ]; then
     change_credentials
     return $?
