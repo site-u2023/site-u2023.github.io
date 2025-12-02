@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1129.1006"
+VERSION="R7.1202.1309"
 
 NET_ADDR=""
 NET_ADDR6_LIST=""
@@ -608,6 +608,7 @@ adguardhome_main() {
   if [ -n "$REMOVE_MODE" ]; then
     printf "\n\033[1;34m========================================\033[0m\n"
     printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
+    printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
     printf "\033[1;34m========================================\033[0m\n\n"
     remove_adguardhome "$REMOVE_MODE"
     return 0
@@ -615,6 +616,7 @@ adguardhome_main() {
   
   printf "\n\033[1;34m========================================\033[0m\n"
   printf "\033[1;34m  AdGuard Home Installation\033[0m\n"
+  printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
   printf "\033[1;34m========================================\033[0m\n\n"
   
   check_system
