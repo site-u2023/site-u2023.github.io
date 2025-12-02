@@ -1656,9 +1656,9 @@ generate_files() {
                 skip=0
             }
             !skip
-        ' "$TPL_POSTINST" > "$CONFIG_DIR/postinst.sh"
+        ' "$TPL_POSTINST" > "$GENERATED_POSTINST"
         
-        chmod +x "$CONFIG_DIR/postinst.sh"
+        chmod +x "$GENERATED_POSTINST"
     fi
     
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
