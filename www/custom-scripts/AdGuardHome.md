@@ -1,5 +1,5 @@
 # AdGuard Home インストールスクリプト - 技術仕様書
-
+ 
 ## 書式
 ```
 adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>]
