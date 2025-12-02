@@ -38,8 +38,7 @@
           "type": "number",
           "label": "tr-tui-customscript-dnsport",
           "default": "53",
-          "envVar": "DNS_PORT",
-          "hidden": true  
+          "envVar": "DNS_PORT"
         },
         {
           "id": "lan_addr",
@@ -48,6 +47,30 @@
           "default": "192.168.1.1",
           "envVar": "LAN_ADDR",
           "hidden": true
+        }
+      ],
+      "credential_inputs": [
+        {
+          "id": "username",
+          "type": "text",
+          "label": "tr-tui-customscript-username",
+          "default": "admin",
+          "envVar": "AGH_USER"
+        },
+        {
+          "id": "password",
+          "type": "password",
+          "label": "tr-tui-customscript-password",
+          "default": "password",
+          "minlength": 8,
+          "envVar": "AGH_PASS"
+        },
+        {
+          "id": "web_port",
+          "type": "number",
+          "label": "tr-tui-customscript-webport",
+          "default": "8000",
+          "envVar": "WEB_PORT"
         }
       ],
       "options": [
@@ -70,7 +93,8 @@
           "label": "tr-tui-customscript-change-credentials",
           "args": "change-credentials",
           "requireInstalled": true,
-          "reboot": false
+          "reboot": false,
+          "useCredentialInputs": true
         },
         {
           "id": "remove",
