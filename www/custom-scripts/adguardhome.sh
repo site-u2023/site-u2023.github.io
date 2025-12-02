@@ -123,15 +123,28 @@ is_adguardhome_installed() {
 }
 
 detect_install_type() {
-    if opkg list-installed | grep -q "^${PKG_ADGUARDHOME_OPENWRT} "; then
-        INSTALL_TYPE="openwrt"
-        AGH="$PKG_ADGUARDHOME_OPENWRT"
-    elif [ -x "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}" ]; then
-        INSTALL_TYPE="official"
-        AGH="$PKG_ADGUARDHOME_OFFICIAL"
-    else
-        INSTALL_TYPE=""
-        AGH=""
+    if [ "$PACKAGE_MANAGER" = "opkg" ]; then
+        if opkg list-installed | grep -q "^${PKG_ADGUARDHOME_OPENWRT} "; then
+            INSTALL_TYPE="openwrt"
+            AGH="$PKG_ADGUARDHOME_OPENWRT"
+        elif [ -x "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}" ]; then
+            INSTALL_TYPE="official"
+            AGH="$PKG_ADGUARDHOME_OFFICIAL"
+        else
+            INSTALL_TYPE=""
+            AGH=""
+        fi
+    elif [ "$PACKAGE_MANAGER" = "apk" ]; then
+        if apk info -e "${PKG_ADGUARDHOME_OPENWRT}" >/dev/null 2>&1; then
+            INSTALL_TYPE="openwrt"
+            AGH="$PKG_ADGUARDHOME_OPENWRT"
+        elif [ -x "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}" ]; then
+            INSTALL_TYPE="official"
+            AGH="$PKG_ADGUARDHOME_OFFICIAL"
+        else
+            INSTALL_TYPE=""
+            AGH=""
+        fi
     fi
 }
 
@@ -702,6 +715,7 @@ remove_adguardhome() {
     local auto_confirm="$1"
     printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
 
+    check_package_manager
     detect_install_type
     if [ -z "$INSTALL_TYPE" ]; then
         printf "\033[1;31mAdGuard Home not found\033[0m\n"
@@ -724,27 +738,14 @@ remove_adguardhome() {
     /etc/init.d/"${AGH}" disable 2>/dev/null
 
     if [ "$INSTALL_TYPE" = "official" ]; then
-        "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null
+        "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}" -s uninstall 2>/dev/null
+        rm -f "/etc/${PKG_ADGUARDHOME_OFFICIAL}/${PKG_ADGUARDHOME_OFFICIAL}"
+        [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL}"
+        printf "\033[1;32mOfficial binary removed\033[0m\n"
     else
         remove_package "" "$AGH"
-    fi
-
-    if [ -d "/etc/${AGH}" ] || [ -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml" ]; then
-        if [ "$auto_confirm" != "auto" ]; then
-            printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
-            read -r cfg
-            case "$cfg" in
-                [yY]*)
-                    [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
-                    [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
-                    rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
-                    ;;
-            esac
-        else
-            [ -d "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OFFICIAL:?}"
-            [ -d "/etc/${PKG_ADGUARDHOME_OPENWRT:?}" ] && rm -rf "/etc/${PKG_ADGUARDHOME_OPENWRT:?}"
-            rm -f /etc/${PKG_ADGUARDHOME_OPENWRT}.yaml
-        fi
+        rm -f "/etc/${PKG_ADGUARDHOME_OPENWRT}.yaml"
+        printf "\033[1;32mOpenWrt package removed\033[0m\n"
     fi
 
     printf "\033[1;34mRemoving htpasswd and dependencies\033[0m\n"
