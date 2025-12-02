@@ -38,7 +38,8 @@
           "type": "number",
           "label": "tr-tui-customscript-dnsport",
           "default": "53",
-          "envVar": "DNS_PORT"
+          "envVar": "DNS_PORT",
+          "hidden": true  
         },
         {
           "id": "lan_addr",
@@ -69,8 +70,7 @@
           "label": "tr-tui-customscript-change-credentials",
           "args": "change-credentials",
           "requireInstalled": true,
-          "reboot": false,
-          "skipInputs": true
+          "reboot": false
         },
         {
           "id": "remove",
