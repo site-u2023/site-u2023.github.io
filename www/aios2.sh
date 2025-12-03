@@ -1319,7 +1319,7 @@ generate_customscript_file() {
         
         if [ -f "$vars_file" ]; then
             while IFS= read -r line; do
-                printf 'export %s\n' "$(echo "$line" | xargs)"
+                echo "export $line"
             done < "$vars_file"
         fi
         
