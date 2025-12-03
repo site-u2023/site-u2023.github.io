@@ -1230,9 +1230,25 @@ get_adguardhome_current_user() {
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
+    local selected_option="$3"
     local inputs input_id input_label input_default input_envvar input_hidden min_length value
+    local required_inputs
     
-    inputs=$(get_customscript_inputs "$script_id")
+    # Get requiredInputs from selected option
+    if [ -n "$selected_option" ]; then
+        required_inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].requiredInputs[*]" 2>/dev/null)
+        
+        if [ -z "$required_inputs" ]; then
+            # Fallback to all inputs if requiredInputs not defined (backward compatibility)
+            inputs=$(get_customscript_inputs "$script_id")
+        else
+            # Use only required inputs
+            inputs="$required_inputs"
+        fi
+    else
+        # No option specified, use all inputs
+        inputs=$(get_customscript_inputs "$script_id")
+    fi
     
     for input_id in $inputs; do
         input_label=$(get_customscript_input_label "$script_id" "$input_id")
