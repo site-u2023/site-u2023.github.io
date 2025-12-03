@@ -47,6 +47,7 @@ REMOVE_MODE=""         # -r: auto|manual
 NO_YAML=""             # -n: skip YAML generation
 SKIP_RESOURCE_CHECK="" # -c: skip resource check
 UPDATE_CREDENTIALS=""  # -m: update credentials mode
+TUI_MODE=""            # -t: tui mode
 
 # URL and Path Configuration
 
