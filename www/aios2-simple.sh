@@ -301,7 +301,7 @@ EOF
                         echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     "change-credentials")
-                        echo "ACTION_MODE='change_credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        echo "UPDATE_CREDENTIALS='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                 esac
 
