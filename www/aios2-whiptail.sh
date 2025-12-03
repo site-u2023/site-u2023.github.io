@@ -1341,6 +1341,10 @@ EOF
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                while IFS= read -r line; do
+                    eval "export $line"
+                done < "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
                 sh "$script"
             fi
         done
