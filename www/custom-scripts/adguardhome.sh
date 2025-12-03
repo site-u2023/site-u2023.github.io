@@ -903,24 +903,28 @@ common_config() {
     cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
     cp /etc/config/firewall /etc/config/firewall.adguard.bak
     
-    uci set dhcp.@dnsmasq[0].noresolv="1"
-    uci set dhcp.@dnsmasq[0].cachesize="0"
-    uci set dhcp.@dnsmasq[0].rebind_protection='0'
-    uci set dhcp.@dnsmasq[0].port="${DNS_BACKUP_PORT}"
-    uci set dhcp.@dnsmasq[0].domain="lan"
-    uci set dhcp.@dnsmasq[0].local="/lan/"
-    uci set dhcp.@dnsmasq[0].expandhosts="1"
-    uci -q del dhcp.@dnsmasq[0].server || true
-    uci add_list dhcp.@dnsmasq[0].server="127.0.0.1#${DNS_PORT}"
-    uci add_list dhcp.@dnsmasq[0].server="::1#${DNS_PORT}"
-    uci -q del dhcp.lan.dhcp_option || true
-    uci add_list dhcp.lan.dhcp_option="6,${NET_ADDR}"
-    uci -q del dhcp.lan.dhcp_option6 || true
+    uci batch << EOF
+set dhcp.@dnsmasq[0].noresolv='1'
+set dhcp.@dnsmasq[0].cachesize='0'
+set dhcp.@dnsmasq[0].rebind_protection='0'
+set dhcp.@dnsmasq[0].port='${DNS_BACKUP_PORT}'
+set dhcp.@dnsmasq[0].domain='lan'
+set dhcp.@dnsmasq[0].local='/lan/'
+set dhcp.@dnsmasq[0].expandhosts='1'
+del dhcp.@dnsmasq[0].server
+add_list dhcp.@dnsmasq[0].server='127.0.0.1#${DNS_PORT}'
+add_list dhcp.@dnsmasq[0].server='::1#${DNS_PORT}'
+del dhcp.lan.dhcp_option
+add_list dhcp.lan.dhcp_option='6,${NET_ADDR}'
+del dhcp.lan.dhcp_option6
+EOF
+
     if [ -n "$NET_ADDR6_LIST" ]; then
         for ip in $NET_ADDR6_LIST; do
             uci add_list dhcp.lan.dhcp_option6="option6:dns=[${ip}]"
         done
     fi
+    
     uci commit dhcp
     
     restart_service dnsmasq || exit 1
@@ -940,24 +944,26 @@ common_config() {
 
 common_config_firewall() {
     rule_name="adguardhome_dns_${DNS_PORT}"
-    uci -q delete firewall."$rule_name" || true
+    uci -q delete firewall."$rule_name" 2>/dev/null || true
     
     if [ -z "$FAMILY_TYPE" ]; then
         printf "\033[1;31mNo valid IP address family detected. Skipping firewall rule setup.\033[0m\n"
         return
     fi
     
-    uci set "firewall.${rule_name}=redirect"
-    uci set "firewall.${rule_name}.name=AdGuardHome DNS Redirect (${FAMILY_TYPE})"
-    uci set "firewall.${rule_name}.family=${FAMILY_TYPE}"
-    uci set "firewall.${rule_name}.src=lan"
-    uci set "firewall.${rule_name}.dest=lan"
-    uci add_list "firewall.${rule_name}.proto=tcp"
-    uci add_list "firewall.${rule_name}.proto=udp"
-    uci set "firewall.${rule_name}.src_dport=${DNS_PORT}"
-    uci set "firewall.${rule_name}.dest_port=${DNS_PORT}"
-    uci set "firewall.${rule_name}.target=DNAT"
-    uci commit firewall
+    uci batch << EOF
+set firewall.${rule_name}=redirect
+set firewall.${rule_name}.name='AdGuard Home DNS Redirect (${FAMILY_TYPE})'
+set firewall.${rule_name}.family='${FAMILY_TYPE}'
+set firewall.${rule_name}.src='lan'
+set firewall.${rule_name}.dest='lan'
+add_list firewall.${rule_name}.proto='tcp'
+add_list firewall.${rule_name}.proto='udp'
+set firewall.${rule_name}.src_dport='${DNS_PORT}'
+set firewall.${rule_name}.dest_port='${DNS_PORT}'
+set firewall.${rule_name}.target='DNAT'
+commit firewall
+EOF
     
     restart_service firewall || exit 1
     
@@ -1001,9 +1007,9 @@ remove_adguardhome() {
         "/etc/${detected_service}/${detected_service}" -s uninstall 2>/dev/null || true
     else
         if command -v apk >/dev/null 2>&1; then
-            apk del "$detected_service" 2>/dev/null || true
+            apk del "${detected_service}" 2>/dev/null || true
         else
-            opkg remove --verbosity=0 "$detected_service" 2>/dev/null || true
+            opkg remove --verbosity=0 "${detected_service}" 2>/dev/null || true
         fi
     fi
 
@@ -1037,27 +1043,29 @@ remove_adguardhome() {
     # Restore defaults if no backup
     if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
         printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-        uci -q del dhcp.@dnsmasq[0].noresolv
-        uci -q del dhcp.@dnsmasq[0].cachesize
-        uci -q del dhcp.@dnsmasq[0].rebind_protection
-        uci set dhcp.@dnsmasq[0].port="53"
-        uci -q del dhcp.@dnsmasq[0].server
-        uci -q del dhcp.lan.dhcp_option
-        uci -q del dhcp.lan.dhcp_option6
-        uci commit dhcp
+        uci batch << EOF
+del dhcp.@dnsmasq[0].noresolv
+del dhcp.@dnsmasq[0].cachesize
+del dhcp.@dnsmasq[0].rebind_protection
+set dhcp.@dnsmasq[0].port='53'
+del dhcp.@dnsmasq[0].server
+del dhcp.lan.dhcp_option
+del dhcp.lan.dhcp_option6
+commit dhcp
+EOF
     fi
     
     # Remove firewall rule
     rule_name="adguardhome_dns_${DNS_PORT:-53}"
     if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
         printf "\033[1;34mRemoving firewall rule\033[0m\n"
-        uci -q delete firewall."$rule_name"
-        uci commit firewall
+        uci batch << EOF
+delete firewall.${rule_name}
+commit firewall
+EOF
     fi
 
     uci commit network
-    uci commit dhcp
-    uci commit firewall
 
     restart_network_services
 
