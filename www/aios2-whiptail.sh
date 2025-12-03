@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1203.1545"
+VERSION="R7.1203.1400"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -214,37 +214,18 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
+                # 変数ファイルを初期化
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
 
-                local idx=0
-                local opt_ids opt_id env_json
-                
-                opt_ids=$(get_customscript_options "$script_id")
-                for opt_id in $opt_ids; do
-                    if [ "$opt_id" = "$selected_option" ]; then
-                        break
-                    fi
-                    idx=$((idx+1))
-                done
-                
-                env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
-                
-                if [ -n "$env_json" ]; then
-                    echo "$env_json" | \
-                        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
-                        sed 's/^"//; s/"$//' | \
-                        while IFS=: read -r key value; do
-                            key=$(echo "$key" | tr -d '"')
-                            value=$(echo "$value" | tr -d '"')
-                            [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        done
-                fi
+                # JSON駆動でenvVarsを書き込む（ハードコードなし）
+                write_option_envvars "$script_id" "$selected_option"
 
+                # 入力が必要かチェック
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
                 if [ "$skip_inputs" != "true" ]; then
-                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+                    collect_script_inputs "$script_id" "$breadcrumb"
                 fi
                 return 0
             fi
@@ -1341,10 +1322,6 @@ EOF
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                while IFS= read -r line; do
-                    eval "export $line"
-                done < "$CONFIG_DIR/script_vars_${script_id}.txt"
-                
                 sh "$script"
             fi
         done
