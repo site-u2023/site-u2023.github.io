@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.0938"
+VERSION="R7.1203.1023"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -339,11 +339,12 @@ install_dependencies() {
                 apache_was_installed=1
             fi
             
-            if [ ! -x /usr/bin/htpasswd ]; then
+            if [ ! -f /usr/bin/htpasswd ] || [ ! -x /usr/bin/htpasswd ]; then
                 printf "Installing apache package to obtain htpasswd... "
                 opkg install --nodeps apache >/dev/null 2>&1
                 
-                if [ -x /usr/bin/htpasswd ]; then
+                if [ -f /usr/bin/htpasswd ]; then
+                    chmod +x /usr/bin/htpasswd 2>/dev/null
                     printf "Done\n"
                     if [ "$apache_was_installed" -eq 0 ]; then
                         printf "Preserving htpasswd and removing apache... "
@@ -371,11 +372,12 @@ install_dependencies() {
                 apache_was_installed=1
             fi
             
-            if [ ! -x /usr/bin/htpasswd ]; then
+            if [ ! -f /usr/bin/htpasswd ] || [ ! -x /usr/bin/htpasswd ]; then
                 printf "Installing apache package to obtain htpasswd... "
                 apk add --force apache >/dev/null 2>&1
                 
-                if [ -x /usr/bin/htpasswd ]; then
+                if [ -f /usr/bin/htpasswd ]; then
+                    chmod +x /usr/bin/htpasswd 2>/dev/null
                     printf "Done\n"
                     if [ "$apache_was_installed" -eq 0 ]; then
                         printf "Preserving htpasswd and removing apache... "
