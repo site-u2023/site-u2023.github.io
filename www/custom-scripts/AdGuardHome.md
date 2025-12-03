@@ -15,6 +15,10 @@ adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>]
 
 YAML設定ファイルの自動生成を無効化する。環境変数`NO_YAML=1`と同等である。
 
+**-m**
+
+認証情報更新モード。既存のAdGuard Homeインストールのユーザー名、パスワード、Webポート番号を更新する。
+
 **-r** *mode*
 
 削除モードを指定する。
@@ -40,6 +44,10 @@ YAML設定ファイルの自動生成を無効化する。環境変数`NO_YAML=1
 **NO_YAML**
 
 `1`を設定した場合、YAML自動生成を無効化する。コマンドラインオプション`-n`と同等である。
+
+**UPDATE_CREDENTIALS**
+
+`1`を設定した場合、認証情報更新モードで実行する。コマンドラインオプション`-m`と同等である。
 
 **REMOVE_MODE**
 
@@ -422,6 +430,11 @@ sh adguardhome.sh
 非対話型インストール:
 ```
 INSTALL_MODE=official AGH_USER=admin AGH_PASS=securepass123 sh adguardhome.sh
+```
+
+認証情報更新:
+```
+sh adguardhome.sh -m
 ```
 
 Web手動設定モード:
