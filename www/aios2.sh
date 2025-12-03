@@ -1300,10 +1300,7 @@ generate_customscript_file() {
     local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
     local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     
-    local script_args=""
-
-    # TUI mode flag (always set when called from TUI)
-    script_args=" -t"
+    local script_args=" -t"
 
     [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="$script_args -c"
 
