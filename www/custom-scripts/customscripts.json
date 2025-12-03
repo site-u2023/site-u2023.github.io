@@ -73,7 +73,7 @@
           "envVars": {
             "UPDATE_CREDENTIALS": "1"
           },
-          "skipInputs": true,
+          "skipInputs": false,
           "requireInstalled": true
         },
         {
