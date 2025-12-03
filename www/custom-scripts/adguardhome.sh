@@ -316,39 +316,13 @@ update_credentials() {
     read -r input_user
     NEW_USER="${input_user:-${CURRENT_USER:-admin}}"
     
-    # Password
-    while true; do
-        printf "Enter new password (min 8 chars, empty to skip): "
-        stty -echo 2>/dev/null
-        read -r input_pass
-        stty echo 2>/dev/null
-        
-        if [ -z "$input_pass" ]; then
-            printf "\n\033[1;33mPassword unchanged\033[0m\n"
-            UPDATE_PASSWORD=0
-            break
-        fi
-        
-        if [ ${#input_pass} -lt 8 ]; then
-            printf "\n\033[1;31mPassword must be at least 8 characters\033[0m\n"
-            continue
-        fi
-        
-        printf "\nConfirm new password: "
-        stty -echo 2>/dev/null
-        read -r confirm_pass
-        stty echo 2>/dev/null
-        
-        if [ "$input_pass" != "$confirm_pass" ]; then
-            printf "\n\033[1;31mPasswords do not match\033[0m\n"
-            continue
-        fi
-        
-        NEW_PASS="$input_pass"
+    # Password (allow empty to skip)
+    if read_password "Enter new password" "1"; then
+        NEW_PASS="$PASSWORD_INPUT"
         UPDATE_PASSWORD=1
-        printf "\n"
-        break
-    done
+    else
+        UPDATE_PASSWORD=0
+    fi
     
     # Web Port
     printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
@@ -677,6 +651,64 @@ install_official() {
 }
 
 # =============================================================================
+# Password Input Module
+# =============================================================================
+
+# Read password with validation and confirmation
+# Args:
+#   $1 - Prompt message (optional, default: "Enter password")
+#   $2 - Allow empty (optional: "1" to allow, default: "0")
+# Returns:
+#   0 - Success (password stored in PASSWORD_INPUT variable)
+#   1 - User cancelled (only when allow_empty=1)
+read_password() {
+    local prompt="${1:-Enter password}"
+    local allow_empty="${2:-0}"
+    local input_pass confirm_pass
+    
+    while true; do
+        printf "%s (min 8 chars%s): " "$prompt" "$([ "$allow_empty" = "1" ] && echo ", empty to skip" || echo "")"
+        stty -echo 2>/dev/null
+        read -r input_pass
+        stty echo 2>/dev/null
+        
+        # Handle empty input
+        if [ -z "$input_pass" ]; then
+            if [ "$allow_empty" = "1" ]; then
+                printf "\n\033[1;33mPassword skipped\033[0m\n"
+                PASSWORD_INPUT=""
+                return 1
+            else
+                printf "\n\033[1;31mPassword cannot be empty\033[0m\n"
+                continue
+            fi
+        fi
+        
+        # Validate length
+        if [ ${#input_pass} -lt 8 ]; then
+            printf "\n\033[1;31mPassword must be at least 8 characters\033[0m\n"
+            continue
+        fi
+        
+        # Confirm password
+        printf "\nConfirm password: "
+        stty -echo 2>/dev/null
+        read -r confirm_pass
+        stty echo 2>/dev/null
+        
+        # Check match
+        if [ "$input_pass" != "$confirm_pass" ]; then
+            printf "\n\033[1;31mPasswords do not match\033[0m\n"
+            continue
+        fi
+        
+        PASSWORD_INPUT="$input_pass"
+        printf "\n"
+        return 0
+    done
+}
+
+# =============================================================================
 # Credential Handling
 # =============================================================================
 
@@ -694,38 +726,10 @@ prompt_credentials() {
     read -r input_user
     AGH_USER="${input_user:-$DEFAULT_AGH_USER}"
     
-    # Password input with validation
-    while true; do
-        printf "Enter admin password (min 8 chars): "
-        stty -echo 2>/dev/null
-        read -r input_pass
-        stty echo 2>/dev/null
-        
-        if [ -z "$input_pass" ]; then
-            printf "\033[1;31mPassword cannot be empty\033[0m\n"
-            continue
-        fi
-        
-        if [ ${#input_pass} -lt 8 ]; then
-            printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
-            continue
-        fi
-        
-        AGH_PASS="$input_pass"
-        break
-    done
+    # Password input
+    read_password "Enter admin password" || exit 1
+    AGH_PASS="$PASSWORD_INPUT"
     
-    # Password confirmation
-    printf "Confirm password: "
-    stty -echo 2>/dev/null
-    read -r confirm_pass
-    stty echo 2>/dev/null
-    
-    if [ "$AGH_PASS" != "$confirm_pass" ]; then
-        printf "\033[1;31mPasswords do not match. Aborting.\033[0m\n"
-        exit 1
-    fi
-
     # Web port input
     printf "Enter web interface port [%s]: " "$DEFAULT_WEB_PORT"
     read -r input_port
