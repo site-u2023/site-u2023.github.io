@@ -6,6 +6,7 @@
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
+      "reboot": true,
       "requirements": {
         "minMemoryMB": 50,
         "minFlashMB": 100
@@ -49,60 +50,39 @@
           "hidden": true
         }
       ],
-      "credential_inputs": [
-        {
-          "id": "username",
-          "type": "text",
-          "label": "tr-tui-customscript-username",
-          "default": "admin",
-          "envVar": "AGH_USER"
-        },
-        {
-          "id": "password",
-          "type": "password",
-          "label": "tr-tui-customscript-password",
-          "default": "password",
-          "minlength": 8,
-          "envVar": "AGH_PASS"
-        },
-        {
-          "id": "web_port",
-          "type": "number",
-          "label": "tr-tui-customscript-webport",
-          "default": "8000",
-          "envVar": "WEB_PORT"
-        }
-      ],
       "options": [
         {
           "id": "openwrt",
           "label": "tr-tui-customscript-install-openwrt",
-          "args": "openwrt",
-          "requireNotInstalled": true,
-          "reboot": true
+          "envVars": {
+            "INSTALL_MODE": "openwrt"
+          },
+          "requireNotInstalled": true
         },
         {
           "id": "official",
           "label": "tr-tui-customscript-install-official",
-          "args": "official",
-          "requireNotInstalled": true,
-          "reboot": true
+          "envVars": {
+            "INSTALL_MODE": "official"
+          },
+          "requireNotInstalled": true
         },
         {
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
-          "args": "change-credentials",
-          "requireInstalled": true,
-          "reboot": false,
-          "useCredentialInputs": true
+          "envVars": {
+            "ACTION_MODE": "change_credentials"
+          },
+          "requireInstalled": true
         },
         {
           "id": "remove",
           "label": "tr-tui-customscript-remove",
-          "args": "remove auto",
+          "envVars": {
+            "REMOVE_MODE": "auto"
+          },
           "skipInputs": true,
-          "requireInstalled": true,
-          "reboot": true
+          "requireInstalled": true
         }
       ]
     }
