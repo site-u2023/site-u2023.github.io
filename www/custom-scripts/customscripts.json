@@ -94,9 +94,7 @@
         {
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
-          "envVars": {
-            "UPDATE_CREDENTIALS": "1"
-          },
+          "args": "-m",
           "useCredentialInputs": true,
           "requireInstalled": true
         },
