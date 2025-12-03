@@ -226,6 +226,9 @@ EOF
                     "remove auto")
                         echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
+                    "change-credentials")
+                        echo "ACTION_MODE='change_credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        ;;
                 esac
 
                 local skip_inputs
