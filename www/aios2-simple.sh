@@ -1210,7 +1210,7 @@ EOF
     done
 }
 
-main_menu() {
+simple_main_menu() {
     while true; do
         show_menu_header "aios2 Vr.$VERSION"
         
@@ -1290,5 +1290,5 @@ main_menu() {
 
 aios2_simple_main() {
     device_info
-    main_menu
+    simple_main_menu
 }
