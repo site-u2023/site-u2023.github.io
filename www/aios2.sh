@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1203.1400"
+VERSION="R7.1204.0058"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1293,56 +1293,6 @@ collect_script_inputs() {
     return 0
 }
 
-generate_customscript_file() {
-    local script_id="$1"
-    local script_file="$2"
-    local option_args="$3"
-    local output_file="$CONFIG_DIR/customscripts-${script_id}.sh"
-    local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
-    
-    local script_args=" -t"
-
-    [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="$script_args -c"
-
-    if [ -n "$option_args" ]; then
-        local first_arg install_mode
-        first_arg=$(echo "$option_args" | awk '{print $1}')
-    
-        case "$first_arg" in
-            openwrt|official)
-                install_mode="$first_arg"
-                script_args="$script_args -i $install_mode"
-                ;;
-            remove)
-                script_args="$script_args -r auto"
-                ;;
-            *)
-                script_args="$script_args $option_args"
-                ;;
-        esac
-    fi
-    
-    {
-        echo "#!/bin/sh"
-        echo "# customscripts-${script_id}.sh (priority: 1024)"
-        echo ""
-        
-        if [ -f "$vars_file" ]; then
-            while IFS= read -r line; do
-                echo "export $line"
-            done < "$vars_file"
-        fi
-        
-        echo ""
-        echo "sh \"\${CONFIG_DIR}/${script_file}\"${script_args}"
-        # echo "sh \"\${CONFIG_DIR}/${script_file}\" $script_args"
-    } > "$output_file"
-    
-    chmod +x "$output_file"
-    
-    echo "[DEBUG] Generated customscript: $output_file with args:${script_args}" >> "$CONFIG_DIR/debug.log"
-}
-
 check_script_requirements() {
     local script_id="$1"
     
@@ -1821,7 +1771,7 @@ EOF3
                     ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
                     
                     echo ""
-                    echo "${script_id}_main"
+                    echo "${script_id}_main -t"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
