@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1055"
+VERSION="R7.1203.1128"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -303,17 +303,18 @@ update_credentials() {
     fi
     
     # Get current values
-    CURRENT_USER=$(awk '/^users:/,/^[a-z]/ {if ($1 == "- name:") print $3}' "$CONFIG_FILE" | head -n1)
-    CURRENT_PORT=$(awk '/^http:/,/^[a-z]/ {if ($1 == "address:") {split($2,a,":"); print a[2]}}' "$CONFIG_FILE")
+    CURRENT_USER=$(grep -A 5 '^users:' "$CONFIG_FILE" | grep 'name:' | head -1 | awk '{print $3}')
+    CURRENT_PORT=$(grep -A 5 '^http:' "$CONFIG_FILE" | grep 'address:' | cut -d: -f3)
     
     printf "Current settings:\n"
-    printf "  Username: \033[1;36m%s\033[0m\n" "$CURRENT_USER"
-    printf "  Web Port: \033[1;36m%s\033[0m\n\n" "$CURRENT_PORT"
+    printf "  Username: \033[1;36m%s\033[0m\n" "${CURRENT_USER:-<not set>}"
+    printf "  Web Port: \033[1;36m%s\033[0m\n" "${CURRENT_PORT:-<not set>}"
+    printf "\n"
     
     # Username
-    printf "Enter new username [%s]: " "$CURRENT_USER"
+    printf "Enter new username [%s]: " "${CURRENT_USER:-admin}"
     read -r input_user
-    NEW_USER="${input_user:-$CURRENT_USER}"
+    NEW_USER="${input_user:-${CURRENT_USER:-admin}}"
     
     # Password
     while true; do
@@ -351,9 +352,9 @@ update_credentials() {
     done
     
     # Web Port
-    printf "Enter new web port [%s]: " "$CURRENT_PORT"
+    printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
     read -r input_port
-    NEW_PORT="${input_port:-$CURRENT_PORT}"
+    NEW_PORT="${input_port:-${CURRENT_PORT:-8000}}"
     
     # Generate password hash if needed
     if [ "$UPDATE_PASSWORD" -eq 1 ]; then
@@ -379,15 +380,15 @@ update_credentials() {
     /etc/init.d/"$SERVICE_NAME" stop
     
     # Update username
-    sed -i "/^users:/,/^[a-z]/ s/- name: .*/- name: ${NEW_USER}/" "$CONFIG_FILE"
+    sed -i "/^users:/,/^[a-z]/ { /- name:/ s/name: .*/name: ${NEW_USER}/ }" "$CONFIG_FILE"
     
     # Update password if changed
     if [ "$UPDATE_PASSWORD" -eq 1 ]; then
-        sed -i "/^users:/,/^[a-z]/ s|password: .*|password: ${NEW_PASS_HASH}|" "$CONFIG_FILE"
+        sed -i "/^users:/,/^[a-z]/ { /password:/ s|password: .*|password: ${NEW_PASS_HASH}| }" "$CONFIG_FILE"
     fi
     
     # Update web port
-    sed -i "/^http:/,/^[a-z]/ s/address: .*/address: 0.0.0.0:${NEW_PORT}/" "$CONFIG_FILE"
+    sed -i "/^http:/,/^[a-z]/ { /address:/ s|address: .*|address: 0.0.0.0:${NEW_PORT}| }" "$CONFIG_FILE"
     
     /etc/init.d/"$SERVICE_NAME" start
     
