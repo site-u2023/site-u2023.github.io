@@ -40,6 +40,10 @@ _PACKAGE_ENABLEVAR_LOADED=0
 _PACKAGE_NAME_CACHE=""
 _PACKAGE_NAME_LOADED=0
 
+# adguardhome
+INSTALL_MODE=""        # -i: openwrt|official
+REMOVE_MODE=""         # -r: auto|manual
+
 # URL and Path Configuration
 
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
