@@ -1326,10 +1326,10 @@ EOF
             fi
         done
         
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
-        
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
+        
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
         if [ "$needs_reboot" -eq 1 ]; then
