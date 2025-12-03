@@ -8,6 +8,18 @@
 VERSION="R7.1203.1716"
 
 # =============================================================================
+# Requirements
+# =============================================================================
+
+adguardhome_requirements() {
+export MINIMUM_MEM="20"
+export MINIMUM_FLASH="25"
+export RECOMMENDED_MEM="50"
+export RECOMMENDED_FLASH="100"
+}
+adguardhome_requirements
+
+# =============================================================================
 # Variable Initialization (empty by default)
 # =============================================================================
 
@@ -56,15 +68,6 @@ DEFAULT_DNS_PORT="53"
 DEFAULT_DNS_BACKUP_PORT="54"
 DEFAULT_LAN_ADDR="192.168.1.1"
 DEFAULT_LAN="br-lan"
-
-# =============================================================================
-# Requirements
-# =============================================================================
-
-export MINIMUM_MEM="20"
-export MINIMUM_FLASH="25"
-export RECOMMENDED_MEM="50"
-export RECOMMENDED_FLASH="100"
 
 # =============================================================================
 # Script Configuration
