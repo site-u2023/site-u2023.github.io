@@ -1094,13 +1094,14 @@ write_option_envvars() {
     [ -z "$env_json" ] && return 0
     
     # JSONオブジェクトをパースして変数ファイルに書き込む
-    # {"KEY1":"value1","KEY2":"value2"} → KEY1='value1'\nKEY2='value2'
+    # 修正: sedとtrを使って前後の空白とクォートを確実に除去
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
         while IFS=: read -r key value; do
-            key=$(echo "$key" | tr -d '"')
-            value=$(echo "$value" | tr -d '"')
+            # 前後の空白とクォートを除去
+            key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$vars_file"
         done
     
