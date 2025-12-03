@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1023"
+VERSION="R7.1203.1030"
 
 # =============================================================================
 # Variable Initialization (empty by default)
