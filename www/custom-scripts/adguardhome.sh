@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1030"
+VERSION="R7.1203.1040"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -127,6 +127,7 @@ parse_options() {
             -i)
                 if [ -n "$2" ] && [ "${2#-}" = "$2" ]; then
                     INSTALL_MODE="$2"
+                    INSTALL_MODE_FROM_ARGS="1"
                     shift
                 else
                     printf "\033[1;31mError: -i requires an argument (openwrt|official)\033[0m\n"
@@ -158,9 +159,11 @@ apply_environment_variables() {
 # Mode Detection
 # =============================================================================
 
+INSTALL_MODE_FROM_ARGS=""
+
 is_standalone_mode() {
-    # Standalone mode: no INSTALL_MODE and no REMOVE_MODE specified
-    [ -z "$INSTALL_MODE" ] && [ -z "$REMOVE_MODE" ]
+    # Standalone mode: INSTALL_MODE not specified via args, and no REMOVE_MODE
+    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ]
 }
 
 is_interactive_mode() {
