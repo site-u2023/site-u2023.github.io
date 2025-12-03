@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1203.1544"
+VERSION="R7.1203.1400"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1230,31 +1230,16 @@ get_adguardhome_current_user() {
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
-    local selected_option="$3"
     local inputs input_id input_label input_default input_envvar input_hidden min_length value
     
-    # useCredentialInputs チェック
-    local use_credential_inputs input_type
-    use_credential_inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].useCredentialInputs" 2>/dev/null | head -1)
-    
-    # credential_inputs または inputs を使用
-    if [ "$use_credential_inputs" = "true" ]; then
-        input_type="credential_inputs"
-    else
-        input_type="inputs"
-    fi
-    
-    # 入力IDリストを取得
-    inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[*].id" 2>/dev/null | grep -v '^$')
+    inputs=$(get_customscript_inputs "$script_id")
     
     for input_id in $inputs; do
-        # 各プロパティを取得（input_typeを使用）
-        input_label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[@.id='$input_id'].label" 2>/dev/null | head -1)
-        input_label=$(translate "$input_label")
-        input_default=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[@.id='$input_id'].default" 2>/dev/null | head -1)
-        input_envvar=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[@.id='$input_id'].envVar" 2>/dev/null | head -1)
-        input_hidden=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[@.id='$input_id'].hidden" 2>/dev/null | head -1)
-        min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].${input_type}[@.id='$input_id'].minlength" 2>/dev/null | head -1)
+        input_label=$(get_customscript_input_label "$script_id" "$input_id")
+        input_default=$(get_customscript_input_default "$script_id" "$input_id")
+        input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+        input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
+        min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1816,7 +1801,7 @@ EOF3
                             print
                             if (vars_file != "") {
                                 while ((getline line < vars_file) > 0) {
-                                    print "export " line
+                                    print line
                                 }
                                 close(vars_file)
                             }
