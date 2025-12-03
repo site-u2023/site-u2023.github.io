@@ -17,7 +17,7 @@ VERSION="R7.1203.2355"
 : "${NO_YAML:=}"              # -n: skip YAML generation
 : "${SKIP_RESOURCE_CHECK:=}"  # -c: skip resource check
 : "${UPDATE_CREDENTIALS:=}"   # -m: update credentials mode
-: "${TUI_MODE:=}"             # -t: tui mode
+: "${TUI_MODE:=}"             # -t: tui mode
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
@@ -151,7 +151,7 @@ parse_options() {
                 fi
                 ;;
             -t)
-                TUI_MODE="1"
+                TUI_MODE="1"
                 ;;
             *)
                 printf "\033[1;33mWarning: Unknown option: %s\033[0m\n" "$1"
