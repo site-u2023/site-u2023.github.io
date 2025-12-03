@@ -17,6 +17,7 @@ VERSION="R7.1203.1716"
 : "${NO_YAML:=}"              # -n: skip YAML generation
 : "${SKIP_RESOURCE_CHECK:=}"  # -c: skip resource check
 : "${UPDATE_CREDENTIALS:=}"   # -m: update credentials mode
+: "${NO_REBOOT:=}"            # flag: skip reboot prompt
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
@@ -179,7 +180,7 @@ INSTALL_MODE_FROM_ARGS=""
 
 is_standalone_mode() {
     # Standalone mode: INSTALL_MODE not specified via args, and no REMOVE_MODE
-    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ]
+    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ] && [ -z "$NO_REBOOT" ]
 }
 
 is_interactive_mode() {
