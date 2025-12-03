@@ -54,6 +54,7 @@
         {
           "id": "openwrt",
           "label": "tr-tui-customscript-install-openwrt",
+          "requiredInputs": ["username", "password", "web_port", "dns_port", "lan_addr"],
           "envVars": {
             "INSTALL_MODE": "openwrt"
           },
@@ -62,6 +63,7 @@
         {
           "id": "official",
           "label": "tr-tui-customscript-install-official",
+          "requiredInputs": ["username", "password", "web_port", "dns_port", "lan_addr"],
           "envVars": {
             "INSTALL_MODE": "official"
           },
@@ -70,6 +72,7 @@
         {
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
+          "requiredInputs": ["username", "password", "web_port"],
           "envVars": {
             "UPDATE_CREDENTIALS": "1"
           },
