@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1716"
+VERSION="R7.1203.2355"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -17,6 +17,7 @@ VERSION="R7.1203.1716"
 : "${NO_YAML:=}"              # -n: skip YAML generation
 : "${SKIP_RESOURCE_CHECK:=}"  # -c: skip resource check
 : "${UPDATE_CREDENTIALS:=}"   # -m: update credentials mode
+: "${TUI_MODE:=}"             # -t: tui mode
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
@@ -150,6 +151,9 @@ parse_options() {
                     exit 1
                 fi
                 ;;
+            -t)
+                TUI_MODE="1"
+                ;;
             *)
                 printf "\033[1;33mWarning: Unknown option: %s\033[0m\n" "$1"
                 ;;
@@ -178,13 +182,8 @@ apply_environment_variables() {
 INSTALL_MODE_FROM_ARGS=""
 
 is_standalone_mode() {
-    # Standalone mode: 引数が一切指定されていない場合のみ真（True）とする
-    # -i, -r, -n, -m, -c のいずれかが指定されていれば False（再起動プロンプトを出さない）
-    [ -z "$INSTALL_MODE_FROM_ARGS" ] && \
-    [ -z "$REMOVE_MODE" ] && \
-    [ -z "$NO_YAML" ] && \
-    [ -z "$UPDATE_CREDENTIALS" ] && \
-    [ -z "$SKIP_RESOURCE_CHECK" ]
+    # Standalone mode: INSTALL_MODE not specified via args, and no REMOVE_MODE
+    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ]
 }
 
 is_interactive_mode() {
