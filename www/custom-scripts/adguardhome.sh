@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1237"
+VERSION="R7.1203.1716"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -434,32 +434,43 @@ update_credentials() {
     CONFIG_FILE="$DETECTED_CONFIG_FILE"
     SERVICE_NAME="$DETECTED_SERVICE_NAME"
     
-    # Get current values
     CURRENT_USER=$(grep -A 5 '^users:' "$CONFIG_FILE" | grep 'name:' | head -1 | awk '{print $3}')
     CURRENT_PORT=$(grep -A 5 '^http:' "$CONFIG_FILE" | grep 'address:' | cut -d: -f3)
     
-    printf "Current settings:\n"
-    printf "  Username: \033[1;36m%s\033[0m\n" "${CURRENT_USER:-<not set>}"
-    printf "  Web Port: \033[1;36m%s\033[0m\n" "${CURRENT_PORT:-<not set>}"
-    printf "\n"
-    
-    # Username
-    printf "Enter new username [%s]: " "${CURRENT_USER:-admin}"
-    read -r input_user
-    NEW_USER="${input_user:-${CURRENT_USER:-admin}}"
-    
-    # Password (allow empty to skip)
-    if read_password "Enter new password" "1"; then
-        NEW_PASS="$PASSWORD_INPUT"
+    # Check for non-interactive mode (all required variables set)
+    if [ -n "$AGH_USER" ] && [ -n "$AGH_PASS" ] && [ -n "$WEB_PORT" ]; then
+        # Non-interactive mode
+        NEW_USER="$AGH_USER"
+        NEW_PASS="$AGH_PASS"
+        NEW_PORT="$WEB_PORT"
         UPDATE_PASSWORD=1
+        
+        printf "Updating credentials (non-interactive mode)\n"
+        printf "  Username: %s\n" "$NEW_USER"
+        printf "  Password: %s\n" "********"
+        printf "  Web Port: %s\n" "$NEW_PORT"
     else
-        UPDATE_PASSWORD=0
+        # Interactive mode
+        printf "Current settings:\n"
+        printf "  Username: \033[1;36m%s\033[0m\n" "${CURRENT_USER:-<not set>}"
+        printf "  Web Port: \033[1;36m%s\033[0m\n" "${CURRENT_PORT:-<not set>}"
+        printf "\n"
+        
+        printf "Enter new username [%s]: " "${CURRENT_USER:-admin}"
+        read -r input_user
+        NEW_USER="${input_user:-${CURRENT_USER:-admin}}"
+        
+        if read_password "Enter new password" "1"; then
+            NEW_PASS="$PASSWORD_INPUT"
+            UPDATE_PASSWORD=1
+        else
+            UPDATE_PASSWORD=0
+        fi
+        
+        printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
+        read -r input_port
+        NEW_PORT="${input_port:-${CURRENT_PORT:-8000}}"
     fi
-    
-    # Web Port
-    printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
-    read -r input_port
-    NEW_PORT="${input_port:-${CURRENT_PORT:-8000}}"
     
     # Generate password hash if needed
     if [ "$UPDATE_PASSWORD" -eq 1 ]; then
@@ -478,23 +489,13 @@ update_credentials() {
         fi
     fi
     
-    # Backup config
     backup_config_file "$CONFIG_FILE"
-    
-    # Update config file
     /etc/init.d/"$SERVICE_NAME" stop
-    
-    # Update username
     sed -i "/^users:/,/^[a-z]/ { /- name:/ s/name: .*/name: ${NEW_USER}/ }" "$CONFIG_FILE"
-    
-    # Update password if changed
     if [ "$UPDATE_PASSWORD" -eq 1 ]; then
         sed -i "/^users:/,/^[a-z]/ { /password:/ s|password: .*|password: ${NEW_PASS_HASH}| }" "$CONFIG_FILE"
     fi
-    
-    # Update web port
     sed -i "/^http:/,/^[a-z]/ { /address:/ s|address: .*|address: 0.0.0.0:${NEW_PORT}| }" "$CONFIG_FILE"
-    
     /etc/init.d/"$SERVICE_NAME" start
     
     printf "\n\033[1;32mCredentials updated successfully!\033[0m\n\n"
