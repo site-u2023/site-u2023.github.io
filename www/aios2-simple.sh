@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1203.1440"
+VERSION="R7.1203.1556"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -290,20 +290,7 @@ EOF
             if [ -n "$selected_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
 
-                local opt_args
-                opt_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                
-                case "$opt_args" in
-                    openwrt|official)
-                        echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    "remove auto")
-                        echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    "change-credentials")
-                        echo "UPDATE_CREDENTIALS='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                esac
+                write_option_envvars "$script_id" "$selected_option"
 
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
