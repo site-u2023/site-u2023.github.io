@@ -1301,7 +1301,7 @@ generate_customscript_file() {
         case "$first_arg" in
             openwrt|official)
                 install_mode="$first_arg"
-                script_args="$script_args -i $(echo "$install_mode" | xargs)"
+                script_args="$script_args -i $install_mode"
                 ;;
             remove)
                 script_args="$script_args -r auto"
@@ -1319,7 +1319,7 @@ generate_customscript_file() {
         
         if [ -f "$vars_file" ]; then
             while IFS= read -r line; do
-                echo "export $line"
+                printf 'export %s\n' "$(echo "$line" | xargs)"
             done < "$vars_file"
         fi
         
