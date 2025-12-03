@@ -7,10 +7,6 @@
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
       "reboot": true,
-      "requirements": {
-        "minMemoryMB": 50,
-        "minFlashMB": 100
-      },
       "inputs": [
         {
           "id": "username",
