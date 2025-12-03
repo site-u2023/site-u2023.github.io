@@ -61,8 +61,10 @@ DEFAULT_LAN="br-lan"
 # Requirements
 # =============================================================================
 
-REQUIRED_MEM="20"
-REQUIRED_FLASH="25"
+MINIMUM_MEM="20"
+MINIMUM_FLASH="25"
+RECOMMENDED_MEM="50"
+RECOMMENDED_FLASH="100"
 
 # =============================================================================
 # Script Configuration
