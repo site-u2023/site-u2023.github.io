@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1203.1449"
+VERSION="R7.1203.1545"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -214,28 +214,18 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
+                # 変数ファイルを初期化
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
 
-                local opt_args
-                opt_args=$(get_customscript_option_args "$script_id" "$selected_option")
-                
-                case "$opt_args" in
-                    openwrt|official)
-                        echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    "remove auto")
-                        echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    "change-credentials")
-                        echo "UPDATE_CREDENTIALS='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                esac
+                # JSON駆動でenvVarsを書き込む（ハードコードなし）
+                write_option_envvars "$script_id" "$selected_option"
 
+                # 入力が必要かチェック
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
                 if [ "$skip_inputs" != "true" ]; then
-                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+                    collect_script_inputs "$script_id" "$breadcrumb"
                 fi
                 return 0
             fi
@@ -1311,39 +1301,18 @@ EOF
         
         clear
         
-        # 失敗カウンタ
-        local failed_count=0
-        local failed_scripts=""
-        
-        if [ -s "$SELECTED_PACKAGES" ]; then
-            echo "$(translate 'tr-tui-installing-packages')"
-            sh "$CONFIG_DIR/postinst.sh"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}postinst.sh "
-            fi
-        fi
+        echo "$(translate 'tr-tui-installing-packages')"
+        sh "$CONFIG_DIR/postinst.sh"
         
         echo ""
         echo "$(translate 'tr-tui-installing-custom-packages')"
         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] || continue
-            sh "$script"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}$(basename "$script") "
-            fi
+            [ -f "$script" ] && sh "$script"
         done
         
-        if [ -s "$SETUP_VARS" ]; then
-            echo ""
-            echo "$(translate 'tr-tui-applying-config')"
-            sh "$CONFIG_DIR/setup.sh"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}setup.sh "
-            fi
-        fi
+        echo ""
+        echo "$(translate 'tr-tui-applying-config')"
+        sh "$CONFIG_DIR/setup.sh"
         
         echo ""
         echo "$(translate 'tr-tui-installing-custom-scripts')"
@@ -1354,38 +1323,21 @@ EOF
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                 sh "$script"
-                if [ $? -ne 0 ]; then
-                    failed_count=$((failed_count + 1))
-                    failed_scripts="${failed_scripts}$(basename "$script") "
-                fi
             fi
         done
         
-        # needs_reboot_check を rm の前に実行
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
         
-        # script_vars を削除（needs_reboot_check の後）
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
-        
         echo ""
-        
-        # 失敗があった場合はエラー表示
-        if [ "$failed_count" -gt 0 ]; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
-
-Warning: $failed_count script(s) failed:
-$failed_scripts"
-        fi
-        
         if [ "$needs_reboot" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
             fi
         else
-            if [ "$failed_count" -eq 0 ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-            fi
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
         fi
     fi
     
