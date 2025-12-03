@@ -233,10 +233,6 @@ EOF
                 
                 if [ "$skip_inputs" != "true" ]; then
                     collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-                    if [ $? -ne 0 ]; then
-                        rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        return 1
-                    fi
                 fi
                 return 0
             fi
