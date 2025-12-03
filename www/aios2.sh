@@ -1301,7 +1301,7 @@ generate_customscript_file() {
         case "$first_arg" in
             openwrt|official)
                 install_mode="$first_arg"
-                script_args="$script_args -i $install_mode"
+                script_args="$script_args -i $(echo "$install_mode" | xargs)"
                 ;;
             remove)
                 script_args="$script_args -r auto"
