@@ -1331,8 +1331,6 @@ generate_customscript_file() {
                 echo "export $line"
             done < "$vars_file"
         fi
-
-        echo "export NO_REBOOT='1'"
         
         echo ""
         echo "sh \"\${CONFIG_DIR}/${script_file}\"${script_args}"
