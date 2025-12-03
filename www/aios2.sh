@@ -2007,36 +2007,36 @@ needs_reboot_check() {
     # customscripts.json のスクリプトチェック
     
     if [ "$needs_reboot" -eq 0 ]; then
-        # ファイルレベルの reboot フラグ
-        local file_reboot
-        file_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.reboot" 2>/dev/null)
-        if [ "$file_reboot" = "true" ]; then
-            # script_vars_*.txt が1つでもあれば再起動必要
-            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                if [ -f "$var_file" ]; then
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local script_id selected_option option_reboot script_reboot
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            
+            # 選択されたオプションIDを取得
+            selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+            
+            # オプションレベルの reboot フラグをチェック
+            if [ -n "$selected_option" ]; then
+                option_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].reboot" 2>/dev/null | head -1)
+                
+                if [ "$option_reboot" = "true" ]; then
                     needs_reboot=1
                     break
+                elif [ "$option_reboot" = "false" ]; then
+                    # オプションで明示的にfalse → reboot不要、次のスクリプトへ
+                    continue
                 fi
-            done
-        fi
-        
-        # 項目レベルのチェック（ファイルレベルがfalseの場合）
-        if [ "$needs_reboot" -eq 0 ]; then
-            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                [ -f "$var_file" ] || continue
-                
-                local script_id
-                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-                
-                local script_reboot
-                script_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].reboot" 2>/dev/null | head -1)
-                
-                if [ "$script_reboot" = "true" ]; then
-                    needs_reboot=1
-                    break
-                fi
-            done
-        fi
+            fi
+            
+            # オプションにrebootがない場合、スクリプトレベルをチェック
+            script_reboot=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].reboot" 2>/dev/null | head -1)
+            
+            if [ "$script_reboot" = "true" ]; then
+                needs_reboot=1
+                break
+            fi
+        done
     fi
     
     echo "$needs_reboot"
