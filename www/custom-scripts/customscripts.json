@@ -71,7 +71,7 @@
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
           "envVars": {
-            "ACTION_MODE": "change_credentials"
+            "UPDATE_CREDENTIALS": "1"
           },
           "requireInstalled": true
         },
