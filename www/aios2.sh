@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1203.1448"
+VERSION="R7.1203.1544"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1073,12 +1073,28 @@ get_customscript_option_label() {
     translate "$label"
 }
 
-get_customscript_option_args() {
+get_customscript_option_skip_inputs() {
     local script_id="$1"
     local option_id="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
+}
+
+# =============================================================================
+# Write Option Environment Variables (JSON-driven, no hardcoding)
+# =============================================================================
+# Reads envVars from customscripts.json and writes to script_vars file
+# Args:
+#   $1 - script_id
+#   $2 - option_id
+# =============================================================================
+write_option_envvars() {
+    local script_id="$1"
+    local option_id="$2"
+    local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     local idx=0
-    local opt_ids opt_id
+    local opt_ids opt_id env_json
     
+    # オプションのインデックスを取得
     opt_ids=$(get_customscript_options "$script_id")
     for opt_id in $opt_ids; do
         if [ "$opt_id" = "$option_id" ]; then
@@ -1087,13 +1103,25 @@ get_customscript_option_args() {
         idx=$((idx+1))
     done
     
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].args" 2>/dev/null | head -1
-}
-
-get_customscript_option_skip_inputs() {
-    local script_id="$1"
-    local option_id="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
+    # envVarsオブジェクトを取得
+    env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
+    
+    [ -z "$env_json" ] && return 0
+    
+    # JSONオブジェクトをパースして変数ファイルに書き込む
+    # {"KEY1":"value1","KEY2":"value2"} → KEY1='value1'\nKEY2='value2'
+    echo "$env_json" | \
+        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
+        sed 's/^"//; s/"$//' | \
+        while IFS=: read -r key value; do
+            key=$(echo "$key" | tr -d '"')
+            value=$(echo "$value" | tr -d '"')
+            [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$vars_file"
+        done
+    
+    echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
+    [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
 }
 
 get_customscript_inputs() {
@@ -1202,34 +1230,16 @@ get_adguardhome_current_user() {
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
-    local selected_option="$3"
     local inputs input_id input_label input_default input_envvar input_hidden min_length value
     
-    local use_credential_inputs
-    use_credential_inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].useCredentialInputs" 2>/dev/null | head -1)
-    
-    if [ "$use_credential_inputs" = "true" ]; then
-        inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[*].id" 2>/dev/null | grep -v '^$')
-    else
-        inputs=$(get_customscript_inputs "$script_id")
-    fi
+    inputs=$(get_customscript_inputs "$script_id")
     
     for input_id in $inputs; do
-        if [ "$use_credential_inputs" = "true" ]; then
-            input_label=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].label" 2>/dev/null | head -1)
-            input_default=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].default" 2>/dev/null | head -1)
-            input_envvar=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].envVar" 2>/dev/null | head -1)
-            input_hidden=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1)
-            min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].credential_inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
-        else
-            input_label=$(get_customscript_input_label "$script_id" "$input_id")
-            input_default=$(get_customscript_input_default "$script_id" "$input_id")
-            input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
-            input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
-            min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
-        fi
-        
-        input_label=$(translate "$input_label")
+        input_label=$(get_customscript_input_label "$script_id" "$input_id")
+        input_default=$(get_customscript_input_default "$script_id" "$input_id")
+        input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
+        input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
+        min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1242,6 +1252,7 @@ collect_script_inputs() {
         fi
         
         if [ "$input_hidden" = "true" ]; then
+            echo "${input_envvar}=\"${input_default}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             continue
         fi
         
@@ -1299,9 +1310,6 @@ generate_customscript_file() {
                 ;;
             remove)
                 script_args="$script_args -r auto"
-                ;;
-            change-credentials)
-                script_args="$script_args -m"
                 ;;
             *)
                 script_args="$script_args $option_args"
@@ -1783,24 +1791,10 @@ EOF3
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
             
+            script_url="${BASE_URL}/custom-script/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
             
-            if [ -f "$template_path" ] && [ -f "$vars_file" ]; then
-                local script_args=""
-                
-                if grep -q "^INSTALL_MODE='change-credentials'" "$vars_file" 2>/dev/null; then
-                    script_args="-m"
-                elif grep -q "^INSTALL_MODE='openwrt'" "$vars_file" 2>/dev/null; then
-                    script_args="-i openwrt"
-                elif grep -q "^INSTALL_MODE='official'" "$vars_file" 2>/dev/null; then
-                    script_args="-i official"
-                elif grep -q "^REMOVE_MODE='auto'" "$vars_file" 2>/dev/null; then
-                    script_args="-r auto"
-                fi
-                
-                [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="-c $script_args"
-                
+            if [ -f "$template_path" ]; then
                 {
                     awk '
                         /^# BEGIN_VARIABLE_DEFINITIONS/ {
@@ -1818,14 +1812,10 @@ EOF3
                             skip=0
                         }
                         !skip
-                    ' vars_file="$vars_file" "$template_path"
+                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
                     
                     echo ""
-                    if [ -n "$script_args" ]; then
-                        echo "${script_id}_main $script_args"
-                    else
-                        echo "${script_id}_main"
-                    fi
+                    echo "${script_id}_main"
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
