@@ -12,11 +12,11 @@ VERSION="R7.1203.1716"
 # =============================================================================
 
 # Operation mode variables (set by command line options)
-# INSTALL_MODE=""        # -i: openwrt|official
-# REMOVE_MODE=""         # -r: auto|manual
-NO_YAML=""             # -n: skip YAML generation
-SKIP_RESOURCE_CHECK="" # -c: skip resource check
-UPDATE_CREDENTIALS=""  # -m: update credentials mode
+: "${INSTALL_MODE:=}"         # -i: openwrt|official
+: "${REMOVE_MODE:=}"          # -r: auto|manual
+: "${NO_YAML:=}"              # -n: skip YAML generation
+: "${SKIP_RESOURCE_CHECK:=}"  # -c: skip resource check
+: "${UPDATE_CREDENTIALS:=}"   # -m: update credentials mode
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
