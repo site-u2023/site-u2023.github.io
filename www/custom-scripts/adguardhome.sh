@@ -339,13 +339,22 @@ install_dependencies() {
                 apache_was_installed=1
             fi
             
-            if [ ! -f /usr/bin/htpasswd ] || [ ! -x /usr/bin/htpasswd ]; then
+            # If htpasswd doesn't exist, reinstall apache
+            if [ ! -f /usr/bin/htpasswd ]; then
                 printf "Installing apache package to obtain htpasswd... "
+                
+                # Force reinstall if apache exists but htpasswd is missing
+                if [ "$apache_was_installed" -eq 1 ]; then
+                    opkg remove --force-depends apache >/dev/null 2>&1
+                fi
+                
                 opkg install --nodeps apache >/dev/null 2>&1
                 
                 if [ -f /usr/bin/htpasswd ]; then
                     chmod +x /usr/bin/htpasswd 2>/dev/null
                     printf "Done\n"
+                    
+                    # Only remove apache if it wasn't originally installed
                     if [ "$apache_was_installed" -eq 0 ]; then
                         printf "Preserving htpasswd and removing apache... "
                         cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null
@@ -357,6 +366,9 @@ install_dependencies() {
                 else
                     printf "Failed\n"
                 fi
+            elif [ ! -x /usr/bin/htpasswd ]; then
+                # File exists but not executable
+                chmod +x /usr/bin/htpasswd 2>/dev/null
             fi
             ;;
         apk)
@@ -372,13 +384,22 @@ install_dependencies() {
                 apache_was_installed=1
             fi
             
-            if [ ! -f /usr/bin/htpasswd ] || [ ! -x /usr/bin/htpasswd ]; then
+            # If htpasswd doesn't exist, reinstall apache
+            if [ ! -f /usr/bin/htpasswd ]; then
                 printf "Installing apache package to obtain htpasswd... "
+                
+                # Force reinstall if apache exists but htpasswd is missing
+                if [ "$apache_was_installed" -eq 1 ]; then
+                    apk del --force apache >/dev/null 2>&1
+                fi
+                
                 apk add --force apache >/dev/null 2>&1
                 
                 if [ -f /usr/bin/htpasswd ]; then
                     chmod +x /usr/bin/htpasswd 2>/dev/null
                     printf "Done\n"
+                    
+                    # Only remove apache if it wasn't originally installed
                     if [ "$apache_was_installed" -eq 0 ]; then
                         printf "Preserving htpasswd and removing apache... "
                         cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null
@@ -390,6 +411,9 @@ install_dependencies() {
                 else
                     printf "Failed\n"
                 fi
+            elif [ ! -x /usr/bin/htpasswd ]; then
+                # File exists but not executable
+                chmod +x /usr/bin/htpasswd 2>/dev/null
             fi
             ;;
     esac
