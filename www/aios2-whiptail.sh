@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1202.1316"
+VERSION="R7.1203.1438"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -222,9 +222,6 @@ EOF
                 case "$opt_args" in
                     openwrt|official)
                         echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    change-credentials)
-                        echo "INSTALL_MODE='change-credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     "remove auto")
                         echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
