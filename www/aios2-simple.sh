@@ -289,7 +289,9 @@ EOF
             
             if [ -n "$selected_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-
+                
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
                 local idx=0
                 local opt_ids opt_id env_json
                 
