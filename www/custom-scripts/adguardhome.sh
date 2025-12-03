@@ -1225,7 +1225,6 @@ adguardhome_main() {
             read -r _
             reboot
         fi
-        return 0
     fi
     
     # Install dependencies (htpasswd)
@@ -1269,8 +1268,6 @@ adguardhome_main() {
         printf "\033[33mPress [Enter] to reboot.\033[0m\n"
         read -r _
         reboot
-    else
-        return 0
     fi
 }
 
