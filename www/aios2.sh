@@ -1816,7 +1816,7 @@ EOF3
                             print
                             if (vars_file != "") {
                                 while ((getline line < vars_file) > 0) {
-                                    print line
+                                    print "export " line
                                 }
                                 close(vars_file)
                             }
