@@ -1,5 +1,9 @@
 # AdGuard Home インストールスクリプト - 技術仕様書
- 
+
+## システム構成とアーキテクチャ原則
+`adguardhome.sh`は独立したスタンドアロンスクリプトとして設計されており、その仕様とインターフェースは不変の正規仕様として扱われる。
+TUI側（aios2.sh、aios2-whiptail.sh、aios2-simple.sh）は、adguardhome.shが定義するインターフェース仕様に完全に準拠しなければならない
+
 ## 書式
 ```
 adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>]
