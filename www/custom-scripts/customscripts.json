@@ -50,30 +50,6 @@
           "hidden": true
         }
       ],
-      "credential_inputs": [
-        {
-          "id": "username",
-          "type": "text",
-          "label": "tr-tui-customscript-username",
-          "default": "admin",
-          "envVar": "AGH_USER"
-        },
-        {
-          "id": "password",
-          "type": "password",
-          "label": "tr-tui-customscript-password",
-          "default": "password",
-          "minlength": 8,
-          "envVar": "AGH_PASS"
-        },
-        {
-          "id": "web_port",
-          "type": "number",
-          "label": "tr-tui-customscript-webport",
-          "default": "8000",
-          "envVar": "WEB_PORT"
-        }
-      ],
       "options": [
         {
           "id": "openwrt",
@@ -95,10 +71,8 @@
           "id": "change-credentials",
           "label": "tr-tui-customscript-change-credentials",
           "envVars": {
-            "UPDATE_CREDENTIALS": "1"
+            "ACTION_MODE": "change_credentials"
           },
-          "args": "-m",
-          "useCredentialInputs": true,
           "requireInstalled": true
         },
         {
