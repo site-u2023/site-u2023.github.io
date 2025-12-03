@@ -61,10 +61,10 @@ DEFAULT_LAN="br-lan"
 # Requirements
 # =============================================================================
 
-MINIMUM_MEM="20"
-MINIMUM_FLASH="25"
-RECOMMENDED_MEM="50"
-RECOMMENDED_FLASH="100"
+export MINIMUM_MEM="20"
+export MINIMUM_FLASH="25"
+export RECOMMENDED_MEM="50"
+export RECOMMENDED_FLASH="100"
 
 # =============================================================================
 # Script Configuration
@@ -340,10 +340,10 @@ check_system() {
         flash_col="1;32"
     fi
     
-    printf "Memory: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: 50 MB)\n" \
-        "$mem_col" "$MEM_FREE_MB" "$MEM_TOTAL_MB" "$REQUIRED_MEM"
-    printf "Flash: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: 100 MB)\n" \
-        "$flash_col" "$FLASH_FREE_MB" "$FLASH_TOTAL_MB" "$REQUIRED_FLASH"
+    printf "Memory: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: %s MB)\n" \
+        "$mem_col" "$MEM_FREE_MB" "$MEM_TOTAL_MB" "$MINIMUM_MEM" "$RECOMMENDED_MEM"
+    printf "Flash: Free \033[%sm%s MB\033[0m / Total %s MB (Min: %s MB / Recommended: %s MB)\n" \
+        "$flash_col" "$FLASH_FREE_MB" "$FLASH_TOTAL_MB" "$MINIMUM_FLASH" "$RECOMMENDED_FLASH"
     
     # Skip resource check if -c option specified
     if [ -n "$SKIP_RESOURCE_CHECK" ]; then
@@ -351,14 +351,14 @@ check_system() {
         return 0
     fi
     
-    if [ "$MEM_FREE_MB" -lt "$REQUIRED_MEM" ]; then
+    if [ "$MEM_FREE_MB" -lt "$MINIMUM_MEM" ]; then
         printf "\033[1;31mError: Insufficient memory. At least %sMB RAM is required.\033[0m\n" \
-            "$REQUIRED_MEM"
+            "$MINIMUM_MEM"
         exit 1
     fi
-    if [ "$FLASH_FREE_MB" -lt "$REQUIRED_FLASH" ]; then
+    if [ "$FLASH_FREE_MB" -lt "$MINIMUM_FLASH" ]; then
         printf "\033[1;31mError: Insufficient flash storage. At least %sMB free space is required.\033[0m\n" \
-            "$REQUIRED_FLASH"
+            "$MINIMUM_FLASH"
         exit 1
     fi
 }
