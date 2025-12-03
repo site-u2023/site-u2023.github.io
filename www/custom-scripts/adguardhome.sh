@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2034,SC3043
+# shellcheck shell=sh disable=SC2034,SC2086,SC3043
 # OpenWrt 19.07+ configuration
 # Reference: https://openwrt.org/docs/guide-user/services/dns/adguard-home
 #            https://github.com/AdguardTeam/AdGuardHome
@@ -252,7 +252,8 @@ restart_network_services() {
 #   1 - Failed or file not found
 backup_config_file() {
     local file="$1"
-    local backup="${file}.backup.$(date +%Y%m%d%H%M%S)"
+    local backup
+    backup="${file}.backup.$(date +%Y%m%d%H%M%S)"
     
     if [ -f "$file" ]; then
         cp "$file" "$backup" || {
@@ -783,9 +784,9 @@ install_official() {
     chmod 700 /etc/"$SERVICE_NAME"
 }
 
-=============================================================================
-Credential Handling
-=============================================================================
+# =============================================================================
+# Credential Handling
+# =============================================================================
 
 set_default_credentials() {
     # Set defaults for non-interactive mode
@@ -830,9 +831,9 @@ generate_password_hash() {
     return 0
 }
 
-=============================================================================
-YAML Configuration
-=============================================================================
+# =============================================================================
+# YAML Configuration
+# =============================================================================
 
 generate_yaml() {
     local yaml_path yaml_template_url yaml_tmp
@@ -865,9 +866,9 @@ generate_yaml() {
     printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
 }
 
-=============================================================================
-Network Configuration
-=============================================================================
+# =============================================================================
+# Network Configuration
+# =============================================================================
 
 get_iface_addrs() {
     local flag=0
@@ -960,9 +961,9 @@ common_config_firewall() {
     printf "\033[1;32mFirewall configuration completed\033[0m\n"
 }
 
-=============================================================================
-Removal Functions
-=============================================================================
+# =============================================================================
+# Removal Functions
+# =============================================================================
 
 remove_adguardhome() {
     local auto_confirm="${1:-$REMOVE_MODE}"
@@ -1067,9 +1068,9 @@ remove_adguardhome() {
     fi
 }
 
-=============================================================================
-Access Information Display
-=============================================================================
+# =============================================================================
+# Access Information Display
+# =============================================================================
 
 get_access() {
     local cfg port addr
@@ -1117,9 +1118,9 @@ get_access() {
     fi
 }
 
-=============================================================================
-Banner Function
-=============================================================================
+# =============================================================================
+# Banner Function
+# =============================================================================
 
 adguardhome_main() {
     # =========================================================================
@@ -1246,26 +1247,6 @@ adguardhome_main() {
     fi
 }
 
-# =========================================================================
-# Phase 5: Install and configure
-# =========================================================================
-install_cacertificates
-install_"$INSTALL_MODE"
-generate_yaml
-get_iface_addrs
-common_config
-common_config_firewall
-
-printf "\n\033[1;32mAdGuard Home installation and configuration completed successfully.\033[0m\n\n"
-get_access
-
-# Prompt for reboot only in standalone mode
-if is_standalone_mode; then
-    printf "\033[33mPress [Enter] to reboot.\033[0m\n"
-    read -r _
-    reboot
-fi
-}
 =============================================================================
 Script Execution
 =============================================================================
