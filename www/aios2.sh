@@ -1306,12 +1306,12 @@ generate_customscript_file() {
     if [ -n "$option_args" ]; then
         local first_arg install_mode
         first_arg=$(echo "$option_args" | awk '{print $1}')
-        
+    
         case "$first_arg" in
             openwrt|official)
                 install_mode="$first_arg"
                 script_args="$script_args -i $install_mode"
-                echo "export INSTALL_MODE_FROM_ARGS=1" >> "$vars_file"
+                # echo "export INSTALL_MODE_FROM_ARGS=1" >> "$vars_file"
                 ;;
             remove)
                 script_args="$script_args -r auto"
@@ -1334,7 +1334,8 @@ generate_customscript_file() {
         fi
         
         echo ""
-        echo "sh \"\${CONFIG_DIR}/${script_file}\"${script_args}"
+        # echo "sh \"\${CONFIG_DIR}/${script_file}\"${script_args}"
+        echo "sh \"\${CONFIG_DIR}/${script_file}\" $script_args"
     } > "$output_file"
     
     chmod +x "$output_file"
