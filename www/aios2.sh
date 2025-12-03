@@ -210,21 +210,6 @@ select_ui_mode() {
         2)
             UI_MODE="simple"
             ;;
-        3)      
-            # テストモード - fallback専用whiptailコマンドを先にダウンロード
-            WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
-            __download_file_core "$WHIPTAIL_FALLBACK_URL" "$CONFIG_DIR/whiptail" >/dev/null 2>&1
-            chmod +x "$CONFIG_DIR/whiptail"
-            export PATH="$CONFIG_DIR:$PATH"
-            
-            # fallback専用のUI実装をダウンロード
-            WHIPTAIL_FALLBACK_UI_URL="${WHIPTAIL_UI_URL/aios2-whiptail/aios2-whiptail-fallback}"
-            if ! __download_file_core "$WHIPTAIL_FALLBACK_UI_URL" "$CONFIG_DIR/aios2-whiptail_fallback.sh" >/dev/null 2>&1; then
-                echo "Error: Failed to download fallback UI"
-                exit 1
-            fi
-            UI_MODE="whiptail_fallback"
-            ;;
         *)
             UI_MODE="whiptail"
             if ! command -v whiptail >/dev/null 2>&1; then
@@ -1154,12 +1139,6 @@ get_customscript_input_hidden() {
     local script_id="$1"
     local input_id="$2"
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1
-}
-
-get_customscript_requirement() {
-    local script_id="$1"
-    local req_key="$2"
-    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.${req_key}" 2>/dev/null | head -1
 }
 
 is_adguardhome_installed() {
