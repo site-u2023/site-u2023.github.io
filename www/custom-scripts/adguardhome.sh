@@ -402,7 +402,7 @@ read_password() {
         fi
         
         # Confirm password
-        printf "\nConfirm password: "
+        printf "Confirm password: "
         stty -echo 2>/dev/null
         read -r confirm_pass
         stty echo 2>/dev/null
