@@ -226,6 +226,7 @@ EOF
                 
                 if [ "$skip_inputs" != "true" ]; then
                     collect_script_inputs "$script_id" "$breadcrumb"
+                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
                 fi
                 return 0
             fi
