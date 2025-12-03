@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1203"
+VERSION="R7.1203.1237"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -16,6 +16,7 @@ INSTALL_MODE=""        # -i: openwrt|official
 REMOVE_MODE=""         # -r: auto|manual
 NO_YAML=""             # -n: skip YAML generation
 SKIP_RESOURCE_CHECK="" # -c: skip resource check
+UPDATE_CREDENTIALS=""  # -m: update credentials mode
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
@@ -32,11 +33,17 @@ LAN_ADDR=""
 NET_ADDR=""
 NET_ADDR6_LIST=""
 SERVICE_NAME=""
-ARCH=""
-AGH=""
 PACKAGE_MANAGER=""
 FAMILY_TYPE=""
 LAN=""
+
+# Service detection variables (set by detect_adguardhome_service)
+DETECTED_SERVICE_TYPE=""
+DETECTED_SERVICE_NAME=""
+DETECTED_CONFIG_FILE=""
+
+# Update state variables
+UPDATE_PASSWORD=0
 
 # =============================================================================
 # Default Values (used as fallback)
@@ -179,22 +186,92 @@ is_interactive_mode() {
 }
 
 # =============================================================================
+# Service Detection Module
+# =============================================================================
+
+# Detect installed AdGuard Home service
+# Sets global variables: DETECTED_SERVICE_TYPE, DETECTED_SERVICE_NAME, DETECTED_CONFIG_FILE
+# Returns:
+#   0 - Service found
+#   1 - Service not found
+detect_adguardhome_service() {
+    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
+        DETECTED_SERVICE_TYPE="official"
+        DETECTED_SERVICE_NAME="AdGuardHome"
+        DETECTED_CONFIG_FILE="/etc/AdGuardHome/AdGuardHome.yaml"
+        return 0
+    elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
+        DETECTED_SERVICE_TYPE="openwrt"
+        DETECTED_SERVICE_NAME="adguardhome"
+        DETECTED_CONFIG_FILE="/etc/adguardhome.yaml"
+        return 0
+    else
+        DETECTED_SERVICE_TYPE=""
+        DETECTED_SERVICE_NAME=""
+        DETECTED_CONFIG_FILE=""
+        return 1
+    fi
+}
+
+# =============================================================================
+# Service Management Module
+# =============================================================================
+
+# Restart a single service with error handling
+# Args:
+#   $1 - Service name
+# Returns:
+#   0 - Success
+#   1 - Failed
+restart_service() {
+    local service="$1"
+    
+    /etc/init.d/"$service" restart || {
+        printf "\033[1;31mFailed to restart %s\033[0m\n" "$service"
+        return 1
+    }
+    return 0
+}
+
+# Restart all network services
+restart_network_services() {
+    restart_service dnsmasq || exit 1
+    restart_service odhcpd || exit 1
+    restart_service firewall || exit 1
+}
+
+# =============================================================================
+# Backup Module
+# =============================================================================
+
+# Backup a configuration file with timestamp
+# Args:
+#   $1 - File path to backup
+# Returns:
+#   0 - Success
+#   1 - Failed or file not found
+backup_config_file() {
+    local file="$1"
+    local backup="${file}.backup.$(date +%Y%m%d%H%M%S)"
+    
+    if [ -f "$file" ]; then
+        cp "$file" "$backup" || {
+            printf "\033[1;31mFailed to backup %s\033[0m\n" "$file"
+            return 1
+        }
+        return 0
+    fi
+    return 1
+}
+
+# =============================================================================
 # System Check Functions
 # =============================================================================
 
 check_system() {
-    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
+    if detect_adguardhome_service; then
         printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-        
-        if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
-            EXISTING_TYPE="official"
-            EXISTING_SERVICE="AdGuardHome"
-        else
-            EXISTING_TYPE="openwrt"
-            EXISTING_SERVICE="adguardhome"
-        fi
-        
-        printf "\nInstalled: \033[1;36m%s version\033[0m\n\n" "$EXISTING_TYPE"
+        printf "\nInstalled: \033[1;36m%s version\033[0m\n\n" "$DETECTED_SERVICE_TYPE"
         
         while true; do
             printf "[1] Update credentials (Username/Password/Web Port)\n"
@@ -284,23 +361,77 @@ check_system() {
 }
 
 # =============================================================================
+# Password Input Module
+# =============================================================================
+
+# Read password with validation and confirmation
+# Args:
+#   $1 - Prompt message (optional, default: "Enter password")
+#   $2 - Allow empty (optional: "1" to allow, default: "0")
+# Returns:
+#   0 - Success (password stored in PASSWORD_INPUT variable)
+#   1 - User cancelled (only when allow_empty=1)
+read_password() {
+    local prompt="${1:-Enter password}"
+    local allow_empty="${2:-0}"
+    local input_pass confirm_pass
+    
+    while true; do
+        printf "%s (min 8 chars%s): " "$prompt" "$([ "$allow_empty" = "1" ] && echo ", empty to skip" || echo "")"
+        stty -echo 2>/dev/null
+        read -r input_pass
+        stty echo 2>/dev/null
+        
+        # Handle empty input
+        if [ -z "$input_pass" ]; then
+            if [ "$allow_empty" = "1" ]; then
+                printf "\n\033[1;33mPassword skipped\033[0m\n"
+                PASSWORD_INPUT=""
+                return 1
+            else
+                printf "\n\033[1;31mPassword cannot be empty\033[0m\n"
+                continue
+            fi
+        fi
+        
+        # Validate length
+        if [ ${#input_pass} -lt 8 ]; then
+            printf "\n\033[1;31mPassword must be at least 8 characters\033[0m\n"
+            continue
+        fi
+        
+        # Confirm password
+        printf "\nConfirm password: "
+        stty -echo 2>/dev/null
+        read -r confirm_pass
+        stty echo 2>/dev/null
+        
+        # Check match
+        if [ "$input_pass" != "$confirm_pass" ]; then
+            printf "\n\033[1;31mPasswords do not match\033[0m\n"
+            continue
+        fi
+        
+        PASSWORD_INPUT="$input_pass"
+        printf "\n"
+        return 0
+    done
+}
+
+# =============================================================================
 # Update Credentials Function
 # =============================================================================
 
 update_credentials() {
     printf "\033[1;34mUpdating AdGuard Home Credentials\033[0m\n\n"
     
-    # Detect config file location
-    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
-        CONFIG_FILE="/etc/AdGuardHome/AdGuardHome.yaml"
-        SERVICE_NAME="AdGuardHome"
-    elif [ -f "/etc/adguardhome.yaml" ]; then
-        CONFIG_FILE="/etc/adguardhome.yaml"
-        SERVICE_NAME="adguardhome"
-    else
-        printf "\033[1;31mConfiguration file not found.\033[0m\n"
+    if ! detect_adguardhome_service; then
+        printf "\033[1;31mAdGuard Home not found.\033[0m\n"
         exit 1
     fi
+    
+    CONFIG_FILE="$DETECTED_CONFIG_FILE"
+    SERVICE_NAME="$DETECTED_SERVICE_NAME"
     
     # Get current values
     CURRENT_USER=$(grep -A 5 '^users:' "$CONFIG_FILE" | grep 'name:' | head -1 | awk '{print $3}')
@@ -347,7 +478,7 @@ update_credentials() {
     fi
     
     # Backup config
-    cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S)"
+    backup_config_file "$CONFIG_FILE"
     
     # Update config file
     /etc/init.d/"$SERVICE_NAME" stop
@@ -610,6 +741,8 @@ install_openwrt() {
 }
 
 install_official() {
+    local ARCH
+    
     CA="--no-check-certificate"
     URL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest"
     VER=$( { wget -q -O - "$URL" || wget -q "$CA" -O - "$URL"; } | jsonfilter -e '@.tag_name' )
@@ -650,67 +783,9 @@ install_official() {
     chmod 700 /etc/"$SERVICE_NAME"
 }
 
-# =============================================================================
-# Password Input Module
-# =============================================================================
-
-# Read password with validation and confirmation
-# Args:
-#   $1 - Prompt message (optional, default: "Enter password")
-#   $2 - Allow empty (optional: "1" to allow, default: "0")
-# Returns:
-#   0 - Success (password stored in PASSWORD_INPUT variable)
-#   1 - User cancelled (only when allow_empty=1)
-read_password() {
-    local prompt="${1:-Enter password}"
-    local allow_empty="${2:-0}"
-    local input_pass confirm_pass
-    
-    while true; do
-        printf "%s (min 8 chars%s): " "$prompt" "$([ "$allow_empty" = "1" ] && echo ", empty to skip" || echo "")"
-        stty -echo 2>/dev/null
-        read -r input_pass
-        stty echo 2>/dev/null
-        
-        # Handle empty input
-        if [ -z "$input_pass" ]; then
-            if [ "$allow_empty" = "1" ]; then
-                printf "\n\033[1;33mPassword skipped\033[0m\n"
-                PASSWORD_INPUT=""
-                return 1
-            else
-                printf "\n\033[1;31mPassword cannot be empty\033[0m\n"
-                continue
-            fi
-        fi
-        
-        # Validate length
-        if [ ${#input_pass} -lt 8 ]; then
-            printf "\n\033[1;31mPassword must be at least 8 characters\033[0m\n"
-            continue
-        fi
-        
-        # Confirm password
-        printf "\nConfirm password: "
-        stty -echo 2>/dev/null
-        read -r confirm_pass
-        stty echo 2>/dev/null
-        
-        # Check match
-        if [ "$input_pass" != "$confirm_pass" ]; then
-            printf "\n\033[1;31mPasswords do not match\033[0m\n"
-            continue
-        fi
-        
-        PASSWORD_INPUT="$input_pass"
-        printf "\n"
-        return 0
-    done
-}
-
-# =============================================================================
-# Credential Handling
-# =============================================================================
+=============================================================================
+Credential Handling
+=============================================================================
 
 set_default_credentials() {
     # Set defaults for non-interactive mode
@@ -755,9 +830,9 @@ generate_password_hash() {
     return 0
 }
 
-# =============================================================================
-# YAML Configuration
-# =============================================================================
+=============================================================================
+YAML Configuration
+=============================================================================
 
 generate_yaml() {
     local yaml_path yaml_template_url yaml_tmp
@@ -790,9 +865,9 @@ generate_yaml() {
     printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
 }
 
-# =============================================================================
-# Network Configuration
-# =============================================================================
+=============================================================================
+Network Configuration
+=============================================================================
 
 get_iface_addrs() {
     local flag=0
@@ -844,14 +919,8 @@ common_config() {
     fi
     uci commit dhcp
     
-    /etc/init.d/dnsmasq restart || {
-        printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"
-        exit 1
-    }
-    /etc/init.d/odhcpd restart || {
-        printf "\033[1;31mFailed to restart odhcpd\033[0m\n"
-        exit 1
-    }
+    restart_service dnsmasq || exit 1
+    restart_service odhcpd || exit 1
     /etc/init.d/"$SERVICE_NAME" enable
     /etc/init.d/"$SERVICE_NAME" start
     
@@ -886,33 +955,29 @@ common_config_firewall() {
     uci set "firewall.${rule_name}.target=DNAT"
     uci commit firewall
     
-    /etc/init.d/firewall restart || {
-        printf "\033[1;31mFailed to restart firewall\033[0m\n"
-        exit 1
-    }
+    restart_service firewall || exit 1
     
     printf "\033[1;32mFirewall configuration completed\033[0m\n"
 }
 
-# =============================================================================
-# Removal Functions
-# =============================================================================
+=============================================================================
+Removal Functions
+=============================================================================
 
 remove_adguardhome() {
     local auto_confirm="${1:-$REMOVE_MODE}"
+    local detected_service
 
     printf "\033[1;34mRemoving AdGuard Home\033[0m\n"
 
-    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
-        INSTALL_TYPE="official"; AGH="AdGuardHome"
-    elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
-        INSTALL_TYPE="openwrt"; AGH="adguardhome"
-    else
+    if ! detect_adguardhome_service; then
         printf "\033[1;31mAdGuard Home not found\033[0m\n"
         return 1
     fi
 
-    printf "Found AdGuard Home (%s version)\n" "$INSTALL_TYPE"
+    detected_service="$DETECTED_SERVICE_NAME"
+
+    printf "Found AdGuard Home (%s version)\n" "$DETECTED_SERVICE_TYPE"
     
     if [ "$auto_confirm" != "auto" ]; then
         printf "Do you want to remove it? (y/N): "
@@ -925,20 +990,20 @@ remove_adguardhome() {
         printf "\033[1;33mAuto-removing...\033[0m\n"
     fi
     
-    /etc/init.d/"${AGH}" stop    2>/dev/null || true
-    /etc/init.d/"${AGH}" disable 2>/dev/null || true
+    /etc/init.d/"${detected_service}" stop    2>/dev/null || true
+    /etc/init.d/"${detected_service}" disable 2>/dev/null || true
 
-    if [ "$INSTALL_TYPE" = "official" ]; then
-        "/etc/${AGH}/${AGH}" -s uninstall 2>/dev/null || true
+    if [ "$DETECTED_SERVICE_TYPE" = "official" ]; then
+        "/etc/${detected_service}/${detected_service}" -s uninstall 2>/dev/null || true
     else
         if command -v apk >/dev/null 2>&1; then
-            apk del "$AGH" 2>/dev/null || true
+            apk del "$detected_service" 2>/dev/null || true
         else
-            opkg remove --verbosity=0 "$AGH" 2>/dev/null || true
+            opkg remove --verbosity=0 "$detected_service" 2>/dev/null || true
         fi
     fi
 
-    if [ -d "/etc/${AGH}" ] || [ -f "/etc/adguardhome.yaml" ]; then
+    if [ -d "/etc/${detected_service}" ] || [ -f "/etc/adguardhome.yaml" ]; then
         if [ "$auto_confirm" != "auto" ]; then
             printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
             read -r cfg
@@ -990,9 +1055,7 @@ remove_adguardhome() {
     uci commit dhcp
     uci commit firewall
 
-    /etc/init.d/dnsmasq restart  || { printf "\033[1;31mFailed to restart dnsmasq\033[0m\n"; exit 1; }
-    /etc/init.d/odhcpd restart   || { printf "\033[1;31mFailed to restart odhcpd\033[0m\n"; exit 1; }
-    /etc/init.d/firewall restart || { printf "\033[1;31mFailed to restart firewall\033[0m\n"; exit 1; }
+    restart_network_services
 
     printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
     
@@ -1004,9 +1067,9 @@ remove_adguardhome() {
     fi
 }
 
-# =============================================================================
-# Access Information Display
-# =============================================================================
+=============================================================================
+Access Information Display
+=============================================================================
 
 get_access() {
     local cfg port addr
@@ -1054,23 +1117,9 @@ get_access() {
     fi
 }
 
-# =============================================================================
-# Banner Function
-# =============================================================================
-
-print_banner() {
-    local title="$1"
-    local version="$2"
-    
-    printf "\n\033[1;34m========================================\033[0m\n"
-    printf "\033[1;34m  %s\033[0m\n" "$title"
-    [ -n "$version" ] && printf "\033[1;34m  Version: %s\033[0m\n" "$version"
-    printf "\033[1;34m========================================\033[0m\n\n"
-}
-
-# =============================================================================
-# Main Entry Point
-# =============================================================================
+=============================================================================
+Banner Function
+=============================================================================
 
 adguardhome_main() {
     # =========================================================================
@@ -1197,10 +1246,30 @@ adguardhome_main() {
     fi
 }
 
-# =============================================================================
-# Script Execution
-# =============================================================================
+# =========================================================================
+# Phase 5: Install and configure
+# =========================================================================
+install_cacertificates
+install_"$INSTALL_MODE"
+generate_yaml
+get_iface_addrs
+common_config
+common_config_firewall
+
+printf "\n\033[1;32mAdGuard Home installation and configuration completed successfully.\033[0m\n\n"
+get_access
+
+# Prompt for reboot only in standalone mode
+if is_standalone_mode; then
+    printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+    read -r _
+    reboot
+fi
+}
+=============================================================================
+Script Execution
+=============================================================================
 
 if [ "$(basename "$0")" = "adguardhome.sh" ]; then
     adguardhome_main "$@"
-fi
+fi 
