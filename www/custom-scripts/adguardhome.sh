@@ -17,7 +17,6 @@ VERSION="R7.1203.1716"
 : "${NO_YAML:=}"              # -n: skip YAML generation
 : "${SKIP_RESOURCE_CHECK:=}"  # -c: skip resource check
 : "${UPDATE_CREDENTIALS:=}"   # -m: update credentials mode
-: "${NO_REBOOT:=}"            # flag: skip reboot prompt
 
 # Credential variables (set by environment or interactive input)
 AGH_USER=""
@@ -179,8 +178,13 @@ apply_environment_variables() {
 INSTALL_MODE_FROM_ARGS=""
 
 is_standalone_mode() {
-    # Standalone mode: INSTALL_MODE not specified via args, and no REMOVE_MODE
-    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ] && [ -z "$NO_REBOOT" ]
+    # Standalone mode: 引数が一切指定されていない場合のみ真（True）とする
+    # -i, -r, -n, -m, -c のいずれかが指定されていれば False（再起動プロンプトを出さない）
+    [ -z "$INSTALL_MODE_FROM_ARGS" ] && \
+    [ -z "$REMOVE_MODE" ] && \
+    [ -z "$NO_YAML" ] && \
+    [ -z "$UPDATE_CREDENTIALS" ] && \
+    [ -z "$SKIP_RESOURCE_CHECK" ]
 }
 
 is_interactive_mode() {
