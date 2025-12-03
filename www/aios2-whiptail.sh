@@ -1164,78 +1164,6 @@ EOF
     done
 }
 
-main_menu() {
-    local tr_main_menu tr_select tr_exit packages_label custom_feeds_label custom_scripts_label review_label
-    local setup_categories setup_cat_count
-    local menu_items i cat_id cat_title packages_choice custom_feeds_choice custom_scripts_choice review_choice choice selected_cat
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_select=$(translate "tr-tui-select")
-    tr_exit=$(translate "tr-tui-exit")
-    packages_label=$(translate "tr-tui-packages")
-    custom_feeds_label=$(translate "tr-tui-custom-feeds")
-    custom_scripts_label=$(translate "tr-tui-custom-scripts")
-    review_label=$(translate "tr-tui-review-configuration")
-    
-    setup_categories=$(get_setup_categories)
-    setup_cat_count=$(echo "$setup_categories" | wc -l)
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_title=$(get_setup_category_title "$cat_id")
-            menu_items="$menu_items $i \"$cat_title\""
-            i=$((i+1))
-        done <<EOF
-$setup_categories
-EOF
-        
-        menu_items="$menu_items $i \"$packages_label\""
-        packages_choice=$i
-        i=$((i+1))
-        
-        menu_items="$menu_items $i \"$custom_feeds_label\""
-        custom_feeds_choice=$i
-        i=$((i+1))
-        
-        menu_items="$menu_items $i \"$custom_scripts_label\""
-        custom_scripts_choice=$i
-        i=$((i+1))
-
-        local restore_point_label
-        restore_point_label=$(translate "tr-tui-restore-point")
-        menu_items="$menu_items $i \"$restore_point_label\""
-        restore_point_choice=$i
-        i=$((i+1))
-        
-        menu_items="$menu_items $i \"$review_label\""
-        review_choice=$i
-        
-        choice=$(eval "show_menu \"\$TITLE\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ "$choice" -le "$setup_cat_count" ]; then
-            selected_cat=$(echo "$setup_categories" | sed -n "${choice}p")
-            category_config "$selected_cat"
-        elif [ "$choice" -eq "$packages_choice" ]; then
-            package_categories
-        elif [ "$choice" -eq "$custom_feeds_choice" ]; then
-            custom_feeds_selection
-        elif [ "$choice" -eq "$custom_scripts_choice" ]; then
-            custom_scripts_selection
-        elif [ "$choice" -eq "$restore_point_choice" ]; then
-            restore_point_menu
-        elif [ "$choice" -eq "$review_choice" ]; then
-            review_and_apply
-        fi
-    done
-}
-
 review_and_apply() {
     local need_fetch=0
     
@@ -1344,8 +1272,80 @@ EOF
     return 0
 }
 
+whiptail_main_menu() {
+    local tr_main_menu tr_select tr_exit packages_label custom_feeds_label custom_scripts_label review_label
+    local setup_categories setup_cat_count
+    local menu_items i cat_id cat_title packages_choice custom_feeds_choice custom_scripts_choice review_choice choice selected_cat
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_select=$(translate "tr-tui-select")
+    tr_exit=$(translate "tr-tui-exit")
+    packages_label=$(translate "tr-tui-packages")
+    custom_feeds_label=$(translate "tr-tui-custom-feeds")
+    custom_scripts_label=$(translate "tr-tui-custom-scripts")
+    review_label=$(translate "tr-tui-review-configuration")
+    
+    setup_categories=$(get_setup_categories)
+    setup_cat_count=$(echo "$setup_categories" | wc -l)
+    
+    while true; do
+        menu_items="" 
+        i=1
+        
+        while read -r cat_id; do
+            cat_title=$(get_setup_category_title "$cat_id")
+            menu_items="$menu_items $i \"$cat_title\""
+            i=$((i+1))
+        done <<EOF
+$setup_categories
+EOF
+        
+        menu_items="$menu_items $i \"$packages_label\""
+        packages_choice=$i
+        i=$((i+1))
+        
+        menu_items="$menu_items $i \"$custom_feeds_label\""
+        custom_feeds_choice=$i
+        i=$((i+1))
+        
+        menu_items="$menu_items $i \"$custom_scripts_label\""
+        custom_scripts_choice=$i
+        i=$((i+1))
+
+        local restore_point_label
+        restore_point_label=$(translate "tr-tui-restore-point")
+        menu_items="$menu_items $i \"$restore_point_label\""
+        restore_point_choice=$i
+        i=$((i+1))
+        
+        menu_items="$menu_items $i \"$review_label\""
+        review_choice=$i
+        
+        choice=$(eval "show_menu \"\$TITLE\" \"\" \"\$tr_select\" \"\$tr_exit\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ "$choice" -le "$setup_cat_count" ]; then
+            selected_cat=$(echo "$setup_categories" | sed -n "${choice}p")
+            category_config "$selected_cat"
+        elif [ "$choice" -eq "$packages_choice" ]; then
+            package_categories
+        elif [ "$choice" -eq "$custom_feeds_choice" ]; then
+            custom_feeds_selection
+        elif [ "$choice" -eq "$custom_scripts_choice" ]; then
+            custom_scripts_selection
+        elif [ "$choice" -eq "$restore_point_choice" ]; then
+            restore_point_menu
+        elif [ "$choice" -eq "$review_choice" ]; then
+            review_and_apply
+        fi
+    done
+}
+
 aios2_whiptail_main() {
     export NEWT_COLORS
     device_info
-    main_menu
+    whiptail_main_menu
 }
