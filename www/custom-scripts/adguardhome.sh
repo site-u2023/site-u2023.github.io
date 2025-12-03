@@ -144,7 +144,6 @@ parse_options() {
             -i)
                 if [ -n "$2" ] && [ "${2#-}" = "$2" ]; then
                     INSTALL_MODE="$2"
-                    INSTALL_MODE_FROM_ARGS="1"
                     shift
                 else
                     printf "\033[1;31mError: -i requires an argument (openwrt|official)\033[0m\n"
@@ -183,7 +182,7 @@ INSTALL_MODE_FROM_ARGS=""
 
 is_standalone_mode() {
     # Standalone mode: INSTALL_MODE not specified via args, and no REMOVE_MODE
-    [ -z "$INSTALL_MODE_FROM_ARGS" ] && [ -z "$REMOVE_MODE" ]
+    [ -z "$TUI_MODE" ]
 }
 
 is_interactive_mode() {
@@ -1180,6 +1179,8 @@ adguardhome_main() {
         return 0
     fi
     
+    # adguardhome_main 関数内
+
     # --- Install Mode ---
     print_banner "AdGuard Home Installation" "$VERSION"
     
@@ -1188,7 +1189,7 @@ adguardhome_main() {
     
     # Select install mode (interactive if not specified)
     select_install_mode
-    
+
     # Update package lists
     case "$PACKAGE_MANAGER" in
         opkg)
