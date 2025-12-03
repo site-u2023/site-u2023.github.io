@@ -214,13 +214,12 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
-                # 変数ファイルを初期化
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
 
-                # JSON駆動でenvVarsを書き込む（ハードコードなし）
                 write_option_envvars "$script_id" "$selected_option"
 
-                # 入力が必要かチェック
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 
