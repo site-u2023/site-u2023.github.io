@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1128"
+VERSION="R7.1203.1203"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -318,36 +318,35 @@ update_credentials() {
     
     # Password
     while true; do
-        printf "Enter new password (min 8 chars, leave empty to keep current): "
+        printf "Enter new password (min 8 chars, empty to skip): "
         stty -echo 2>/dev/null
         read -r input_pass
         stty echo 2>/dev/null
-        printf "\n"
         
         if [ -z "$input_pass" ]; then
-            printf "\033[1;33mPassword unchanged\033[0m\n"
+            printf "\n\033[1;33mPassword unchanged\033[0m\n"
             UPDATE_PASSWORD=0
             break
         fi
         
         if [ ${#input_pass} -lt 8 ]; then
-            printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
+            printf "\n\033[1;31mPassword must be at least 8 characters\033[0m\n"
             continue
         fi
         
-        printf "Confirm new password: "
+        printf "\nConfirm new password: "
         stty -echo 2>/dev/null
         read -r confirm_pass
         stty echo 2>/dev/null
-        printf "\n"
         
         if [ "$input_pass" != "$confirm_pass" ]; then
-            printf "\033[1;31mPasswords do not match\033[0m\n"
+            printf "\n\033[1;31mPasswords do not match\033[0m\n"
             continue
         fi
         
         NEW_PASS="$input_pass"
         UPDATE_PASSWORD=1
+        printf "\n"
         break
     done
     
@@ -701,7 +700,6 @@ prompt_credentials() {
         stty -echo 2>/dev/null
         read -r input_pass
         stty echo 2>/dev/null
-        printf "\n"
         
         if [ -z "$input_pass" ]; then
             printf "\033[1;31mPassword cannot be empty\033[0m\n"
@@ -722,12 +720,18 @@ prompt_credentials() {
     stty -echo 2>/dev/null
     read -r confirm_pass
     stty echo 2>/dev/null
-    printf "\n"
     
     if [ "$AGH_PASS" != "$confirm_pass" ]; then
         printf "\033[1;31mPasswords do not match. Aborting.\033[0m\n"
         exit 1
     fi
+
+    # Web port input
+    printf "Enter web interface port [%s]: " "$DEFAULT_WEB_PORT"
+    read -r input_port
+    WEB_PORT="${input_port:-$DEFAULT_WEB_PORT}"
+    
+    printf "\n"
 }
 
 generate_password_hash() {
