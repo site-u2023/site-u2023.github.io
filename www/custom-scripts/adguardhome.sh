@@ -903,7 +903,7 @@ common_config() {
     cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
     cp /etc/config/firewall /etc/config/firewall.adguard.bak
     
-    uci batch << EOF
+    uci batch << EOF 2>/dev/null
 set dhcp.@dnsmasq[0].noresolv='1'
 set dhcp.@dnsmasq[0].cachesize='0'
 set dhcp.@dnsmasq[0].rebind_protection='0'
@@ -951,7 +951,7 @@ common_config_firewall() {
         return
     fi
     
-    uci batch << EOF
+    uci batch << EOF 2>/dev/null
 set firewall.${rule_name}=redirect
 set firewall.${rule_name}.name='AdGuard Home DNS Redirect (${FAMILY_TYPE})'
 set firewall.${rule_name}.family='${FAMILY_TYPE}'
@@ -1043,7 +1043,7 @@ remove_adguardhome() {
     # Restore defaults if no backup
     if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
         printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-        uci batch << EOF
+        uci batch << EOF 2>/dev/null
 del dhcp.@dnsmasq[0].noresolv
 del dhcp.@dnsmasq[0].cachesize
 del dhcp.@dnsmasq[0].rebind_protection
@@ -1059,7 +1059,7 @@ EOF
     rule_name="adguardhome_dns_${DNS_PORT:-53}"
     if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
         printf "\033[1;34mRemoving firewall rule\033[0m\n"
-        uci batch << EOF
+        uci batch << EOF 2>/dev/null
 delete firewall.${rule_name}
 commit firewall
 EOF
