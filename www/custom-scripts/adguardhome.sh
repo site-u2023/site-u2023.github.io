@@ -329,12 +329,12 @@ check_system() {
     FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
     FLASH_TOTAL_MB=$((FLASH_TOTAL_KB / 1024))
     
-    if [ "$MEM_FREE_MB" -lt "$REQUIRED_MEM" ]; then
+    if [ "$MEM_FREE_MB" -lt "$RECOMMENDED_MEM" ]; then
         mem_col="1;31"
     else
         mem_col="1;32"
     fi
-    if [ "$FLASH_FREE_MB" -lt "$REQUIRED_FLASH" ]; then
+    if [ "$FLASH_FREE_MB" -lt "$RECOMMENDED_FLASH" ]; then
         flash_col="1;31"
     else
         flash_col="1;32"
