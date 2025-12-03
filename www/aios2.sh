@@ -1289,13 +1289,12 @@ generate_customscript_file() {
     [ -n "$SKIP_RESOURCE_CHECK" ] && script_args="$script_args -c"
 
     if [ -n "$option_args" ]; then
-        local first_arg install_mode
+        local first_arg
         first_arg=$(echo "$option_args" | awk '{print $1}')
         
         case "$first_arg" in
             openwrt|official)
-                install_mode="$first_arg"
-                script_args="$script_args -i $install_mode"
+                script_args="$script_args -i $first_arg"
                 ;;
             remove)
                 script_args="$script_args -r auto"
