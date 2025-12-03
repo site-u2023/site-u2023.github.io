@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.1040"
+VERSION="R7.1203.1055"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -77,6 +77,7 @@ Usage: $(basename "$0") [OPTIONS]
 Options:
   -i SOURCE    Install from specified source (openwrt|official)
   -r MODE      Remove AdGuard Home (auto|manual)
+  -m           Update credentials (Username/Password/Web Port)
   -c           Skip system resource check
   -n           Skip YAML configuration generation (use web setup)
   -h           Show this help message
@@ -96,6 +97,9 @@ Examples:
   Non-interactive install:
     AGH_USER=admin AGH_PASS=mypassword sh $(basename "$0") -i official
 
+  Update credentials:
+    sh $(basename "$0") -m
+
   Remove with auto-confirm:
     sh $(basename "$0") -r auto
 
@@ -114,6 +118,9 @@ parse_options() {
                 ;;
             -n)
                 NO_YAML="1"
+                ;;
+            -m)
+                UPDATE_CREDENTIALS="1"
                 ;;
             -r)
                 if [ -n "$2" ] && [ "${2#-}" = "$2" ]; then
@@ -178,7 +185,31 @@ is_interactive_mode() {
 check_system() {
     if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
         printf "\033[1;33mAdGuard Home is already installed.\033[0m\n"
-        remove_adguardhome
+        
+        if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
+            EXISTING_TYPE="official"
+            EXISTING_SERVICE="AdGuardHome"
+        else
+            EXISTING_TYPE="openwrt"
+            EXISTING_SERVICE="adguardhome"
+        fi
+        
+        printf "\nInstalled: \033[1;36m%s version\033[0m\n\n" "$EXISTING_TYPE"
+        
+        while true; do
+            printf "[1] Update credentials (Username/Password/Web Port)\n"
+            printf "[2] Remove and reinstall\n"
+            printf "[0] Exit\n"
+            printf "Please select (1, 2 or 0): "
+            read -r choice
+            
+            case "$choice" in
+                1) update_credentials; exit 0 ;;
+                2) remove_adguardhome; break ;;
+                0) printf "\033[1;33mCancelled.\033[0m\n"; exit 0 ;;
+                *) printf "\033[1;31mInvalid choice '%s'. Please enter 1, 2, or 0.\033[0m\n" "$choice" ;;
+            esac
+        done
         return 0
     fi
     
@@ -249,6 +280,132 @@ check_system() {
         printf "\033[1;31mError: Insufficient flash storage. At least %sMB free space is required.\033[0m\n" \
             "$REQUIRED_FLASH"
         exit 1
+    fi
+}
+
+# =============================================================================
+# Update Credentials Function
+# =============================================================================
+
+update_credentials() {
+    printf "\033[1;34mUpdating AdGuard Home Credentials\033[0m\n\n"
+    
+    # Detect config file location
+    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
+        CONFIG_FILE="/etc/AdGuardHome/AdGuardHome.yaml"
+        SERVICE_NAME="AdGuardHome"
+    elif [ -f "/etc/adguardhome.yaml" ]; then
+        CONFIG_FILE="/etc/adguardhome.yaml"
+        SERVICE_NAME="adguardhome"
+    else
+        printf "\033[1;31mConfiguration file not found.\033[0m\n"
+        exit 1
+    fi
+    
+    # Get current values
+    CURRENT_USER=$(awk '/^users:/,/^[a-z]/ {if ($1 == "- name:") print $3}' "$CONFIG_FILE" | head -n1)
+    CURRENT_PORT=$(awk '/^http:/,/^[a-z]/ {if ($1 == "address:") {split($2,a,":"); print a[2]}}' "$CONFIG_FILE")
+    
+    printf "Current settings:\n"
+    printf "  Username: \033[1;36m%s\033[0m\n" "$CURRENT_USER"
+    printf "  Web Port: \033[1;36m%s\033[0m\n\n" "$CURRENT_PORT"
+    
+    # Username
+    printf "Enter new username [%s]: " "$CURRENT_USER"
+    read -r input_user
+    NEW_USER="${input_user:-$CURRENT_USER}"
+    
+    # Password
+    while true; do
+        printf "Enter new password (min 8 chars, leave empty to keep current): "
+        stty -echo 2>/dev/null
+        read -r input_pass
+        stty echo 2>/dev/null
+        printf "\n"
+        
+        if [ -z "$input_pass" ]; then
+            printf "\033[1;33mPassword unchanged\033[0m\n"
+            UPDATE_PASSWORD=0
+            break
+        fi
+        
+        if [ ${#input_pass} -lt 8 ]; then
+            printf "\033[1;31mPassword must be at least 8 characters\033[0m\n"
+            continue
+        fi
+        
+        printf "Confirm new password: "
+        stty -echo 2>/dev/null
+        read -r confirm_pass
+        stty echo 2>/dev/null
+        printf "\n"
+        
+        if [ "$input_pass" != "$confirm_pass" ]; then
+            printf "\033[1;31mPasswords do not match\033[0m\n"
+            continue
+        fi
+        
+        NEW_PASS="$input_pass"
+        UPDATE_PASSWORD=1
+        break
+    done
+    
+    # Web Port
+    printf "Enter new web port [%s]: " "$CURRENT_PORT"
+    read -r input_port
+    NEW_PORT="${input_port:-$CURRENT_PORT}"
+    
+    # Generate password hash if needed
+    if [ "$UPDATE_PASSWORD" -eq 1 ]; then
+        if ! command -v htpasswd >/dev/null 2>&1; then
+            printf "\033[1;31mhtpasswd not found. Installing dependencies...\033[0m\n"
+            install_dependencies || {
+                printf "\033[1;31mFailed to install htpasswd. Cannot update password.\033[0m\n"
+                exit 1
+            }
+        fi
+        
+        NEW_PASS_HASH=$(htpasswd -B -n -b "" "$NEW_PASS" 2>/dev/null | cut -d: -f2)
+        if [ -z "$NEW_PASS_HASH" ]; then
+            printf "\033[1;31mFailed to generate password hash.\033[0m\n"
+            exit 1
+        fi
+    fi
+    
+    # Backup config
+    cp "$CONFIG_FILE" "${CONFIG_FILE}.backup.$(date +%Y%m%d%H%M%S)"
+    
+    # Update config file
+    /etc/init.d/"$SERVICE_NAME" stop
+    
+    # Update username
+    sed -i "/^users:/,/^[a-z]/ s/- name: .*/- name: ${NEW_USER}/" "$CONFIG_FILE"
+    
+    # Update password if changed
+    if [ "$UPDATE_PASSWORD" -eq 1 ]; then
+        sed -i "/^users:/,/^[a-z]/ s|password: .*|password: ${NEW_PASS_HASH}|" "$CONFIG_FILE"
+    fi
+    
+    # Update web port
+    sed -i "/^http:/,/^[a-z]/ s/address: .*/address: 0.0.0.0:${NEW_PORT}/" "$CONFIG_FILE"
+    
+    /etc/init.d/"$SERVICE_NAME" start
+    
+    printf "\n\033[1;32mCredentials updated successfully!\033[0m\n\n"
+    printf "New settings:\n"
+    printf "  Username: \033[1;36m%s\033[0m\n" "$NEW_USER"
+    if [ "$UPDATE_PASSWORD" -eq 1 ]; then
+        printf "  Password: \033[1;36m%s\033[0m\n" "$NEW_PASS"
+    else
+        printf "  Password: \033[1;33m(unchanged)\033[0m\n"
+    fi
+    printf "  Web Port: \033[1;36m%s\033[0m\n" "$NEW_PORT"
+    
+    get_iface_addrs
+    printf "\nWeb interface IPv4: http://%s:%s/\n" "$NET_ADDR" "$NEW_PORT"
+    if [ -n "$NET_ADDR6_LIST" ]; then
+        set -- $NET_ADDR6_LIST
+        printf "Web interface IPv6: http://[%s]:%s/\n" "$1" "$NEW_PORT"
     fi
 }
 
@@ -889,6 +1046,20 @@ get_access() {
 }
 
 # =============================================================================
+# Banner Function
+# =============================================================================
+
+print_banner() {
+    local title="$1"
+    local version="$2"
+    
+    printf "\n\033[1;34m========================================\033[0m\n"
+    printf "\033[1;34m  %s\033[0m\n" "$title"
+    [ -n "$version" ] && printf "\033[1;34m  Version: %s\033[0m\n" "$version"
+    printf "\033[1;34m========================================\033[0m\n\n"
+}
+
+# =============================================================================
 # Main Entry Point
 # =============================================================================
 
@@ -907,20 +1078,22 @@ adguardhome_main() {
     # Phase 3: Route to appropriate handler based on mode
     # =========================================================================
     
+    # --- Update Credentials Mode ---
+    if [ -n "$UPDATE_CREDENTIALS" ]; then
+        print_banner "AdGuard Home Credentials Update"
+        update_credentials
+        exit 0
+    fi
+    
     # --- Remove Mode ---
     if [ -n "$REMOVE_MODE" ]; then
-        printf "\n\033[1;34m========================================\033[0m\n"
-        printf "\033[1;34m  AdGuard Home Removal\033[0m\n"
-        printf "\033[1;34m========================================\033[0m\n\n"
+        print_banner "AdGuard Home Removal"
         remove_adguardhome "$REMOVE_MODE"
         return 0
     fi
     
     # --- Install Mode ---
-    printf "\n\033[1;34m========================================\033[0m\n"
-    printf "\033[1;34m  AdGuard Home Installation\033[0m\n"
-    printf "\033[1;34m  Version: %s\033[0m\n" "$VERSION"
-    printf "\033[1;34m========================================\033[0m\n"
+    print_banner "AdGuard Home Installation" "$VERSION"
     
     # System check
     check_system
