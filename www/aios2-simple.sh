@@ -290,7 +290,29 @@ EOF
             if [ -n "$selected_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
 
-                write_option_envvars "$script_id" "$selected_option"
+                local idx=0
+                local opt_ids opt_id env_json
+                
+                opt_ids=$(get_customscript_options "$script_id")
+                for opt_id in $opt_ids; do
+                    if [ "$opt_id" = "$selected_option" ]; then
+                        break
+                    fi
+                    idx=$((idx+1))
+                done
+                
+                env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
+                
+                if [ -n "$env_json" ]; then
+                    echo "$env_json" | \
+                        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
+                        sed 's/^"//; s/"$//' | \
+                        while IFS=: read -r key value; do
+                            key=$(echo "$key" | tr -d '"')
+                            value=$(echo "$value" | tr -d '"')
+                            [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                        done
+                fi
 
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
