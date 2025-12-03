@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1202.1348"
+VERSION="R7.1203.1440"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -296,9 +296,6 @@ EOF
                 case "$opt_args" in
                     openwrt|official)
                         echo "INSTALL_MODE='$opt_args'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                        ;;
-                    change-credentials)
-                        echo "INSTALL_MODE='change-credentials'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                         ;;
                     "remove auto")
                         echo "REMOVE_MODE='auto'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
