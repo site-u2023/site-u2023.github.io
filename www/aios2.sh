@@ -41,8 +41,12 @@ _PACKAGE_NAME_CACHE=""
 _PACKAGE_NAME_LOADED=0
 
 # adguardhome
+# Operation mode variables (set by command line options)
 INSTALL_MODE=""        # -i: openwrt|official
 REMOVE_MODE=""         # -r: auto|manual
+NO_YAML=""             # -n: skip YAML generation
+SKIP_RESOURCE_CHECK="" # -c: skip resource check
+UPDATE_CREDENTIALS=""  # -m: update credentials mode
 
 # URL and Path Configuration
 
