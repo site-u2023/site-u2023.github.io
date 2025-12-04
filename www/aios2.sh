@@ -877,12 +877,12 @@ get_package_enablevar() {
     
     if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
         _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '/"id":/ {id=$4} /"enableVar":/ {print id "=" $4}')
+            awk -F'"' '{id="";uid="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="enableVar")ev=$(i+2)}key=(uid?uid:id);if(key&&ev)print key"="ev}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '/"id":/ {id=$4} /"enableVar":/ {print id "=" $4}')
+                awk -F'"' '{id="";uid="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="enableVar")ev=$(i+2)}key=(uid?uid:id);if(key&&ev)print key"="ev}')
             _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
 ${custom_cache}"
         fi
