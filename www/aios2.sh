@@ -831,11 +831,9 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     local pkgs
-    
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
+
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     echo "$pkgs"
 }
 
@@ -851,7 +849,7 @@ get_package_name() {
                 /"uniqueId":/ {uniqueId=$4}
                 /^[[:space:]]*}[[:space:]]*$/ {
                     if (id != "") {
-                        key = (uniqueId != "") ? uniqueId : id
+                        key = id
                         display = (name != "") ? name : id
                         print key "=" display
                         id=""; name=""; uniqueId=""
@@ -868,7 +866,7 @@ get_package_name() {
                     /"uniqueId":/ {uniqueId=$4}
                     /^[[:space:]]*}[[:space:]]*$/ {
                         if (id != "") {
-                            key = (uniqueId != "") ? uniqueId : id
+                            key = id
                             display = (name != "") ? name : id
                             print key "=" display
                             id=""; name=""; uniqueId=""
