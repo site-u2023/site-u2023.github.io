@@ -603,7 +603,8 @@
         {
           "id": "apache",
           "name": "apache",
-          "description": "Full Apache HTTP Server (includes htpasswd)"
+          "description": "Full Apache HTTP Server (includes htpasswd)",
+          "enableVar": "apache_keep"
         },
         {
           "id": "htpasswd",
