@@ -1622,7 +1622,10 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$SELECTED_PACKAGES" | sed 's/ $//')
+            pkgs=$(while read -r pkg; do
+                actual_id=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg'].id" 2>/dev/null | head -1)
+                [ -n "$actual_id" ] && echo "$actual_id" || echo "$pkg"
+            done < "$SELECTED_PACKAGES" | awk '!seen[$0]++' | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
         else
             pkgs=""
         fi
