@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1204.1831"
+VERSION="R7.1204.0058"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -831,11 +831,9 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     local pkgs
-
+    
     pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    
     echo "$pkgs"
 }
 
@@ -843,22 +841,22 @@ get_package_name() {
     local pkg_id="$1"
     local name
     
-    name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].name" 2>/dev/null | head -1)
-    
-    if [ -z "$name" ]; then
-        name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
-    fi
-    
-    if [ -z "$name" ] && [ -f "$CUSTOMFEEDS_JSON" ]; then
-        name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].name" 2>/dev/null | head -1)
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
         
-        if [ -z "$name" ]; then
-            name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${custom_cache}"
         fi
+        
+        _PACKAGE_NAME_LOADED=1
     fi
     
-    [ -z "$name" ] && name="$pkg_id"
-    
+    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
     printf '%s\n' "$name"
 }
 
