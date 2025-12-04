@@ -855,7 +855,7 @@ OpenVPN
 
 </details>
 
-### パスワード
+### パスワード暗号化
  <details>
 <summary>htpasswd</summary>
 
