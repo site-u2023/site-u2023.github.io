@@ -21,6 +21,28 @@ sh /tmp/adguardhome.sh -i official
 
 詳細な使用方法については「使用例」セクションを参照すること。
 
+## ファイル配置
+
+本スクリプトに関連するファイルは以下のリポジトリで管理されている。
+
+### 実行ファイル
+
+[adguardhome.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/adguardhome.sh)
+
+本体スクリプトである。全ての機能がこの単一ファイルに実装されている。
+
+### 設定ファイルテンプレート
+
+[adguardhome.yaml](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/adguardhome.yaml)
+
+YAML設定ファイルのテンプレートである。スクリプトは環境変数`SCRIPT_BASE_URL`で指定されたURLからこのファイルをダウンロードし、プレースホルダーを実際の値で置換して使用する。デフォルトのダウンロード元は`https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml`である。
+
+### 技術仕様書
+
+[AdGuardHome.md](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/AdGuardHome.md)
+
+本ドキュメントである。スクリプトの仕様、動作、使用方法が詳細に記載されている。
+
 ## 書式
 ```
 adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>]
