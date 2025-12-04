@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1204.1256"
+VERSION="R7.1204.1247"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -950,10 +950,10 @@ EOF
     
     uci commit dhcp
     
-    restart_service dnsmasq || exit 1
-    restart_service odhcpd || exit 1
+    # restart_service dnsmasq || exit 1
+    # restart_service odhcpd || exit 1
     /etc/init.d/"$SERVICE_NAME" enable
-    /etc/init.d/"$SERVICE_NAME" start
+    # /etc/init.d/"$SERVICE_NAME" start
     
     printf "Router IPv4: %s\n" "$NET_ADDR"
     if [ -z "$NET_ADDR6_LIST" ]; then
