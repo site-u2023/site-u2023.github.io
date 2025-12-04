@@ -831,7 +831,7 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     local pkgs
-
+    
     pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     echo "$pkgs"
@@ -843,36 +843,12 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '
-                /"id":/ {id=$4}
-                /"name":/ {name=$4; gsub(/\\n/, " ", name)}
-                /"uniqueId":/ {uniqueId=$4}
-                /^[[:space:]]*}[[:space:]]*$/ {
-                    if (id != "") {
-                        key = id
-                        display = (name != "") ? name : id
-                        print key "=" display
-                        id=""; name=""; uniqueId=""
-                    }
-                }
-            ')
+            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '
-                    /"id":/ {id=$4}
-                    /"name":/ {name=$4; gsub(/\\n/, " ", name)}
-                    /"uniqueId":/ {uniqueId=$4}
-                    /^[[:space:]]*}[[:space:]]*$/ {
-                        if (id != "") {
-                            key = id
-                            display = (name != "") ? name : id
-                            print key "=" display
-                            id=""; name=""; uniqueId=""
-                        }
-                    }
-                ')
+                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -1646,10 +1622,7 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            pkgs=$(while read -r pkg; do
-                actual_id=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg'].id" 2>/dev/null | head -1)
-                [ -n "$actual_id" ] && echo "$actual_id" || echo "$pkg"
-            done < "$SELECTED_PACKAGES" | awk '!seen[$0]++' | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
+            pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$SELECTED_PACKAGES" | sed 's/ $//')
         else
             pkgs=""
         fi
