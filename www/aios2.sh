@@ -845,12 +845,36 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+            awk -F'"' '
+                /"id":/ {id=$4}
+                /"name":/ {name=$4; gsub(/\\n/, " ", name)}
+                /"uniqueId":/ {uniqueId=$4}
+                /^[[:space:]]*}[[:space:]]*$/ {
+                    if (id != "") {
+                        key = (uniqueId != "") ? uniqueId : id
+                        display = (name != "") ? name : id
+                        print key "=" display
+                        id=""; name=""; uniqueId=""
+                    }
+                }
+            ')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+                awk -F'"' '
+                    /"id":/ {id=$4}
+                    /"name":/ {name=$4; gsub(/\\n/, " ", name)}
+                    /"uniqueId":/ {uniqueId=$4}
+                    /^[[:space:]]*}[[:space:]]*$/ {
+                        if (id != "") {
+                            key = (uniqueId != "") ? uniqueId : id
+                            display = (name != "") ? name : id
+                            print key "=" display
+                            id=""; name=""; uniqueId=""
+                        }
+                    }
+                ')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
