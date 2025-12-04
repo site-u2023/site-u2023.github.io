@@ -607,20 +607,13 @@
           "enableVar": "apache_keep"
         },
         {
-          "id": "htpasswd",
+          "id": "apache",
           "name": "htpasswd",
+          "uniqueId": "htpasswd-from-apache",
           "description": "Password hash tool (extracted from apache)",
           "dependencies": ["libaprutil", "libapr", "libexpat", "libuuid1"],
           "enableVar": "enable_htpasswd",
-          "virtual": true
-        },
-        {
-          "id": "htpasswd-deps",
-          "name": "htpasswd Dependencies",
-          "hidden": true,
-          "virtual": true,
-          "installOptions": "--nodeps",
-          "targetPackage": "apache"
+          "installOptions": "--nodeps"
         },
         {
           "id": "libaprutil",
