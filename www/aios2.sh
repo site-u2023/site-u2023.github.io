@@ -831,12 +831,10 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     local pkgs
+
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/uniqueId/ {uid=$4; next} /^[[:space:]]*"id":/ {if (uid) {print uid; uid=""} else {print $4}}')
-    
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/uniqueId/ {uid=$4; next} /^[[:space:]]*"id":/ {if (uid) {print uid; uid=""} else {print $4}}')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     
     echo "$pkgs"
 }
