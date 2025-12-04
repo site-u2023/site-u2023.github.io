@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1204.0058"
+VERSION="R7.1204.1831"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -832,8 +832,14 @@ get_category_packages() {
     local cat_id="$1"
     local pkgs
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/uniqueId/ {print $4; next} /^[[:space:]]*"id":/ {print $4}' | \
+        awk '!seen[$0]++')
+    
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/uniqueId/ {print $4; next} /^[[:space:]]*"id":/ {print $4}' | \
+        awk '!seen[$0]++')
+    
     echo "$pkgs"
 }
 
@@ -841,22 +847,22 @@ get_package_name() {
     local pkg_id="$1"
     local name
     
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
-            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
-${custom_cache}"
-        fi
-        
-        _PACKAGE_NAME_LOADED=1
+    name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].name" 2>/dev/null | head -1)
+    
+    if [ -z "$name" ]; then
+        name=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
     fi
     
-    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
+    if [ -z "$name" ] && [ -f "$CUSTOMFEEDS_JSON" ]; then
+        name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].name" 2>/dev/null | head -1)
+        
+        if [ -z "$name" ]; then
+            name=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].name" 2>/dev/null | head -1)
+        fi
+    fi
+    
+    [ -z "$name" ] && name="$pkg_id"
+    
     printf '%s\n' "$name"
 }
 
