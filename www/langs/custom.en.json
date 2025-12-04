@@ -149,6 +149,8 @@
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
 
+    "tr-web-tools": "Web Server Tools",
+    
     "tr-feedback-link": "Forum",
 
     "tr-tui-packages": "Packages",
