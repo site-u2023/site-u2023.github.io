@@ -137,6 +137,7 @@
     "tr-utilities": "ユーティリティ",
     "tr-usb-storage": "USBストレージ対応",
     "tr-file-sharing": "ファイル共有",
+    "tr-web-tools": "Webサーバーツール",
     "tr-dns-privacy": "DNS & プライバシー",
     
     "tr-dnsmasq-settings": "DNS サーバー最適化",
@@ -148,8 +149,6 @@
     "tr-dnsmasq-negcache": "ネガティブキャッシュ",
     "tr-dnsmasq-auto-optimization": "自動最適化",
     "tr-dnsmasq-optimization-disabled": "最適化無効",
-
-    "tr-web-tools": "Webサーバーツール",
     
     "tr-feedback-link": "フォーラム",
 
