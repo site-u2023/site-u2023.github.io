@@ -3311,7 +3311,9 @@ function createPackageCategory(category) {
     let hasVisiblePackages = false;
     
     category.packages.forEach(pkg => {
-        if (!pkg.hidden) {
+        if (pkg.hidden) {
+            createHiddenPackageCheckbox(pkg);
+        } else {
             hasVisiblePackages = true;
             const packageItem = createPackageItem(pkg);
             packageGrid.appendChild(packageItem);
