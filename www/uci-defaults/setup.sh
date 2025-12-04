@@ -13,6 +13,7 @@ DELLIST() { uci del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
+PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
 DIAG="one.one.one.one"
 NTPDOMAIN=".pool.ntp.org"
 COUNTRY="${country:-00}"
@@ -305,7 +306,25 @@ fi
     }
 }
 [ -n "${enable_htpasswd}" ] && {
-    [ -z "${apache_keep}" ] && { [ -f /usr/bin/htpasswd ] && { cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null; case "$PACKAGE_MANAGER" in opkg) opkg remove apache >/dev/null 2>&1 || true ;; apk) apk del apache >/dev/null 2>&1 || true ;; esac; mv /tmp/htpasswd /usr/bin/htpasswd 2>/dev/null; chmod +x /usr/bin/htpasswd 2>/dev/null; }; }
+    [ -z "${apache_keep}" ] && {
+        local htpasswd_bin="/usr/bin/htpasswd"
+        local htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
+        local tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
+        
+        [ -f "$htpasswd_bin" ] && cp "$htpasswd_bin" /tmp/htpasswd
+        for lib in $htpasswd_libs; do
+            [ -f "$lib" ] && cp "$lib" /tmp/
+        done
+        case "$PACKAGE_MANAGER" in
+            opkg) opkg remove apache >/dev/null 2>&1 || true ;;
+            apk) apk del apache >/dev/null 2>&1 || true ;;
+        esac
+        mv /tmp/htpasswd "$htpasswd_bin"
+        chmod +x "$htpasswd_bin"
+        for lib in $tmp_libs; do
+            [ -f "$lib" ] && mv "$lib" /usr/lib/
+        done
+    }
 }
 [ -n "${enable_adguardhome}" ] && {
 local agh_yaml="/etc/adguardhome.yaml"
