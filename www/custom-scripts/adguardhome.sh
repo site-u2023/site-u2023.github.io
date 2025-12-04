@@ -1,11 +1,38 @@
 #!/bin/sh
 # shellcheck shell=sh disable=SC2034,SC2086,SC3043
-# OpenWrt 19.07+ configuration
+# OpenWrt 19.07+ AdGuard Home Installation Script
 # Reference: https://openwrt.org/docs/guide-user/services/dns/adguard-home
 #            https://github.com/AdguardTeam/AdGuardHome
-# This script file can be used standalone.
+#
+# FEATURES:
+#   - Dual installation modes: OpenWrt package or official binary
+#   - Non-disruptive installation: network connectivity maintained during setup
+#   - Modular dependency management with automated cleanup
+#   - Interactive and non-interactive operation modes
+#   - In-place credential updates without reinstallation
+#   - Automated configuration backup and restoration
+#
+# INSTALLATION BEHAVIOR:
+#   Configuration changes are committed but not applied during installation.
+#   DNS services remain operational throughout the process. AdGuard Home
+#   activation occurs on next system boot, preventing service interruption.
+#
+# OPTIONS:
+#   -i SOURCE    Installation source (openwrt|official)
+#   -r MODE      Removal mode (auto|manual)
+#   -m           Update credentials only
+#   -c           Skip system resource validation
+#   -n           Skip YAML generation (web-based initial setup)
+#   -h           Display usage information
+#
+# ENVIRONMENT VARIABLES:
+#   AGH_USER         Administrator username (default: admin)
+#   AGH_PASS         Administrator password (default: password, minimum 8 characters)
+#   WEB_PORT         Web interface port (default: 8000)
+#   DNS_PORT         DNS service port (default: 53)
+#   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1204.1247"
+VERSION="R7.1204.1302"
 
 # =============================================================================
 # Variable Initialization (empty by default)
