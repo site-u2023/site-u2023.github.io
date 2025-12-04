@@ -648,29 +648,8 @@
           "name": "htpasswd",
           "uniqueId": "htpasswd-from-apache",
           "description": "Password hash tool (extracted from apache)",
-          "dependencies": ["libaprutil", "libapr", "libexpat", "libuuid1"],
           "enableVar": "enable_htpasswd",
           "installOptions": "--nodeps"
-        },
-        {
-          "id": "libaprutil",
-          "name": "libaprutil",
-          "hidden": true
-        },
-        {
-          "id": "libapr",
-          "name": "libapr",
-          "hidden": true
-        },
-        {
-          "id": "libexpat",
-          "name": "libexpat",
-          "hidden": true
-        },
-        {
-          "id": "libuuid1",
-          "name": "libuuid1",
-          "hidden": true
         }
       ]
     },   
