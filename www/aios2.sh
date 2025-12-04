@@ -832,8 +832,10 @@ get_category_packages() {
     local cat_id="$1"
     local pkgs
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
     echo "$pkgs"
 }
 
