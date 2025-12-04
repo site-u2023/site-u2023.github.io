@@ -4,6 +4,28 @@
   "reboot": true,
   "columns": 2,
   
+  "_schema": {
+    "_description": "Setup configuration schema. This block is ignored by custom.js.",
+    "common_options": {
+      "id": "Item identifier (required, unique)",
+      "type": "Item type: select, radio-group, text, conditional-section, input-group, info-display",
+      "title/label": "Display text in UI",
+      "class": "Translation key (tr-xxx format)",
+      "description": "Tooltip text",
+      "variable": "Variable name to set in setup.sh",
+      "default": "Default value",
+      "hidden": "If true, item is not displayed",
+      "apiSource": "API response field to use as default (e.g. 'timezone', 'mape.brIpv6Address')"
+    },
+    "conditional_options": {
+      "showWhen.field": "Variable name to watch",
+      "showWhen.values": "Array of values that trigger display"
+    },
+    "select_options": {
+      "options": "Array of {value, label, class} objects"
+    }
+  },
+  
   "constants": {
     "interfaces": {
       "dsl": "dsl",
