@@ -312,7 +312,7 @@ local cfg_fw="/etc/config/firewall"
 cp "$cfg_net" "$cfg_net.adguard.bak"
 cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
 cp "$cfg_fw" "$cfg_fw.adguard.bak"
-local agh_hash=$(htpasswd -B -n -b "" "${agh_pass:-password}" 2>/dev/null | cut -d: -f2)
+local agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
 [ -z "$agh_hash" ] && { echo "Error: Failed to generate AdGuard Home password hash"; exit 1; }
 cat > "$agh_yaml" << 'AGHEOF'
 http:
@@ -410,28 +410,28 @@ log:
   file: ""
 schema_version: 29
 AGHEOF
-sed -i "s|{{AGH_USER}}|${agh_user:-admin}|g" "$agh_yaml"
+sed -i "s|{{AGH_USER}}|${agh_user}|g" "$agh_yaml"
 sed -i "s|{{AGH_HASH}}|${agh_hash}|g" "$agh_yaml"
-sed -i "s|{{WEB_PORT}}|${agh_web_port:-8000}|g" "$agh_yaml"
-sed -i "s|{{DNS_PORT}}|${agh_dns_port:-53}|g" "$agh_yaml"
-sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port:-54}|g" "$agh_yaml"
+sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
+sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
+sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
 chmod 600 "$agh_yaml"
 local SEC=dhcp
 SET @dnsmasq[0].noresolv='1'
 SET @dnsmasq[0].cachesize='0'
 SET @dnsmasq[0].rebind_protection='0'
-SET @dnsmasq[0].port="${agh_dns_backup_port:-54}"
+SET @dnsmasq[0].port="${agh_dns_backup_port}"
 SET @dnsmasq[0].domain='lan'
 SET @dnsmasq[0].local='/lan/'
 SET @dnsmasq[0].expandhosts='1'
 DEL @dnsmasq[0].server
-ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port:-53}"
-ADDLIST @dnsmasq[0].server="::1#${agh_dns_port:-53}"
+ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
+ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
 DEL lan.dhcp_option
 [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
 DEL lan.dhcp_option6
 local SEC=firewall
-local agh_rule="adguardhome_dns_${agh_dns_port:-53}"
+local agh_rule="adguardhome_dns_${agh_dns_port}"
 DEL "${agh_rule}" 2>/dev/null || true
 SET ${agh_rule}=redirect
 SET ${agh_rule}.name="AdGuard Home DNS Redirect"
@@ -440,8 +440,8 @@ SET ${agh_rule}.src='lan'
 SET ${agh_rule}.dest='lan'
 ADDLIST ${agh_rule}.proto='tcp'
 ADDLIST ${agh_rule}.proto='udp'
-SET ${agh_rule}.src_dport="${agh_dns_port:-53}"
-SET ${agh_rule}.dest_port="${agh_dns_port:-53}"
+SET ${agh_rule}.src_dport="${agh_dns_port}"
+SET ${agh_rule}.dest_port="${agh_dns_port}"
 SET ${agh_rule}.target='DNAT'
 [ -z "${apache_keep}" ] && { [ -f /usr/bin/htpasswd ] && { cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null; case "$PACKAGE_MANAGER" in opkg) opkg remove apache >/dev/null 2>&1 || true ;; apk) apk del apache >/dev/null 2>&1 || true ;; esac; mv /tmp/htpasswd /usr/bin/htpasswd 2>/dev/null; chmod +x /usr/bin/htpasswd 2>/dev/null; }; }
 }
