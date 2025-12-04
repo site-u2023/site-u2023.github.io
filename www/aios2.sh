@@ -832,8 +832,10 @@ get_category_packages() {
     local cat_id="$1"
     local pkgs
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
     echo "$pkgs"
 }
 
@@ -843,12 +845,12 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+            awk -F'"' '/"id":/ {id=$4} /"name":/ {name=$4; gsub(/\\n/, " ", name)} /"uniqueId":/ {uid=$4} /^[[:space:]]*}/ {key=(uid?uid:id); val=(name?name:id); if(key)print key "=" val; id="";name="";uid=""}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '/"id":/ {id=$4} /"name":/ {gsub(/\\n/, " ", $4); print id "=" $4}')
+                awk -F'"' '/"id":/ {id=$4} /"name":/ {name=$4; gsub(/\\n/, " ", name)} /"uniqueId":/ {uid=$4} /^[[:space:]]*}/ {key=(uid?uid:id); val=(name?name:id); if(key)print key "=" val; id="";name="";uid=""}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -1622,7 +1624,10 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$SELECTED_PACKAGES" | sed 's/ $//')
+            pkgs=$(while read -r pkg; do
+                actual_id=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg'].id" 2>/dev/null | head -1)
+                [ -n "$actual_id" ] && echo "$actual_id" || echo "$pkg"
+            done < "$SELECTED_PACKAGES" | awk '!seen[$0]++' | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
         else
             pkgs=""
         fi
