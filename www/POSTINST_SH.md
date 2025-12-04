@@ -847,7 +847,7 @@ OpenVPN
 
 ## Webサーバーツール
 
-### 
+### Webサーバー
 <details>
 <summary>apache</summary>
 
@@ -855,6 +855,7 @@ OpenVPN
 
 </details>
 
+### パスワード
  <details>
 <summary>htpasswd</summary>
 
