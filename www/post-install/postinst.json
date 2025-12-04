@@ -595,6 +595,54 @@
       ]
     },
     {
+      "id": "web-tools",
+      "name": "Web Server Tools",
+      "class": "tr-web-tools",
+      "description": "Apache web server and htpasswd password tool. Note: apache includes htpasswd.",
+      "packages": [
+        {
+          "id": "apache",
+          "name": "apache",
+          "description": "Full Apache HTTP Server (includes htpasswd)"
+        },
+        {
+          "id": "htpasswd",
+          "name": "htpasswd",
+          "description": "Password hash tool (extracted from apache)",
+          "dependencies": ["htpasswd-deps"],
+          "enableVar": "enable_htpasswd"
+        },
+        {
+          "id": "htpasswd-deps",
+          "name": "htpasswd Dependencies",
+          "hidden": true,
+          "virtual": true,
+          "installOptions": "--nodeps",
+          "targetPackage": "apache"
+        },
+        {
+          "id": "libaprutil",
+          "name": "libaprutil",
+          "hidden": true
+        },
+        {
+          "id": "libapr",
+          "name": "libapr",
+          "hidden": true
+        },
+        {
+          "id": "libexpat",
+          "name": "libexpat",
+          "hidden": true
+        },
+        {
+          "id": "libuuid1",
+          "name": "libuuid1",
+          "hidden": true
+        }
+      ]
+    },   
+    {
       "id": "dns-privacy",
       "name": "DNS & Privacy",
       "class": "tr-dns-privacy",
