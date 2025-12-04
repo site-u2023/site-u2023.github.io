@@ -137,6 +137,7 @@
     "tr-utilities": "Utilities",
     "tr-usb-storage": "USB Storage Support",
     "tr-file-sharing": "File Sharing",
+    "tr-web-tools": "Web Server Tools",
     "tr-dns-privacy": "DNS & Privacy",
     
     "tr-dnsmasq-settings": "DNS Server Optimization",
@@ -148,8 +149,6 @@
     "tr-dnsmasq-negcache": "Negative Cache",
     "tr-dnsmasq-auto-optimization": "Automatic Optimization",
     "tr-dnsmasq-optimization-disabled": "Optimization Disabled",
-
-    "tr-web-tools": "Web Server Tools",
     
     "tr-feedback-link": "Forum",
 
