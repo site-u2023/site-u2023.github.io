@@ -304,6 +304,9 @@ fi
         SET "$IDX".enabled='1'
     }
 }
+[ -n "${enable_htpasswd}" ] && {
+    [ -z "${apache_keep}" ] && { [ -f /usr/bin/htpasswd ] && { cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null; case "$PACKAGE_MANAGER" in opkg) opkg remove apache >/dev/null 2>&1 || true ;; apk) apk del apache >/dev/null 2>&1 || true ;; esac; mv /tmp/htpasswd /usr/bin/htpasswd 2>/dev/null; chmod +x /usr/bin/htpasswd 2>/dev/null; }; }
+}
 [ -n "${enable_adguardhome}" ] && {
 local agh_yaml="/etc/adguardhome.yaml"
 local cfg_net="/etc/config/network"
@@ -443,7 +446,6 @@ ADDLIST ${agh_rule}.proto='udp'
 SET ${agh_rule}.src_dport="${agh_dns_port}"
 SET ${agh_rule}.dest_port="${agh_dns_port}"
 SET ${agh_rule}.target='DNAT'
-[ -z "${apache_keep}" ] && { [ -f /usr/bin/htpasswd ] && { cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null; case "$PACKAGE_MANAGER" in opkg) opkg remove apache >/dev/null 2>&1 || true ;; apk) apk del apache >/dev/null 2>&1 || true ;; esac; mv /tmp/htpasswd /usr/bin/htpasswd 2>/dev/null; chmod +x /usr/bin/htpasswd 2>/dev/null; }; }
 }
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
