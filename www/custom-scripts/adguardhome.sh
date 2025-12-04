@@ -5,7 +5,7 @@
 #            https://github.com/AdguardTeam/AdGuardHome
 # This script file can be used standalone.
 
-VERSION="R7.1203.2355"
+VERSION="R7.1204.1211"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -1076,7 +1076,7 @@ EOF
     
     # Only prompt for reboot in standalone mode
     if is_standalone_mode; then
-        printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+        printf "\033[33mPress [Enter] to reboot.\033[0m"
         read -r _
         reboot
     fi
@@ -1226,7 +1226,7 @@ adguardhome_main() {
         printf "Access: http://%s:3000/\n" "$NET_ADDR"
         
         if is_standalone_mode; then
-            printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+            printf "\033[33mPress [Enter] to reboot.\033[0m"
             read -r _
             reboot
         fi
@@ -1270,7 +1270,7 @@ adguardhome_main() {
     
     # Prompt for reboot only in standalone mode
     if is_standalone_mode; then
-        printf "\033[33mPress [Enter] to reboot.\033[0m\n"
+        printf "\033[33mPress [Enter] to reboot.\033[0m"
         read -r _
         reboot
     fi
