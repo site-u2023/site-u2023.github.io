@@ -23,6 +23,7 @@
 #   -m           Update credentials only
 #   -c           Skip system resource validation
 #   -n           Skip YAML generation (web-based initial setup)
+#   -t           TUI mode (internal use)
 #   -h           Display usage information
 #
 # ENVIRONMENT VARIABLES:
