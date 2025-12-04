@@ -833,9 +833,9 @@ get_category_packages() {
     local pkgs
     
     pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
+        awk -F'"' '{id="";uid="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2)}if(uid)print uid;else if(id)print id}' | grep -v '^$')
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '/"uniqueId":/ {uid=$4; next} /"id":/ {print (uid ? uid : $4); uid=""}' | grep -v '^$')
+        awk -F'"' '{id="";uid="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2)}if(uid)print uid;else if(id)print id}' | grep -v '^$')
     echo "$pkgs"
 }
 
@@ -845,12 +845,12 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '/"id":/ {id=$4} /"name":/ {name=$4; gsub(/\\n/, " ", name)} /"uniqueId":/ {uid=$4} /^[[:space:]]*}/ {key=(uid?uid:id); val=(name?name:id); if(key)print key "=" val; id="";name="";uid=""}')
+            awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=(uid?uid:id);val=(name?name:id);if(key)print key"="val}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '/"id":/ {id=$4} /"name":/ {name=$4; gsub(/\\n/, " ", name)} /"uniqueId":/ {uid=$4} /^[[:space:]]*}/ {key=(uid?uid:id); val=(name?name:id); if(key)print key "=" val; id="";name="";uid=""}')
+                awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=(uid?uid:id);val=(name?name:id);if(key)print key"="val}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
