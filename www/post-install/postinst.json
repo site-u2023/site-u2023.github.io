@@ -611,7 +611,8 @@
           "name": "htpasswd",
           "description": "Password hash tool (extracted from apache)",
           "dependencies": ["htpasswd-deps"],
-          "enableVar": "enable_htpasswd"
+          "enableVar": "enable_htpasswd",
+          "virtual": true
         },
         {
           "id": "htpasswd-deps",
