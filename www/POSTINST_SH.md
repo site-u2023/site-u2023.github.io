@@ -845,6 +845,23 @@ OpenVPN
 
 </details>
 
+## Webサーバーツール
+
+### 
+<details>
+<summary>apache</summary>
+
+- Webサーバー
+
+</details>
+
+ <details>
+<summary>htpasswd</summary>
+
+- ユーザー名と暗号化されたパスワードファイルを作成
+
+</details>
+
 ## DNS & プライバシー
 
 ### 広告ブロック
