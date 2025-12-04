@@ -501,110 +501,109 @@ IPv6グローバルアドレスが検出された場合、`http://[${NET_ADDR6}]
 
 ## 使用例
 
-### 対話型インストール（スタンドアロンモード）
+### 対話型インストール
 
-デフォルトの対話型インストール。インストールモードとクレデンシャルの入力を求められる。
+オプション指定なしで実行した場合、インストールモードの選択とクレデンシャルの入力を対話的に求められる。
 ```bash
 sh adguardhome.sh
 ```
 
-### 非対話型インストール（スタンドアロンモード）
+### 非対話型インストール
 
-全ての設定を環境変数で指定する。入力プロンプトなしで実行される。
+`-i`オプションでインストールモードを指定し、環境変数で認証情報を設定することで、非対話型実行が可能となる。環境変数`AGH_USER`、`AGH_PASS`、`WEB_PORT`が全て設定されている場合、入力プロンプトは表示されない。
+```bash
+sh adguardhome.sh -i official
+```
+
+上記の場合、認証情報の入力が求められる。環境変数で事前設定することで完全な非対話実行となる。
 ```bash
 AGH_USER=admin AGH_PASS=securepass123 WEB_PORT=8000 sh adguardhome.sh -i official
 ```
 
-または
+### OpenWrtパッケージからのインストール
+
+`-i openwrt`オプションによりOpenWrtリポジトリからインストールする。パッケージが利用不可の場合、自動的に公式バイナリへフォールバックする。
 ```bash
-INSTALL_MODE=official AGH_USER=admin AGH_PASS=securepass123 WEB_PORT=8000 sh adguardhome.sh
+sh adguardhome.sh -i openwrt
 ```
 
-### 認証情報更新（対話型）
+### 認証情報更新
 
-既存のインストールのユーザー名、パスワード、Webポートを更新する。
-```bash
-sh adguardhome.sh -m
-```
-
-### 認証情報更新（非対話型）
-
-環境変数で全ての認証情報を指定して更新する。
+`-m`オプションにより既存のインストールの認証情報を更新する。対話的に入力を求められる。
 ```bash
 sh adguardhome.sh -m
 ```
 
-実行前に環境変数を設定:
+環境変数を設定することで非対話実行も可能である。
 ```bash
-AGH_USER=newadmin AGH_PASS=newpassword WEB_PORT=8080 sh adguardhome.sh -m
+AGH_USER=newadmin AGH_PASS=newpassword123 WEB_PORT=8080 sh adguardhome.sh -m
 ```
 
-または
-```bash
-export AGH_USER=newadmin
-export AGH_PASS=newpassword
-export WEB_PORT=8080
-sh adguardhome.sh -m
-```
+### YAML生成スキップモード
 
-### Web手動設定モード
-
-YAML自動生成をスキップし、Web UI(ポート3000)での初期設定を行う。
+`-n`オプションにより設定ファイルの自動生成をスキップする。この場合、AdGuard Homeはデフォルトでポート3000を使用し、Webインターフェースでの初期設定が必要となる。
 ```bash
 sh adguardhome.sh -i official -n
 ```
 
-### リソースチェック無効化
+### システムリソースチェック無効化
 
-システムリソース要件チェックをスキップしてインストールする。
+`-c`オプションによりメモリおよびストレージの要件チェックをスキップする。
 ```bash
 sh adguardhome.sh -i official -c
 ```
 
-### 自動削除
+### 削除モード（自動）
 
-確認プロンプトなしで削除する。
+`-r auto`オプションにより確認プロンプトなしで削除を実行する。設定ファイルも自動的に削除される。
 ```bash
 sh adguardhome.sh -r auto
 ```
 
-### 手動削除
+### 削除モード（手動）
 
-確認プロンプトありで削除する。
+`-r manual`オプションにより削除前に確認を求める。削除実行前と設定ファイル削除前の2回確認が表示される。
 ```bash
 sh adguardhome.sh -r manual
 ```
 
-### 複合指定（コマンドラインオプション優先）
+### 複合オプション指定
 
-複数のオプションを組み合わせて使用する。コマンドラインオプションが環境変数より優先される。
+複数のオプションを同時に指定可能である。オプションの順序は任意である。
 ```bash
 sh adguardhome.sh -i official -c -n
 ```
 
-環境変数と組み合わせる場合:
+環境変数を併用する場合、オプションで指定されていないクレデンシャルのみ環境変数から読み取られる。
 ```bash
-AGH_USER=admin AGH_PASS=mypassword WEB_PORT=8080 sh adguardhome.sh -i official -c -n
+AGH_USER=admin AGH_PASS=mypassword123 sh adguardhome.sh -i official -c
 ```
 
 ### TUI統合モード
 
-他のスクリプトから呼び出す場合。`-t`オプションにより再起動プロンプトが抑制される。
+`-t`オプションは他のスクリプトからの統合実行用である。このモードでは処理完了後の再起動プロンプトが抑制される。環境変数`TUI_MODE=1`も同等である。
 ```bash
 sh adguardhome.sh -t -i official
 ```
 
-環境変数で認証情報を指定する場合:
+環境変数との組み合わせ例。
 ```bash
 AGH_USER=admin AGH_PASS=pass12345 WEB_PORT=8000 sh adguardhome.sh -t -i official
 ```
 
-または環境変数`TUI_MODE`を使用:
+### 環境変数による完全指定
+
+全ての動作を環境変数で制御することも可能である。この場合、コマンドラインオプションは不要となる。ただし、明示性の観点からオプション指定を推奨する。
 ```bash
-TUI_MODE=1 AGH_USER=admin AGH_PASS=pass12345 sh adguardhome.sh -i official
+INSTALL_MODE=official AGH_USER=admin AGH_PASS=securepass123 WEB_PORT=8000 sh adguardhome.sh
 ```
 
-注意: `-t`オプションまたは`TUI_MODE=1`が指定された場合、スクリプトは統合モードとして動作し、処理完了後の再起動プロンプトは表示されない。
+削除を環境変数で指定する例。
+```bash
+REMOVE_MODE=auto sh adguardhome.sh
+```
+
+注意: コマンドラインオプションが指定された場合、該当する環境変数は無視される。例えば`-i official`が指定された場合、環境変数`INSTALL_MODE`の値は使用されない。
 
 ## スタンドアロンモードと統合モード
 
