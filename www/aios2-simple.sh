@@ -891,12 +891,15 @@ package_selection() {
     echo "$cat_desc"
     echo ""
     
-    echo "$packages" | while read -r pkg_id; do
+    while read -r pkg_id; do
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
         
-        get_package_name "$pkg_id" | while read -r pkg_name; do
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
             local is_selected
             
             if is_package_selected "$pkg_id" "$caller"; then
@@ -906,23 +909,34 @@ package_selection() {
             fi
             
             show_checkbox "$is_selected" "$pkg_name"
-        done
-    done
+        done <<NAMES
+$names
+NAMES
+    done <<EOF
+$packages
+EOF
     
     echo ""
     echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
     
     local i=1
-    echo "$packages" | while read -r pkg_id; do
+    while read -r pkg_id; do
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
         
-        get_package_name "$pkg_id" | while read -r pkg_name; do
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
             show_numbered_item "$i" "$pkg_name"
             i=$((i+1))
-        done
-    done
+        done <<NAMES
+$names
+NAMES
+    done <<EOF
+$packages
+EOF
     
     echo ""
     echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
@@ -935,22 +949,26 @@ package_selection() {
     fi
     
     if [ -n "$choice" ]; then
-        local selected_idx=1 found_pkg=""
+        local selected_idx=1
+        local found_pkg=""
         
         while read -r pkg_id; do
             if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
                 continue
             fi
             
-            get_package_name "$pkg_id" | while read -r pkg_name; do
+            local names
+            names=$(get_package_name "$pkg_id")
+            
+            while read -r pkg_name; do
                 if [ "$selected_idx" -eq "$choice" ]; then
                     found_pkg="$pkg_id"
-                    break
+                    break 2
                 fi
                 selected_idx=$((selected_idx+1))
-            done
-            
-            [ -n "$found_pkg" ] && break
+            done <<NAMES
+$names
+NAMES
         done <<EOF
 $packages
 EOF
