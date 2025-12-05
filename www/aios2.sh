@@ -1995,10 +1995,19 @@ EOF
             
             local seen_vars=""
             while read -r cache_line; do
-                local pkg_id enable_var
+                local pkg_id unique_id enable_var
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                unique_id=$(echo "$cache_line" | cut -d= -f3)
                 
-                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+                # uniqueId がある場合は、それで enableVar を検索
+                if [ -n "$unique_id" ]; then
+                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$unique_id'].enableVar" 2>/dev/null | head -1)
+                fi
+                
+                # uniqueId で見つからない場合は id で検索
+                if [ -z "$enable_var" ]; then
+                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+                fi
                 
                 if [ -n "$enable_var" ]; then
                     # 既に出力済みならスキップ
