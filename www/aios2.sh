@@ -1608,10 +1608,13 @@ generate_files() {
     
     if [ -s "$SELECTED_PACKAGES" ]; then
         while read -r pkg_id; do
-            enable_var=$(get_package_enablevar "$pkg_id")
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${enable_var}='1'" >> "$temp_enablevars"
-            fi
+            # この pkg_id に対応する全ての enableVar を取得
+            jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | \
+            while read -r enable_var; do
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$temp_enablevars"
+                fi
+            done
         done < "$SELECTED_PACKAGES"
         
         [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
