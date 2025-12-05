@@ -878,7 +878,7 @@ ${custom_cache}"
         _PACKAGE_NAME_LOADED=1
     fi
     
-    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | head -1 | cut -d= -f2)
+    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
     printf '%s\n' "$name"
 }
 
