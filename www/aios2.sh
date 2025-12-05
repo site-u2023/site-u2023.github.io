@@ -843,12 +843,34 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id&&name){print id"="name}}')
+            awk -F'"' '{
+                id=""; name=""; uniqueId=""; installOptions="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id")id=$(i+2);
+                    if($i=="name")name=$(i+2);
+                    if($i=="uniqueId")uniqueId=$(i+2);
+                    if($i=="installOptions")installOptions=$(i+2);
+                }
+                if(id&&name){
+                    print id "=" name "=" uniqueId "=" installOptions
+                }
+            }')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id&&name){print id"="name}}')
+                awk -F'"' '{
+                    id=""; name=""; uniqueId=""; installOptions="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id")id=$(i+2);
+                        if($i=="name")name=$(i+2);
+                        if($i=="uniqueId")uniqueId=$(i+2);
+                        if($i=="installOptions")installOptions=$(i+2);
+                    }
+                    if(id&&name){
+                        print id "=" name "=" uniqueId "=" installOptions
+                    }
+                }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -856,7 +878,7 @@ ${custom_cache}"
         _PACKAGE_NAME_LOADED=1
     fi
     
-    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
+    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | head -1 | cut -d= -f2)
     printf '%s\n' "$name"
 }
 
