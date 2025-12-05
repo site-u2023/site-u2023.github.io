@@ -1946,16 +1946,22 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # identifier を id に変換して表示
+            # identifier から id と installOptions を取得して表示
             while read -r identifier; do
-                local entry pkg_id
+                local entry pkg_id pkg_opts
                 entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
                     $2 == id || $3 == id { print; exit }
                 ')
                 
                 if [ -n "$entry" ]; then
                     pkg_id=$(echo "$entry" | cut -d= -f1)
-                    echo "$pkg_id"
+                    pkg_opts=$(echo "$entry" | cut -d= -f4)
+                    
+                    if [ -n "$pkg_opts" ]; then
+                        echo "$pkg_opts $pkg_id"
+                    else
+                        echo "$pkg_id"
+                    fi
                 fi
             done < "$SELECTED_PACKAGES"
             
