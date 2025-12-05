@@ -1603,11 +1603,25 @@ auto_cleanup_conditional_variables() {
 
 check_and_cleanup_variable() {
     local item_id="$1"
-    local variable
+    local variable show_when
     
     # この項目が変数を持っているか確認
     variable=$(get_setup_item_variable "$item_id")
     [ -z "$variable" ] && return 0
+    
+    # showWhen が存在するか確認（トップレベル）
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    
+    # showWhen が無い場合、ネストされたアイテムもチェック
+    if [ -z "$show_when" ]; then
+        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    fi
+    
+    # showWhen が無い項目はスキップ（削除対象外）
+    if [ -z "$show_when" ]; then
+        echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
     
     # showWhen 条件をチェック
     if ! should_show_item "$item_id"; then
