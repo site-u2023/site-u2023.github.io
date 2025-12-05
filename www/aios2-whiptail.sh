@@ -869,34 +869,29 @@ package_selection() {
             fi
         fi
         
-        local raw_names display_name name uniqueId installOptions
-        raw_names=$(get_package_name "$pkg_id")
-         
-        while read -r raw_name; do
-            [ -z "$raw_name" ] && continue
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
             
-            # Split raw_name (name=uniqueId=installOptions)
-            name=$(echo "$raw_name" | cut -d'=' -f1)
-            uniqueId=$(echo "$raw_name" | cut -d'=' -f2)
-            installOptions=$(echo "$raw_name" | cut -d'=' -f3)
-            
-            # Use uniqueId if present, else name (ignore installOptions for display)
-            display_name="${uniqueId:-$name}"
-             
-            display_names="${display_names}${display_name}|${pkg_id}
+            display_names="${display_names}${pkg_name}|${pkg_id}
 "
-             
-            if is_package_selected "$display_name" "$caller"; then
+            
+            if is_package_selected "$pkg_name" "$caller"; then
                 status="ON"
             else
                 status="OFF"
             fi
-             
-            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            
+            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
             idx=$((idx+1))
         done <<NAMES
-$raw_names
+$names
 NAMES
+    done <<EOF
+$packages
+EOF
     
     selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
     
