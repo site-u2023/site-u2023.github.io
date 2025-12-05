@@ -954,19 +954,29 @@ DISPLAY
         selected_line=$(echo "$display_list" | sed -n "${choice}p")
         
         if [ -n "$selected_line" ]; then
-            local selected_name pkg_id
+            local selected_name pkg_id enable_var
             selected_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
             if is_package_selected "$selected_name" "$caller"; then
-                # 選択解除: 該当パッケージIDのエントリを削除
+                # 選択解除: 該当パッケージIDのエントリとenableVarを削除
                 sed -i "/^${pkg_id}=/d" "$target_file"
+                
+                enable_var=$(get_package_enablevar "$pkg_id")
+                if [ -n "$enable_var" ]; then
+                    sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                fi
             else
-                # 選択: キャッシュ行をそのまま保存
+                # 選択: キャッシュ行をそのまま保存してenableVarを追加
                 local cache_line
                 cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
                 if [ -n "$cache_line" ]; then
                     echo "$cache_line" >> "$target_file"
+                    
+                    enable_var=$(get_package_enablevar "$pkg_id")
+                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    fi
                 fi
             fi
         fi
