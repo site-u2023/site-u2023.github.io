@@ -1690,9 +1690,6 @@ generate_files() {
                 fi
             fi
             
-            # 複数行になっていないか確実に1行だけ取得
-            enable_var=$(echo "$enable_var" | head -1)
-            
             if [ -n "$enable_var" ]; then
                 # temp_enablevars に既に存在しないか確認
                 if ! grep -q "^${enable_var}=" "$temp_enablevars" 2>/dev/null; then
