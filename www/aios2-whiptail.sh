@@ -838,6 +838,8 @@ EOF
     done
 }
 
+# aios2-whiptail.sh の package_selection()
+
 package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
@@ -852,6 +854,9 @@ package_selection() {
     packages=$(get_category_packages "$cat_id")
     checklist_items=""
     idx=1
+    
+    # 表示用の name/uniqueId を収集
+    local display_names=""
     
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
@@ -868,7 +873,10 @@ package_selection() {
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            if is_package_selected "$pkg_id" "$caller"; then
+            display_names="${display_names}${pkg_name}|${pkg_id}
+"
+            
+            if is_package_selected "$pkg_name" "$caller"; then
                 status="ON"
             else
                 status="OFF"
@@ -895,105 +903,43 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
+    # 既存の選択をクリア（このカテゴリのみ）
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
-        sed -i "/^${pkg_id}\$/d" "$target_file"
+        local names
+        names=$(get_package_name "$pkg_id")
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            sed -i "/^${pkg_name}\$/d" "$target_file"
+        done <<NAMES2
+$names
+NAMES2
     done <<EOF2
 $packages
 EOF2
     
+    # 選択されたものを保存（表示された name/uniqueId をそのまま）
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local current_idx=1
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            
-            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-                continue
-            fi
-            
-            if [ "$current_idx" -eq "$idx_clean" ]; then
-                echo "$pkg_id" >> "$target_file"
-                break
-            fi
-            current_idx=$((current_idx+1))
-        done <<EOF3
-$packages
-EOF3
+        local selected_name
+        selected_name=$(echo "$display_names" | sed -n "${idx_clean}p" | cut -d'|' -f1)
+        
+        if [ -n "$selected_name" ]; then
+            echo "$selected_name" >> "$target_file"
+        fi
     done
 }
 
-view_selected_custom_packages() {
-    local tr_main_menu tr_review tr_custom_packages breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb temp_view pkg_id pkg_name
-    local categories
+is_package_selected() {
+    local identifier="$1"  # name または uniqueId
+    local caller="${2:-normal}"
     
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_custom_packages=$(translate "tr-tui-view-custom-packages")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
+    if [ "$caller" = "custom_feeds" ]; then
+        grep -q "^${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+    else
+        grep -q "^${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
     fi
-    
-    categories=$(get_customfeed_categories)
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
-$categories
-EOF
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            cat_name=$(get_category_name "$selected_cat")
-            cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-            
-            temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
-            : > "$temp_view"
-            
-            while read -r pkg_id; do
-                if ! package_compatible "$pkg_id"; then
-                    continue
-                fi
-                
-                if grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    pkg_name=$(get_package_name "$pkg_id")
-                    echo "  - ${pkg_name}"
-                fi
-            done <<EOF2 > "$temp_view"
-$(get_category_packages "$selected_cat")
-EOF2
-            
-            if [ -s "$temp_view" ]; then
-                show_textbox "$cat_breadcrumb" "$temp_view"
-            else
-                show_msgbox "$cat_breadcrumb" "$(translate 'tr-tui-no-packages')"
-            fi
-            
-            rm -f "$temp_view"
-        fi
-    done
 }
 
 view_customfeeds() {
