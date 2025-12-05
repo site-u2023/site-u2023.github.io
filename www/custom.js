@@ -3213,12 +3213,7 @@ function generatePackageSelector() {
     
     state.packages.json.categories.forEach(category => {
         if (category.hidden) {
-            console.log(`Processing hidden category: ${category.id}`);
-            category.packages.forEach(pkg => {
-                if (pkg.hidden) {
-                    createHiddenPackageCheckbox(pkg);
-                }
-            });
+            console.log(`Skipping hidden category: ${category.id}`);
             return;
         }
         
@@ -3228,7 +3223,7 @@ function generatePackageSelector() {
         }
     });
     
-    console.log(`Generated ${state.packages.json.categories.length} package categories (including hidden)`);
+    console.log(`Generated ${state.packages.json.categories.length} package categories`);
     
     requestAnimationFrame(() => {
         evaluateInitialPackages();
@@ -3353,7 +3348,7 @@ function createPackageItem(pkg) {
         
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
-            if (depPkg && !depPkg.hidden) { 
+            if (depPkg) {
                 const depCheckbox = createPackageCheckbox(depPkg, pkg.checked === true, true);
                 depCheckbox.classList.add('package-dependent');
                 depContainer.appendChild(depCheckbox);
