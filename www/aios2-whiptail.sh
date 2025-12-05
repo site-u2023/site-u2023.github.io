@@ -844,6 +844,11 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
+
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
     local cat_name breadcrumb checklist_items
     local pkg_id pkg_name status idx selected target_file idx_str idx_clean
     local packages
