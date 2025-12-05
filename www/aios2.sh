@@ -1948,6 +1948,29 @@ generate_config_summary() {
             cat "$SELECTED_PACKAGES"
             echo ""
             has_content=1
+            
+            # enableVar を表示
+            printf "🟡 %s\n\n" "$tr_variables"
+            while read -r identifier; do
+                # identifier から enableVar を取得
+                local entry
+                entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
+                    $2 == id || $3 == id { print; exit }
+                ')
+                
+                if [ -n "$entry" ]; then
+                    local pkg_id
+                    pkg_id=$(echo "$entry" | cut -d= -f1)
+                    
+                    local enable_var
+                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+                    
+                    if [ -n "$enable_var" ]; then
+                        echo "${enable_var}='1'"
+                    fi
+                fi
+            done < "$SELECTED_PACKAGES"
+            echo ""
         fi
         
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
