@@ -1711,26 +1711,32 @@ generate_files() {
     fi
 
     : > "$temp_enablevars"
-
-
+    
     if [ -s "$SELECTED_PACKAGES" ]; then
-        while IFS='=' read -r pkg_id pkg_name unique_id enable_var; do
-
-            # enableVar がキャッシュに無い場合は何もしない
-            if [ -z "$enable_var" ]; then
-                continue
+        while read -r cache_line; do
+            local pkg_id unique_id enable_var
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            unique_id=$(echo "$cache_line" | cut -d= -f3)
+            
+            # uniqueId がある場合はそれで検索、ない場合は id で検索
+            if [ -n "$unique_id" ]; then
+                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$unique_id'].enableVar" 2>/dev/null | head -1)
+            else
+                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.uniqueId=''].enableVar" 2>/dev/null | head -1)
+        
+                # uniqueId が定義されていないエントリの enableVar を取得
+                if [ -z "$enable_var" ]; then
+                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | grep -v "^$" | head -1)
+                fi
             fi
-
-            # SETUP_VARS に未登録の enableVar を追加
-            if ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+            
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                 echo "${enable_var}='1'" >> "$temp_enablevars"
             fi
-
         done < "$SELECTED_PACKAGES"
-
+        
         [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
     fi
-
     rm -f "$temp_enablevars"
     
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
