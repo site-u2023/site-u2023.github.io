@@ -1946,16 +1946,39 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # identifier から id と installOptions を取得して表示
+            # デバッグ: SELECTED_PACKAGES の内容を出力
+            echo "[DEBUG] SELECTED_PACKAGES content:" >> "$CONFIG_DIR/debug.log"
+            cat "$SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
+            
+            # デバッグ: キャッシュの内容を出力
+            echo "[DEBUG] _PACKAGE_NAME_CACHE:" >> "$CONFIG_DIR/debug.log"
+            echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
+            
             while read -r identifier; do
-                local entry pkg_id pkg_opts
-                entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
-                    $2 == id || $3 == id { print; exit }
-                ')
+                [ -z "$identifier" ] && continue
                 
-                if [ -n "$entry" ]; then
-                    pkg_id=$(echo "$entry" | cut -d= -f1)
-                    pkg_opts=$(echo "$entry" | cut -d= -f4)
+                echo "[DEBUG] Processing identifier: $identifier" >> "$CONFIG_DIR/debug.log"
+                
+                # name または uniqueId で検索
+                local line pkg_id pkg_opts
+                line=$(echo "$_PACKAGE_NAME_CACHE" | while read -r cache_line; do
+                    local cached_id cached_name cached_unique cached_opts
+                    cached_id=$(echo "$cache_line" | cut -d= -f1)
+                    cached_name=$(echo "$cache_line" | cut -d= -f2)
+                    cached_unique=$(echo "$cache_line" | cut -d= -f3)
+                    cached_opts=$(echo "$cache_line" | cut -d= -f4)
+                    
+                    if [ "$cached_name" = "$identifier" ] || [ "$cached_unique" = "$identifier" ]; then
+                        echo "$cached_id|$cached_opts"
+                        break
+                    fi
+                done)
+                
+                echo "[DEBUG] Found line: $line" >> "$CONFIG_DIR/debug.log"
+                
+                if [ -n "$line" ]; then
+                    pkg_id=$(echo "$line" | cut -d'|' -f1)
+                    pkg_opts=$(echo "$line" | cut -d'|' -f2)
                     
                     if [ -n "$pkg_opts" ]; then
                         echo "$pkg_opts $pkg_id"
