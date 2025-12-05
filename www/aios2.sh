@@ -32,8 +32,6 @@ VERSION="R7.1205.1259"
 # - If both executed: apache installs first → --nodeps becomes ineffective
 # - Solution: Keep entry with installOptions, discard entry without
 # - This ensures --nodeps and similar options work correctly
-#
-# =============================================================================
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
