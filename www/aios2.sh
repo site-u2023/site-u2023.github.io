@@ -832,10 +832,8 @@ get_category_packages() {
     local cat_id="$1"
     local pkgs
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '{id="";uid="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2)}if(uid)print uid;else if(id)print id}' | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
-        awk -F'"' '{id="";uid="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2)}if(uid)print uid;else if(id)print id}' | grep -v '^$')
+    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
+    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     echo "$pkgs"
 }
 
@@ -845,12 +843,12 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=(uid?uid:id);val=(name?name:id);if(key)print key"="val}')
+            awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id){val=(name?name:id);print id"="val}}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=(uid?uid:id);val=(name?name:id);if(key)print key"="val}')
+                awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id){val=(name?name:id);print id"="val}}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -877,12 +875,12 @@ get_package_enablevar() {
     
     if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
         _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";uid="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="enableVar")ev=$(i+2)}key=(uid?uid:id);if(key&&ev)print key"="ev}')
+            awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";uid="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="enableVar")ev=$(i+2)}key=(uid?uid:id);if(key&&ev)print key"="ev}')
+                awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
             _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
 ${custom_cache}"
         fi
@@ -1624,10 +1622,38 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            pkgs=$(while read -r pkg; do
-                actual_id=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg'].id" 2>/dev/null | head -1)
-                [ -n "$actual_id" ] && echo "$actual_id" || echo "$pkg"
-            done < "$SELECTED_PACKAGES" | awk '!seen[$0]++' | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
+            # id → installOptions のマップを作成
+            local pkg_options_map=""
+            pkg_options_map=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '{
+                    id=""; opts="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id")id=$(i+2);
+                        if($i=="installOptions")opts=$(i+2);
+                    }
+                    if(id) print id"|"opts
+                }')
+            
+            # 重複削除 + installOptions 優先処理
+            pkgs=$(while read -r pkg_id; do
+                echo "$pkg_id"
+            done < "$SELECTED_PACKAGES" | sort | uniq -d | while read -r dup_id; do
+                # 重複するidに対してinstallOptionsがあるものを探す
+                has_opts=$(echo "$pkg_options_map" | grep "^${dup_id}|" | grep -v "^${dup_id}|$" | head -1)
+                if [ -n "$has_opts" ]; then
+                    opts=$(echo "$has_opts" | cut -d'|' -f2)
+                    echo "${dup_id} ${opts}"
+                else
+                    echo "${dup_id}"
+                fi
+            done | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
+            
+            # 重複していないidを追加
+            pkgs="${pkgs} $(while read -r pkg_id; do
+                echo "$pkg_id"
+            done < "$SELECTED_PACKAGES" | sort | uniq -u | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')"
+            
+            pkgs=$(echo "$pkgs" | xargs)
         else
             pkgs=""
         fi
