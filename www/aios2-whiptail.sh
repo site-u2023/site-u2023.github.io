@@ -858,7 +858,6 @@ package_selection() {
     checklist_items=""
     idx=1
     
-    # 表示用の name/uniqueId を収集
     local display_names=""
     
     while read -r pkg_id; do
@@ -905,8 +904,16 @@ EOF
     else
         target_file="$SELECTED_PACKAGES"
     fi
+    
+    # このカテゴリの既存エントリをすべて削除
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        sed -i "/^${pkg_id}=/d" "$target_file"
+    done <<EOF
+$packages
+EOF
 
-    # 選択されたものを保存
+    # 選択されたものだけを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
