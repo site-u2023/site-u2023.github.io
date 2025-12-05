@@ -1575,6 +1575,50 @@ get_section_nested_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
 }
 
+auto_cleanup_conditional_variables() {
+    local cat_id="$1"
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    # カテゴリ内の全アイテムをスキャン
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        local item_type
+        item_type=$(get_setup_item_type "$item_id")
+        
+        # section の中もチェック
+        if [ "$item_type" = "section" ]; then
+            local nested_items
+            nested_items=$(get_section_nested_items "$item_id")
+            for nested_id in $nested_items; do
+                check_and_cleanup_variable "$nested_id"
+            done
+        else
+            check_and_cleanup_variable "$item_id"
+        fi
+    done
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+check_and_cleanup_variable() {
+    local item_id="$1"
+    local variable
+    
+    # この項目が変数を持っているか確認
+    variable=$(get_setup_item_variable "$item_id")
+    [ -z "$variable" ] && return 0
+    
+    # showWhen 条件をチェック
+    if ! should_show_item "$item_id"; then
+        # 条件を満たさない場合、変数を削除
+        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${variable}=/d" "$SETUP_VARS"
+            echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+}
+
 compute_dslite_aftr() {
     local aftr_type="$1"
     local area="$2"
