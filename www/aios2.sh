@@ -1671,7 +1671,45 @@ generate_files() {
     local tpl_custom enable_var
     local script_id script_file template_path script_url
     local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
-    
+
+    # SETUP_VARSから孤立したenableVarをクリーンアップ
+    if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+        local temp_vars="$CONFIG_DIR/temp_setup_vars.txt"
+        : > "$temp_vars"
+        
+        while read -r line; do
+            # コメント行と空行はそのまま保持
+            case "$line" in
+                \#*|'') 
+                    echo "$line" >> "$temp_vars"
+                    continue 
+                    ;;
+            esac
+            
+            local var_name=$(echo "$line" | cut -d= -f1)
+            local is_enable_var=0
+            
+            # この変数がenableVarかどうかを確認
+            if echo "$_PACKAGE_ENABLEVAR_CACHE" | grep -q "=${var_name}\$"; then
+                local pkg_id=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "=${var_name}\$" | cut -d= -f1)
+                
+                # パッケージが選択されている場合のみ変数を保持
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                   grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    echo "$line" >> "$temp_vars"
+                    echo "[DEBUG] Kept enableVar: ${var_name} for selected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
+                else
+                    echo "[DEBUG] Removed orphaned enableVar: ${var_name} for package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
+                fi
+            else
+                # enableVarではない通常の変数はそのまま保持
+                echo "$line" >> "$temp_vars"
+            fi
+        done < "$SETUP_VARS"
+        
+        mv "$temp_vars" "$SETUP_VARS"
+    fi
+
     : > "$temp_enablevars"
     
     if [ -s "$SELECTED_PACKAGES" ]; then
@@ -2399,8 +2437,8 @@ aios2_main() {
     select_ui_mode
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
+        sed -i 's|"tr-tui-yes": "[^"]*"|"tr-tui-yes": "y"|' "$LANG_JSON"
+        sed -i 's|"tr-tui-no": "[^"]*"|"tr-tui-no": "n"|' "$LANG_JSON"
     fi
 
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
