@@ -10,7 +10,7 @@ VERSION="R7.1205.1259"
 # Package Selection and Installation Logic
 # =============================================================================
 #
-# Cache (Package Name Cache):
+# Package Name Cache (_PACKAGE_NAME_CACHE):
 # - Single source of truth (read-only)
 # - Format: id|name|uniqueId|installOptions
 # - Never modify, only read
