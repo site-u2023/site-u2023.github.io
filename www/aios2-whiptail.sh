@@ -938,13 +938,15 @@ EOF
 }
 
 is_package_selected() {
-    local identifier="$1"  # name または uniqueId
+    local identifier="$1"
     local caller="${2:-normal}"
     
     if [ "$caller" = "custom_feeds" ]; then
-        grep -q "^${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+        grep -q "=${identifier}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || \
+        grep -q "=${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
     else
-        grep -q "^${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
+        grep -q "=${identifier}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+        grep -q "=${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
     fi
 }
 
