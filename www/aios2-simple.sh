@@ -950,13 +950,25 @@ DISPLAY
         selected_line=$(echo "$display_list" | sed -n "${choice}p")
         
         if [ -n "$selected_line" ]; then
-            local selected_name
+            local selected_name pkg_id
             selected_name=$(echo "$selected_line" | cut -d'|' -f1)
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
             if is_package_selected "$selected_name" "$caller"; then
-                sed -i "/^${selected_name}$/d" "$target_file"
+                # 選択解除: キャッシュ行全体を削除
+                local cache_line
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+                if [ -n "$cache_line" ]; then
+                    # = を含む特殊文字をエスケープして削除
+                    sed -i "\|^${cache_line}$|d" "$target_file"
+                fi
             else
-                echo "$selected_name" >> "$target_file"
+                # 選択: キャッシュ行をそのまま保存
+                local cache_line
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+                if [ -n "$cache_line" ]; then
+                    echo "$cache_line" >> "$target_file"
+                fi
             fi
         fi
         
