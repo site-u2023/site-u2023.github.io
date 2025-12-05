@@ -895,7 +895,6 @@ package_selection() {
     echo "$cat_desc"
     echo ""
     
-    # 表示用の name/uniqueId を収集
     local display_list=""
     
     while read -r pkg_id; do
@@ -959,15 +958,14 @@ DISPLAY
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
             if is_package_selected "$selected_name" "$caller"; then
-                # 選択解除: 該当パッケージIDのエントリとenableVarを削除
                 sed -i "/^${pkg_id}=/d" "$target_file"
                 
                 enable_var=$(get_package_enablevar "$pkg_id")
                 if [ -n "$enable_var" ]; then
                     sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                    echo "[DEBUG] Removed enableVar: ${enable_var} for deselected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
                 fi
             else
-                # 選択: キャッシュ行をそのまま保存してenableVarを追加
                 local cache_line
                 cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
                 if [ -n "$cache_line" ]; then
@@ -976,6 +974,7 @@ DISPLAY
                     enable_var=$(get_package_enablevar "$pkg_id")
                     if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                         echo "${enable_var}='1'" >> "$SETUP_VARS"
+                        echo "[DEBUG] Added enableVar: ${enable_var} for selected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
                     fi
                 fi
             fi
