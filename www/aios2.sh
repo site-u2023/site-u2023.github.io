@@ -957,19 +957,16 @@ ${custom_cache}"
 }
 
 is_package_selected() {
-    local identifier="$1"  # name または uniqueId
+    local identifier="$1"
     local caller="${2:-normal}"
-    local target_file
     
     if [ "$caller" = "custom_feeds" ]; then
-        target_file="$SELECTED_CUSTOM_PACKAGES"
+        grep -q "=${identifier}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || \
+        grep -q "=${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
     else
-        target_file="$SELECTED_PACKAGES"
+        grep -q "=${identifier}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+        grep -q "=${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
     fi
-    
-    # キャッシュ行全体で検索（name または uniqueId でマッチ）
-    grep -q "=${identifier}=" "$target_file" 2>/dev/null || \
-    grep -q "=${identifier}\$" "$target_file" 2>/dev/null
 }
 
 # Custom Feeds Management
