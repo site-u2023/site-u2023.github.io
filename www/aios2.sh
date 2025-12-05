@@ -1690,12 +1690,28 @@ generate_files() {
                 fi
             fi
             
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${enable_var}='1'" >> "$temp_enablevars"
+            # 複数行になっていないか確実に1行だけ取得
+            enable_var=$(echo "$enable_var" | head -1)
+            
+            if [ -n "$enable_var" ]; then
+                # temp_enablevars に既に存在しないか確認
+                if ! grep -q "^${enable_var}=" "$temp_enablevars" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$temp_enablevars"
+                fi
             fi
         done < "$SELECTED_PACKAGES"
         
-        [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
+        # SETUP_VARS にまとめて追記（重複チェック）
+        if [ -s "$temp_enablevars" ]; then
+            while read -r line; do
+                local var_name
+                var_name=$(echo "$line" | cut -d= -f1)
+                # SETUP_VARS に既に存在しない場合のみ追記
+                if ! grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "$line" >> "$SETUP_VARS"
+                fi
+            done < "$temp_enablevars"
+        fi
     fi
     rm -f "$temp_enablevars"
     
