@@ -909,6 +909,13 @@ EOF
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         sed -i "/^${pkg_id}=/d" "$target_file"
+        
+        # enableVar も削除
+        local enable_var
+        enable_var=$(get_package_enablevar "$pkg_id")
+        if [ -n "$enable_var" ]; then
+            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+        fi
     done <<EOF
 $packages
 EOF
@@ -917,7 +924,7 @@ EOF
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_line pkg_id ui_label cache_line
+        local selected_line pkg_id ui_label cache_line enable_var
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
@@ -932,6 +939,12 @@ EOF
             
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
+                
+                # enableVar を追加
+                enable_var=$(get_package_enablevar "$pkg_id")
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                fi
             fi
         fi
     done
