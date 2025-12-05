@@ -959,13 +959,8 @@ DISPLAY
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
             if is_package_selected "$selected_name" "$caller"; then
-                # 選択解除: キャッシュ行全体を削除
-                local cache_line
-                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
-                if [ -n "$cache_line" ]; then
-                    # = を含む特殊文字をエスケープして削除
-                    sed -i "\|^${cache_line}$|d" "$target_file"
-                fi
+                # 選択解除: 該当パッケージIDのエントリを削除
+                sed -i "/^${pkg_id}=/d" "$target_file"
             else
                 # 選択: キャッシュ行をそのまま保存
                 local cache_line
