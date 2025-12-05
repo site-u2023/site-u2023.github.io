@@ -905,12 +905,10 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # このカテゴリの既存エントリをすべて削除
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         sed -i "/^${pkg_id}=/d" "$target_file"
         
-        # enableVar も削除
         local enable_var
         enable_var=$(get_package_enablevar "$pkg_id")
         if [ -n "$enable_var" ]; then
@@ -920,7 +918,6 @@ EOF
 $packages
 EOF
 
-    # 選択されたものだけを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
@@ -940,7 +937,6 @@ EOF
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
                 
-                # enableVar を追加
                 enable_var=$(get_package_enablevar "$pkg_id")
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                     echo "${enable_var}='1'" >> "$SETUP_VARS"
@@ -948,6 +944,22 @@ EOF
             fi
         fi
     done
+    
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        local enable_var
+        enable_var=$(get_package_enablevar "$pkg_id")
+        
+        if [ -n "$enable_var" ]; then
+            if ! grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+                sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                echo "[DEBUG] Removed enableVar: ${enable_var} for unselected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+    done <<EOF
+$packages
+EOF
 }
 
 view_customfeeds() {
