@@ -576,7 +576,12 @@ load_default_packages() {
         get_category_packages "$cat_id" | while read -r pkg_id; do
             checked=$(get_package_checked "$pkg_id")
             if [ "$checked" = "true" ]; then
-                echo "$pkg_id" >> "$SELECTED_PACKAGES"
+                # キャッシュから該当行を取得して保存
+                local cache_line
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+                if [ -n "$cache_line" ]; then
+                    echo "$cache_line" >> "$SELECTED_PACKAGES"
+                fi
             fi
         done
     done
@@ -954,12 +959,17 @@ ${custom_cache}"
 is_package_selected() {
     local identifier="$1"  # name または uniqueId
     local caller="${2:-normal}"
+    local target_file
     
     if [ "$caller" = "custom_feeds" ]; then
-        grep -q "^${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+        target_file="$SELECTED_CUSTOM_PACKAGES"
     else
-        grep -q "^${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
+        target_file="$SELECTED_PACKAGES"
     fi
+    
+    # キャッシュ行全体で検索（name または uniqueId でマッチ）
+    grep -q "=${identifier}=" "$target_file" 2>/dev/null || \
+    grep -q "=${identifier}\$" "$target_file" 2>/dev/null
 }
 
 # Custom Feeds Management
@@ -1693,28 +1703,15 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            # キャッシュマップを作成（uniqueId または name → id|installOptions）
-            local pkg_map=""
-            pkg_map=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= '{
-                id=$1; name=$2; uniqueId=$3; opts=$4
-                key = uniqueId ? uniqueId : name
-                print key "|" id "|" opts
-            }')
-            
-            # selected_packages.txt から id と installOptions を取得
+            # キャッシュ行から id と installOptions を取得
             local id_opts_list=""
-            while read -r identifier; do
-                local entry
-                entry=$(echo "$pkg_map" | grep "^${identifier}|" | head -1)
+            while read -r cache_line; do
+                local pkg_id pkg_opts
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                if [ -n "$entry" ]; then
-                    local pkg_id pkg_opts
-                    pkg_id=$(echo "$entry" | cut -d'|' -f2)
-                    pkg_opts=$(echo "$entry" | cut -d'|' -f3)
-                    
-                    id_opts_list="${id_opts_list}${pkg_id}|${pkg_opts}
+                id_opts_list="${id_opts_list}${pkg_id}|${pkg_opts}
 "
-                fi
             done < "$SELECTED_PACKAGES"
             
             # 同一 id の排他処理（installOptions がある方を優先）
@@ -1946,45 +1943,16 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # デバッグ: SELECTED_PACKAGES の内容を出力
-            echo "[DEBUG] SELECTED_PACKAGES content:" >> "$CONFIG_DIR/debug.log"
-            cat "$SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
-            
-            # デバッグ: キャッシュの内容を出力
-            echo "[DEBUG] _PACKAGE_NAME_CACHE:" >> "$CONFIG_DIR/debug.log"
-            echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
-            
-            while read -r identifier; do
-                [ -z "$identifier" ] && continue
+            # キャッシュ行から id と installOptions を取得して表示
+            while read -r cache_line; do
+                local pkg_id pkg_opts
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                echo "[DEBUG] Processing identifier: $identifier" >> "$CONFIG_DIR/debug.log"
-                
-                # name または uniqueId で検索
-                local line pkg_id pkg_opts
-                line=$(echo "$_PACKAGE_NAME_CACHE" | while read -r cache_line; do
-                    local cached_id cached_name cached_unique cached_opts
-                    cached_id=$(echo "$cache_line" | cut -d= -f1)
-                    cached_name=$(echo "$cache_line" | cut -d= -f2)
-                    cached_unique=$(echo "$cache_line" | cut -d= -f3)
-                    cached_opts=$(echo "$cache_line" | cut -d= -f4)
-                    
-                    if [ "$cached_name" = "$identifier" ] || [ "$cached_unique" = "$identifier" ]; then
-                        echo "$cached_id|$cached_opts"
-                        break
-                    fi
-                done)
-                
-                echo "[DEBUG] Found line: $line" >> "$CONFIG_DIR/debug.log"
-                
-                if [ -n "$line" ]; then
-                    pkg_id=$(echo "$line" | cut -d'|' -f1)
-                    pkg_opts=$(echo "$line" | cut -d'|' -f2)
-                    
-                    if [ -n "$pkg_opts" ]; then
-                        echo "$pkg_opts $pkg_id"
-                    else
-                        echo "$pkg_id"
-                    fi
+                if [ -n "$pkg_opts" ]; then
+                    echo "$pkg_opts $pkg_id"
+                else
+                    echo "$pkg_id"
                 fi
             done < "$SELECTED_PACKAGES"
             
@@ -1993,19 +1961,14 @@ generate_config_summary() {
             
             # enableVar を表示
             printf "🟡 %s\n\n" "$tr_variables"
-            while read -r identifier; do
-                local entry pkg_id enable_var
-                entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
-                    $2 == id || $3 == id { print; exit }
-                ')
+            while read -r cache_line; do
+                local pkg_id enable_var
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 
-                if [ -n "$entry" ]; then
-                    pkg_id=$(echo "$entry" | cut -d= -f1)
-                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
-                    
-                    if [ -n "$enable_var" ]; then
-                        echo "${enable_var}='1'"
-                    fi
+                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+                
+                if [ -n "$enable_var" ]; then
+                    echo "${enable_var}='1'"
                 fi
             done < "$SELECTED_PACKAGES"
             echo ""
