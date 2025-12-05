@@ -936,22 +936,16 @@ EOF
 get_package_enablevar() {
     local pkg_id="$1"
     local enable_var
-    
+
     if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
-        _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
-            _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
-${custom_cache}"
-        fi
-        
+        _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" \
+            -e '@.categories[*].packages[*].id' \
+            -e '@.categories[*].packages[*].enableVar' | \
+            awk 'NR%2==1 {id=$1} NR%2==0 {ev=$1; if(id && ev) print id"="ev}')
+
         _PACKAGE_ENABLEVAR_LOADED=1
     fi
-    
+
     enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
     echo "$enable_var"
 }
