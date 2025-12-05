@@ -862,7 +862,10 @@ package_selection() {
             fi
         fi
         
-        get_package_name "$pkg_id" | while read -r pkg_name; do
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
             if is_package_selected "$pkg_id" "$caller"; then
@@ -873,7 +876,9 @@ package_selection() {
             
             checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
             idx=$((idx+1))
-        done
+        done <<NAMES
+$names
+NAMES
     done <<EOF
 $packages
 EOF
