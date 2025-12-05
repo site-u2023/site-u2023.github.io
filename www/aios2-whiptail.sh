@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1203.1400"
+VERSION="R7.1206.0835"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -514,12 +514,14 @@ process_items() {
                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
                 auto_add_conditional_packages "$cat_id"
+                auto_cleanup_conditional_variables "$cat_id"
                 
                 # 特殊処理: 接続タイプの場合
                 if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
                     if [ "$selected_opt" = "auto" ]; then
                         if show_network_info "$item_breadcrumb"; then
                             auto_add_conditional_packages "$cat_id"
+                            auto_cleanup_conditional_variables "$cat_id"
                             return $RETURN_STAY
                         fi
                     elif [ "$selected_opt" = "dhcp" ]; then
@@ -532,6 +534,7 @@ No additional settings required."
                         fi
                         show_msgbox "$item_breadcrumb" "$dhcp_content"
                         auto_add_conditional_packages "$cat_id"
+                        auto_cleanup_conditional_variables "$cat_id"
                         return $RETURN_STAY
                     fi
                 fi
@@ -648,6 +651,7 @@ No additional settings required."
                     echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                     
                     auto_add_conditional_packages "$cat_id"
+                    auto_cleanup_conditional_variables "$cat_id"
                     
                     if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-jurisdiction" ]; then
                         aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -755,6 +759,7 @@ category_config() {
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
+            auto_cleanup_conditional_variables "$cat_id"
             return $RETURN_STAY
         fi
     fi
@@ -786,6 +791,7 @@ category_config() {
     done
     
     auto_add_conditional_packages "$cat_id"
+    auto_cleanup_conditional_variables "$cat_id"
     [ "$cat_id" = "basic-config" ] && update_language_packages
     
     return $RETURN_STAY
