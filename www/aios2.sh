@@ -6,6 +6,35 @@
 
 VERSION="R7.1205.1259"
 
+# =============================================================================
+# Package Selection and Installation Logic
+# =============================================================================
+#
+# Cache (Package Name Cache):
+# - Single source of truth (read-only)
+# - Format: id|name|uniqueId|installOptions
+# - Never modify, only read
+#
+# UI Display:
+# - Display uniqueId if exists, otherwise display name
+# - Save displayed value (name or uniqueId) to selected_packages.txt
+#
+# Installation (postinst.sh generation):
+# - installOptions acts as exclusive flag for same id
+# - When multiple entries share same id:
+#   * No installOptions = dominant (strong)
+#   * With installOptions = recessive (weak)
+#   * Installing both makes installOptions ineffective
+#   * Therefore: exclusive processing required
+#
+# Exclusive Processing:
+# - Example: apache (no options) vs --nodeps apache (with options)
+# - If both executed: apache installs first → --nodeps becomes ineffective
+# - Solution: Keep entry with installOptions, discard entry without
+# - This ensures --nodeps and similar options work correctly
+#
+# =============================================================================
+
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
