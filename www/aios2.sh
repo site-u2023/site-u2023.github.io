@@ -838,9 +838,11 @@ get_category_packages() {
     echo "$pkgs" | sort -u
 }
 
+# aios2.sh の該当箇所
+
 get_package_name() {
     local pkg_id="$1"
-    local name
+    local name unique_id
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
@@ -881,8 +883,22 @@ ${custom_cache}"
         echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
-    printf '%s\n' "$name"
+    # uniqueId があれば uniqueId を返す、なければ name を返す
+    while read -r line; do
+        local cached_id=$(echo "$line" | cut -d= -f1)
+        [ "$cached_id" != "$pkg_id" ] && continue
+        
+        unique_id=$(echo "$line" | cut -d= -f3)
+        name=$(echo "$line" | cut -d= -f2)
+        
+        if [ -n "$unique_id" ]; then
+            printf '%s\n' "$unique_id"
+        else
+            printf '%s\n' "$name"
+        fi
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
 }
 
 get_package_enablevar() {
