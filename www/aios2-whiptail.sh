@@ -942,6 +942,14 @@ EOF
                 
                 # enableVar を追加
                 enable_var=$(get_package_enablevar "$pkg_id")
+                if [ -n "$enable_var" ]; then
+                    # enableVar があるパッケージは selected_custom_packages に書かない
+                    :  # 何もしない（＝保存しない）
+                else
+                    echo "$cache_line" >> "$target_file"
+                fi
+               
+                # enableVar の処理（これは今まで通り残す）
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                     echo "${enable_var}='1'" >> "$SETUP_VARS"
                 fi
