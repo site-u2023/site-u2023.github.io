@@ -843,12 +843,12 @@ get_package_name() {
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id){val=(name?name:id);print id"="val}}')
+            awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id&&name){print id"="name}}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id){val=(name?name:id);print id"="val}}')
+                awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}if(id&&name){print id"="name}}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -858,15 +858,6 @@ ${custom_cache}"
     
     name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
     printf '%s\n' "$name"
-}
-
-get_package_checked() {
-    local pkg_id="$1"
-    local checked
-    
-    checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
-    [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
-    echo "$checked"
 }
 
 get_package_enablevar() {
