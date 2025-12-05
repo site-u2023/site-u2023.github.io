@@ -862,17 +862,18 @@ package_selection() {
             fi
         fi
         
-        pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && continue
-        
-        if is_package_selected "$pkg_id" "$caller"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
-        idx=$((idx+1))
+        get_package_name "$pkg_id" | while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            
+            if is_package_selected "$pkg_id" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+            idx=$((idx+1))
+        done
     done <<EOF
 $packages
 EOF
