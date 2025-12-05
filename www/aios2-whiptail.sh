@@ -937,19 +937,6 @@ EOF
     done
 }
 
-is_package_selected() {
-    local identifier="$1"
-    local caller="${2:-normal}"
-    
-    if [ "$caller" = "custom_feeds" ]; then
-        grep -q "=${identifier}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
-    else
-        grep -q "=${identifier}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
-    fi
-}
-
 view_customfeeds() {
     local tr_main_menu tr_review tr_customfeeds breadcrumb
     local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb script_file
