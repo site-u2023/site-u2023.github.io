@@ -957,16 +957,19 @@ ${custom_cache}"
 }
 
 is_package_selected() {
-    local identifier="$1"
+    local identifier="$1"  # name または uniqueId
     local caller="${2:-normal}"
+    local target_file
     
     if [ "$caller" = "custom_feeds" ]; then
-        grep -q "=${identifier}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+        target_file="$SELECTED_CUSTOM_PACKAGES"
     else
-        grep -q "=${identifier}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
+        target_file="$SELECTED_PACKAGES"
     fi
+    
+    # キャッシュ行全体で検索（name または uniqueId でマッチ）
+    grep -q "=${identifier}=" "$target_file" 2>/dev/null || \
+    grep -q "=${identifier}\$" "$target_file" 2>/dev/null
 }
 
 # Custom Feeds Management
@@ -1678,16 +1681,14 @@ generate_files() {
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             unique_id=$(echo "$cache_line" | cut -d= -f3)
             
-            # uniqueId がある場合はそれで検索、ない場合は id で検索
+            # uniqueId がある場合は、それで enableVar を検索
             if [ -n "$unique_id" ]; then
                 enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$unique_id'].enableVar" 2>/dev/null | head -1)
-            else
-                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.uniqueId=''].enableVar" 2>/dev/null | head -1)
-        
-                # uniqueId が定義されていないエントリの enableVar を取得
-                if [ -z "$enable_var" ]; then
-                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | grep -v "^$" | head -1)
-                fi
+            fi
+            
+            # uniqueId で見つからない場合は id で検索
+            if [ -z "$enable_var" ]; then
+                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
             fi
             
             if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
@@ -1937,26 +1938,43 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # 重複除去してパッケージIDのみ表示
+            # 排他処理: 同じ id で installOptions がある方を優先
             local temp_list=""
             while read -r cache_line; do
-                local pkg_id
+                local pkg_id pkg_opts
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                temp_list="${temp_list}${pkg_id}
+                temp_list="${temp_list}${pkg_id}|${pkg_opts}
 "
             done < "$SELECTED_PACKAGES"
             
-            # 重複削除
+            # 重複除去してパッケージ名のみ表示
             local processed_ids=""
             while read -r line; do
                 [ -z "$line" ] && continue
                 
-                echo "$processed_ids" | grep -q "^${line}\$" && continue
+                local current_id current_opts
+                current_id=$(echo "$line" | cut -d'|' -f1)
+                current_opts=$(echo "$line" | cut -d'|' -f2)
                 
-                echo "$line"
+                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
                 
-                processed_ids="${processed_ids}${line}
+                local same_id_lines
+                same_id_lines=$(echo "$temp_list" | grep "^${current_id}|")
+                
+                local has_opts
+                has_opts=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                
+                if [ -n "$has_opts" ]; then
+                    local opts_value
+                    opts_value=$(echo "$has_opts" | cut -d'|' -f2)
+                    echo "$opts_value $current_id"
+                else
+                    echo "$current_id"
+                fi
+                
+                processed_ids="${processed_ids}${current_id}
 "
             done <<EOF
 $temp_list
@@ -1968,7 +1986,7 @@ EOF
         
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
-            cut -d= -f1 "$SELECTED_CUSTOM_PACKAGES"
+            cat "$SELECTED_CUSTOM_PACKAGES"
             echo ""
             has_content=1
         fi
