@@ -1841,35 +1841,7 @@ generate_config_summary() {
     {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
-            
-            # pkg_options_mapを生成
-            local pkg_options_map
-            pkg_options_map=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{
-                    id=""; opts=""; uniqueId="";
-                    for(i=1;i<=NF;i++){
-                        if($i=="id")id=$(i+2);
-                        if($i=="uniqueId")uniqueId=$(i+2);
-                        if($i=="installOptions")opts=$(i+2);
-                    }
-                    key = uniqueId ? uniqueId : id
-                    if(key) print key"|"id"|"opts
-                }')
-            
-            # パッケージを表示
-            while read -r pkg_id; do
-                # installOptionsを検索
-                local entry opts
-                entry=$(echo "$pkg_options_map" | grep "|${pkg_id}|" | head -1)
-                opts=$(echo "$entry" | cut -d'|' -f3)
-                
-                if [ -n "$opts" ]; then
-                    echo "$opts $pkg_id"
-                else
-                    echo "$pkg_id"
-                fi
-            done < "$SELECTED_PACKAGES"
-            
+            cat "$SELECTED_PACKAGES"
             echo ""
             has_content=1
         fi
