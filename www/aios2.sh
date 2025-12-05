@@ -807,7 +807,7 @@ get_category_name() {
     if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
         translate "$class"
     else
-        echo "$name"
+        printf '%s\n' "$name"
     fi
 }
 
