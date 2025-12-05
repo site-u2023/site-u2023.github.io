@@ -842,7 +842,7 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-    
+
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" > /dev/null 2>&1
     fi
@@ -905,29 +905,19 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # このカテゴリの既存エントリをすべて削除し、対応するenableVarも削除
+    # このカテゴリの既存エントリをすべて削除
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
-        
-        # パッケージファイルから削除
         sed -i "/^${pkg_id}=/d" "$target_file"
-        
-        # 対応するenableVarを削除
-        local enable_var
-        enable_var=$(get_package_enablevar "$pkg_id")
-        if [ -n "$enable_var" ]; then
-            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-            echo "[DEBUG] Removed enableVar: ${enable_var} for package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
-        fi
     done <<EOF
 $packages
 EOF
-    
-    # 選択されたものだけを保存し、enableVarを追加
+
+    # 選択されたものだけを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_line pkg_id ui_label cache_line enable_var
+        local selected_line pkg_id ui_label cache_line
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
@@ -942,13 +932,6 @@ EOF
             
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
-                
-                # 選択されたパッケージのenableVarを追加
-                enable_var=$(get_package_enablevar "$pkg_id")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Added enableVar: ${enable_var} for selected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
-                fi
             fi
         fi
     done
