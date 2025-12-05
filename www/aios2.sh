@@ -1653,28 +1653,20 @@ generate_files() {
                     if(key) print key"|"id"|"opts
                 }')
             
-            echo "[DEBUG] pkg_options_map:" >> "$CONFIG_DIR/debug.log"
-            echo "$pkg_options_map" >> "$CONFIG_DIR/debug.log"
-            
-            pkgs=$(while read -r pkg_id; do
-                echo "$pkg_id"
-            done < "$SELECTED_PACKAGES" | sort | uniq -d | while read -r dup_id; do
-                has_opts=$(echo "$pkg_options_map" | grep "^${dup_id}|" | grep -v "^${dup_id}|$" | head -1)
-                if [ -n "$has_opts" ]; then
-                    opts=$(echo "$has_opts" | cut -d'|' -f2)
-                    echo "${dup_id} ${opts}"
+            pkgs=""
+            while read -r pkg_id; do
+                local entry opts
+                entry=$(echo "$pkg_options_map" | grep "|${pkg_id}|" | head -1)
+                opts=$(echo "$entry" | cut -d'|' -f3)
+                
+                if [ -n "$opts" ]; then
+                    pkgs="${pkgs} ${opts} ${pkg_id}"
                 else
-                    echo "${dup_id}"
+                    pkgs="${pkgs} ${pkg_id}"
                 fi
-            done | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
-            
-            pkgs="${pkgs} $(while read -r pkg_id; do
-                echo "$pkg_id"
-            done < "$SELECTED_PACKAGES" | sort | uniq -u | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')"
+            done < "$SELECTED_PACKAGES"
             
             pkgs=$(echo "$pkgs" | xargs)
-            
-            echo "[DEBUG] PACKAGES='$pkgs'" >> "$CONFIG_DIR/debug.log"
         else
             pkgs=""
         fi
