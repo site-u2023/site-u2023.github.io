@@ -842,6 +842,11 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
+
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
     local cat_name breadcrumb checklist_items
     local pkg_id pkg_name status idx selected target_file idx_str idx_clean
     local packages
@@ -853,6 +858,8 @@ package_selection() {
     checklist_items=""
     idx=1
     
+    local display_names=""
+    
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
@@ -862,17 +869,26 @@ package_selection() {
             fi
         fi
         
-        pkg_name=$(get_package_name "$pkg_id")
-        [ -z "$pkg_name" ] && continue
+        local names
+        names=$(get_package_name "$pkg_id")
         
-        if is_package_selected "$pkg_id" "$caller"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
-        idx=$((idx+1))
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            
+            display_names="${display_names}${pkg_name}|${pkg_id}
+"
+            
+            if is_package_selected "$pkg_name" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+            idx=$((idx+1))
+        done <<NAMES
+$names
+NAMES
     done <<EOF
 $packages
 EOF
@@ -889,103 +905,47 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
+    # このカテゴリの既存エントリをすべて削除
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
-        sed -i "/^${pkg_id}\$/d" "$target_file"
-    done <<EOF2
+        sed -i "/^${pkg_id}=/d" "$target_file"
+        
+        # enableVar も削除
+        local enable_var
+        enable_var=$(get_package_enablevar "$pkg_id")
+        if [ -n "$enable_var" ]; then
+            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+        fi
+    done <<EOF
 $packages
-EOF2
-    
+EOF
+
+    # 選択されたものだけを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local current_idx=1
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
+        local selected_line pkg_id ui_label cache_line enable_var
+        selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+        
+        if [ -n "$selected_line" ]; then
+            ui_label=$(echo "$selected_line" | cut -d'|' -f1)
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
-            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-                continue
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
+            
+            if [ -z "$cache_line" ]; then
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=${ui_label}==.*")
             fi
             
-            if [ "$current_idx" -eq "$idx_clean" ]; then
-                echo "$pkg_id" >> "$target_file"
-                break
-            fi
-            current_idx=$((current_idx+1))
-        done <<EOF3
-$packages
-EOF3
-    done
-}
-
-view_selected_custom_packages() {
-    local tr_main_menu tr_review tr_custom_packages breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb temp_view pkg_id pkg_name
-    local categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_custom_packages=$(translate "tr-tui-view-custom-packages")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_custom_packages")
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    categories=$(get_customfeed_categories)
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
-$categories
-EOF
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            cat_name=$(get_category_name "$selected_cat")
-            cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-            
-            temp_view="$CONFIG_DIR/selected_custom_pkg_view.txt"
-            : > "$temp_view"
-            
-            while read -r pkg_id; do
-                if ! package_compatible "$pkg_id"; then
-                    continue
-                fi
+            if [ -n "$cache_line" ]; then
+                echo "$cache_line" >> "$target_file"
                 
-                if grep -q "^${pkg_id}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    pkg_name=$(get_package_name "$pkg_id")
-                    echo "  - ${pkg_name}"
+                # enableVar を追加
+                enable_var=$(get_package_enablevar "$pkg_id")
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
                 fi
-            done <<EOF2 > "$temp_view"
-$(get_category_packages "$selected_cat")
-EOF2
-            
-            if [ -s "$temp_view" ]; then
-                show_textbox "$cat_breadcrumb" "$temp_view"
-            else
-                show_msgbox "$cat_breadcrumb" "$(translate 'tr-tui-no-packages')"
             fi
-            
-            rm -f "$temp_view"
         fi
     done
 }
