@@ -891,6 +891,9 @@ package_selection() {
     echo "$cat_desc"
     echo ""
     
+    # 表示用の name/uniqueId を収集
+    local display_list=""
+    
     while read -r pkg_id; do
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
@@ -902,13 +905,15 @@ package_selection() {
         while read -r pkg_name; do
             local is_selected
             
-            if is_package_selected "$pkg_id" "$caller"; then
+            if is_package_selected "$pkg_name" "$caller"; then
                 is_selected="true"
             else
                 is_selected="false"
             fi
             
             show_checkbox "$is_selected" "$pkg_name"
+            display_list="${display_list}${pkg_name}|${pkg_id}
+"
         done <<NAMES
 $names
 NAMES
@@ -920,23 +925,15 @@ EOF
     echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
     
     local i=1
-    while read -r pkg_id; do
-        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-            continue
-        fi
-        
-        local names
-        names=$(get_package_name "$pkg_id")
-        
-        while read -r pkg_name; do
-            show_numbered_item "$i" "$pkg_name"
-            i=$((i+1))
-        done <<NAMES
-$names
-NAMES
-    done <<EOF
-$packages
-EOF
+    while read -r line; do
+        [ -z "$line" ] && continue
+        local display_name
+        display_name=$(echo "$line" | cut -d'|' -f1)
+        show_numbered_item "$i" "$display_name"
+        i=$((i+1))
+    done <<DISPLAY
+$display_list
+DISPLAY
     
     echo ""
     echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
@@ -949,35 +946,17 @@ EOF
     fi
     
     if [ -n "$choice" ]; then
-        local selected_idx=1
-        local found_pkg=""
+        local selected_line
+        selected_line=$(echo "$display_list" | sed -n "${choice}p")
         
-        while read -r pkg_id; do
-            if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-                continue
-            fi
+        if [ -n "$selected_line" ]; then
+            local selected_name
+            selected_name=$(echo "$selected_line" | cut -d'|' -f1)
             
-            local names
-            names=$(get_package_name "$pkg_id")
-            
-            while read -r pkg_name; do
-                if [ "$selected_idx" -eq "$choice" ]; then
-                    found_pkg="$pkg_id"
-                    break 2
-                fi
-                selected_idx=$((selected_idx+1))
-            done <<NAMES
-$names
-NAMES
-        done <<EOF
-$packages
-EOF
-
-        if [ -n "$found_pkg" ]; then
-            if is_package_selected "$found_pkg" "$caller"; then
-                sed -i "/^${found_pkg}$/d" "$target_file"
+            if is_package_selected "$selected_name" "$caller"; then
+                sed -i "/^${selected_name}$/d" "$target_file"
             else
-                echo "$found_pkg" >> "$target_file"
+                echo "$selected_name" >> "$target_file"
             fi
         fi
         
