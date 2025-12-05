@@ -917,16 +917,24 @@ NAMES2
     done <<EOF2
 $packages
 EOF2
-    
-    # 選択されたものを保存（表示された name/uniqueId をそのまま）
+
+    # 選択されたものを保存（キャッシュ行をそのまま = 区切りで）
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_name
-        selected_name=$(echo "$display_names" | sed -n "${idx_clean}p" | cut -d'|' -f1)
+        local selected_line pkg_id
+        selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
-        if [ -n "$selected_name" ]; then
-            echo "$selected_name" >> "$target_file"
+        if [ -n "$selected_line" ]; then
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            
+            # キャッシュから該当行を取得してそのまま保存
+            local cache_line
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+            
+            if [ -n "$cache_line" ]; then
+                echo "$cache_line" >> "$target_file"
+            fi
         fi
     done
 }
