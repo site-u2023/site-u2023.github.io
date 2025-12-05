@@ -1986,7 +1986,49 @@ EOF
         
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
-            cat "$SELECTED_CUSTOM_PACKAGES"
+           
+            # 排他処理: 同じ id で installOptions がある方を優先
+            local temp_list=""
+            while read -r cache_line; do
+                local pkg_id pkg_opts
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
+               
+                temp_list="${temp_list}${pkg_id}|${pkg_opts}
+"
+            done < "$SELECTED_CUSTOM_PACKAGES"
+           
+            # 重複除去してパッケージ名のみ表示
+            local processed_ids=""
+            while read -r line; do
+                [ -z "$line" ] && continue
+               
+                local current_id current_opts
+                current_id=$(echo "$line" | cut -d'|' -f1)
+                current_opts=$(echo "$line" | cut -d'|' -f2)
+               
+                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
+               
+                local same_id_lines
+                same_id_lines=$(echo "$temp_list" | grep "^${current_id}|")
+               
+                local has_opts
+                has_opts=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+               
+                if [ -n "$has_opts" ]; then
+                    local opts_value
+                    opts_value=$(echo "$has_opts" | cut -d'|' -f2)
+                    echo "$opts_value $current_id"
+                else
+                    echo "$current_id"
+                fi
+               
+                processed_ids="${processed_ids}${current_id}
+"
+            done <<EOF
+$temp_list
+EOF
+           
             echo ""
             has_content=1
         fi
