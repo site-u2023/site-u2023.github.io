@@ -1945,24 +1945,33 @@ generate_config_summary() {
     {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
-            cat "$SELECTED_PACKAGES"
+            
+            # identifier を id に変換して表示
+            while read -r identifier; do
+                local entry pkg_id
+                entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
+                    $2 == id || $3 == id { print; exit }
+                ')
+                
+                if [ -n "$entry" ]; then
+                    pkg_id=$(echo "$entry" | cut -d= -f1)
+                    echo "$pkg_id"
+                fi
+            done < "$SELECTED_PACKAGES"
+            
             echo ""
             has_content=1
             
             # enableVar を表示
             printf "🟡 %s\n\n" "$tr_variables"
             while read -r identifier; do
-                # identifier から enableVar を取得
-                local entry
+                local entry pkg_id enable_var
                 entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$identifier" '
                     $2 == id || $3 == id { print; exit }
                 ')
                 
                 if [ -n "$entry" ]; then
-                    local pkg_id
                     pkg_id=$(echo "$entry" | cut -d= -f1)
-                    
-                    local enable_var
                     enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
                     
                     if [ -n "$enable_var" ]; then
