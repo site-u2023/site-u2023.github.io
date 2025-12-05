@@ -905,14 +905,6 @@ EOF
     else
         target_file="$SELECTED_PACKAGES"
     fi
-    
-    # カテゴリ内の全パッケージIDの既存エントリを削除
-    while read -r pkg_id; do
-        [ -z "$pkg_id" ] && continue
-        sed -i "/^${pkg_id}=/d" "$target_file"
-    done <<EOF
-$packages
-EOF
 
     # 選択されたものを保存
     for idx_str in $selected; do
