@@ -1935,43 +1935,26 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # 排他処理: 同じ id で installOptions がある方を優先
+            # 重複除去してパッケージIDのみ表示
             local temp_list=""
             while read -r cache_line; do
-                local pkg_id pkg_opts
+                local pkg_id
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                temp_list="${temp_list}${pkg_id}|${pkg_opts}
+                temp_list="${temp_list}${pkg_id}
 "
             done < "$SELECTED_PACKAGES"
             
-            # 重複除去してパッケージ名のみ表示
+            # 重複削除
             local processed_ids=""
             while read -r line; do
                 [ -z "$line" ] && continue
                 
-                local current_id current_opts
-                current_id=$(echo "$line" | cut -d'|' -f1)
-                current_opts=$(echo "$line" | cut -d'|' -f2)
+                echo "$processed_ids" | grep -q "^${line}\$" && continue
                 
-                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
+                echo "$line"
                 
-                local same_id_lines
-                same_id_lines=$(echo "$temp_list" | grep "^${current_id}|")
-                
-                local has_opts
-                has_opts=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
-                
-                if [ -n "$has_opts" ]; then
-                    local opts_value
-                    opts_value=$(echo "$has_opts" | cut -d'|' -f2)
-                    echo "$opts_value $current_id"
-                else
-                    echo "$current_id"
-                fi
-                
-                processed_ids="${processed_ids}${current_id}
+                processed_ids="${processed_ids}${line}
 "
             done <<EOF
 $temp_list
