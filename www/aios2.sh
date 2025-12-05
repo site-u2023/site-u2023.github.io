@@ -1678,14 +1678,16 @@ generate_files() {
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             unique_id=$(echo "$cache_line" | cut -d= -f3)
             
-            # uniqueId がある場合は、それで enableVar を検索
+            # uniqueId がある場合はそれで検索、ない場合は id で検索
             if [ -n "$unique_id" ]; then
                 enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$unique_id'].enableVar" 2>/dev/null | head -1)
-            fi
-            
-            # uniqueId で見つからない場合は id で検索
-            if [ -z "$enable_var" ]; then
-                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
+            else
+                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.uniqueId=''].enableVar" 2>/dev/null | head -1)
+        
+                # uniqueId が定義されていないエントリの enableVar を取得
+                if [ -z "$enable_var" ]; then
+                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | grep -v "^$" | head -1)
+                fi
             fi
             
             if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
