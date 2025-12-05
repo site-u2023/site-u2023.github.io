@@ -834,7 +834,8 @@ get_category_packages() {
     
     pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    echo "$pkgs"
+    
+    echo "$pkgs" | sort -u
 }
 
 get_package_name() {
