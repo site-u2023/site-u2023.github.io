@@ -1672,11 +1672,6 @@ generate_files() {
     local tpl_custom enable_var
     local script_id script_file template_path script_url
     local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
-
-    if [ -f "$SETUP_VARS" ]; then
-        grep -v "^enable_" "$SETUP_VARS" | grep -v "^apache_keep=" > "$SETUP_VARS.tmp"
-        mv "$SETUP_VARS.tmp" "$SETUP_VARS"
-    fi
     
     : > "$temp_enablevars"
     
