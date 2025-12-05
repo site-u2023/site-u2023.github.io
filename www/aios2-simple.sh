@@ -971,7 +971,7 @@ DISPLAY
                 local cache_line
                 cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
                 if [ -n "$cache_line" ]; then
-                    echo "$cache_line" >> "$target_file"
+                    echo "${cache_line%%=*}" >> "$target_file"
                     
                     enable_var=$(get_package_enablevar "$pkg_id")
                     if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
