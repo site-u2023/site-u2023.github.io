@@ -12,10 +12,11 @@
     "package_options": {
       "id": "Package name to install via opkg/apk (required)",
       "name": "Display name in UI (defaults to id if omitted)",
+      "uniqueId": "Unique identifier for distinguishing multiple entries with same id (coexistence flag)",
       "description": "Package description shown as tooltip",
       "dependencies": "Array of package ids to select together",
       "enableVar": "Variable name to set in setup.sh when selected",
-      "installOptions": "opkg/apk install options (e.g. --nodeps, --force). When same id appears multiple times, entry with installOptions takes priority",
+      "installOptions": "opkg/apk install options (e.g. --nodeps, --force). When same id appears multiple times, entry with installOptions takes priority (priority flag)",
       "hidden": "If true, package is not displayed (for dependency-only packages)",
       "virtual": "If true, skip package availability check (for non-existent packages)",
       "reboot": "If true, package requires reboot after install",
@@ -24,6 +25,7 @@
     "example": {
       "id": "apache",
       "name": "htpasswd",
+      "uniqueId": "htpasswd-from-apache",
       "description": "Password hash tool (extracted from apache)",
       "dependencies": ["libaprutil", "libapr"],
       "enableVar": "enable_htpasswd",
