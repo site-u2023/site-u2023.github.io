@@ -938,7 +938,7 @@ EOF
             fi
             
             if [ -n "$cache_line" ]; then
-                echo "${cache_line%%=*}" >> "$target_file"
+                echo "$cache_line" >> "$target_file"
                 
                 # enableVar を追加
                 enable_var=$(get_package_enablevar "$pkg_id")
