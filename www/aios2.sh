@@ -1983,7 +1983,7 @@ EOF
         
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
-            cat "$SELECTED_CUSTOM_PACKAGES"
+            cut -d= -f1 "$SELECTED_CUSTOM_PACKAGES"
             echo ""
             has_content=1
         fi
