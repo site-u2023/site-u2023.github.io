@@ -842,13 +842,16 @@ get_package_name() {
     local name
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        # uniqueIdを持つものを優先的にキャッシュ
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}key=id;val=(name?name:id);if(key)print key"="val}')
+            awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=id;val=(name?name:id);priority=(uid?"1":"0");if(key)print priority":"key"="val}' | \
+            sort -t: -k1,1r -k2,2 | awk -F: '{if(!seen[$2]++){split($2,a,"=");print a[1]"="a[2]}}')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="name")name=$(i+2)}key=id;val=(name?name:id);if(key)print key"="val}')
+                awk -F'"' '{id="";uid="";name="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="uniqueId")uid=$(i+2);if($i=="name")name=$(i+2)}key=id;val=(name?name:id);priority=(uid?"1":"0");if(key)print priority":"key"="val}' | \
+                sort -t: -k1,1r -k2,2 | awk -F: '{if(!seen[$2]++){split($2,a,"=");print a[1]"="a[2]}}')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
 ${custom_cache}"
         fi
@@ -856,7 +859,7 @@ ${custom_cache}"
         _PACKAGE_NAME_LOADED=1
     fi
     
-    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2-)
+    name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | head -1 | cut -d= -f2-)
     printf '%s\n' "$name"
 }
 
