@@ -1639,13 +1639,23 @@ generate_files() {
     : > "$temp_enablevars"
     
     if [ -s "$SELECTED_PACKAGES" ]; then
-        while read -r pkg_id; do
-            jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | \
-            while read -r enable_var; do
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$temp_enablevars"
-                fi
-            done
+        while read -r identifier; do
+            # identifier (name/uniqueId) からキャッシュ検索して pkg_id を取得
+            local pkg_id_from_cache
+            pkg_id_from_cache=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${identifier}=" | cut -d= -f1 | head -1)
+            
+            if [ -z "$pkg_id_from_cache" ]; then
+                pkg_id_from_cache=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${identifier}\$" | cut -d= -f1 | head -1)
+            fi
+            
+            if [ -n "$pkg_id_from_cache" ]; then
+                jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id_from_cache'].enableVar" 2>/dev/null | \
+                while read -r enable_var; do
+                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${enable_var}='1'" >> "$temp_enablevars"
+                    fi
+                done
+            fi
         done < "$SELECTED_PACKAGES"
         
         [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
@@ -1656,33 +1666,84 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            local pkg_options_map=""
-            pkg_options_map=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{
-                    id=""; opts=""; uniqueId="";
-                    for(i=1;i<=NF;i++){
-                        if($i=="id")id=$(i+2);
-                        if($i=="uniqueId")uniqueId=$(i+2);
-                        if($i=="installOptions")opts=$(i+2);
-                    }
-                    key = uniqueId ? uniqueId : id
-                    if(key) print key"|"id"|"opts
-                }')
+            # キャッシュマップを作成（uniqueId または name → id|installOptions）
+            local pkg_map=""
+            pkg_map=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= '{
+                id=$1; name=$2; uniqueId=$3; opts=$4
+                key = uniqueId ? uniqueId : name
+                print key "|" id "|" opts
+            }')
             
-            pkgs=""
-            while read -r pkg_id; do
-                local entry opts
-                entry=$(echo "$pkg_options_map" | grep "|${pkg_id}|" | head -1)
-                opts=$(echo "$entry" | cut -d'|' -f3)
+            # selected_packages.txt から id と installOptions を取得
+            local id_opts_list=""
+            while read -r identifier; do
+                local entry
+                entry=$(echo "$pkg_map" | grep "^${identifier}|" | head -1)
                 
-                if [ -n "$opts" ]; then
-                    pkgs="${pkgs} ${opts} ${pkg_id}"
-                else
-                    pkgs="${pkgs} ${pkg_id}"
+                if [ -n "$entry" ]; then
+                    local pkg_id pkg_opts
+                    pkg_id=$(echo "$entry" | cut -d'|' -f2)
+                    pkg_opts=$(echo "$entry" | cut -d'|' -f3)
+                    
+                    id_opts_list="${id_opts_list}${pkg_id}|${pkg_opts}
+"
                 fi
             done < "$SELECTED_PACKAGES"
             
-            pkgs=$(echo "$pkgs" | xargs)
+            # 同一 id の排他処理（installOptions がある方を優先）
+            local final_list=""
+            local processed_ids=""
+            
+            while read -r line; do
+                [ -z "$line" ] && continue
+                
+                local current_id current_opts
+                current_id=$(echo "$line" | cut -d'|' -f1)
+                current_opts=$(echo "$line" | cut -d'|' -f2)
+                
+                # すでに処理済みの id はスキップ
+                if echo "$processed_ids" | grep -q "^${current_id}\$"; then
+                    continue
+                fi
+                
+                # 同じ id が他にあるかチェック
+                local same_id_lines
+                same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
+                local count
+                count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
+                
+                if [ "$count" -gt 1 ]; then
+                    # 重複がある場合、installOptions がある方を採用
+                    local has_opts_line
+                    has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                    
+                    if [ -n "$has_opts_line" ]; then
+                        local opts_value
+                        opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
+                        final_list="${final_list}${opts_value} ${current_id}
+"
+                    else
+                        final_list="${final_list}${current_id}
+"
+                    fi
+                else
+                    # 重複がない場合
+                    if [ -n "$current_opts" ]; then
+                        final_list="${final_list}${current_opts} ${current_id}
+"
+                    else
+                        final_list="${final_list}${current_id}
+"
+                    fi
+                fi
+                
+                processed_ids="${processed_ids}${current_id}
+"
+            done <<EOF
+$id_opts_list
+EOF
+            
+            pkgs=$(echo "$final_list" | xargs)
         else
             pkgs=""
         fi
