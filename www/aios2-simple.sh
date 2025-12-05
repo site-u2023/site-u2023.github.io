@@ -606,6 +606,7 @@ process_items() {
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                         auto_add_conditional_packages "$cat_id"
+                        auto_cleanup_conditional_variables "$cat_id"
                     fi
                 fi
                 ;;
@@ -713,6 +714,7 @@ process_items() {
                             sed -i "/^${variable}=/d" "$SETUP_VARS"
                             echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                             auto_add_conditional_packages "$cat_id"
+                            auto_cleanup_conditional_variables "$cat_id"
                             
                             if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
                                 local aftr_type area computed
@@ -818,6 +820,7 @@ category_config() {
     process_items "$cat_id" "" "$breadcrumb"
     
     auto_add_conditional_packages "$cat_id"
+    auto_cleanup_conditional_variables "$cat_id"
     [ "$cat_id" = "basic-config" ] && update_language_packages
 }
 
