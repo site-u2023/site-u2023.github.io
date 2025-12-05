@@ -923,20 +923,31 @@ NAMES2
 $packages
 EOF2
 
-    # 選択されたものを保存（キャッシュ行をそのまま = 区切りで）
+    # 選択されたものを保存（修正版：重複書き込みの根本修正）
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_line pkg_id
+        # UI上のリスト位置から、識別子とIDを取得
+        local selected_line pkg_id ui_label cache_line
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
-            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            # display_names は "UI識別子|PackageID" の形式
+            ui_label=$(echo "$selected_line" | cut -d'|' -f1) # uniqueId または name
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)   # id
             
-            # キャッシュから該当行を取得してそのまま保存
-            local cache_line
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+            # 【重要】キャッシュから行を特定する際、IDだけでなくUI識別子も条件に加える
+            # キャッシュ形式: id=name=uniqueId=installOptions
             
+            # ケース1: uniqueIdとして一致するか検索 (3列目)
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
+            
+            # ケース2: 見つからない場合、nameとして一致するか検索 (2列目) かつ uniqueId(3列目)が空
+            if [ -z "$cache_line" ]; then
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=${ui_label}==.*")
+            fi
+            
+            # 厳密に一致した1行だけを書き込む
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
             fi
