@@ -879,15 +879,16 @@ get_package_name() {
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '{
-                id=""; name=""; uniqueId=""; installOptions="";
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
                     if($i=="name")name=$(i+2);
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
+                    if($i=="enableVar")enableVar=$(i+2);
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
                 }
             }')
         
@@ -895,15 +896,16 @@ get_package_name() {
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '{
-                    id=""; name=""; uniqueId=""; installOptions="";
+                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
                         if($i=="name")name=$(i+2);
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
+                        if($i=="enableVar")enableVar=$(i+2);
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -1703,15 +1705,14 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            local id_opts_list=""
-            while read -r cache_line; do
-                local pkg_id pkg_opts
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                pkg_opts=$(echo "$cache_line" | cut -d= -f4)
-                
-                id_opts_list="${id_opts_list}${pkg_id}|${pkg_opts}
-"
-            done < "$SELECTED_PACKAGES"
+        while read -r cache_line; do
+            local enable_var
+            enable_var=$(echo "$cache_line" | cut -d= -f5)
+            
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${enable_var}='1'" >> "$temp_enablevars"
+            fi
+        done < "$SELECTED_PACKAGES"
             
             local final_list=""
             local processed_ids=""
