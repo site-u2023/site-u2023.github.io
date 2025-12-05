@@ -1943,24 +1943,57 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # キャッシュ行から id と installOptions を取得して表示
+            # 排他処理: 同じ id で installOptions がある方を優先
+            local temp_list=""
             while read -r cache_line; do
                 local pkg_id pkg_opts
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 pkg_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                if [ -n "$pkg_opts" ]; then
-                    echo "$pkg_opts $pkg_id"
-                else
-                    echo "$pkg_id"
-                fi
+                temp_list="${temp_list}${pkg_id}|${pkg_opts}
+"
             done < "$SELECTED_PACKAGES"
+            
+            # 重複除去
+            local processed_ids=""
+            while read -r line; do
+                [ -z "$line" ] && continue
+                
+                local current_id current_opts
+                current_id=$(echo "$line" | cut -d'|' -f1)
+                current_opts=$(echo "$line" | cut -d'|' -f2)
+                
+                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
+                
+                # 同じ id の全エントリを取得
+                local same_id_lines
+                same_id_lines=$(echo "$temp_list" | grep "^${current_id}|")
+                
+                # installOptions がある行を優先
+                local has_opts
+                has_opts=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                
+                if [ -n "$has_opts" ]; then
+                    local opts_value
+                    opts_value=$(echo "$has_opts" | cut -d'|' -f2)
+                    echo "$opts_value $current_id"
+                else
+                    echo "$current_id"
+                fi
+                
+                processed_ids="${processed_ids}${current_id}
+"
+            done <<EOF
+$temp_list
+EOF
             
             echo ""
             has_content=1
             
-            # enableVar を表示
+            # enableVar を表示（重複除去）
             printf "🟡 %s\n\n" "$tr_variables"
+            
+            local seen_vars=""
             while read -r cache_line; do
                 local pkg_id enable_var
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
@@ -1968,7 +2001,12 @@ generate_config_summary() {
                 enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | head -1)
                 
                 if [ -n "$enable_var" ]; then
+                    # 既に出力済みならスキップ
+                    echo "$seen_vars" | grep -q "^${enable_var}\$" && continue
+                    
                     echo "${enable_var}='1'"
+                    seen_vars="${seen_vars}${enable_var}
+"
                 fi
             done < "$SELECTED_PACKAGES"
             echo ""
