@@ -876,6 +876,8 @@ ${custom_cache}"
         fi
         
         _PACKAGE_NAME_LOADED=1
+        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
+        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
     name=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
