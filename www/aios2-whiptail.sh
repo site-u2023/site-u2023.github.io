@@ -838,15 +838,12 @@ EOF
     done
 }
 
+# aios2-whiptail.sh の package_selection()
+
 package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        get_package_name "dummy" > /dev/null 2>&1
-    fi
-    
     local cat_name breadcrumb checklist_items
     local pkg_id pkg_name status idx selected target_file idx_str idx_clean
     local packages
@@ -858,6 +855,7 @@ package_selection() {
     checklist_items=""
     idx=1
     
+    # 表示用の name/uniqueId を収集
     local display_names=""
     
     while read -r pkg_id; do
@@ -905,49 +903,51 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # このカテゴリの既存エントリをすべて削除
+    # 既存の選択をクリア（このカテゴリのみ）
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
-        sed -i "/^${pkg_id}=/d" "$target_file"
-        
-        # enableVar も削除
-        local enable_var
-        enable_var=$(get_package_enablevar "$pkg_id")
-        if [ -n "$enable_var" ]; then
-            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-        fi
-    done <<EOF
+        local names
+        names=$(get_package_name "$pkg_id")
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            sed -i "/^${pkg_name}\$/d" "$target_file"
+        done <<NAMES2
+$names
+NAMES2
+    done <<EOF2
 $packages
-EOF
+EOF2
 
-    # 選択されたものだけを保存
+    # 選択されたものを保存（キャッシュ行をそのまま = 区切りで）
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_line pkg_id ui_label cache_line enable_var
+        local selected_line pkg_id
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
-            ui_label=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
-            
-            if [ -z "$cache_line" ]; then
-                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=${ui_label}==.*")
-            fi
+            # キャッシュから該当行を取得してそのまま保存
+            local cache_line
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
             
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
-                
-                # enableVar を追加
-                enable_var=$(get_package_enablevar "$pkg_id")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                fi
             fi
         fi
     done
+}
+
+is_package_selected() {
+    local identifier="$1"  # name または uniqueId
+    local caller="${2:-normal}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        grep -q "^${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+    else
+        grep -q "^${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
+    fi
 }
 
 view_customfeeds() {
