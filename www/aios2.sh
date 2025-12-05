@@ -1624,7 +1624,6 @@ generate_files() {
     
     if [ -s "$SELECTED_PACKAGES" ]; then
         while read -r pkg_id; do
-            # この pkg_id に対応する全ての enableVar を取得
             jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | \
             while read -r enable_var; do
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
@@ -1641,23 +1640,25 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-            # id → installOptions のマップを作成
             local pkg_options_map=""
             pkg_options_map=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '{
-                    id=""; opts="";
+                    id=""; opts=""; uniqueId="";
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
+                        if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")opts=$(i+2);
                     }
-                    if(id) print id"|"opts
+                    key = uniqueId ? uniqueId : id
+                    if(key) print key"|"id"|"opts
                 }')
             
-            # 重複削除 + installOptions 優先処理
+            echo "[DEBUG] pkg_options_map:" >> "$CONFIG_DIR/debug.log"
+            echo "$pkg_options_map" >> "$CONFIG_DIR/debug.log"
+            
             pkgs=$(while read -r pkg_id; do
                 echo "$pkg_id"
             done < "$SELECTED_PACKAGES" | sort | uniq -d | while read -r dup_id; do
-                # 重複するidに対してinstallOptionsがあるものを探す
                 has_opts=$(echo "$pkg_options_map" | grep "^${dup_id}|" | grep -v "^${dup_id}|$" | head -1)
                 if [ -n "$has_opts" ]; then
                     opts=$(echo "$has_opts" | cut -d'|' -f2)
@@ -1667,12 +1668,13 @@ generate_files() {
                 fi
             done | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')
             
-            # 重複していないidを追加
             pkgs="${pkgs} $(while read -r pkg_id; do
                 echo "$pkg_id"
             done < "$SELECTED_PACKAGES" | sort | uniq -u | awk 'BEGIN{ORS=" "} {print} END{print ""}' | sed 's/ $//')"
             
             pkgs=$(echo "$pkgs" | xargs)
+            
+            echo "[DEBUG] PACKAGES='$pkgs'" >> "$CONFIG_DIR/debug.log"
         else
             pkgs=""
         fi
