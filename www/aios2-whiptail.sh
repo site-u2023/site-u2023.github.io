@@ -109,13 +109,6 @@ show_textbox() {
     rm -f "$temp_file"
 }
 
-set_var() {
-    local var_name="$1"
-    local var_value="$2"
-    sed -i "/^${var_name}=/d" "$SETUP_VARS"
-    [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
-}
-
 # Package Compatibility Check for Custom Feeds
 
 custom_feeds_selection() {
