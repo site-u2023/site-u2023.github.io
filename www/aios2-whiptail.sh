@@ -679,7 +679,27 @@ No additional settings required."
                     echo "[DEBUG] Inputbox cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
                     return $RETURN_BACK
                 fi
-                
+
+                # 🔧 修正: 空欄の扱いを明確化
+                if [ -z "$value" ]; then
+                    # API値がある項目は初期値に戻す
+                    local api_source
+                    api_source=$(get_setup_item_api_source "$item_id")
+        
+                    if [ -n "$api_source" ]; then
+                        # API値がある → 初期値を使用
+                        local api_value
+                        api_value=$(get_api_value "$api_source")
+                        value="${api_value:-$default}"
+                        echo "[DEBUG] Empty input, using API/default: '$value'" >> "$CONFIG_DIR/debug.log"
+                    else
+                        # API値がない → 空欄を許可
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "[DEBUG] Empty input, removed variable: $variable" >> "$CONFIG_DIR/debug.log"
+                        return $RETURN_STAY
+                    fi
+                fi
+    
                 if [ -n "$value" ]; then
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${value}'" >> "$SETUP_VARS"
