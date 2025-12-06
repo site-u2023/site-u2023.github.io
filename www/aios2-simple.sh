@@ -95,6 +95,11 @@ show_inputbox() {
         value="$default"
     fi
     
+    # IPv4アドレスの場合、CIDRを自動付与
+    if echo "$value" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+        value="${value}/24"
+    fi
+    
     echo "$value"
     return 0
 }
