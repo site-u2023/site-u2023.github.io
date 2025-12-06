@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1122"
+VERSION="R7.1206.1132"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -564,6 +564,62 @@ package_compatible() {
     echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
     
     return 1
+}
+
+load_default_packages() {
+    if [ ! -f "$PACKAGES_JSON" ]; then
+        return 1
+    fi
+    
+    echo "[DEBUG] === load_default_packages called ===" >> "$CONFIG_DIR/debug.log"
+    
+    # キャッシュがまだ構築されていなければ構築
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
+    # postinst.jsonから checked=true のパッケージを取得
+    local checked_packages
+    checked_packages=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[@.checked=true].id' 2>/dev/null)
+    
+    # 見つかったパッケージをキャッシュから追加
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        local cache_line
+        cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+        
+        if [ -n "$cache_line" ]; then
+            # 重複チェック
+            if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "$cache_line" >> "$SELECTED_PACKAGES"
+                echo "[DEFAULT] Added checked package: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            fi
+        else
+            echo "[DEFAULT] Warning: Package $pkg_id not found in cache" >> "$CONFIG_DIR/debug.log"
+        fi
+    done <<EOF
+$checked_packages
+EOF
+    
+    # customfeeds.jsonからも取得（もし存在すれば）
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        local custom_checked
+        custom_checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[@.checked=true].id' 2>/dev/null)
+        
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            
+            if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "${pkg_id}" >> "$SELECTED_PACKAGES"
+                echo "[DEFAULT] Added custom checked package: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            fi
+        done <<EOF
+$custom_checked
+EOF
+    fi
+    
+    echo "[DEBUG] === load_default_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
 load_default_packages() {
