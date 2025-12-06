@@ -1080,6 +1080,20 @@ get_customfeed_categories() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
 
+custom_feeds_selection_prepare() {
+    download_customfeeds_json || return 1
+    
+    local categories
+    categories=$(get_customfeed_categories)
+    
+    if [ -z "$categories" ]; then
+        return 1
+    fi
+    
+    echo "$categories"
+    return 0
+}
+
 custom_feeds_selection_common() {
     download_customfeeds_json || return 1
     
