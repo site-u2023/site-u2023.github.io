@@ -868,7 +868,6 @@ category_config() {
     auto_add_conditional_packages "$cat_id"
     auto_cleanup_conditional_variables "$cat_id"
     cleanup_orphaned_enablevars "$cat_id"
-    [ "$cat_id" = "basic-config" ] && update_language_packages
 }
 
 package_categories() {
