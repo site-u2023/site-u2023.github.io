@@ -601,6 +601,7 @@ apply_api_defaults() {
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
         
+        # 言語パッケージの初期化
         local language
         language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         if [ -n "$language" ] && [ "$language" != "en" ] && [ -f "$SETUP_JSON" ]; then
@@ -608,7 +609,6 @@ apply_api_defaults() {
                 -e '@.constants.language_prefixes_release[*]' 2>/dev/null \
                 | while IFS= read -r prefix; do
                     local lang_pkg="${prefix}${language}"
-                    # キャッシュから完全なエントリを取得
                     local cache_line
                     cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${lang_pkg}=")
                     if [ -n "$cache_line" ]; then
@@ -617,9 +617,7 @@ apply_api_defaults() {
                 done
         fi
         
-        language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        if [ -n "$language" ] && [ "$language" != "en" ] && [ -f "$SETUP_JSON" ]; then
-     
+        # MAP-E/DS-Lite の自動設定
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
             if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
                 sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
