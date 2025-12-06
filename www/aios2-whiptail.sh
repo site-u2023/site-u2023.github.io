@@ -109,6 +109,13 @@ show_textbox() {
     rm -f "$temp_file"
 }
 
+set_var() {
+    local var_name="$1"
+    local var_value="$2"
+    sed -i "/^${var_name}=/d" "$SETUP_VARS"
+    [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
+}
+
 # Package Compatibility Check for Custom Feeds
 
 custom_feeds_selection() {
@@ -320,18 +327,16 @@ ${tr_mape_notice}
 $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='auto'" >> "$SETUP_VARS"
-            
-            [ -n "$MAPE_GUA_PREFIX" ] && echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
-            echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIX" ] && echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIX" ] && echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-            [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+            set_var "connection_type" "auto"
+            set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
+            set_var "mape_br" "$MAPE_BR"
+            set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
+            set_var "mape_ipv4_prefixlen" "$MAPE_IPV4_PREFIXLEN"
+            set_var "mape_ipv6_prefix" "$MAPE_IPV6_PREFIX"
+            set_var "mape_ipv6_prefixlen" "$MAPE_IPV6_PREFIXLEN"
+            set_var "mape_ealen" "$MAPE_EALEN"
+            set_var "mape_psidlen" "$MAPE_PSIDLEN"
+            set_var "mape_psid_offset" "$MAPE_PSID_OFFSET"
 
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
@@ -364,9 +369,8 @@ ${tr_dslite_notice}
 $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
-            sed -i "/^connection_type=/d" "$SETUP_VARS"
-            echo "connection_type='auto'" >> "$SETUP_VARS"
-            echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+            set_var "connection_type" "auto"
+            set_var "dslite_aftr_address" "$DSLITE_AFTR"
 
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
