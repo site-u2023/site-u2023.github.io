@@ -1678,11 +1678,6 @@ auto_cleanup_conditional_variables() {
     
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-
-    # 接続方式の排他制御
-    if [ "$cat_id" = "internet-connection" ]; then
-        cleanup_connection_type_variables
-    fi
     
     # カテゴリ内の全アイテムをスキャン
     for item_id in $(get_setup_category_items "$cat_id"); do
@@ -1734,58 +1729,6 @@ check_and_cleanup_variable() {
             echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
         fi
     fi
-}
-
-# 接続方式の排他制御
-cleanup_connection_type_variables() {
-    local current_type
-    current_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    echo "[DEBUG] Current connection_type: '$current_type'" >> "$CONFIG_DIR/debug.log"
-    
-    # 各接続方式専用の変数リスト
-    local pppoe_vars="pppoe_username pppoe_password"
-    local dslite_vars="dslite_aftr_type dslite_jurisdiction dslite_aftr_address"
-    local mape_vars="mape_type mape_gua_prefix mape_br mape_ealen mape_ipv4_prefix mape_ipv4_prefixlen mape_ipv6_prefix mape_ipv6_prefixlen mape_psid_offset mape_psidlen"
-    local ap_vars="ap_ip_address ap_gateway"
-    
-    # 現在の接続方式以外の変数を削除
-    case "$current_type" in
-        pppoe)
-            _remove_vars "$dslite_vars $mape_vars $ap_vars"
-            ;;
-        dslite)
-            _remove_vars "$pppoe_vars $mape_vars $ap_vars"
-            ;;
-        mape)
-            _remove_vars "$pppoe_vars $dslite_vars $ap_vars"
-            ;;
-        ap)
-            _remove_vars "$pppoe_vars $dslite_vars $mape_vars"
-            ;;
-        dhcp)
-            _remove_vars "$pppoe_vars $dslite_vars $mape_vars $ap_vars"
-            ;;
-        auto)
-            # autoの場合は削除しない（API値保持）
-            echo "[DEBUG] Connection type 'auto' - keeping API values" >> "$CONFIG_DIR/debug.log"
-            ;;
-        *)
-            echo "[DEBUG] Unknown connection type: $current_type" >> "$CONFIG_DIR/debug.log"
-            ;;
-    esac
-}
-
-# ヘルパー関数：変数リストを削除
-_remove_vars() {
-    local vars="$1"
-    
-    for var in $vars; do
-        if grep -q "^${var}=" "$SETUP_VARS" 2>/dev/null; then
-            sed -i "/^${var}=/d" "$SETUP_VARS"
-            echo "[CLEANUP] Removed conflicting variable: $var" >> "$CONFIG_DIR/debug.log"
-        fi
-    done
 }
 
 # enableVar のクリーンアップ
