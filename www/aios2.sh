@@ -2831,9 +2831,9 @@ aios2_main() {
     init
     
     detect_package_manager
-    echo "Detecting package manager: $PKG_MGR"
+    # echo "Detecting package manager: $PKG_MGR"
 
-    echo "Starting background downloads..."
+    # echo "Starting background downloads..."
 
     # --- 1. すべてのダウンロードを即座にバックグラウンドで開始 ---
     
@@ -2891,7 +2891,7 @@ aios2_main() {
     wait $API_DL_PID
     
     # API情報をパースして変数をセット (ダウンロードは終わっているので処理のみ)
-    echo "Parsing device info..."
+    # echo "Parsing device info..."
     get_extended_device_info
     
     # 言語設定の決定と追加ダウンロード
@@ -2899,7 +2899,7 @@ aios2_main() {
     wait $LANG_EN_PID
     
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "Fetching language file: ${AUTO_LANGUAGE}"
+        # echo "Fetching language file: ${AUTO_LANGUAGE}"
         download_language_json "${AUTO_LANGUAGE}"
     fi
 
@@ -2930,7 +2930,7 @@ aios2_main() {
     fi
 
     # データロード処理
-    echo "Loading package data..."
+    # echo "Loading package data..."
     load_default_packages
     apply_api_defaults
 
