@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.2117"
+VERSION="R7.1206.2121"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -1649,6 +1649,7 @@ auto_add_conditional_packages() {
     effective_conn_type=$(get_effective_connection_type)
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
+    # 初回のみキャッシュ構築
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
         _CONDITIONAL_PACKAGES_CACHE=$(
             # wifi_mode (文字列)
@@ -1681,13 +1682,9 @@ auto_add_conditional_packages() {
         
         echo "[DEBUG] Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
         
-        # 現在値取得
+        # 現在値取得（SETUP_VARSから直接）
         local current_val
-        if [ "$when_var" = "connection_type" ]; then
-            current_val="$effective_conn_type"
-        else
-            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        fi
+        current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
         echo "[DEBUG] current_val=$current_val" >> "$CONFIG_DIR/debug.log"
         
@@ -1713,18 +1710,14 @@ auto_add_conditional_packages() {
                 fi
             fi
         else
-            # 削除する前に、他の条件でマッチしないか確認
+            # 削除する前に他の条件でマッチしないか確認
             local has_other_match=0
             while IFS='|' read -r check_pkg check_var check_val; do
                 [ "$check_pkg" != "$pkg_id" ] && continue
                 [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
                 
                 local check_current
-                if [ "$check_var" = "connection_type" ]; then
-                    check_current="$effective_conn_type"
-                else
-                    check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                fi
+                check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
                 
                 if [ "$check_current" = "$check_val" ]; then
                     has_other_match=1
