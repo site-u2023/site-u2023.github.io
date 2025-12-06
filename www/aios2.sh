@@ -202,6 +202,13 @@ load_config_from_js() {
     return 0
 }
 
+set_var() {
+    local var_name="$1"
+    local var_value="$2"
+    sed -i "/^${var_name}=/d" "$SETUP_VARS"
+    [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
+}
+
 # UI Common Functions
 
 build_breadcrumb() {
