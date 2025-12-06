@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1300"
+VERSION="R7.1206.1650"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -72,6 +72,8 @@ _PACKAGE_COMPAT_LOADED=0
 _SELECTED_PACKAGES_CACHE=""
 _SELECTED_CUSTOM_CACHE=""
 _PACKAGE_COMPAT_CACHE=""
+_CONDITIONAL_PACKAGES_CACHE=""
+_CONDITIONAL_PACKAGES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -733,6 +735,20 @@ apply_api_defaults() {
 
 # Setup JSON Accessors
 
+get_setup_item_property() {
+    local item_id="$1"
+    local property="$2"
+    local result
+    
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
+    fi
+    
+    echo "$result"
+}
+
 get_setup_categories() {
     jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -754,16 +770,7 @@ get_setup_category_items() {
 }
 
 get_setup_item_type() {
-    local item_id="$1"
-    local result
-    
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
-    
-    if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].type" 2>/dev/null | head -1)
-    fi
-    
-    echo "$result"
+    get_setup_item_property "$1" "type"
 }
 
 get_setup_item_label() {
@@ -791,29 +798,11 @@ get_setup_item_label() {
 }
 
 get_setup_item_variable() {
-    local item_id="$1"
-    local result
-    
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
-    
-    if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].variable" 2>/dev/null | head -1)
-    fi
-    
-    echo "$result"
+    get_setup_item_property "$1" "variable"
 }
 
 get_setup_item_default() {
-    local item_id="$1"
-    local result
-    
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
-    
-    if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].default" 2>/dev/null | head -1)
-    fi
-    
-    echo "$result"
+    get_setup_item_property "$1" "default"
 }
 
 get_setup_item_api_source() {
@@ -1832,48 +1821,50 @@ check_and_cleanup_variable() {
 # enableVar のクリーンアップ
 cleanup_orphaned_enablevars() {
     local cat_id="$1"
-    local temp_file="$CONFIG_DIR/temp_enablevars.txt"
     
     echo "[DEBUG] === cleanup_orphaned_enablevars called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
+    # enableVar のマップを一度だけ構築
+    local enablevar_map=""
+    while read -r cache_line; do
+        local cached_id cached_enablevar
+        cached_id=$(echo "$cache_line" | cut -d= -f1)
+        cached_enablevar=$(echo "$cache_line" | cut -d= -f5)
+        
+        [ -n "$cached_enablevar" ] && enablevar_map="${enablevar_map}${cached_enablevar}|${cached_id}
+"
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
+    
+    # SETUP_VARSをスキャン（1回のみ）
+    local temp_file="$CONFIG_DIR/temp_enablevars.txt"
     : > "$temp_file"
     
     while read -r line; do
         case "$line" in
-            \#*|'') continue ;;
+            \#*|'') 
+                echo "$line" >> "$temp_file"
+                continue 
+                ;;
         esac
         
         local var_name=$(echo "$line" | cut -d= -f1)
         
-        # このenableVarに対応するパッケージを検索
-        local pkg_exists=0
-        while read -r cache_line; do
-            local cached_id=$(echo "$cache_line" | cut -d= -f1)
-            local cached_enablevar=$(echo "$cache_line" | cut -d= -f5)
-            
-            if [ "$cached_enablevar" = "$var_name" ]; then
-                # 対応するパッケージが選択されているか確認
-                if grep -q "^${cached_id}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "^${cached_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    pkg_exists=1
-                    echo "[DEBUG] enableVar $var_name: package $cached_id is selected" >> "$CONFIG_DIR/debug.log"
-                    break
-                fi
+        # マップから高速検索
+        local pkg_id=$(echo "$enablevar_map" | grep "^${var_name}|" | cut -d'|' -f2 | head -1)
+        
+        if [ -n "$pkg_id" ]; then
+            # パッケージが選択されているかチェック
+            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+               grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                echo "$line" >> "$temp_file"
+            else
+                echo "[CLEANUP] Removed orphaned enableVar: $var_name" >> "$CONFIG_DIR/debug.log"
             fi
-        done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
-        
-        # 🔧 修正: here-string を echo | grep に変更
-        local is_enablevar
-        is_enablevar=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "=${var_name}$")
-        
-        if [ "$pkg_exists" -eq 1 ] || [ -z "$is_enablevar" ]; then
-            # パッケージが選択されているか、enableVarではない通常変数
-            echo "$line" >> "$temp_file"
         else
-            echo "[CLEANUP] Removed orphaned enableVar: $var_name" >> "$CONFIG_DIR/debug.log"
+            # enableVarではない通常変数
+            echo "$line" >> "$temp_file"
         fi
     done < "$SETUP_VARS"
     
