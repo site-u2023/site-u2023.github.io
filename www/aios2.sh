@@ -1584,7 +1584,7 @@ EOF
 
 auto_add_conditional_packages() {
     local cat_id="$1"
-    local effective_conn_type pkg_count idx pkg_id when_json when_var current_val expected should_add
+    local effective_conn_type
     
     echo "[DEBUG] === auto_add_conditional_packages called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
@@ -1592,74 +1592,95 @@ auto_add_conditional_packages() {
     effective_conn_type=$(get_effective_connection_type)
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
-    pkg_count=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | wc -l)
-    
-    echo "[DEBUG] pkg_count=$pkg_count" >> "$CONFIG_DIR/debug.log"
-    
-    if [ "$pkg_count" -eq 0 ]; then
-        echo "[DEBUG] No packages in category, returning" >> "$CONFIG_DIR/debug.log"
-        return 0
+    # 初回のみキャッシュ構築
+    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
+        _CONDITIONAL_PACKAGES_CACHE=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk '
+            BEGIN { id=""; when_block=0; when_var=""; when_val="" }
+            /"id"/ { 
+                match($0, /"id"[[:space:]]*:[[:space:]]*"([^"]*)"/, arr)
+                id = arr[1]
+            }
+            /"when"/ { 
+                when_block=1
+                next
+            }
+            when_block==1 {
+                if (match($0, /"([^"]+)"[[:space:]]*:[[:space:]]*"([^"]*)"/, arr)) {
+                    when_var = arr[1]
+                    when_val = arr[2]
+                    print id "|" when_var "|" when_val
+                    when_block=0
+                    id=""; when_var=""; when_val=""
+                } else if (match($0, /"([^"]+)"[[:space:]]*:[[:space:]]*\[/, arr)) {
+                    when_var = arr[1]
+                } else if (match($0, /"([^"]*)"/, arr) && when_var != "") {
+                    when_val = arr[1]
+                    if (when_val != "") {
+                        print id "|" when_var "|" when_val
+                    }
+                } else if (/\]/) {
+                    when_block=0
+                    id=""; when_var=""; when_val=""
+                }
+            }
+            ')
+        _CONDITIONAL_PACKAGES_LOADED=1
+        echo "[DEBUG] Conditional packages cache built:" >> "$CONFIG_DIR/debug.log"
+        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    idx=0
-    while [ "$idx" -lt "$pkg_count" ]; do
-        echo "[DEBUG] Processing package index $idx" >> "$CONFIG_DIR/debug.log"
+    # キャッシュから処理（カテゴリフィルタなし - 全カテゴリ対応）
+    echo "$_CONDITIONAL_PACKAGES_CACHE" | while IFS='|' read -r pkg_id when_var expected; do
+        [ -z "$pkg_id" ] && continue
         
-        pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].id" 2>/dev/null)
-        echo "[DEBUG] pkg_id=$pkg_id" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
         
-        when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$idx].when" 2>/dev/null | head -1)
-        echo "[DEBUG] when_json=$when_json" >> "$CONFIG_DIR/debug.log"
+        # 現在値取得
+        local current_val
+        if [ "$when_var" = "connection_type" ]; then
+            current_val="$effective_conn_type"
+        else
+            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        fi
         
-        if [ -n "$when_json" ]; then
-            when_var=$(echo "$when_json" | sed 's/^{ *"\([^"]*\)".*/\1/')
-            echo "[DEBUG] when_var=$when_var" >> "$CONFIG_DIR/debug.log"
-            
-            if [ "$when_var" = "connection_type" ]; then
-                current_val="$effective_conn_type"
-                echo "[DEBUG] Using effective connection type: $current_val" >> "$CONFIG_DIR/debug.log"
-            else
-                current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                echo "[DEBUG] current_val from SETUP_VARS: $current_val" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            expected=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
-$when_json
-EOF
-)
-
-            if [ -z "$expected" ]; then
-                expected=$(jsonfilter -e "@.${when_var}" 2>/dev/null <<EOF
-$when_json
-EOF
-)
-            fi
-            
-            echo "[DEBUG] expected=$expected" >> "$CONFIG_DIR/debug.log"
-            
-            should_add=0
-            if echo "$expected" | grep -qx "$current_val"; then
-                should_add=1
-                echo "[DEBUG] Match found!" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            if [ "$should_add" -eq 1 ]; then
-                # キャッシュ形式でチェック
-                if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    # キャッシュ形式で追加: id=name=uniqueId=installOptions=enableVar
-                    echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_PACKAGES"
-                    echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] current_val=$current_val" >> "$CONFIG_DIR/debug.log"
+        
+        # 条件判定
+        local should_add=0
+        if [ "$current_val" = "$expected" ]; then
+            should_add=1
+            echo "[DEBUG] Match found!" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        # パッケージ追加/削除
+        if [ "$should_add" -eq 1 ]; then
+            if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_PACKAGES"
+                echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+                
+                # enableVar追加
+                local enable_var
+                enable_var=$(get_package_enablevar "$pkg_id" "")
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Added enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
                 fi
-            else
-                # キャッシュ形式で削除
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
-                    echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+            fi
+        else
+            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
+                echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+                
+                # enableVar削除
+                local enable_var
+                enable_var=$(get_package_enablevar "$pkg_id" "")
+                if [ -n "$enable_var" ]; then
+                    sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                    echo "[DEBUG] Removed enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
         fi
-        
-        idx=$((idx+1))
     done
     
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
