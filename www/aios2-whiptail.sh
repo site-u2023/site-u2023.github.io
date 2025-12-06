@@ -787,9 +787,11 @@ category_config() {
         fi
     fi
     
+    # internet-connection カテゴリの場合、setup-driven-packages も処理
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
+            auto_add_conditional_packages "setup-driven-packages"
             auto_cleanup_conditional_variables "$cat_id"
             cleanup_orphaned_enablevars "$cat_id"
             return $RETURN_STAY
