@@ -270,7 +270,12 @@
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
             {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
-          ]
+          ],
+          "exclusiveVars": {
+            "standard": ["wlan_ssid", "wlan_password"],
+            "usteer": ["wlan_ssid", "wlan_password", "mobility_domain", "snr"],
+            "disabled": []
+          }
         },
         {
           "type": "field",
@@ -363,7 +368,15 @@
             {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
             {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
             {"value": "ap", "label": "AP", "class": "tr-ap"}
-          ]
+          ],
+          "exclusiveVars": {
+            "auto": [],
+            "dhcp": [],
+            "pppoe": ["pppoe_username", "pppoe_password"],
+            "dslite": ["dslite_aftr_type", "dslite_jurisdiction", "dslite_aftr_address"],
+            "mape": ["mape_type", "mape_gua_prefix", "mape_br", "mape_ealen", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_psid_offset", "mape_psidlen"],
+            "ap": ["ap_ip_address", "ap_gateway"]
+          }
         },
         {
           "type": "section",
@@ -488,7 +501,11 @@
               "options": [
                 {"value": "gua", "label": "GUA"},
                 {"value": "pd", "label": "PD"}
-              ]
+              ],
+              "exclusiveVars": {
+                "gua": ["mape_gua_prefix"],
+                "pd": []
+              }
             },
             {
               "type": "field",
@@ -648,7 +665,12 @@
             {"value": "auto", "label": "AUTO", "class": "tr-auto"},
             {"value": "manual", "label": "Manual", "class": "tr-manual"},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
-          ]
+          ],
+          "exclusiveVars": {
+            "auto": [],
+            "manual": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"],
+            "disabled": []
+          }
         },
         {
           "type": "section",
@@ -762,7 +784,12 @@
             {"value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto"},
             {"value": "manual", "label": "Manual", "class": "tr-dnsmasq-manual"},
             {"value": "disabled", "label": "Disabled", "class": "tr-dnsmasq-disabled"}
-          ]
+          ],
+          "exclusiveVars": {
+            "auto": [],
+            "manual": ["dnsmasq_cache", "dnsmasq_negcache"],
+            "disabled": []
+          }
         },
         {
           "type": "section",
