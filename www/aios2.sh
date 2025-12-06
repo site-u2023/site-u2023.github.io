@@ -619,7 +619,7 @@ package_compatible() {
     return 1
 }
 
-load_default_packages() {
+XXX_load_default_packages() {
     if [ ! -f "$PACKAGES_JSON" ]; then
         return 1
     fi
@@ -746,13 +746,6 @@ XXX_apply_api_defaults() {
         else
             echo "[DEBUG] Connection type is '$current_type' (not auto), skipping API defaults for connection" >> "$CONFIG_DIR/debug.log"
         fi
-    fi
-}
-
-apply_api_defaults() {
-    if [ -f "$AUTO_CONFIG_JSON" ]; then
-        # 初期化時は何も書き込まない
-        initialize_language_packages
     fi
 }
 
@@ -2924,8 +2917,8 @@ aios2_main() {
     fi
 
     # データロード
-    load_default_packages
-    apply_api_defaults
+    # load_default_packages
+    # apply_api_defaults
     
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
