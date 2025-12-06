@@ -1871,6 +1871,14 @@ auto_cleanup_conditional_variables() {
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
+    # connection_type='auto' の場合、internet-connection カテゴリはスキップ
+    local conn_type
+    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    if [ "$conn_type" = "auto" ] && [ "$cat_id" = "internet-connection" ]; then
+        echo "[DEBUG] Skipping cleanup for internet-connection (connection_type=auto)" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
     # カテゴリ内の全アイテムをスキャン
     for item_id in $(get_setup_category_items "$cat_id"); do
         local item_type
