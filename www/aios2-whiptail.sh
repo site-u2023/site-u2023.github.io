@@ -484,6 +484,8 @@ process_items() {
             
             options=$(get_setup_item_options "$item_id")
             
+            options=$(echo "$options" | sed 's/^___EMPTY___$//')
+            
             if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
                 options=$(echo "$options" | grep -v "^auto\$")
                 echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> "$CONFIG_DIR/debug.log"
