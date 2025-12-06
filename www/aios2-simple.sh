@@ -639,8 +639,14 @@ process_items() {
                     local selected_opt
                     selected_opt=$(echo "$options" | sed -n "${choice}p")
                     if [ -n "$selected_opt" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        # disabledの場合は変数を削除
+                        if [ "$selected_opt" = "disabled" ]; then
+                            sed -i "/^${variable}=/d" "$SETUP_VARS"
+                            echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                        else
+                            sed -i "/^${variable}=/d" "$SETUP_VARS"
+                            echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                        fi
 
                         cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
                         
@@ -753,8 +759,15 @@ process_items() {
                         local selected_opt
                         selected_opt=$(echo "$options" | sed -n "${choice}p")
                         if [ -n "$selected_opt" ]; then
-                            sed -i "/^${variable}=/d" "$SETUP_VARS"
-                            echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                            # disabledの場合は変数を削除
+                            if [ "$selected_opt" = "disabled" ]; then
+                                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                            else
+                                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                            fi
+                            
                             auto_add_conditional_packages "$cat_id"
                             auto_cleanup_conditional_variables "$cat_id"
                             cleanup_orphaned_enablevars "$cat_id"
@@ -776,7 +789,6 @@ process_items() {
                     printf '%s [%s]: ' "$item_label" "$current"
                     read -r value
                     
-                    # 空欄なら変数削除、入力があればセット
                     if [ -z "$value" ]; then
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "[DEBUG] Empty input, removed ${variable}" >> "$CONFIG_DIR/debug.log"
