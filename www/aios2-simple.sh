@@ -543,8 +543,21 @@ show_network_info() {
     
     echo ""
     if show_yesno "$breadcrumb" "$(translate 'tr-tui-use-auto-config')"; then
-        sed -i "/^connection_type=/d" "$SETUP_VARS"
-        echo "connection_type='auto'" >> "$SETUP_VARS"
+        set_var "connection_type" "auto"
+        
+        if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
+            set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
+            set_var "mape_br" "$MAPE_BR"
+            set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
+            set_var "mape_ipv4_prefixlen" "$MAPE_IPV4_PREFIXLEN"
+            set_var "mape_ipv6_prefix" "$MAPE_IPV6_PREFIX"
+            set_var "mape_ipv6_prefixlen" "$MAPE_IPV6_PREFIXLEN"
+            set_var "mape_ealen" "$MAPE_EALEN"
+            set_var "mape_psidlen" "$MAPE_PSIDLEN"
+            set_var "mape_psid_offset" "$MAPE_PSID_OFFSET"
+        elif [ "$DETECTED_CONN_TYPE" = "dslite" ]; then
+            set_var "dslite_aftr_address" "$DSLITE_AFTR"
+        fi
         
         # パッケージ追加
         auto_add_conditional_packages "internet-connection"
