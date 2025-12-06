@@ -991,6 +991,9 @@ DISPLAY
                     fi
                 fi
             fi
+            
+            # 選択が変更されたのでキャッシュをクリア
+            clear_selection_cache    
         fi
         
         package_selection "$cat_id" "$caller" "$parent_breadcrumb"
