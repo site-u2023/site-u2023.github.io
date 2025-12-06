@@ -2944,8 +2944,6 @@ aios2_main() {
     
     echo "Thank you for using aios2!"
     echo ""
-    cat /tmp/aios2/debug.log
-    echo ""
 }
 
 aios2_main
