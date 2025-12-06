@@ -2049,17 +2049,7 @@ generate_files() {
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             unique_id=$(echo "$cache_line" | cut -d= -f3)
             
-            # uniqueId がある場合はそれで検索、ない場合は id で検索
-            if [ -n "$unique_id" ]; then
-                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$unique_id'].enableVar" 2>/dev/null | head -1)
-            else
-                enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.uniqueId=''].enableVar" 2>/dev/null | head -1)
-        
-                # uniqueId が定義されていないエントリの enableVar を取得
-                if [ -z "$enable_var" ]; then
-                    enable_var=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].enableVar" 2>/dev/null | grep -v "^$" | head -1)
-                fi
-            fi
+            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
             
             if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                 echo "${enable_var}='1'" >> "$temp_enablevars"
@@ -2074,14 +2064,17 @@ generate_files() {
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -s "$SELECTED_PACKAGES" ]; then
-        while read -r cache_line; do
-            local enable_var
-            enable_var=$(echo "$cache_line" | cut -d= -f5)
+            # id_opts_list を構築
+            local id_opts_list=""
             
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${enable_var}='1'" >> "$temp_enablevars"
-            fi
-        done < "$SELECTED_PACKAGES"
+            while read -r cache_line; do
+                local pkg_id install_opts
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                install_opts=$(echo "$cache_line" | cut -d= -f4)
+                
+                id_opts_list="${id_opts_list}${pkg_id}|${install_opts}
+"
+            done < "$SELECTED_PACKAGES"
             
             local final_list=""
             local processed_ids=""
