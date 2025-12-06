@@ -2874,7 +2874,11 @@ aios2_main() {
     # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
 
-    # 必須ファイルの完了を優先的に待機
+    # API情報を取得・パース（言語ファイルは待たない）
+    wait $API_DL_PID
+    get_extended_device_info
+
+    # 必須ファイルの完了を待機
     wait $SETUP_PID
     SETUP_STATUS=$?
     
@@ -2896,11 +2900,11 @@ aios2_main() {
         return 1
     fi
 
-    # API情報を取得・パース
-    wait $API_DL_PID
-    get_extended_device_info
-    
-    # 言語ファイルを取得（必須ファイル後に待機）
+    # データロード
+    load_default_packages
+    apply_api_defaults
+
+    # 言語ファイルを取得（最後に待つ）
     wait $LANG_EN_PID
     
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -2911,10 +2915,6 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
-
-    # データロード
-    load_default_packages
-    apply_api_defaults
 
     # 起動時間を表示
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
