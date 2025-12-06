@@ -74,6 +74,12 @@ _SELECTED_CUSTOM_CACHE=""
 _PACKAGE_COMPAT_CACHE=""
 _CONDITIONAL_PACKAGES_CACHE=""
 _CONDITIONAL_PACKAGES_LOADED=0
+_CUSTOMFEED_CATEGORIES_CACHE=""
+_CUSTOMFEED_CATEGORIES_LOADED=0
+_CATEGORIES_CACHE=""
+_CATEGORIES_LOADED=0
+_SETUP_CATEGORIES_CACHE=""
+_SETUP_CATEGORIES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -364,8 +370,15 @@ init() {
 
     unset _PACKAGE_ENABLEVAR_CACHE
     unset _PACKAGE_NAME_CACHE
+    unset _CUSTOMFEED_CATEGORIES_CACHE
+    unset _CATEGORIES_CACHE
+    unset _SETUP_CATEGORIES_CACHE
+    
     _PACKAGE_ENABLEVAR_LOADED=0
     _PACKAGE_NAME_LOADED=0
+    _CUSTOMFEED_CATEGORIES_LOADED=0
+    _CATEGORIES_LOADED=0
+    _SETUP_CATEGORIES_LOADED=0
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
 }
@@ -750,7 +763,11 @@ get_setup_item_property() {
 }
 
 get_setup_categories() {
-    jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
+    if [ "$_SETUP_CATEGORIES_LOADED" -eq 0 ]; then
+        _SETUP_CATEGORIES_CACHE=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        _SETUP_CATEGORIES_LOADED=1
+    fi
+    echo "$_SETUP_CATEGORIES_CACHE"
 }
 
 get_setup_category_title() {
@@ -873,7 +890,11 @@ get_setup_item_option_label() {
 # Package JSON Accessors
 
 get_categories() {
-    jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
+    if [ "$_CATEGORIES_LOADED" -eq 0 ]; then
+        _CATEGORIES_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        _CATEGORIES_LOADED=1
+    fi
+    echo "$_CATEGORIES_CACHE"
 }
 
 get_category_name() {
@@ -1077,7 +1098,12 @@ download_customfeeds_json() {
 }
 
 get_customfeed_categories() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
+    if [ "$_CUSTOMFEED_CATEGORIES_LOADED" -eq 0 ]; then
+        _CUSTOMFEED_CATEGORIES_CACHE=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        _CUSTOMFEED_CATEGORIES_LOADED=1
+        echo "[DEBUG] Custom feed categories cache built" >> "$CONFIG_DIR/debug.log"
+    fi
+    echo "$_CUSTOMFEED_CATEGORIES_CACHE"
 }
 
 XXX_custom_feeds_selection_common() {
@@ -1105,7 +1131,7 @@ XXX_custom_feeds_selection_common() {
     return 0
 }
 
-custom_feeds_selection_common() {
+custom_feeds_selection_prepare() {
     download_customfeeds_json || return 1
     
     local categories
