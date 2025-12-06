@@ -2941,6 +2941,8 @@ aios2_main() {
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
     fi
+
+    echo "Thank you for using aios2!"
 }
 
 aios2_main
