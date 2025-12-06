@@ -764,6 +764,7 @@ show_auto_detection_if_available() {
     if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
         if show_network_info; then
             auto_add_conditional_packages "internet-connection"
+            auto_add_conditional_packages "setup-driven-packages"
             return 0
         fi
     fi
