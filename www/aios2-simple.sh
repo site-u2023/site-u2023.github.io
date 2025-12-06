@@ -857,13 +857,16 @@ category_config() {
         printf "%s [%s]: " "$tr_language" "$current_lang"
         read -r value
         
-        [ -z "$value" ] && value="$current_lang"
-            
-        if [ -n "$value" ]; then
+        # 空欄の場合は削除、値がある場合は設定
+        if [ -z "$value" ]; then
+            sed -i "/^language=/d" "$SETUP_VARS"
+            echo "[DEBUG] Empty language input, removed variable" >> "$CONFIG_DIR/debug.log"
+        else
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
-            update_language_packages
         fi
+        # 常にパッケージ同期
+        update_language_packages
     fi
     
     if [ "$cat_id" = "internet-connection" ]; then
