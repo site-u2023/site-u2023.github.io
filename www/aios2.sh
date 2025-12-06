@@ -2096,17 +2096,28 @@ generate_files() {
                 count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
                 
                 if [ "$count" -gt 1 ]; then
-                    local has_opts_line
-                    has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                    # 同じIDが複数ある場合、オプションなしを優先
+                    local no_opts_line
+                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
                     
-                    if [ -n "$has_opts_line" ]; then
-                        local opts_value
-                        opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
-                        final_list="${final_list}${opts_value} ${current_id}
-"
-                    else
+                    if [ -n "$no_opts_line" ]; then
+                        # オプションなしがある場合はそれを使う
                         final_list="${final_list}${current_id}
 "
+                    else
+                        # オプションなしがない場合は最初のオプション付きを使う
+                        local has_opts_line
+                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                        
+                        if [ -n "$has_opts_line" ]; then
+                            local opts_value
+                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
+                            final_list="${final_list}${opts_value} ${current_id}
+"
+                        else
+                            final_list="${final_list}${current_id}
+"
+                        fi
                     fi
                 else
                     if [ -n "$current_opts" ]; then
@@ -2300,29 +2311,62 @@ generate_config_summary() {
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # 重複除去してパッケージIDのみ表示
-            local temp_list=""
+            # id_opts_list を構築（generate_files()と同じロジック）
+            local id_opts_list=""
             while read -r cache_line; do
-                local pkg_id
+                local pkg_id install_opts
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                install_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                temp_list="${temp_list}${pkg_id}
+                id_opts_list="${id_opts_list}${pkg_id}|${install_opts}
 "
             done < "$SELECTED_PACKAGES"
             
-            # 重複削除
+            # 重複除去とオプション処理
             local processed_ids=""
             while read -r line; do
                 [ -z "$line" ] && continue
                 
-                echo "$processed_ids" | grep -q "^${line}\$" && continue
+                local current_id current_opts
+                current_id=$(echo "$line" | cut -d'|' -f1)
+                current_opts=$(echo "$line" | cut -d'|' -f2)
                 
-                echo "$line"
+                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
                 
-                processed_ids="${processed_ids}${line}
+                local same_id_lines count
+                same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
+                count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
+                
+                if [ "$count" -gt 1 ]; then
+                    # 同じIDが複数ある場合、オプションなしを優先
+                    local no_opts_line
+                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
+                    
+                    if [ -n "$no_opts_line" ]; then
+                        echo "$current_id"
+                    else
+                        local has_opts_line opts_value
+                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                        
+                        if [ -n "$has_opts_line" ]; then
+                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
+                            echo "${opts_value} ${current_id}"
+                        else
+                            echo "$current_id"
+                        fi
+                    fi
+                else
+                    if [ -n "$current_opts" ]; then
+                        echo "${current_opts} ${current_id}"
+                    else
+                        echo "$current_id"
+                    fi
+                fi
+                
+                processed_ids="${processed_ids}${current_id}
 "
             done <<EOF
-$temp_list
+$id_opts_list
 EOF
             
             echo ""
