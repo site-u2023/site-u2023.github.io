@@ -895,7 +895,6 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" > /dev/null 2>&1
     fi
@@ -958,15 +957,37 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # このカテゴリの既存エントリをすべて削除
+    # このカテゴリの既存エントリをすべて削除（enableVar も削除）
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
+        
+        # このpkg_idに紐付くすべてのエントリを取得
+        local all_entries
+        all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
+        
+        # 各エントリのenableVarを削除
+        while read -r entry; do
+            [ -z "$entry" ] && continue
+            
+            local unique_id enable_var
+            unique_id=$(echo "$entry" | cut -d= -f3)
+            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+            
+            if [ -n "$enable_var" ]; then
+                sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
+                echo "[DEBUG] Removed enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
+            fi
+        done <<ENTRIES
+$all_entries
+ENTRIES
+        
+        # パッケージエントリを削除
         sed -i "/^${pkg_id}=/d" "$target_file"
     done <<EOF
 $packages
 EOF
-
-    # 選択されたものだけを保存
+    
+    # 選択されたものだけを保存（enableVar も追加）
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
@@ -985,6 +1006,16 @@ EOF
             
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
+                
+                # enableVarを追加
+                local unique_id enable_var
+                unique_id=$(echo "$cache_line" | cut -d= -f3)
+                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+                
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Added enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
+                fi
             fi
         fi
     done
