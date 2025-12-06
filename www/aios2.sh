@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1033"
+VERSION="R7.1206.1122"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -1773,29 +1773,22 @@ initialize_language_packages() {
     echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
     
     # en または空の場合はパッケージ不要
-    if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
+    if [ "$current_lang" = "en" ]; then
         echo "[DEBUG] Language is 'en' or empty, no packages needed" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
+    # JSONから直接prefix取得
     local prefixes
     prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
     for prefix in $prefixes; do
         local lang_pkg="${prefix}${current_lang}"
         
-        # キャッシュから完全なエントリを取得
-        local cache_line
-        cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${lang_pkg}=")
-        
-        if [ -n "$cache_line" ]; then
-            # 重複チェック
-            if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "$cache_line" >> "$SELECTED_PACKAGES"
-                echo "[INIT] Added language package: $lang_pkg" >> "$CONFIG_DIR/debug.log"
-            fi
-        else
-            echo "[INIT] Warning: Language package $lang_pkg not found in cache" >> "$CONFIG_DIR/debug.log"
+        # 直接パッケージ名を追加
+        if ! grep -q "^${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${lang_pkg}" >> "$SELECTED_PACKAGES"
+            echo "[INIT] Added language package: $lang_pkg" >> "$CONFIG_DIR/debug.log"
         fi
     done
     
@@ -2612,6 +2605,12 @@ aios2_main() {
             echo "[DEBUG] Detected mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
         fi
     fi
+
+    echo "Loading default packages"
+    load_default_packages
+    
+    echo "Applying API defaults"
+    apply_api_defaults
 
     echo "Fetching UI modules"
     
