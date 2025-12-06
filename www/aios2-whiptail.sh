@@ -1019,6 +1019,8 @@ EOF
             fi
         fi
     done
+    # 選択が変更されたのでキャッシュをクリア
+    clear_selection_cache
 }
 
 view_customfeeds() {
