@@ -2527,7 +2527,7 @@ aios2_main() {
     echo "Fetching auto-config"
     get_extended_device_info
     
-    if [ "${AUTO_LANGUAGE:-en}" != "en" ]; then
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         echo "Fetching language file: ${AUTO_LANGUAGE}"
         download_language_json "${AUTO_LANGUAGE}"
     fi
