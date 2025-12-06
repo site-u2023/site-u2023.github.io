@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1217"
+VERSION="R7.1206.1300"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -589,6 +589,7 @@ load_default_packages() {
 
 apply_api_defaults() {
     if [ -f "$AUTO_CONFIG_JSON" ]; then
+        # 基本設定（言語・タイムゾーンなど）
         grep -q "^language=" "$SETUP_VARS" 2>/dev/null || \
             echo "language='${AUTO_LANGUAGE}'" >> "$SETUP_VARS"
         
@@ -603,11 +604,32 @@ apply_api_defaults() {
         
         initialize_language_packages
         
-        # MAP-E/DS-Lite の自動設定
-        if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
+        # 🔧 修正: 接続方式の排他制御
+        local current_type
+        current_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        
+        echo "[DEBUG] apply_api_defaults: current_type='$current_type'" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'" >> "$CONFIG_DIR/debug.log"
+        
+        # connection_type が 'auto' または未設定の場合のみAPI値を設定
+        if [ "$current_type" = "auto" ] || [ -z "$current_type" ]; then
+            # デフォルトで 'auto' を設定（未設定の場合）
+            if [ -z "$current_type" ]; then
+                echo "connection_type='auto'" >> "$SETUP_VARS"
+                current_type="auto"
+                echo "[DEBUG] Set default connection_type='auto'" >> "$CONFIG_DIR/debug.log"
+            fi
+            
+            # MAP-E が検出された場合
             if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
-                sed -i "s/^connection_type='auto'/connection_type='mape'/" "$SETUP_VARS"
+                echo "[DEBUG] Applying MAP-E API defaults" >> "$CONFIG_DIR/debug.log"
                 
+                # 既存のDS-Lite変数を削除（MAP-Eと排他）
+                sed -i "/^dslite_aftr_type=/d" "$SETUP_VARS"
+                sed -i "/^dslite_jurisdiction=/d" "$SETUP_VARS"
+                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
+                
+                # MAP-E設定を適用
                 [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
                     echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
                 
@@ -635,10 +657,41 @@ apply_api_defaults() {
                 [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
                     echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
                 
+            # DS-Lite が検出された場合
             elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
+                echo "[DEBUG] Applying DS-Lite API defaults" >> "$CONFIG_DIR/debug.log"
+                
+                # 既存のMAP-E変数を削除（DS-Liteと排他）
+                sed -i "/^mape_type=/d" "$SETUP_VARS"
+                sed -i "/^mape_gua_prefix=/d" "$SETUP_VARS"
+                sed -i "/^mape_br=/d" "$SETUP_VARS"
+                sed -i "/^mape_ealen=/d" "$SETUP_VARS"
+                sed -i "/^mape_ipv4_prefix=/d" "$SETUP_VARS"
+                sed -i "/^mape_ipv4_prefixlen=/d" "$SETUP_VARS"
+                sed -i "/^mape_ipv6_prefix=/d" "$SETUP_VARS"
+                sed -i "/^mape_ipv6_prefixlen=/d" "$SETUP_VARS"
+                sed -i "/^mape_psid_offset=/d" "$SETUP_VARS"
+                sed -i "/^mape_psidlen=/d" "$SETUP_VARS"
+                
+                # DS-Lite設定を適用
                 grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
                     echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+                
+                # DS-Lite typeとjurisdictionも設定（あれば）
+                if [ -n "$DSLITE_AFTR_TYPE" ]; then
+                    grep -q "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null || \
+                        echo "dslite_aftr_type='$DSLITE_AFTR_TYPE'" >> "$SETUP_VARS"
+                fi
+                
+                if [ -n "$DSLITE_JURISDICTION" ]; then
+                    grep -q "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null || \
+                        echo "dslite_jurisdiction='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
+                fi
+            else
+                echo "[DEBUG] No valid connection type detected (DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE')" >> "$CONFIG_DIR/debug.log"
             fi
+        else
+            echo "[DEBUG] Connection type is '$current_type' (not auto), skipping API defaults for connection" >> "$CONFIG_DIR/debug.log"
         fi
     fi
 }
@@ -1562,6 +1615,11 @@ auto_cleanup_conditional_variables() {
     
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+
+    # 接続方式の排他制御
+    if [ "$cat_id" = "internet-connection" ]; then
+        cleanup_connection_type_variables
+    fi
     
     # カテゴリ内の全アイテムをスキャン
     for item_id in $(get_setup_category_items "$cat_id"); do
@@ -1613,6 +1671,58 @@ check_and_cleanup_variable() {
             echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
         fi
     fi
+}
+
+# 接続方式の排他制御
+cleanup_connection_type_variables() {
+    local current_type
+    current_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] Current connection_type: '$current_type'" >> "$CONFIG_DIR/debug.log"
+    
+    # 各接続方式専用の変数リスト
+    local pppoe_vars="pppoe_username pppoe_password"
+    local dslite_vars="dslite_aftr_type dslite_jurisdiction dslite_aftr_address"
+    local mape_vars="mape_type mape_gua_prefix mape_br mape_ealen mape_ipv4_prefix mape_ipv4_prefixlen mape_ipv6_prefix mape_ipv6_prefixlen mape_psid_offset mape_psidlen"
+    local ap_vars="ap_ip_address ap_gateway"
+    
+    # 現在の接続方式以外の変数を削除
+    case "$current_type" in
+        pppoe)
+            _remove_vars "$dslite_vars $mape_vars $ap_vars"
+            ;;
+        dslite)
+            _remove_vars "$pppoe_vars $mape_vars $ap_vars"
+            ;;
+        mape)
+            _remove_vars "$pppoe_vars $dslite_vars $ap_vars"
+            ;;
+        ap)
+            _remove_vars "$pppoe_vars $dslite_vars $mape_vars"
+            ;;
+        dhcp)
+            _remove_vars "$pppoe_vars $dslite_vars $mape_vars $ap_vars"
+            ;;
+        auto)
+            # autoの場合は削除しない（API値保持）
+            echo "[DEBUG] Connection type 'auto' - keeping API values" >> "$CONFIG_DIR/debug.log"
+            ;;
+        *)
+            echo "[DEBUG] Unknown connection type: $current_type" >> "$CONFIG_DIR/debug.log"
+            ;;
+    esac
+}
+
+# ヘルパー関数：変数リストを削除
+_remove_vars() {
+    local vars="$1"
+    
+    for var in $vars; do
+        if grep -q "^${var}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${var}=/d" "$SETUP_VARS"
+            echo "[CLEANUP] Removed conflicting variable: $var" >> "$CONFIG_DIR/debug.log"
+        fi
+    done
 }
 
 # enableVar のクリーンアップ
