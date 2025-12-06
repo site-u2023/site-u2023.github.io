@@ -257,7 +257,14 @@ device_info() {
 "
     [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
 "
-    
+    info="${info}Package manager: $PKG_MGR
+"
+    local current_lang
+    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
+    [ -n "$current_lang" ] && info="${info}Language: $current_lang
+"
+
     show_msgbox "$breadcrumb" "$info"
 }
 
