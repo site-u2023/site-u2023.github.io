@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1948"
+VERSION="R7.1206.2100"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -1651,43 +1651,32 @@ auto_add_conditional_packages() {
     
     # 初回のみキャッシュ構築
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk '
-            BEGIN { id=""; when_block=0; when_var=""; when_val="" }
-            /"id"/ { 
-                match($0, /"id"[[:space:]]*:[[:space:]]*"([^"]*)"/, arr)
-                id = arr[1]
-            }
-            /"when"/ { 
-                when_block=1
-                next
-            }
-            when_block==1 {
-                if (match($0, /"([^"]+)"[[:space:]]*:[[:space:]]*"([^"]*)"/, arr)) {
-                    when_var = arr[1]
-                    when_val = arr[2]
-                    print id "|" when_var "|" when_val
-                    when_block=0
-                    id=""; when_var=""; when_val=""
-                } else if (match($0, /"([^"]+)"[[:space:]]*:[[:space:]]*\[/, arr)) {
-                    when_var = arr[1]
-                } else if (match($0, /"([^"]*)"/, arr) && when_var != "") {
-                    when_val = arr[1]
-                    if (when_val != "") {
-                        print id "|" when_var "|" when_val
-                    }
-                } else if (/\]/) {
-                    when_block=0
-                    id=""; when_var=""; when_val=""
-                }
-            }
-            ')
+        _CONDITIONAL_PACKAGES_CACHE=$(
+            # wifi_mode (文字列)
+            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
+            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
+            if [ -n "$pkg_id" ]; then
+                echo "${pkg_id}|wifi_mode|${when_val}"
+            fi
+            
+            # connection_type (配列)
+            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
+            
+            echo "$pkg_ids" | while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
+                echo "$values" | while read -r val; do
+                    [ -z "$val" ] && continue
+                    echo "${pkg_id}|connection_type|${val}"
+                done
+            done
+        )
         _CONDITIONAL_PACKAGES_LOADED=1
         echo "[DEBUG] Conditional packages cache built:" >> "$CONFIG_DIR/debug.log"
         echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # キャッシュから処理（カテゴリフィルタなし - 全カテゴリ対応）
+    # キャッシュから処理（以下既存のまま）
     echo "$_CONDITIONAL_PACKAGES_CACHE" | while IFS='|' read -r pkg_id when_var expected; do
         [ -z "$pkg_id" ] && continue
         
