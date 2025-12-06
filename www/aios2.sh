@@ -2943,6 +2943,7 @@ aios2_main() {
     fi
 
     echo "Thank you for using aios2!"
+    echo ""
 }
 
 aios2_main
