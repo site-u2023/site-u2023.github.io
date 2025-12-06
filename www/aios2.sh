@@ -66,6 +66,19 @@ _PACKAGE_ENABLEVAR_CACHE=""
 _PACKAGE_ENABLEVAR_LOADED=0
 _PACKAGE_NAME_CACHE=""
 _PACKAGE_NAME_LOADED=0
+_SELECTED_PACKAGES_CACHE_LOADED=0
+_SELECTED_CUSTOM_CACHE_LOADED=0
+_PACKAGE_COMPAT_LOADED=0
+_SELECTED_PACKAGES_CACHE=""
+_SELECTED_CUSTOM_CACHE=""
+_PACKAGE_COMPAT_CACHE=""
+
+clear_selection_cache() {
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _SELECTED_PACKAGES_CACHE=""
+    _SELECTED_CUSTOM_CACHE=""
+}
 
 # adguardhome
 # Operation mode variables (set by command line options)
@@ -555,13 +568,35 @@ get_extended_device_info() {
 
 package_compatible() {
     local pkg_id="$1"
-    local pkg_managers
     
-    pkg_managers=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].packageManager[*]" 2>/dev/null)
+    # 初回のみキャッシュ構築
+    if [ "$_PACKAGE_COMPAT_LOADED" -eq 0 ]; then
+        _PACKAGE_COMPAT_CACHE=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '
+            {
+                id=""; pms="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id") id=$(i+2);
+                    if($i=="packageManager") {
+                        # packageManager配列を収集
+                        for(j=i;j<=NF;j++){
+                            if($j ~ /opkg|apk/) pms=pms$(j)" ";
+                            if($j=="]") break;
+                        }
+                    }
+                }
+                if(id && pms) print id"="pms;
+            }')
+        _PACKAGE_COMPAT_LOADED=1
+    fi
+    
+    # キャッシュから検索
+    local pkg_managers
+    pkg_managers=$(echo "$_PACKAGE_COMPAT_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
     
     [ -z "$pkg_managers" ] && return 0
     
-    echo "$pkg_managers" | grep -q "^${PKG_MGR}$" && return 0
+    echo "$pkg_managers" | grep -q "${PKG_MGR}" && return 0
     
     return 1
 }
@@ -1027,12 +1062,21 @@ is_package_selected() {
     local identifier="$1"
     local caller="${2:-normal}"
     
+    # 初回のみファイルをキャッシュ
     if [ "$caller" = "custom_feeds" ]; then
-        grep -q "=${identifier}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+        if [ "$_SELECTED_CUSTOM_CACHE_LOADED" -eq 0 ]; then
+            _SELECTED_CUSTOM_CACHE=$(cat "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || true)
+            _SELECTED_CUSTOM_CACHE_LOADED=1
+        fi
+        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}=" || \
+        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}\$"
     else
-        grep -q "=${identifier}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-        grep -q "=${identifier}\$" "$SELECTED_PACKAGES" 2>/dev/null
+        if [ "$_SELECTED_PACKAGES_CACHE_LOADED" -eq 0 ]; then
+            _SELECTED_PACKAGES_CACHE=$(cat "$SELECTED_PACKAGES" 2>/dev/null || true)
+            _SELECTED_PACKAGES_CACHE_LOADED=1
+        fi
+        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}=" || \
+        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}\$"
     fi
 }
 
@@ -2295,6 +2339,9 @@ SCRIPTS
         
         echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
     fi
+
+    # ファイル生成後、次回のために選択キャッシュをクリア
+    clear_selection_cache
 }
 
 generate_config_summary() {
