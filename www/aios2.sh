@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1009"
+VERSION="R7.1206.1033"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -600,6 +600,10 @@ apply_api_defaults() {
         
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
+
+        if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+            get_package_name "dummy" > /dev/null 2>&1
+        fi
         
         # 言語パッケージの初期化
         local language
