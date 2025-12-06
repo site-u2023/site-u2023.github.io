@@ -1617,7 +1617,7 @@ check_and_cleanup_variable() {
 
 # enableVar のクリーンアップ
 cleanup_orphaned_enablevars() {
-    local cat_id="$1"  # カテゴリ情報も受け取る（将来の拡張用）
+    local cat_id="$1"
     local temp_file="$CONFIG_DIR/temp_enablevars.txt"
     
     echo "[DEBUG] === cleanup_orphaned_enablevars called ===" >> "$CONFIG_DIR/debug.log"
@@ -1651,7 +1651,11 @@ cleanup_orphaned_enablevars() {
 $_PACKAGE_NAME_CACHE
 EOF
         
-        if [ "$pkg_exists" -eq 1 ] || [ -z "$(grep "=${var_name}$" <<< "$_PACKAGE_ENABLEVAR_CACHE")" ]; then
+        # 🔧 修正: here-string を echo | grep に変更
+        local is_enablevar
+        is_enablevar=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "=${var_name}$")
+        
+        if [ "$pkg_exists" -eq 1 ] || [ -z "$is_enablevar" ]; then
             # パッケージが選択されているか、enableVarではない通常変数
             echo "$line" >> "$temp_file"
         else
