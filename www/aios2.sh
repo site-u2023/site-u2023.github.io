@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.2106"
+VERSION="R7.1206.2112"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -1676,7 +1676,7 @@ auto_add_conditional_packages() {
     fi
     
     # キャッシュから処理
-    echo "$_CONDITIONAL_PACKAGES_CACHE" | while IFS='|' read -r pkg_id when_var expected; do
+    while IFS='|' read -r pkg_id when_var expected; do
         [ -z "$pkg_id" ] && continue
         
         echo "[DEBUG] Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
@@ -1726,7 +1726,9 @@ auto_add_conditional_packages() {
                 fi
             fi
         fi
-    done
+    done <<EOF
+$_CONDITIONAL_PACKAGES_CACHE
+EOF
     
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
