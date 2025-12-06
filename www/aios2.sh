@@ -972,16 +972,36 @@ EOF
 
 get_package_enablevar() {
     local pkg_id="$1"
+    local unique_id="$2"
     local enable_var
     
     if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
+        # postinst.json から id=uniqueId=enableVar の形式でキャッシュ作成
         _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
+            awk -F'"' '
+            {
+                id=""; uid=""; ev="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id") id=$(i+2);
+                    if($i=="uniqueId") uid=$(i+2);
+                    if($i=="enableVar") ev=$(i+2);
+                }
+                if(id && ev) print id"="uid"="ev;
+            }')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{id="";ev="";for(i=1;i<=NF;i++){if($i=="id")id=$(i+2);if($i=="enableVar")ev=$(i+2)}if(id&&ev)print id"="ev}')
+                awk -F'"' '
+                {
+                    id=""; uid=""; ev="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id") id=$(i+2);
+                        if($i=="uniqueId") uid=$(i+2);
+                        if($i=="enableVar") ev=$(i+2);
+                    }
+                    if(id && ev) print id"="uid"="ev;
+                }')
             _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
 ${custom_cache}"
         fi
@@ -989,7 +1009,17 @@ ${custom_cache}"
         _PACKAGE_ENABLEVAR_LOADED=1
     fi
     
-    enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}=" | cut -d= -f2)
+    # キャッシュから検索
+    if [ -n "$unique_id" ]; then
+        # uniqueId がある場合: "id=uniqueId=enableVar" の行を探す
+        enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}=${unique_id}=" | cut -d= -f3)
+    fi
+    
+    # 見つからない場合は id だけで検索（uniqueId が空の行）
+    if [ -z "$enable_var" ]; then
+        enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}==" | cut -d= -f3)
+    fi
+    
     echo "$enable_var"
 }
 
