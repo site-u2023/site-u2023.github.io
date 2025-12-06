@@ -650,24 +650,6 @@ apply_api_defaults() {
     fi
 }
 
-update_language_packages() {
-    local new_lang
-    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    local prefixes
-    prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
-    
-    for prefix in $prefixes; do
-        sed -i "/^${prefix}/d" "$SELECTED_PACKAGES"
-    done
-    
-    if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
-        for prefix in $prefixes; do
-            echo "${prefix}${new_lang}" >> "$SELECTED_PACKAGES"
-        done
-    fi
-}
-
 # Setup JSON Accessors
 
 get_setup_categories() {
