@@ -700,7 +700,7 @@ No additional settings required."
                     return $RETURN_BACK
                 fi
 
-                # 空欄の扱いを明確化
+                # 修正: 空欄の扱いを明確化
                 if [ -n "$value" ]; then
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${value}'" >> "$SETUP_VARS"
