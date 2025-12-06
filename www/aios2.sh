@@ -2877,42 +2877,16 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
 
-    echo "[DEBUG] $(date): All downloads started" >> "$CONFIG_DIR/debug.log"
-
     # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
-    
-    echo "[DEBUG] $(date): UI selected: $UI_MODE" >> "$CONFIG_DIR/debug.log"
 
-    # API情報取得完了を待つ
-    echo "[DEBUG] $(date): Waiting for API download..." >> "$CONFIG_DIR/debug.log"
+    # API情報を取得・パース
     wait $API_DL_PID
-    echo "[DEBUG] $(date): API download complete" >> "$CONFIG_DIR/debug.log"
-    
-    if [ -f "$AUTO_CONFIG_JSON" ]; then
-        echo "[DEBUG] AUTO_CONFIG_JSON exists, size: $(wc -c < "$AUTO_CONFIG_JSON")" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] First 200 chars: $(head -c 200 "$AUTO_CONFIG_JSON")" >> "$CONFIG_DIR/debug.log"
-    else
-        echo "[DEBUG] ERROR: AUTO_CONFIG_JSON does not exist!" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    echo "[DEBUG] $(date): Calling get_extended_device_info..." >> "$CONFIG_DIR/debug.log"
     get_extended_device_info
-    
-    echo "[DEBUG] After get_extended_device_info:" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_MODEL='$DEVICE_MODEL'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   ISP_NAME='$ISP_NAME'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'" >> "$CONFIG_DIR/debug.log"
     
     # 言語ファイルを取得
     wait $LANG_EN_PID
-    echo "[DEBUG] $(date): English language file downloaded" >> "$CONFIG_DIR/debug.log"
-    
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "[DEBUG] Downloading language: $AUTO_LANGUAGE" >> "$CONFIG_DIR/debug.log"
         download_language_json "${AUTO_LANGUAGE}"
     fi
 
@@ -2927,8 +2901,6 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $UI_DL_PID
-    
-    echo "[DEBUG] $(date): All files downloaded" >> "$CONFIG_DIR/debug.log"
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2946,7 +2918,6 @@ aios2_main() {
     fi
 
     # データロード
-    echo "[DEBUG] $(date): Loading package data..." >> "$CONFIG_DIR/debug.log"
     load_default_packages
     apply_api_defaults
 
@@ -2956,8 +2927,6 @@ aios2_main() {
     
     printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
     echo ""
-    
-    echo "[DEBUG] $(date): Starting UI module" >> "$CONFIG_DIR/debug.log"
     
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
@@ -2978,7 +2947,5 @@ aios2_main() {
     cat /tmp/aios2/debug.log
     echo ""
 }
-
-aios2_main
 
 aios2_main
