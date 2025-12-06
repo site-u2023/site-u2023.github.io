@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.2146"
+VERSION="R7.1206.2235"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -564,6 +564,7 @@ get_extended_device_info() {
     _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
     _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
+    _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
     
     # DS-Lite
     _set_api_value 'DSLITE_AFTR'        'aftr.aftrFqdn'
@@ -608,6 +609,8 @@ get_extended_device_info() {
         LAN_ADDR=$(ip -4 -o addr show dev "$LAN_IF" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
         LAN_ADDR6=$(ip -6 -o addr show dev "$LAN_IF" scope global 2>/dev/null | grep -v temporary | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
     fi
+    
+    echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
 }
 
 # Package Management
