@@ -2874,7 +2874,7 @@ aios2_main() {
     # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
 
-    # 必須ファイルの完了を待機
+    # 必須ファイルの完了を優先的に待機
     wait $SETUP_PID
     SETUP_STATUS=$?
     
@@ -2900,7 +2900,7 @@ aios2_main() {
     wait $API_DL_PID
     get_extended_device_info
     
-    # 言語ファイルを取得
+    # 言語ファイルを取得（必須ファイル後に待機）
     wait $LANG_EN_PID
     
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
