@@ -2831,31 +2831,40 @@ aios2_main() {
     init
     detect_package_manager
 
-    # 全ファイルを並列ダウンロード
+    # 全ファイルを並列ダウンロード開始
     (
-        __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        if ! download_setup_json; then
+            echo "Error: Failed to download setup.json" >&2
+            exit 1
+        fi
     ) &
-    WHIPTAIL_PID=$!
-    
-    (
-        __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    SIMPLE_PID=$!
-
-    download_setup_json &
     SETUP_PID=$!
     
-    download_postinst_json &
+    (
+        if ! download_postinst_json; then
+            echo "ERROR: Failed to download postinst.json." >&2
+            exit 1
+        fi
+    ) &
     POSTINST_PID=$!
     
-    download_customfeeds_json >/dev/null 2>&1 &
+    (
+        download_customfeeds_json >/dev/null 2>&1
+    ) &
     CUSTOMFEEDS_PID=$!
     
-    download_customscripts_json >/dev/null 2>&1 &
+    (
+        download_customscripts_json >/dev/null 2>&1
+    ) &
     CUSTOMSCRIPTS_PID=$!
     
     prefetch_templates &
     TEMPLATES_PID=$!
+    
+    (
+        download_language_json "en" >/dev/null 2>&1
+    ) &
+    LANG_EN_PID=$!
     
     (
         __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
@@ -2863,86 +2872,61 @@ aios2_main() {
     API_DL_PID=$!
     
     (
-        download_language_json "en" >/dev/null 2>&1
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
-    LANG_EN_PID=$!
+    UI_DL_PID=$!
 
-    # UIモジュール完了を待つ
-    wait $WHIPTAIL_PID
-    wait $SIMPLE_PID
-    
-    # 全ファイル完了を待つ
+    # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
+    select_ui_mode
+
+    # API情報を取得・パース
     wait $API_DL_PID
+    get_extended_device_info
+    
+    # 言語ファイルを取得
     wait $LANG_EN_PID
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
+
+    # 残りのファイル完了を待機
     wait $SETUP_PID
+    SETUP_STATUS=$?
+    
     wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
-
-    # API情報をパース
-    get_extended_device_info
+    wait $UI_DL_PID
     
-    # 言語ファイル取得
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}"
+    # エラーチェック
+    if [ $SETUP_STATUS -ne 0 ]; then
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    if [ $POSTINST_STATUS -ne 0 ]; then
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
     fi
 
     # データロード
     load_default_packages
     apply_api_defaults
 
-    # 起動時間を表示（UI選択の前）
+    # 起動時間を表示
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
     ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
     printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
     echo ""
-
-    # UI選択
-    local has_whiptail=0
-    local has_simple=0
-    local whiptail_pkg="whiptail"
-    local choice
-    
-    [ -f "$CONFIG_DIR/aios2-whiptail.sh" ] && has_whiptail=1
-    [ -f "$CONFIG_DIR/aios2-simple.sh" ] && has_simple=1
-    
-    if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
-        echo "Error: No UI module found"
-        exit 1
-    fi
-    
-    if [ $has_whiptail -eq 1 ] && [ $has_simple -eq 0 ]; then
-        UI_MODE="whiptail"
-    elif [ $has_whiptail -eq 0 ] && [ $has_simple -eq 1 ]; then
-        UI_MODE="simple"
-    else
-        echo "Select UI Mode:"
-        echo "1) whiptail (Dialog TUI)"
-        echo "2) simple   (List TUI)"
-        
-        printf "Select [1]: "
-        read -r choice
-        
-        case "$choice" in
-            2)
-                UI_MODE="simple"
-                ;;
-            *)
-                UI_MODE="whiptail"
-                if ! command -v whiptail >/dev/null 2>&1; then
-                    echo "Installing whiptail..."
-                    if install_package $whiptail_pkg; then
-                        echo "Installation successful."
-                    else
-                        echo "Installation failed. Falling back to simple mode."
-                        UI_MODE="simple"
-                    fi
-                fi
-                ;;
-        esac
-    fi
     
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
@@ -2950,8 +2934,13 @@ aios2_main() {
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
     
-    . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-    aios2_${UI_MODE}_main
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        exit 1
+    fi
 }
 
 aios2_main
