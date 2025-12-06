@@ -6,33 +6,6 @@
 
 VERSION="R7.1206.2235"
 
-# =============================================================================
-# Package Selection and Installation Logic
-# =============================================================================
-#
-# Package Name Cache (_PACKAGE_NAME_CACHE):
-# - Single source of truth (read-only)
-# - Format: id|name|uniqueId|installOptions
-# - Never modify, only read
-#
-# UI Display:
-# - Display uniqueId if exists, otherwise display name
-# - Save displayed value (name or uniqueId) to selected_packages.txt
-#
-# Installation (postinst.sh generation):
-# - installOptions acts as exclusive flag for same id
-# - When multiple entries share same id:
-#   * No installOptions = dominant (strong)
-#   * With installOptions = recessive (weak)
-#   * Installing both makes installOptions ineffective
-#   * Therefore: exclusive processing required
-#
-# Exclusive Processing:
-# - Example: apache (no options) vs --nodeps apache (with options)
-# - If both executed: apache installs first → --nodeps becomes ineffective
-# - Solution: Keep entry with installOptions, discard entry without
-# - This ensures --nodeps and similar options work correctly
-
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
@@ -650,136 +623,6 @@ package_compatible() {
     return 1
 }
 
-XXX_load_default_packages() {
-    if [ ! -f "$PACKAGES_JSON" ]; then
-        return 1
-    fi
-    
-    local cat_id pkg_id checked
-    get_categories | while read -r cat_id; do
-        get_category_packages "$cat_id" | while read -r pkg_id; do
-            checked=$(get_package_checked "$pkg_id")
-            if [ "$checked" = "true" ]; then
-                # キャッシュから該当行を取得して保存
-                local cache_line
-                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
-                if [ -n "$cache_line" ]; then
-                    echo "$cache_line" >> "$SELECTED_PACKAGES"
-                fi
-            fi
-        done
-    done
-}
-
-XXX_apply_api_defaults() {
-    if [ -f "$AUTO_CONFIG_JSON" ]; then
-        # 基本設定（言語・タイムゾーンなど）
-        grep -q "^language=" "$SETUP_VARS" 2>/dev/null || \
-            echo "language='${AUTO_LANGUAGE}'" >> "$SETUP_VARS"
-        
-        grep -q "^timezone=" "$SETUP_VARS" 2>/dev/null || \
-            echo "timezone='${AUTO_TIMEZONE}'" >> "$SETUP_VARS"
-        
-        grep -q "^zonename=" "$SETUP_VARS" 2>/dev/null || \
-            echo "zonename='${AUTO_ZONENAME}'" >> "$SETUP_VARS"
-        
-        grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
-            echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
-        
-        initialize_language_packages
-        
-        # 🔧 修正: 接続方式の排他制御
-        local current_type
-        current_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        
-        echo "[DEBUG] apply_api_defaults: current_type='$current_type'" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'" >> "$CONFIG_DIR/debug.log"
-        
-        # connection_type が 'auto' または未設定の場合のみAPI値を設定
-        if [ "$current_type" = "auto" ] || [ -z "$current_type" ]; then
-            # デフォルトで 'auto' を設定（未設定の場合）
-            if [ -z "$current_type" ]; then
-                echo "connection_type='auto'" >> "$SETUP_VARS"
-                current_type="auto"
-                echo "[DEBUG] Set default connection_type='auto'" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            # MAP-E が検出された場合
-            if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
-                echo "[DEBUG] Applying MAP-E API defaults" >> "$CONFIG_DIR/debug.log"
-                
-                # 既存のDS-Lite変数を削除（MAP-Eと排他）
-                sed -i "/^dslite_aftr_type=/d" "$SETUP_VARS"
-                sed -i "/^dslite_jurisdiction=/d" "$SETUP_VARS"
-                sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                
-                # MAP-E設定を適用
-                [ -n "$MAPE_GUA_PREFIX" ] && ! grep -q "^mape_gua_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_gua_prefix='$MAPE_GUA_PREFIX'" >> "$SETUP_VARS"
-                
-                grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null || \
-                    echo "mape_br='$MAPE_BR'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_IPV4_PREFIX" ] && ! grep -q "^mape_ipv4_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_ipv4_prefix='$MAPE_IPV4_PREFIX'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_IPV4_PREFIXLEN" ] && ! grep -q "^mape_ipv4_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_ipv4_prefixlen='$MAPE_IPV4_PREFIXLEN'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_IPV6_PREFIX" ] && ! grep -q "^mape_ipv6_prefix=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_ipv6_prefix='$MAPE_IPV6_PREFIX'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_IPV6_PREFIXLEN" ] && ! grep -q "^mape_ipv6_prefixlen=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_ipv6_prefixlen='$MAPE_IPV6_PREFIXLEN'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_EALEN" ] && ! grep -q "^mape_ealen=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_PSIDLEN" ] && ! grep -q "^mape_psidlen=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
-                
-                [ -n "$MAPE_PSID_OFFSET" ] && ! grep -q "^mape_psid_offset=" "$SETUP_VARS" 2>/dev/null && \
-                    echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
-                
-            # DS-Lite が検出された場合
-            elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
-                echo "[DEBUG] Applying DS-Lite API defaults" >> "$CONFIG_DIR/debug.log"
-                
-                # 既存のMAP-E変数を削除（DS-Liteと排他）
-                sed -i "/^mape_type=/d" "$SETUP_VARS"
-                sed -i "/^mape_gua_prefix=/d" "$SETUP_VARS"
-                sed -i "/^mape_br=/d" "$SETUP_VARS"
-                sed -i "/^mape_ealen=/d" "$SETUP_VARS"
-                sed -i "/^mape_ipv4_prefix=/d" "$SETUP_VARS"
-                sed -i "/^mape_ipv4_prefixlen=/d" "$SETUP_VARS"
-                sed -i "/^mape_ipv6_prefix=/d" "$SETUP_VARS"
-                sed -i "/^mape_ipv6_prefixlen=/d" "$SETUP_VARS"
-                sed -i "/^mape_psid_offset=/d" "$SETUP_VARS"
-                sed -i "/^mape_psidlen=/d" "$SETUP_VARS"
-                
-                # DS-Lite設定を適用
-                grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
-                    echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
-                
-                # DS-Lite typeとjurisdictionも設定（あれば）
-                if [ -n "$DSLITE_AFTR_TYPE" ]; then
-                    grep -q "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null || \
-                        echo "dslite_aftr_type='$DSLITE_AFTR_TYPE'" >> "$SETUP_VARS"
-                fi
-                
-                if [ -n "$DSLITE_JURISDICTION" ]; then
-                    grep -q "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null || \
-                        echo "dslite_jurisdiction='$DSLITE_JURISDICTION'" >> "$SETUP_VARS"
-                fi
-            else
-                echo "[DEBUG] No valid connection type detected (DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE')" >> "$CONFIG_DIR/debug.log"
-            fi
-        else
-            echo "[DEBUG] Connection type is '$current_type' (not auto), skipping API defaults for connection" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-}
-
 # Setup JSON Accessors
 
 get_setup_item_property() {
@@ -1138,31 +981,6 @@ get_customfeed_categories() {
         echo "[DEBUG] Custom feed categories cache built" >> "$CONFIG_DIR/debug.log"
     fi
     echo "$_CUSTOMFEED_CATEGORIES_CACHE"
-}
-
-XXX_custom_feeds_selection_common() {
-    download_customfeeds_json || return 1
-    
-    local tr_main_menu tr_custom_feeds breadcrumb categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
-    
-    categories=$(get_customfeed_categories)
-    
-    if [ -z "$categories" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 1
-    fi
-    
-    # 共通データを出力（UIモジュールで利用）
-    echo "BREADCRUMB=$breadcrumb"
-    echo "CATEGORIES<<EOF"
-    echo "$categories"
-    echo "EOF"
-    
-    return 0
 }
 
 custom_feeds_selection_prepare() {
