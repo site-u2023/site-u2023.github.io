@@ -99,7 +99,7 @@ firewall_wan() {
 [ -n "${zonename}" ] && { local SEC=system; SET @system[0].zonename="${zonename}"; }
 [ -n "${ssh_interface}" ] && { local SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
 [ -n "${ssh_port}" ] && { local SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
-[ -n "${flow_offloading_type}" ] && {
+[ -n "${flow_offloading_type}" ] && [ "${flow_offloading_type}" != "disabled" ] && {
     local SEC=firewall
     SET @defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
