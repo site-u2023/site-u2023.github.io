@@ -601,12 +601,18 @@ apply_api_defaults() {
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
 
-        # キャッシュを事前にロード
-        if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-            get_package_name "dummy" > /dev/null 2>&1
+        # 言語パッケージの初期化
+        local language
+        language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        if [ -n "$language" ] && [ "$language" != "en" ] && [ -f "$SETUP_JSON" ]; then
+            jsonfilter -i "$SETUP_JSON" \
+                -e '@.constants.language_prefixes_release[*]' 2>/dev/null \
+                | while IFS= read -r prefix; do
+                    echo "${prefix}${language}" >> "$SELECTED_PACKAGES"
+                done
         fi
         
-        initialize_language_packages
+        # initialize_language_packages
         
         # MAP-E/DS-Lite の自動設定
         if grep -q "^connection_type='auto'" "$SETUP_VARS" 2>/dev/null; then
