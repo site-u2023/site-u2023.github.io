@@ -765,7 +765,7 @@ category_config() {
         lang_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${tr_language}"
         
         current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
+        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
         
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
