@@ -802,7 +802,9 @@ category_config() {
         read -r value
         
         [ -z "$value" ] && value="$current_lang"
-        
+
+        [ -z "$value" ] && value="en"
+            
         if [ -n "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
