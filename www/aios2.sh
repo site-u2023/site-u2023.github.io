@@ -2832,30 +2832,16 @@ aios2_main() {
     detect_package_manager
 
     # バックグラウンドで全ファイルをダウンロード開始
-    (
-        if ! download_setup_json; then
-            echo "Error: Failed to download setup.json" >&2
-            exit 1
-        fi
-    ) &
+    download_setup_json &
     SETUP_PID=$!
     
-    (
-        if ! download_postinst_json; then
-            echo "ERROR: Failed to download postinst.json." >&2
-            exit 1
-        fi
-    ) &
+    download_postinst_json &
     POSTINST_PID=$!
     
-    (
-        download_customfeeds_json >/dev/null 2>&1
-    ) &
+    download_customfeeds_json >/dev/null 2>&1 &
     CUSTOMFEEDS_PID=$!
     
-    (
-        download_customscripts_json >/dev/null 2>&1
-    ) &
+    download_customscripts_json >/dev/null 2>&1 &
     CUSTOMSCRIPTS_PID=$!
     
     prefetch_templates &
@@ -2863,52 +2849,32 @@ aios2_main() {
     
     (
         download_language_json "en" >/dev/null 2>&1
+        if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+            download_language_json "${AUTO_LANGUAGE}"
+        fi
     ) &
-    LANG_EN_PID=$!
+    LANG_PID=$!
     
     (
         __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
+        get_extended_device_info
     ) &
-    API_DL_PID=$!
+    API_PID=$!
 
     # ダウンロード中にUI選択
     select_ui_mode
 
-    # API情報を取得・パース
-    wait $API_DL_PID
-    get_extended_device_info
+    # 選択されたUIモジュールが揃うまで待つ
+    # (select_ui_mode内でダウンロード済み)
 
-    # 必須ファイルの完了を待機
+    # 全ファイル完了を待つ
     wait $SETUP_PID
-    SETUP_STATUS=$?
-    
     wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    
-    # エラーチェック
-    if [ $SETUP_STATUS -ne 0 ]; then
-        echo "Cannot continue without setup.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    if [ $POSTINST_STATUS -ne 0 ]; then
-        echo "Cannot continue without postinst.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-
-    # 残りのファイル完了を待機
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
-    wait $LANG_EN_PID
-    
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}"
-    fi
+    wait $LANG_PID
+    wait $API_PID
 
     # データロード
     load_default_packages
