@@ -332,6 +332,9 @@ $(translate 'tr-tui-use-auto-config')"
             [ -n "$MAPE_EALEN" ] && echo "mape_ealen='$MAPE_EALEN'" >> "$SETUP_VARS"
             [ -n "$MAPE_PSIDLEN" ] && echo "mape_psidlen='$MAPE_PSIDLEN'" >> "$SETUP_VARS"
             [ -n "$MAPE_PSID_OFFSET" ] && echo "mape_psid_offset='$MAPE_PSID_OFFSET'" >> "$SETUP_VARS"
+
+            auto_add_conditional_packages "internet-connection"
+            auto_add_conditional_packages "setup-driven-packages"
             
             return 0
         else
@@ -364,6 +367,10 @@ $(translate 'tr-tui-use-auto-config')"
             sed -i "/^connection_type=/d" "$SETUP_VARS"
             echo "connection_type='auto'" >> "$SETUP_VARS"
             echo "dslite_aftr_address='$DSLITE_AFTR'" >> "$SETUP_VARS"
+
+            auto_add_conditional_packages "internet-connection"
+            auto_add_conditional_packages "setup-driven-packages"
+            
             return 0
         else
             reset_detected_conn_type
@@ -778,7 +785,11 @@ category_config() {
             return $RETURN_BACK
         fi
         
-        if [ -n "$value" ]; then
+        # 空欄なら変数削除
+        if [ -z "$value" ]; then
+            sed -i "/^language=/d" "$SETUP_VARS"
+            echo "[DEBUG] Empty language input, removed variable" >> "$CONFIG_DIR/debug.log"
+        else
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
             update_language_packages
