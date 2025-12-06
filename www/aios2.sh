@@ -1080,6 +1080,31 @@ get_customfeed_categories() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$'
 }
 
+custom_feeds_selection_common() {
+    download_customfeeds_json || return 1
+    
+    local tr_main_menu tr_custom_feeds breadcrumb categories
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_feeds=$(translate "tr-tui-custom-feeds")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
+    
+    categories=$(get_customfeed_categories)
+    
+    if [ -z "$categories" ]; then
+        show_msgbox "$breadcrumb" "No custom feeds available"
+        return 1
+    fi
+    
+    # 共通データを出力（UIモジュールで利用）
+    echo "BREADCRUMB=$breadcrumb"
+    echo "CATEGORIES<<EOF"
+    echo "$categories"
+    echo "EOF"
+    
+    return 0
+}
+
 get_customfeed_package_pattern() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].pattern" 2>/dev/null | head -1
 }
