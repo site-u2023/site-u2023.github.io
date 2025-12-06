@@ -1689,10 +1689,6 @@ update_language_packages() {
     
     echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
     
-    # 🔧 修正: 空欄は 'en' として扱う
-    [ -z "$new_lang" ] && new_lang="en"
-    [ -z "$old_lang" ] && old_lang="en"
-    
     # 言語が変更されていない場合はスキップ
     if [ "$old_lang" = "$new_lang" ]; then
         echo "[DEBUG] Language unchanged, skipping package update" >> "$CONFIG_DIR/debug.log"
