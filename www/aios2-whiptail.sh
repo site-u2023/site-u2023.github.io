@@ -46,7 +46,18 @@ show_inputbox() {
     local ok_btn="${4:-$(translate "$DEFAULT_BTN_SELECT")}"
     local cancel_btn="${5:-$(translate "$DEFAULT_BTN_BACK")}"
     
-    whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" "$UI_HEIGHT" "$UI_WIDTH" "$default" 3>&1 1>&2 2>&3
+    local value
+    value=$(whiptail --title "$breadcrumb" --ok-button "$ok_btn" --cancel-button "$cancel_btn" --inputbox "$prompt" "$UI_HEIGHT" "$UI_WIDTH" "$default" 3>&1 1>&2 2>&3)
+    
+    local exit_code=$?
+    
+    # IPv4アドレスの場合、CIDRを自動付与
+    if [ $exit_code -eq 0 ] && echo "$value" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
+        value="${value}/24"
+    fi
+    
+    echo "$value"
+    return $exit_code
 }
 
 show_yesno() {
