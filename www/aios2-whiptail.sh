@@ -700,8 +700,11 @@ No additional settings required."
                     return $RETURN_BACK
                 fi
 
-                # 修正: 空欄の扱いを明確化
-                if [ -n "$value" ]; then
+                # 修正: 空欄は変数を削除、非空欄のみ保存
+                if [ -z "$value" ]; then
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "[DEBUG] Empty input, removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                elif [ -n "$value" ]; then
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "${variable}='${value}'" >> "$SETUP_VARS"
                     echo "[DEBUG] Saved ${variable}='${value}'" >> "$CONFIG_DIR/debug.log"
