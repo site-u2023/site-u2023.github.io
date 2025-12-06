@@ -764,15 +764,13 @@ get_setup_item_options() {
     local item_id="$1"
     local result
     
-    # 空文字列も含めて取得するため grep -v '^$' を削除
     result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     
     if [ -z "$result" ]; then
         result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     fi
     
-    # 空文字列を "EMPTY_VALUE" のようなプレースホルダーに置き換える
-    echo "$result" | awk '{if($0=="") print "EMPTY_VALUE"; else print $0}'
+    echo "$result" | awk 'NF{print} !NF{print "___EMPTY___"}'
 }
 
 get_setup_item_option_label() {
