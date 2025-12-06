@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1741"
+VERSION="R7.1206.1809"
 
 # =============================================================================
 # Package Selection and Installation Logic
