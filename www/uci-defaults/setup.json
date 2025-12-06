@@ -38,9 +38,9 @@
     "defaults": {
       "mobility_domain": "4f57",
       "ntp_domain": ".pool.ntp.org",
-      "lan_ip": "192.168.1.1",
-      "ap_ip": "192.168.1.2",
-      "ap_gateway": "192.168.1.1"
+      "lan_ip": "192.168.1.1/24",
+      "ap_ip": "192.168.1.2/24",
+      "ap_gateway": "192.168.1.1/24"
     },
     "aftr_map": {
       "transix": {
@@ -624,8 +624,8 @@
               "class": "tr-ap-gateway",
               "fieldType": "text",
               "variable": "ap_gateway",
-              "placeholder": "192.168.1.1",
-              "default": "192.168.1.1"
+              "placeholder": "192.168.1.1/24",
+              "default": "192.168.1.1/24"
             }
           ]
         }
