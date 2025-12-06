@@ -581,6 +581,8 @@ process_items() {
                 [ -z "$current" ] && current="$default"
                 
                 options=$(get_setup_item_options "$item_id")
+
+                options=$(echo "$options" | sed 's/^___EMPTY___$//')
                 
                 echo ""
                 echo "$item_label:"
@@ -690,6 +692,8 @@ process_items() {
                     
                     local options
                     options=$(get_setup_item_options "$item_id")
+
+                    options=$(echo "$options" | sed 's/^___EMPTY___$//')
                     
                     echo ""
                     echo "$item_label:"
