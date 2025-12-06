@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.2139"
+VERSION="R7.1206.2146"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -500,7 +500,6 @@ reset_detected_conn_type() {
 
 get_extended_device_info() {
     get_device_info
-    
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     
     # APIダウンロード（リトライ3回）
@@ -508,34 +507,22 @@ get_extended_device_info() {
     local max_retries=3
     local success=0
     
-    echo "Fetching network information..."
-    
     while [ $retry_count -lt $max_retries ]; do
-        echo "Attempt $((retry_count + 1))/$max_retries..."
-        
         if __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
-            # ファイルが空でないか確認
             if [ -s "$AUTO_CONFIG_JSON" ]; then
-                # JSONとして有効か確認
                 if jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
                     success=1
-                    echo "Successfully fetched network information."
                     break
                 fi
             fi
         fi
-        
         retry_count=$((retry_count + 1))
-        [ $retry_count -lt $max_retries ] && {
-            echo "Failed. Retrying in 2 seconds..."
-            sleep 2
-        }
+        [ $retry_count -lt $max_retries ] && sleep 2
     done
     
     if [ $success -eq 0 ]; then
         echo ""
-        echo "ERROR: Failed to fetch auto-config API after $max_retries attempts"
-        echo "Cannot continue without network information."
+        echo "ERROR: API error"
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
