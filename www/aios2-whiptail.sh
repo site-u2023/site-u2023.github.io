@@ -772,10 +772,6 @@ category_config() {
         if ! [ $? -eq 0 ]; then
             return $RETURN_BACK
         fi
-
-        if [ -z "$value" ]; then
-            value="en"
-        fi
         
         if [ -n "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
