@@ -2871,10 +2871,10 @@ aios2_main() {
     ) &
     API_DL_PID=$!
 
-    # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
+    # ダウンロード中にUI選択
     select_ui_mode
 
-    # API情報を取得・パース（言語ファイルは待たない）
+    # API情報を取得・パース
     wait $API_DL_PID
     get_extended_device_info
 
@@ -2900,21 +2900,19 @@ aios2_main() {
         return 1
     fi
 
-    # データロード
-    load_default_packages
-    apply_api_defaults
-
-    # 言語ファイルを取得（最後に待つ）
+    # 残りのファイル完了を待機
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         download_language_json "${AUTO_LANGUAGE}"
     fi
 
-    # 残りのファイル完了を待機
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
+    # データロード
+    load_default_packages
+    apply_api_defaults
 
     # 起動時間を表示
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
