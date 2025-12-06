@@ -1713,16 +1713,39 @@ auto_add_conditional_packages() {
                 fi
             fi
         else
-            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
-                echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+            # 削除する前に、他の条件でマッチしないか確認
+            local has_other_match=0
+            while IFS='|' read -r check_pkg check_var check_val; do
+                [ "$check_pkg" != "$pkg_id" ] && continue
+                [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
                 
-                # enableVar削除
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
-                if [ -n "$enable_var" ]; then
-                    sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                    echo "[DEBUG] Removed enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
+                local check_current
+                if [ "$check_var" = "connection_type" ]; then
+                    check_current="$effective_conn_type"
+                else
+                    check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                fi
+                
+                if [ "$check_current" = "$check_val" ]; then
+                    has_other_match=1
+                    break
+                fi
+            done <<CHECK
+$_CONDITIONAL_PACKAGES_CACHE
+CHECK
+            
+            if [ "$has_other_match" -eq 0 ]; then
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
+                    echo "[AUTO] Removed package: $pkg_id (no matching conditions)" >> "$CONFIG_DIR/debug.log"
+                    
+                    # enableVar削除
+                    local enable_var
+                    enable_var=$(get_package_enablevar "$pkg_id" "")
+                    if [ -n "$enable_var" ]; then
+                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                        echo "[DEBUG] Removed enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
+                    fi
                 fi
             fi
         fi
