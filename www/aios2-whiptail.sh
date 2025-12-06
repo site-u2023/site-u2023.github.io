@@ -515,6 +515,7 @@ process_items() {
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
                 auto_add_conditional_packages "$cat_id"
                 auto_cleanup_conditional_variables "$cat_id"
+                cleanup_orphaned_enablevars "$cat_id"
                 
                 # 特殊処理: 接続タイプの場合
                 if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
@@ -522,6 +523,7 @@ process_items() {
                         if show_network_info "$item_breadcrumb"; then
                             auto_add_conditional_packages "$cat_id"
                             auto_cleanup_conditional_variables "$cat_id"
+                            cleanup_orphaned_enablevars "$cat_id"
                             return $RETURN_STAY
                         fi
                     elif [ "$selected_opt" = "dhcp" ]; then
@@ -535,6 +537,7 @@ No additional settings required."
                         show_msgbox "$item_breadcrumb" "$dhcp_content"
                         auto_add_conditional_packages "$cat_id"
                         auto_cleanup_conditional_variables "$cat_id"
+                        cleanup_orphaned_enablevars "$cat_id"
                         return $RETURN_STAY
                     fi
                 fi
@@ -652,6 +655,7 @@ No additional settings required."
                     
                     auto_add_conditional_packages "$cat_id"
                     auto_cleanup_conditional_variables "$cat_id"
+                    cleanup_orphaned_enablevars "$cat_id"
                     
                     if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-jurisdiction" ]; then
                         aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -760,6 +764,7 @@ category_config() {
         if show_auto_detection_if_available; then
             auto_add_conditional_packages "$cat_id"
             auto_cleanup_conditional_variables "$cat_id"
+            cleanup_orphaned_enablevars "$cat_id"
             return $RETURN_STAY
         fi
     fi
