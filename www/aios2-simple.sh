@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1203.1556"
+VERSION="R7.1206.1203"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -795,7 +795,7 @@ category_config() {
         [ -z "$tr_language" ] || [ "$tr_language" = "tr-language" ] && tr_language="Language"
         
         current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE:-en}"
+        [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
         
         echo ""
         printf "%s [%s]: " "$tr_language" "$current_lang"
