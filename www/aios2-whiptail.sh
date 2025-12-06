@@ -451,11 +451,9 @@ process_items() {
                             ;;
                         $RETURN_BACK)
                             if [ "$first_field" -eq 1 ]; then
-                                # 最初のフィールドで戻る = sectionを抜ける
                                 echo "[DEBUG] First field cancelled, exiting section" >> "$CONFIG_DIR/debug.log"
                                 return $RETURN_BACK
                             else
-                                # 2番目以降で戻る = section内の最初から再試行
                                 echo "[DEBUG] Non-first field cancelled, restarting section" >> "$CONFIG_DIR/debug.log"
                                 all_completed=0
                                 break
@@ -540,9 +538,16 @@ process_items() {
             if [ -n "$value" ]; then
                 selected_opt=$(echo "$options" | sed -n "${value}p")
                 echo "[DEBUG] Selected: $selected_opt" >> "$CONFIG_DIR/debug.log"
-                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+                
+                # disabledの場合は変数を削除
+                if [ "$selected_opt" = "disabled" ]; then
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                else
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+                fi
 
                 cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
                 
@@ -550,7 +555,6 @@ process_items() {
                 auto_cleanup_conditional_variables "$cat_id"
                 cleanup_orphaned_enablevars "$cat_id"
                 
-                # 特殊処理: 接続タイプの場合
                 if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
                     if [ "$selected_opt" = "auto" ]; then
                         if show_network_info "$item_breadcrumb"; then
@@ -685,8 +689,15 @@ No additional settings required."
                 if [ -n "$value" ]; then
                     selected_opt=$(echo "$options" | sed -n "${value}p")
                     echo "[DEBUG] selected_opt='$selected_opt'" >> "$CONFIG_DIR/debug.log"
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    
+                    # disabledの場合は変数を削除
+                    if [ "$selected_opt" = "disabled" ]; then
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                    else
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    fi
                     
                     auto_add_conditional_packages "$cat_id"
                     auto_cleanup_conditional_variables "$cat_id"
@@ -715,7 +726,6 @@ No additional settings required."
                     return $RETURN_BACK
                 fi
 
-                # 修正: 空欄は変数を削除、非空欄のみ保存
                 if [ -z "$value" ]; then
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
                     echo "[DEBUG] Empty input, removed ${variable}" >> "$CONFIG_DIR/debug.log"
