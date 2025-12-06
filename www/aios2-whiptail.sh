@@ -823,6 +823,15 @@ category_config() {
     auto_cleanup_conditional_variables "$cat_id"     # 2. 不要な変数削除
     cleanup_orphaned_enablevars "$cat_id"            # 3. 孤立したenableVar削除
     track_api_value_changes "$cat_id"                # 4. API値変更追跡
+
+    # internet-connectionカテゴリで'auto'が選ばれた場合、API値を再適用
+    if [ "$cat_id" = "internet-connection" ]; then
+        local current_type
+        current_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        if [ "$current_type" = "auto" ]; then
+            apply_api_defaults
+        fi
+    fi
     
     # 言語設定カテゴリの場合のみ
     [ "$cat_id" = "basic-config" ] && update_language_packages
