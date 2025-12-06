@@ -600,6 +600,11 @@ apply_api_defaults() {
         
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
+
+        # キャッシュを事前にロード
+        if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+            get_package_name "dummy" > /dev/null 2>&1
+        fi
         
         local language
         language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
