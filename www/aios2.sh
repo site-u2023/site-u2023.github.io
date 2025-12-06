@@ -601,6 +601,11 @@ apply_api_defaults() {
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
 
+        # キャッシュを事前にロード
+        if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+            get_package_name "dummy" > /dev/null 2>&1
+        fi
+        
         # 言語パッケージの初期化
         local language
         language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -608,7 +613,12 @@ apply_api_defaults() {
             jsonfilter -i "$SETUP_JSON" \
                 -e '@.constants.language_prefixes_release[*]' 2>/dev/null \
                 | while IFS= read -r prefix; do
-                    echo "${prefix}${language}" >> "$SELECTED_PACKAGES"
+                    local lang_pkg="${prefix}${language}"
+                    local cache_line
+                    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${lang_pkg}=")
+                    if [ -n "$cache_line" ]; then
+                        echo "$cache_line" >> "$SELECTED_PACKAGES"
+                    fi
                 done
         fi
         
