@@ -620,6 +620,8 @@ No additional settings required."
                 
                 options=$(get_setup_item_options "$item_id")
                 
+                options=$(echo "$options" | sed 's/^___EMPTY___$//')
+                
                 echo "[DEBUG] Raw options output: '$options'" >> "$CONFIG_DIR/debug.log"
                 
                 if [ -z "$options" ]; then
