@@ -545,6 +545,11 @@ show_network_info() {
     if show_yesno "$breadcrumb" "$(translate 'tr-tui-use-auto-config')"; then
         sed -i "/^connection_type=/d" "$SETUP_VARS"
         echo "connection_type='auto'" >> "$SETUP_VARS"
+        
+        # パッケージ追加
+        auto_add_conditional_packages "internet-connection"
+        auto_add_conditional_packages "setup-driven-packages"
+        
         return 0
     else
         return 1
