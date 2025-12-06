@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1132"
+VERSION="R7.1206.1217"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -764,13 +764,15 @@ get_setup_item_options() {
     local item_id="$1"
     local result
     
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null | grep -v '^$')
+    # 空文字列も含めて取得するため grep -v '^$' を削除
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     
     if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null | grep -v '^$')
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].options[*].value" 2>/dev/null)
     fi
     
-    echo "$result"
+    # 空文字列を "EMPTY_VALUE" のようなプレースホルダーに置き換える
+    echo "$result" | awk '{if($0=="") print "EMPTY_VALUE"; else print $0}'
 }
 
 get_setup_item_option_label() {
