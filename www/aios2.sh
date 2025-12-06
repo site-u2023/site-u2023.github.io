@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.2104"
+VERSION="R7.1206.2106"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -1649,11 +1649,9 @@ auto_add_conditional_packages() {
     effective_conn_type=$(get_effective_connection_type)
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
-    # 初回のみキャッシュ構築
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
         _CONDITIONAL_PACKAGES_CACHE=$(
             # wifi_mode (文字列)
-            local pkg_id when_val
             pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
             when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
             if [ -n "$pkg_id" ]; then
@@ -1661,7 +1659,6 @@ auto_add_conditional_packages() {
             fi
             
             # connection_type (配列)
-            local pkg_ids values
             pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
             
             echo "$pkg_ids" | while read -r pkg_id; do
