@@ -1674,9 +1674,7 @@ update_language_packages() {
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # 🔧 修正: スナップショットファイルの初期化
     if [ ! -f "$CONFIG_DIR/vars_snapshot.txt" ]; then
-        # 初回実行: AUTO_LANGUAGE を使用
         old_lang="${AUTO_LANGUAGE:-en}"
         echo "[DEBUG] First run, old_lang from AUTO_LANGUAGE: '$old_lang'" >> "$CONFIG_DIR/debug.log"
     else
@@ -1685,7 +1683,6 @@ update_language_packages() {
     
     echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
     
-    # 言語が変更されていない場合はスキップ
     if [ "$old_lang" = "$new_lang" ]; then
         echo "[DEBUG] Language unchanged, skipping package update" >> "$CONFIG_DIR/debug.log"
         return 0
@@ -1698,6 +1695,7 @@ update_language_packages() {
     if [ "$old_lang" != "en" ]; then
         for prefix in $prefixes; do
             local old_pkg="${prefix}${old_lang}"
+            # キャッシュ形式で削除
             sed -i "/=${old_pkg}=/d" "$SELECTED_PACKAGES"
             sed -i "/=${old_pkg}\$/d" "$SELECTED_PACKAGES"
             echo "[LANG] Removed: $old_pkg" >> "$CONFIG_DIR/debug.log"
@@ -1709,22 +1707,16 @@ update_language_packages() {
         for prefix in $prefixes; do
             local new_pkg="${prefix}${new_lang}"
             
-            # キャッシュから完全なエントリを取得
-            local cache_line
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${new_pkg}=")
-            
-            if [ -n "$cache_line" ]; then
-                if ! grep -q "=${new_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    echo "$cache_line" >> "$SELECTED_PACKAGES"
-                    echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
-                fi
-            else
-                echo "[LANG] Warning: Package $new_pkg not found in cache" >> "$CONFIG_DIR/debug.log"
+            # キャッシュ形式で追加
+            if ! grep -q "=${new_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+               ! grep -q "=${new_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                # キャッシュ形式: id=name=uniqueId=installOptions=enableVar
+                echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
+                echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
             fi
         done
     fi
     
-    # 現在の状態をスナップショットとして保存
     grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null
     
     echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
@@ -1781,22 +1773,21 @@ initialize_language_packages() {
     echo "[DEBUG] === initialize_language_packages called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
     
-    # en または空の場合はパッケージ不要
-    if [ "$current_lang" = "en" ]; then
+    if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
         echo "[DEBUG] Language is 'en' or empty, no packages needed" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
-    # JSONから直接prefix取得
     local prefixes
     prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
     for prefix in $prefixes; do
         local lang_pkg="${prefix}${current_lang}"
         
-        # 直接パッケージ名を追加
-        if ! grep -q "^${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${lang_pkg}" >> "$SELECTED_PACKAGES"
+        # キャッシュ形式で追加
+        if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+           ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
             echo "[INIT] Added language package: $lang_pkg" >> "$CONFIG_DIR/debug.log"
         fi
     done
