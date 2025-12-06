@@ -590,7 +590,7 @@ load_default_packages() {
 apply_api_defaults() {
     if [ -f "$AUTO_CONFIG_JSON" ]; then
         grep -q "^language=" "$SETUP_VARS" 2>/dev/null || \
-            echo "language='${AUTO_LANGUAGE:-en}'" >> "$SETUP_VARS"
+            echo "language='${AUTO_LANGUAGE}'" >> "$SETUP_VARS"
         
         grep -q "^timezone=" "$SETUP_VARS" 2>/dev/null || \
             echo "timezone='${AUTO_TIMEZONE}'" >> "$SETUP_VARS"
