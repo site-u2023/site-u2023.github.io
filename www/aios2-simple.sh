@@ -758,11 +758,14 @@ process_items() {
                     printf '%s [%s]: ' "$item_label" "$current"
                     read -r value
                     
-                    [ -z "$value" ] && value="$current"
-                    
-                    if [ -n "$value" ]; then
+                    # 空欄なら変数削除、入力があればセット
+                    if [ -z "$value" ]; then
+                        sed -i "/^${variable}=/d" "$SETUP_VARS"
+                        echo "[DEBUG] Empty input, removed ${variable}" >> "$CONFIG_DIR/debug.log"
+                    else
                         sed -i "/^${variable}=/d" "$SETUP_VARS"
                         echo "${variable}='${value}'" >> "$SETUP_VARS"
+                        echo "[DEBUG] Saved ${variable}='${value}'" >> "$CONFIG_DIR/debug.log"
                     fi
                 fi
                 ;;
