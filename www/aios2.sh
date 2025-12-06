@@ -1633,6 +1633,153 @@ check_and_cleanup_variable() {
     fi
 }
 
+# enableVar のクリーンアップ
+cleanup_orphaned_enablevars() {
+    local cat_id="$1"  # カテゴリ情報も受け取る（将来の拡張用）
+    local temp_file="$CONFIG_DIR/temp_enablevars.txt"
+    
+    echo "[DEBUG] === cleanup_orphaned_enablevars called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    : > "$temp_file"
+    
+    while read -r line; do
+        case "$line" in
+            \#*|'') continue ;;
+        esac
+        
+        local var_name=$(echo "$line" | cut -d= -f1)
+        
+        # このenableVarに対応するパッケージを検索
+        local pkg_exists=0
+        while read -r cache_line; do
+            local cached_id=$(echo "$cache_line" | cut -d= -f1)
+            local cached_enablevar=$(echo "$cache_line" | cut -d= -f5)
+            
+            if [ "$cached_enablevar" = "$var_name" ]; then
+                # 対応するパッケージが選択されているか確認
+                if grep -q "^${cached_id}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                   grep -q "^${cached_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    pkg_exists=1
+                    echo "[DEBUG] enableVar $var_name: package $cached_id is selected" >> "$CONFIG_DIR/debug.log"
+                    break
+                fi
+            fi
+        done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
+        
+        if [ "$pkg_exists" -eq 1 ] || [ -z "$(grep "=${var_name}$" <<< "$_PACKAGE_ENABLEVAR_CACHE")" ]; then
+            # パッケージが選択されているか、enableVarではない通常変数
+            echo "$line" >> "$temp_file"
+        else
+            echo "[CLEANUP] Removed orphaned enableVar: $var_name" >> "$CONFIG_DIR/debug.log"
+        fi
+    done < "$SETUP_VARS"
+    
+    mv "$temp_file" "$SETUP_VARS"
+    echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+# 言語パッケージの動的更新（既存を改良）
+update_language_packages() {
+    local new_lang old_lang
+    
+    echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    old_lang=$(grep "^language=" "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # 言語が変更されていない場合はスキップ
+    if [ "$old_lang" = "$new_lang" ]; then
+        echo "[DEBUG] Language unchanged, skipping package update" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    local prefixes
+    prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+    
+    # 旧言語パッケージを削除（en以外）
+    if [ -n "$old_lang" ] && [ "$old_lang" != "en" ]; then
+        for prefix in $prefixes; do
+            local old_pkg="${prefix}${old_lang}"
+            sed -i "/=${old_pkg}=/d" "$SELECTED_PACKAGES"
+            sed -i "/=${old_pkg}\$/d" "$SELECTED_PACKAGES"
+            echo "[LANG] Removed: $old_pkg" >> "$CONFIG_DIR/debug.log"
+        done
+    fi
+    
+    # 新言語パッケージを追加（en以外）
+    if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
+        for prefix in $prefixes; do
+            local new_pkg="${prefix}${new_lang}"
+            
+            # キャッシュから完全なエントリを取得
+            local cache_line
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${new_pkg}=")
+            
+            if [ -n "$cache_line" ]; then
+                if ! grep -q "=${new_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "$cache_line" >> "$SELECTED_PACKAGES"
+                    echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
+                fi
+            else
+                echo "[LANG] Warning: Package $new_pkg not found in cache" >> "$CONFIG_DIR/debug.log"
+            fi
+        done
+    fi
+    
+    # 現在の状態をスナップショットとして保存
+    grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt"
+    
+    echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+# API値の動的追跡
+track_api_value_changes() {
+    local cat_id="$1"
+    local snapshot_file="$CONFIG_DIR/vars_snapshot_${cat_id}.txt"
+    
+    echo "[DEBUG] === track_api_value_changes called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    # 初回実行時はスナップショットを作成
+    if [ ! -f "$snapshot_file" ]; then
+        cp "$SETUP_VARS" "$snapshot_file"
+        echo "[DEBUG] Created initial snapshot" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # 変更があった変数をリストアップ
+    local changed_vars=""
+    while read -r line; do
+        case "$line" in
+            \#*|'') continue ;;
+        esac
+        
+        local var_name=$(echo "$line" | cut -d= -f1)
+        local old_val=$(grep "^${var_name}=" "$snapshot_file" 2>/dev/null | cut -d"'" -f2)
+        local new_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        
+        if [ "$old_val" != "$new_val" ]; then
+            changed_vars="${changed_vars}${var_name}\n"
+            echo "[TRACK] ${var_name}: '$old_val' → '$new_val'" >> "$CONFIG_DIR/debug.log"
+        fi
+    done < "$SETUP_VARS"
+    
+    # 変更があった場合、関連パッケージを再評価
+    if [ -n "$changed_vars" ]; then
+        echo "[TRACK] Re-evaluating packages due to variable changes" >> "$CONFIG_DIR/debug.log"
+        # ここで必要に応じて追加処理
+    fi
+    
+    # スナップショットを更新
+    cp "$SETUP_VARS" "$snapshot_file"
+    echo "[DEBUG] === track_api_value_changes finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
 compute_dslite_aftr() {
     local aftr_type="$1"
     local area="$2"
