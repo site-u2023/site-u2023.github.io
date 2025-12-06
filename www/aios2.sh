@@ -600,6 +600,8 @@ apply_api_defaults() {
         
         grep -q "^country=" "$SETUP_VARS" 2>/dev/null || \
             echo "country='${AUTO_COUNTRY}'" >> "$SETUP_VARS"
+
+        initialize_language_packages
         
         local language
         language=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -1764,6 +1766,44 @@ track_api_value_changes() {
     # スナップショットを更新
     cp "$SETUP_VARS" "$snapshot_file"
     echo "[DEBUG] === track_api_value_changes finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+# 言語パッケージの初期化
+initialize_language_packages() {
+    local current_lang
+    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] === initialize_language_packages called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # en または空の場合はパッケージ不要
+    if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
+        echo "[DEBUG] Language is 'en' or empty, no packages needed" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    local prefixes
+    prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+    
+    for prefix in $prefixes; do
+        local lang_pkg="${prefix}${current_lang}"
+        
+        # キャッシュから完全なエントリを取得
+        local cache_line
+        cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${lang_pkg}=")
+        
+        if [ -n "$cache_line" ]; then
+            # 重複チェック
+            if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "$cache_line" >> "$SELECTED_PACKAGES"
+                echo "[INIT] Added language package: $lang_pkg" >> "$CONFIG_DIR/debug.log"
+            fi
+        else
+            echo "[INIT] Warning: Language package $lang_pkg not found in cache" >> "$CONFIG_DIR/debug.log"
+        fi
+    done
+    
+    echo "[DEBUG] === initialize_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
 compute_dslite_aftr() {
