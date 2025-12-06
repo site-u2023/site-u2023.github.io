@@ -789,9 +789,13 @@ category_config() {
                 ;;
         esac
     done
+
+    auto_add_conditional_packages "$cat_id"          # 1. 条件付きパッケージ追加
+    auto_cleanup_conditional_variables "$cat_id"     # 2. 不要な変数削除
+    cleanup_orphaned_enablevars "$cat_id"            # 3. 孤立したenableVar削除
+    track_api_value_changes "$cat_id"                # 4. API値変更追跡
     
-    auto_add_conditional_packages "$cat_id"
-    auto_cleanup_conditional_variables "$cat_id"
+    # 言語設定カテゴリの場合のみ
     [ "$cat_id" = "basic-config" ] && update_language_packages
     
     return $RETURN_STAY
