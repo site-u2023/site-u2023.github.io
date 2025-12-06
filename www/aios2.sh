@@ -2831,22 +2831,17 @@ aios2_main() {
     init
     detect_package_manager
 
-    # UIモジュールを並列ダウンロード
+    # 全ファイルを並列ダウンロード
     (
-        if [ -n "$WHIPTAIL_UI_URL" ]; then
-            __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        fi
+        __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
     ) &
     WHIPTAIL_PID=$!
     
     (
-        if [ -n "$SIMPLE_UI_URL" ]; then
-            __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-        fi
+        __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     SIMPLE_PID=$!
 
-    # 他のファイルも並列ダウンロード
     download_setup_json &
     SETUP_PID=$!
     
@@ -2863,21 +2858,48 @@ aios2_main() {
     TEMPLATES_PID=$!
     
     (
-        download_language_json "en" >/dev/null 2>&1
+        __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
     ) &
-    LANG_PID=$!
+    API_DL_PID=$!
     
     (
-        __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
-        get_extended_device_info
+        download_language_json "en" >/dev/null 2>&1
     ) &
-    API_PID=$!
+    LANG_EN_PID=$!
 
-    # UIモジュール完了を待ってから選択
+    # UIモジュール完了を待つ
     wait $WHIPTAIL_PID
     wait $SIMPLE_PID
     
-    # UI選択（ダウンロード処理は削除）
+    # 全ファイル完了を待つ
+    wait $API_DL_PID
+    wait $LANG_EN_PID
+    wait $SETUP_PID
+    wait $POSTINST_PID
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+
+    # API情報をパース
+    get_extended_device_info
+    
+    # 言語ファイル取得
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
+
+    # データロード
+    load_default_packages
+    apply_api_defaults
+
+    # 起動時間を表示（UI選択の前）
+    TIME_END=$(cut -d' ' -f1 /proc/uptime)
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
+    
+    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
+    echo ""
+
+    # UI選択
     local has_whiptail=0
     local has_simple=0
     local whiptail_pkg="whiptail"
@@ -2921,30 +2943,6 @@ aios2_main() {
                 ;;
         esac
     fi
-
-    # 残りのファイル完了を待つ
-    wait $SETUP_PID
-    wait $POSTINST_PID
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_PID
-    wait $API_PID
-    
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}"
-    fi
-
-    # データロード
-    load_default_packages
-    apply_api_defaults
-
-    # 起動時間を表示
-    TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
-    
-    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
-    echo ""
     
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
