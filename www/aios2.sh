@@ -2823,7 +2823,6 @@ EOF
 # Main Entry Point
 
 aios2_main() {
-    TIME_START=$(cut -d' ' -f1 /proc/uptime)
     
     clear
     print_banner
@@ -2901,13 +2900,6 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $UI_DL_PID
-
-    # 起動時間を表示
-    TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
-    
-    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
-    echo ""
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
