@@ -2829,15 +2829,9 @@ aios2_main() {
     print_banner
     
     init
-    
     detect_package_manager
-    # echo "Detecting package manager: $PKG_MGR"
 
-    # echo "Starting background downloads..."
-
-    # --- 1. すべてのダウンロードを即座にバックグラウンドで開始 ---
-    
-    # (A) 基本JSONファイル
+    # バックグラウンドで全ファイルをダウンロード開始
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -2863,56 +2857,29 @@ aios2_main() {
         download_customscripts_json >/dev/null 2>&1
     ) &
     CUSTOMSCRIPTS_PID=$!
-
-    # (B) テンプレート
+    
     prefetch_templates &
     TEMPLATES_PID=$!
-
-    # (C) 英語言語ファイル (UI選択後に使うため裏で落としておく)
+    
     (
         download_language_json "en" >/dev/null 2>&1
     ) &
     LANG_EN_PID=$!
-
-    # (D) API (Auto Config) - ダウンロードだけ先に走らせる
+    
     (
         __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
     ) &
     API_DL_PID=$!
 
-    # --- 2. ダウンロード中にユーザーへUI選択を促す (ユーザーの思考時間がDL時間になる) ---
-    # ここで config.js は init で読み込み済みなので UI URL は判明している
+    # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
 
-
-    # --- 3. ユーザー選択後にデータの整合性を確保 ---
-
-    # まずAPI情報のダウンロード完了を待つ
-    wait $API_DL_PID
-    
-    # API情報をパースして変数をセット (ダウンロードは終わっているので処理のみ)
-    # echo "Parsing device info..."
-    get_extended_device_info
-    
-    # 言語設定の決定と追加ダウンロード
-    # (API情報またはユーザー設定から言語を決定)
-    wait $LANG_EN_PID
-    
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        # echo "Fetching language file: ${AUTO_LANGUAGE}"
-        download_language_json "${AUTO_LANGUAGE}"
-    fi
-
-    # 残りの必須ファイルの完了を待機
+    # 必須ファイルの完了を待機
     wait $SETUP_PID
     SETUP_STATUS=$?
     
     wait $POSTINST_PID
     POSTINST_STATUS=$?
-    
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2929,28 +2896,39 @@ aios2_main() {
         return 1
     fi
 
-    # データロード処理
-    # echo "Loading package data..."
+    # API情報を取得・パース
+    wait $API_DL_PID
+    get_extended_device_info
+    
+    # 言語ファイルを取得
+    wait $LANG_EN_PID
+    
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
+
+    # 残りのファイル完了を待機
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+
+    # データロード
     load_default_packages
     apply_api_defaults
 
-    # --- 起動完了 ---
-    
+    # 起動時間を表示
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
-    
     ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
     
     printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
     echo ""
     
-    # UIモードに応じたメイン処理へ
+    # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
-        # simpleモード用のYes/No調整
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
-
+    
     . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
     aios2_${UI_MODE}_main
 }
