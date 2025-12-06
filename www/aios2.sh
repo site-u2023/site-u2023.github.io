@@ -1789,8 +1789,8 @@ initialize_language_packages() {
     echo "[DEBUG] === initialize_language_packages called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
     
-    # en または空の場合はパッケージ不要
-    if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
+    # en の場合はパッケージ不要
+    if [ "$current_lang" = "en" ]; then
         echo "[DEBUG] Language is 'en' or empty, no packages needed" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
