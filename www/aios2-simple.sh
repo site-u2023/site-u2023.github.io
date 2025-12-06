@@ -182,7 +182,7 @@ custom_feeds_selection() {
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
     
     # 共通処理：カテゴリ取得
-    categories=$(custom_feeds_selection_prepare)
+    categories=$(custom_feeds_selection_common)
     
     if [ $? -ne 0 ] || [ -z "$categories" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
