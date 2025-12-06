@@ -1570,13 +1570,16 @@ EOF
             fi
             
             if [ "$should_add" -eq 1 ]; then
-                if ! is_package_selected "$pkg_id"; then
-                    echo "$pkg_id" >> "$SELECTED_PACKAGES"
+                # キャッシュ形式でチェック
+                if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    # キャッシュ形式で追加: id=name=uniqueId=installOptions=enableVar
+                    echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_PACKAGES"
                     echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
                 fi
             else
-                if is_package_selected "$pkg_id"; then
-                    sed -i "/^${pkg_id}$/d" "$SELECTED_PACKAGES"
+                # キャッシュ形式で削除
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
                     echo "[AUTO] Removed package: $pkg_id (condition not met: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
