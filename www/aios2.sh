@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1937"
+VERSION="R7.1206.1948"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -640,7 +640,7 @@ load_default_packages() {
     done
 }
 
-apply_api_defaults() {
+XXX_apply_api_defaults() {
     if [ -f "$AUTO_CONFIG_JSON" ]; then
         # 基本設定（言語・タイムゾーンなど）
         grep -q "^language=" "$SETUP_VARS" 2>/dev/null || \
@@ -746,6 +746,13 @@ apply_api_defaults() {
         else
             echo "[DEBUG] Connection type is '$current_type' (not auto), skipping API defaults for connection" >> "$CONFIG_DIR/debug.log"
         fi
+    fi
+}
+
+apply_api_defaults() {
+    if [ -f "$AUTO_CONFIG_JSON" ]; then
+        # 初期化時は何も書き込まない
+        initialize_language_packages
     fi
 }
 
