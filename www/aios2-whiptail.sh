@@ -515,6 +515,9 @@ process_items() {
                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                 echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+
+                cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
+                
                 auto_add_conditional_packages "$cat_id"
                 auto_cleanup_conditional_variables "$cat_id"
                 cleanup_orphaned_enablevars "$cat_id"
