@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1206.1809"
+VERSION="R7.1206.1937"
 
 # =============================================================================
 # Package Selection and Installation Logic
@@ -2901,6 +2901,13 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $UI_DL_PID
+
+    # 起動時間を表示
+    TIME_END=$(cut -d' ' -f1 /proc/uptime)
+    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
+    
+    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
+    echo ""
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2920,13 +2927,6 @@ aios2_main() {
     # データロード
     load_default_packages
     apply_api_defaults
-
-    # 起動時間を表示
-    TIME_END=$(cut -d' ' -f1 /proc/uptime)
-    ELAPSED_TIME=$(awk "BEGIN {printf \"%.2f\", $TIME_END - $TIME_START}")
-    
-    printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
-    echo ""
     
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
