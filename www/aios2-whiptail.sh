@@ -112,8 +112,6 @@ show_textbox() {
 # Package Compatibility Check for Custom Feeds
 
 custom_feeds_selection() {
-    download_customfeeds_json || return 0
-    
     local tr_main_menu tr_custom_feeds breadcrumb
     local menu_items i cat_id cat_name choice selected_cat
     local categories
@@ -122,17 +120,20 @@ custom_feeds_selection() {
     tr_custom_feeds=$(translate "tr-tui-custom-feeds")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_feeds")
     
-    categories=$(get_customfeed_categories)
+    # 共通処理：カテゴリ取得
+    categories=$(custom_feeds_selection_prepare)
     
-    if [ -z "$categories" ]; then
+    if [ $? -ne 0 ] || [ -z "$categories" ]; then
         show_msgbox "$breadcrumb" "No custom feeds available"
         return 0
     fi
     
+    # メインループ
     while true; do
         menu_items="" 
         i=1
         
+        # カテゴリリストを構築
         while read -r cat_id; do
             cat_name=$(get_category_name "$cat_id")
             menu_items="$menu_items $i \"$cat_name\""
@@ -141,16 +142,21 @@ custom_feeds_selection() {
 $categories
 EOF
         
+        # メニュー表示
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
+        # キャンセル処理
         if ! [ $? -eq 0 ]; then
-            return 0  # キャンセル → メインメニューへ戻る
+            return 0
         fi
         
+        # カテゴリ選択処理
         if [ -n "$choice" ]; then
             selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
-            # package_selection() から戻ってきたら、再びカテゴリ選択画面へ
+            
+            if [ -n "$selected_cat" ]; then
+                package_selection "$selected_cat" "custom_feeds" "$breadcrumb"
+            fi
         fi
     done
 }
