@@ -1669,16 +1669,29 @@ EOF
     echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-# 言語パッケージの動的更新（既存を改良）
+# aios2.sh
+
 update_language_packages() {
     local new_lang old_lang
     
     echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    old_lang=$(grep "^language=" "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null | cut -d"'" -f2)
+    
+    # 🔧 修正: スナップショットファイルの初期化
+    if [ ! -f "$CONFIG_DIR/vars_snapshot.txt" ]; then
+        # 初回実行: AUTO_LANGUAGE を使用
+        old_lang="${AUTO_LANGUAGE:-en}"
+        echo "[DEBUG] First run, old_lang from AUTO_LANGUAGE: '$old_lang'" >> "$CONFIG_DIR/debug.log"
+    else
+        old_lang=$(grep "^language=" "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null | cut -d"'" -f2)
+    fi
     
     echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # 🔧 修正: 空欄は 'en' として扱う
+    [ -z "$new_lang" ] && new_lang="en"
+    [ -z "$old_lang" ] && old_lang="en"
     
     # 言語が変更されていない場合はスキップ
     if [ "$old_lang" = "$new_lang" ]; then
@@ -1690,7 +1703,7 @@ update_language_packages() {
     prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
     # 旧言語パッケージを削除（en以外）
-    if [ -n "$old_lang" ] && [ "$old_lang" != "en" ]; then
+    if [ "$old_lang" != "en" ]; then
         for prefix in $prefixes; do
             local old_pkg="${prefix}${old_lang}"
             sed -i "/=${old_pkg}=/d" "$SELECTED_PACKAGES"
@@ -1700,7 +1713,7 @@ update_language_packages() {
     fi
     
     # 新言語パッケージを追加（en以外）
-    if [ -n "$new_lang" ] && [ "$new_lang" != "en" ]; then
+    if [ "$new_lang" != "en" ]; then
         for prefix in $prefixes; do
             local new_pkg="${prefix}${new_lang}"
             
@@ -1720,7 +1733,7 @@ update_language_packages() {
     fi
     
     # 現在の状態をスナップショットとして保存
-    grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt"
+    grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null
     
     echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
