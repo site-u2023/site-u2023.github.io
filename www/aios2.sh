@@ -2868,8 +2868,9 @@ aios2_main() {
     
     (
         __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
+        get_extended_device_info
     ) &
-    API_DL_PID=$!
+    API_PID=$!
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
@@ -2880,9 +2881,8 @@ aios2_main() {
     # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
 
-    # API情報を取得・パース
-    wait $API_DL_PID
-    get_extended_device_info
+    # API情報取得完了を待つ
+    wait $API_PID
     
     # 言語ファイルを取得
     wait $LANG_EN_PID
@@ -2941,9 +2941,10 @@ aios2_main() {
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
     fi
-
+    
     echo "Thank you for using aios2!"
-    echo ""
 }
+
+aios2_main
 
 aios2_main
