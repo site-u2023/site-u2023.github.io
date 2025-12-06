@@ -229,6 +229,7 @@ select_ui_mode() {
     local whiptail_pkg="whiptail"
     local choice
     
+    # UIモジュール取得（ここはキャッシュがあれば速いのでそのままでOK）
     if [ -n "$WHIPTAIL_UI_URL" ]; then
         if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
             __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh" && has_whiptail=1
@@ -246,6 +247,7 @@ select_ui_mode() {
         exit 1
     fi
     
+    # 優先順位による自動決定
     if [ $has_whiptail -eq 1 ] && [ $has_simple -eq 0 ]; then
         UI_MODE="whiptail"
         return 0
@@ -256,11 +258,12 @@ select_ui_mode() {
         return 0
     fi
     
-    echo "$(translate 'tr-tui-ui-mode-select')"
-    echo "1) $(translate 'tr-tui-ui-whiptail')"
-    echo "2) $(translate 'tr-tui-ui-simple')"
+    # --- 修正箇所: 翻訳を廃止し英語ベタ書き ---
+    echo "Select UI Mode:"
+    echo "1) whiptail (Dialog TUI)"
+    echo "2) simple   (List TUI)"
     
-    printf "%s [1]: " "$(translate 'tr-tui-ui-choice')"
+    printf "Select [1]: "
     read -r choice
     
     case "$choice" in
@@ -270,11 +273,11 @@ select_ui_mode() {
         *)
             UI_MODE="whiptail"
             if ! command -v whiptail >/dev/null 2>&1; then
-                echo "$(translate 'tr-tui-ui-installing')"
+                echo "Installing whiptail..."
                 if install_package $whiptail_pkg; then
-                    echo "$(translate 'tr-tui-ui-install-success')"
+                    echo "Installation successful."
                 else
-                    echo "$(translate 'tr-tui-ui-install-failed')"
+                    echo "Installation failed. Falling back to simple mode."
                     UI_MODE="simple"
                 fi
             fi
@@ -2826,24 +2829,15 @@ aios2_main() {
     print_banner
     
     init
-    echo "Fetching config.js"
     
     detect_package_manager
     echo "Detecting package manager: $PKG_MGR"
+
+    echo "Starting background downloads..."
+
+    # --- 1. すべてのダウンロードを即座にバックグラウンドで開始 ---
     
-    echo "Fetching English language file"
-    download_language_json "en"
-    
-    echo "Fetching auto-config"
-    get_extended_device_info
-    
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "Fetching language file: ${AUTO_LANGUAGE}"
-        download_language_json "${AUTO_LANGUAGE}"
-    fi
-    
-    echo "Fetching essential files in parallel"
-    
+    # (A) 基本JSONファイル
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -2861,39 +2855,66 @@ aios2_main() {
     POSTINST_PID=$!
     
     (
-        if ! download_customfeeds_json; then
-            echo "Warning: Failed to download customfeeds.json" >&2
-        fi
+        download_customfeeds_json >/dev/null 2>&1
     ) &
     CUSTOMFEEDS_PID=$!
     
     (
-        if ! download_customscripts_json; then
-            echo "Warning: Failed to download customscripts.json" >&2
-        fi
+        download_customscripts_json >/dev/null 2>&1
     ) &
     CUSTOMSCRIPTS_PID=$!
-    
+
+    # (B) テンプレート
     prefetch_templates &
     TEMPLATES_PID=$!
+
+    # (C) 英語言語ファイル (UI選択後に使うため裏で落としておく)
+    (
+        download_language_json "en" >/dev/null 2>&1
+    ) &
+    LANG_EN_PID=$!
+
+    # (D) API (Auto Config) - ダウンロードだけ先に走らせる
+    (
+        __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
+    ) &
+    API_DL_PID=$!
+
+    # --- 2. ダウンロード中にユーザーへUI選択を促す (ユーザーの思考時間がDL時間になる) ---
+    # ここで config.js は init で読み込み済みなので UI URL は判明している
+    select_ui_mode
+
+
+    # --- 3. ユーザー選択後にデータの整合性を確保 ---
+
+    # まずAPI情報のダウンロード完了を待つ
+    wait $API_DL_PID
     
+    # API情報をパースして変数をセット (ダウンロードは終わっているので処理のみ)
+    echo "Parsing device info..."
+    get_extended_device_info
+    
+    # 言語設定の決定と追加ダウンロード
+    # (API情報またはユーザー設定から言語を決定)
+    wait $LANG_EN_PID
+    
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        echo "Fetching language file: ${AUTO_LANGUAGE}"
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
+
+    # 残りの必須ファイルの完了を待機
     wait $SETUP_PID
     SETUP_STATUS=$?
     
     wait $POSTINST_PID
     POSTINST_STATUS=$?
     
-    wait $REVIEW_PID
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     
-    if [ ! -s "$AUTO_CONFIG_JSON" ] || ! grep -q '"language"' "$AUTO_CONFIG_JSON" 2>/dev/null; then
-        echo "Warning: Failed to fetch auto-config API"
-        echo "   https://www.cloudflarestatus.com/"
-        echo ""
-    fi
-    
+    # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
@@ -2908,21 +2929,12 @@ aios2_main() {
         return 1
     fi
 
-    if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
-        if [ -n "$MAPE_GUA_PREFIX" ]; then
-            echo "[DEBUG] Detected mape_type=gua with prefix: $MAPE_GUA_PREFIX" >> "$CONFIG_DIR/debug.log"
-        else
-            echo "[DEBUG] Detected mape_type=pd no GUA detected" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-
-    echo "Loading default packages"
+    # データロード処理
+    echo "Loading package data..."
     load_default_packages
-    
-    echo "Applying API defaults"
     apply_api_defaults
 
-    echo "Fetching UI modules"
+    # --- 起動完了 ---
     
     TIME_END=$(cut -d' ' -f1 /proc/uptime)
     echo "[DEBUG] TIME_START='$TIME_START' TIME_END='$TIME_END'" >> "$CONFIG_DIR/debug.log"
@@ -2932,9 +2944,9 @@ aios2_main() {
     printf "\033[32mLoaded in %ss\033[0m\n" "$ELAPSED_TIME"
     echo ""
     
-    select_ui_mode
-
+    # UIモードに応じたメイン処理へ
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
+        # simpleモード用のYes/No調整
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
