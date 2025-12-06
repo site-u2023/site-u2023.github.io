@@ -2001,6 +2001,23 @@ update_language_packages() {
     
     echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
     
+    # 新言語が空の場合、全ての言語パッケージを削除
+    if [ -z "$new_lang" ]; then
+        local prefixes
+        prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+        
+        for prefix in $prefixes; do
+            # 全言語のパッケージを削除
+            sed -i "/=${prefix}[^=]*=/d" "$SELECTED_PACKAGES"
+            sed -i "/=${prefix}[^=]*\$/d" "$SELECTED_PACKAGES"
+            echo "[LANG] Removed all packages with prefix: $prefix" >> "$CONFIG_DIR/debug.log"
+        done
+        
+        # スナップショット更新
+        grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null || : > "$CONFIG_DIR/vars_snapshot.txt"
+        return 0
+    fi
+    
     if [ "$old_lang" = "$new_lang" ]; then
         echo "[DEBUG] Language unchanged, skipping package update" >> "$CONFIG_DIR/debug.log"
         return 0
@@ -2010,10 +2027,9 @@ update_language_packages() {
     prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
     
     # 旧言語パッケージを削除（en以外）
-    if [ "$old_lang" != "en" ]; then
+    if [ -n "$old_lang" ] && [ "$old_lang" != "en" ]; then
         for prefix in $prefixes; do
             local old_pkg="${prefix}${old_lang}"
-            # キャッシュ形式で削除
             sed -i "/=${old_pkg}=/d" "$SELECTED_PACKAGES"
             sed -i "/=${old_pkg}\$/d" "$SELECTED_PACKAGES"
             echo "[LANG] Removed: $old_pkg" >> "$CONFIG_DIR/debug.log"
@@ -2025,10 +2041,8 @@ update_language_packages() {
         for prefix in $prefixes; do
             local new_pkg="${prefix}${new_lang}"
             
-            # キャッシュ形式で追加
             if ! grep -q "=${new_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
                ! grep -q "=${new_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                # キャッシュ形式: id=name=uniqueId=installOptions=enableVar
                 echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
                 echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
             fi
