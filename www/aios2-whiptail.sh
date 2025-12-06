@@ -845,9 +845,6 @@ category_config() {
     cleanup_orphaned_enablevars "$cat_id"            # 3. 孤立したenableVar削除
     track_api_value_changes "$cat_id"                # 4. API値変更追跡
     
-    # 言語設定カテゴリの場合のみ
-    [ "$cat_id" = "basic-config" ] && update_language_packages
-    
     return $RETURN_STAY
 }
 
