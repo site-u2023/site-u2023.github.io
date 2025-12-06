@@ -1610,6 +1610,69 @@ get_section_nested_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
 }
 
+# ラジオボタングループの排他変数クリーンアップ（汎用）
+cleanup_radio_group_exclusive_vars() {
+    local item_id="$1"
+    local current_value="$2"
+    
+    echo "[DEBUG] === cleanup_radio_group_exclusive_vars ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] item_id=$item_id, current_value=$current_value" >> "$CONFIG_DIR/debug.log"
+    
+    # exclusiveVars の存在確認
+    local has_exclusive
+    has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
+    
+    if [ -z "$has_exclusive" ]; then
+        # ネストされた項目もチェック
+        has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
+    fi
+    
+    [ -z "$has_exclusive" ] && {
+        echo "[DEBUG] No exclusiveVars defined for $item_id" >> "$CONFIG_DIR/debug.log"
+        return 0
+    }
+    
+    # 全オプションの変数リストを取得
+    local all_exclusive_vars=""
+    local options
+    options=$(get_setup_item_options "$item_id")
+    
+    while read -r option_value; do
+        [ -z "$option_value" ] && continue
+        [ "$option_value" = "___EMPTY___" ] && continue
+        
+        # このオプションに紐づく変数リスト
+        local vars_json
+        vars_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars.${option_value}[*]" 2>/dev/null)
+        
+        if [ -z "$vars_json" ]; then
+            vars_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].exclusiveVars.${option_value}[*]" 2>/dev/null)
+        fi
+        
+        # 現在選択されていないオプションの変数を削除対象に追加
+        if [ "$option_value" != "$current_value" ]; then
+            all_exclusive_vars="${all_exclusive_vars}${vars_json}
+"
+        fi
+    done <<EOF
+$options
+EOF
+    
+    # 削除実行
+    while read -r var_name; do
+        [ -z "$var_name" ] && continue
+        
+        if grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${var_name}=/d" "$SETUP_VARS"
+            echo "[EXCLUSIVE] Removed variable: $var_name (not in current selection: $current_value)" >> "$CONFIG_DIR/debug.log"
+        fi
+    done <<EOF
+$all_exclusive_vars
+EOF
+    
+    echo "[DEBUG] === cleanup_radio_group_exclusive_vars finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
 auto_cleanup_conditional_variables() {
     local cat_id="$1"
     
