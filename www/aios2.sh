@@ -2795,11 +2795,17 @@ EOF
 
 aios2_main() {
     
+    echo "[TIME] Start: $(date +%s.%N)" >&2
+    
     clear
     print_banner
     
+    echo "[TIME] After banner: $(date +%s.%N)" >&2
+    
     # config.js を最優先で並列DL
     mkdir -p "$CONFIG_DIR"
+    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
+    
     (
         __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
             echo "Error: Failed to download config.js" >&2
@@ -2808,9 +2814,11 @@ aios2_main() {
     ) &
     CONFIG_PID=$!
     
-    # config.js 完了を待つ（小さいファイルなので即座）
+    # config.js 完了を待つ
     wait $CONFIG_PID
     CONFIG_STATUS=$?
+    
+    echo "[TIME] After config DL: $(date +%s.%N)" >&2
     
     if [ $CONFIG_STATUS -ne 0 ]; then
         echo "Cannot continue without config.js"
@@ -2820,8 +2828,13 @@ aios2_main() {
     fi
     
     # init（config.js パース含む）
+    echo "[TIME] Before init: $(date +%s.%N)" >&2
     init
+    echo "[TIME] After init: $(date +%s.%N)" >&2
+    
     detect_package_manager
+
+    echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
 
     # 全て並列ダウンロード開始（APIも含む）
     download_api_with_retry &
@@ -2861,6 +2874,8 @@ aios2_main() {
     ) &
     LANG_EN_PID=$!
     
+    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
+    
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
     ) &
@@ -2871,10 +2886,18 @@ aios2_main() {
     ) &
     SIMPLE_PID=$!
 
+    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
+    
     # UI DL完了を待ってから選択
     wait $WHIPTAIL_PID
     wait $SIMPLE_PID
+    
+    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
+    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    
     select_ui_mode
+
+    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
     # API完了待ち → 即座に解析 → 母国語DL開始
     wait $API_PID
