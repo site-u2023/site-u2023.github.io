@@ -2770,16 +2770,10 @@ aios2_main() {
         awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
     }
     
-    echo "[TIME] Start: 0.000s" >> "$CONFIG_DIR/debug.log"
-    
     clear
     print_banner
     
-    echo "[TIME] After banner: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    
     mkdir -p "$CONFIG_DIR"
-    
-    echo "[TIME] Before config DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
@@ -2788,96 +2782,51 @@ aios2_main() {
         return 1
     }
     
-    echo "[TIME] After config DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    echo "[TIME] Before init: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    
     init
-    
-    echo "[TIME] After init: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     detect_package_manager
 
-    echo "[TIME] Before parallel DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-
-    (download_api_with_retry && echo "[TIME] API done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log") &
+    (download_api_with_retry) &
     API_PID=$!
     
-    (
-        if ! download_setup_json; then
-            echo "[ERROR] Failed to download setup.json" >> "$CONFIG_DIR/debug.log"
-            exit 1
-        fi
-        echo "[TIME] Setup done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (download_setup_json) &
     SETUP_PID=$!
     
-    (
-        if ! download_postinst_json; then
-            echo "[ERROR] Failed to download postinst.json" >> "$CONFIG_DIR/debug.log"
-            exit 1
-        fi
-        echo "[TIME] Postinst done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (download_postinst_json) &
     POSTINST_PID=$!
     
-    (
-        download_customfeeds_json >/dev/null 2>&1
-        echo "[TIME] Customfeeds done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (download_customfeeds_json >/dev/null 2>&1) &
     CUSTOMFEEDS_PID=$!
     
-    (
-        download_customscripts_json >/dev/null 2>&1
-        echo "[TIME] Customscripts done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (download_customscripts_json >/dev/null 2>&1) &
     CUSTOMSCRIPTS_PID=$!
     
-    (
-        prefetch_templates
-        echo "[TIME] Templates done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (prefetch_templates) &
     TEMPLATES_PID=$!
     
-    (
-        download_language_json "en" >/dev/null 2>&1
-        echo "[TIME] Language EN done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    ) &
+    (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-        echo "[TIME] UI modules done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     UI_DL_PID=$!
 
-    echo "[TIME] After parallel DL start: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-
-    echo "[TIME] Before API wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $API_PID
-    
-    echo "[TIME] After API wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     get_extended_device_info
     
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "[TIME] Before native language DL (parallel): $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-        (
-            download_language_json "${AUTO_LANGUAGE}"
-            echo "[TIME] Native language done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-        ) &
+        (download_language_json "${AUTO_LANGUAGE}") &
         NATIVE_LANG_PID=$!
     fi
 
-    echo "[TIME] Before UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $UI_DL_PID
-    echo "[TIME] After UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ -n "$NATIVE_LANG_PID" ]; then
-        echo "[TIME] Before native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         wait $NATIVE_LANG_PID
-        echo "[TIME] After native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     fi
     
     wait $SETUP_PID
