@@ -2785,16 +2785,24 @@ EOF
 
 aios2_main() {
     
-    echo "[TIME] Start: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    # 起動時刻を記録
+    START_TIME=$(date +%s.%N)
+    
+    elapsed_time() {
+        local current=$(date +%s.%N)
+        echo "$current $START_TIME" | awk '{printf "%.3f", $1 - $2}'
+    }
+    
+    echo "[TIME] Start: 0.000s" >> "$CONFIG_DIR/debug.log"
     
     clear
     print_banner
     
-    echo "[TIME] After banner: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After banner: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     mkdir -p "$CONFIG_DIR"
     
-    echo "[TIME] Before config DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before config DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
@@ -2804,19 +2812,19 @@ aios2_main() {
         return 1
     }
     
-    echo "[TIME] After config DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
-    echo "[TIME] Before init: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After config DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before init: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     init
     
-    echo "[TIME] After init: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After init: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     detect_package_manager
 
-    echo "[TIME] Before parallel DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before parallel DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
     # 全て並列ダウンロード開始
-    (download_api_with_retry && echo "[TIME] API done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log") &
+    (download_api_with_retry && echo "[TIME] API done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log") &
     API_PID=$!
     
     (
@@ -2824,7 +2832,7 @@ aios2_main() {
             echo "[ERROR] Failed to download setup.json" >> "$CONFIG_DIR/debug.log"
             exit 1
         fi
-        echo "[TIME] Setup done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Setup done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     SETUP_PID=$!
     
@@ -2833,82 +2841,82 @@ aios2_main() {
             echo "[ERROR] Failed to download postinst.json" >> "$CONFIG_DIR/debug.log"
             exit 1
         fi
-        echo "[TIME] Postinst done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Postinst done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     POSTINST_PID=$!
     
     (
         download_customfeeds_json >/dev/null 2>&1
-        echo "[TIME] Customfeeds done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Customfeeds done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     CUSTOMFEEDS_PID=$!
     
     (
         download_customscripts_json >/dev/null 2>&1
-        echo "[TIME] Customscripts done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Customscripts done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     CUSTOMSCRIPTS_PID=$!
     
     (
         prefetch_templates
-        echo "[TIME] Templates done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Templates done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     TEMPLATES_PID=$!
     
     (
         download_language_json "en" >/dev/null 2>&1
-        echo "[TIME] Language EN done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Language EN done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     LANG_EN_PID=$!
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-        echo "[TIME] UI modules done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] UI modules done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     ) &
     UI_DL_PID=$!
 
-    echo "[TIME] After parallel DL start: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After parallel DL start: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
     # API完了待ち → 解析
-    echo "[TIME] Before API wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before API wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $API_PID
     
-    echo "[TIME] After API wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After API wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     get_extended_device_info
     
     # 母国語DLを並列で開始（バックグラウンド）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "[TIME] Before native language DL (parallel): $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Before native language DL (parallel): $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         (
             download_language_json "${AUTO_LANGUAGE}"
-            echo "[TIME] Native language done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+            echo "[TIME] Native language done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         ) &
         NATIVE_LANG_PID=$!
     fi
 
     # UI完了待ち
-    echo "[TIME] Before UI wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $UI_DL_PID
-    echo "[TIME] After UI wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     # 母国語DL完了待ち（開始していた場合のみ）
     if [ -n "$NATIVE_LANG_PID" ]; then
-        echo "[TIME] Before native language wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Before native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         wait $NATIVE_LANG_PID
-        echo "[TIME] After native language wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] After native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     fi
     
-    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before select_ui_mode: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     select_ui_mode
 
-    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After select_ui_mode: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
     # 残りのファイル完了を待機
-    echo "[TIME] Before remaining waits: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before remaining waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -2921,7 +2929,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
-    echo "[TIME] After all waits: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] After all waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2938,20 +2946,20 @@ aios2_main() {
         return 1
     fi
 
-    echo "[TIME] Before UI customization: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before UI customization: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
     
-    echo "[TIME] Before UI module load: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before UI module load: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        echo "[TIME] Before UI main: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] Before UI main: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         aios2_${UI_MODE}_main
-        echo "[TIME] After UI main: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        echo "[TIME] After UI main: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
@@ -2960,7 +2968,7 @@ aios2_main() {
     echo ""
     echo "Thank you for using aios2!"
     echo ""
-    echo "[TIME] End: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] End: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 }
 
 aios2_main
