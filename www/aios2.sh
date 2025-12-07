@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2345"
+VERSION="R7.1208.0002"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -96,6 +96,8 @@ print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     printf       "\033[37m         Vr.%s\033[0m\n" "$VERSION"
+    printf "\n"
+    printf "\033[35mThis script is used at your own risk\033[0m\n"
     printf "\n"
 }
 
