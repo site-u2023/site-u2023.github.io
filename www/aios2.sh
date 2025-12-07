@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0036"
+VERSION="R7.1208.0040"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -188,29 +188,8 @@ set_var() {
 # UI Mode Selection
 
 select_ui_mode() {
-    local has_whiptail=0
-    local has_simple=0
     local whiptail_pkg="whiptail"
     local choice
-    
-    # ファイルが存在するかチェックするだけ（再DLしない）
-    [ -f "$CONFIG_DIR/aios2-whiptail.sh" ] && has_whiptail=1
-    [ -f "$CONFIG_DIR/aios2-simple.sh" ] && has_simple=1
-    
-    if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
-        echo "Error: No UI module found"
-        exit 1
-    fi
-    
-    if [ $has_whiptail -eq 1 ] && [ $has_simple -eq 0 ]; then
-        UI_MODE="whiptail"
-        return 0
-    fi
-    
-    if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 1 ]; then
-        UI_MODE="simple"
-        return 0
-    fi
     
     echo "Select UI Mode:"
     echo "1) whiptail (Dialog TUI)"
@@ -2913,8 +2892,6 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
-    
-    echo "[TIME] All downloads and processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
