@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1206.0835"
+VERSION="R7.12067.2042"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -767,6 +767,10 @@ category_config() {
     local tr_main_menu cat_title base_breadcrumb
     local tr_language lang_breadcrumb current_lang value
     local item_id item_type ret
+    local temp_vars="$CONFIG_DIR/temp_vars_${cat_id}.txt"
+    
+    # 現在の状態をバックアップ
+    cp "$SETUP_VARS" "$temp_vars"
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
@@ -782,6 +786,9 @@ category_config() {
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
         if ! [ $? -eq 0 ]; then
+            # キャンセル: 元に戻す
+            cp "$temp_vars" "$SETUP_VARS"
+            rm -f "$temp_vars"
             return $RETURN_BACK
         fi
         
@@ -799,9 +806,9 @@ category_config() {
     # internet-connection カテゴリの場合、自動検出を試みる
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
-            # show_auto_detection_if_available() 内で既に呼ばれている
             auto_cleanup_conditional_variables "$cat_id"
             cleanup_orphaned_enablevars "$cat_id"
+            rm -f "$temp_vars"
             return $RETURN_STAY
         fi
     fi
@@ -824,67 +831,29 @@ category_config() {
                 continue
                 ;;
             $RETURN_BACK)
+                # キャンセル: 元に戻す
+                cp "$temp_vars" "$SETUP_VARS"
+                rm -f "$temp_vars"
                 return $RETURN_BACK
                 ;;
             $RETURN_MAIN)
+                # メインメニューへ: 元に戻す
+                cp "$temp_vars" "$SETUP_VARS"
+                rm -f "$temp_vars"
                 return $RETURN_MAIN
                 ;;
         esac
     done
 
+    # 成功: バックアップを削除
+    rm -f "$temp_vars"
+    
     auto_add_conditional_packages "$cat_id"          # 1. 条件付きパッケージ追加
     auto_cleanup_conditional_variables "$cat_id"     # 2. 不要な変数削除
     cleanup_orphaned_enablevars "$cat_id"            # 3. 孤立したenableVar削除
     track_api_value_changes "$cat_id"                # 4. API値変更追跡
     
     return $RETURN_STAY
-}
-
-package_categories() {
-    local tr_main_menu tr_custom_packages breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat is_hidden
-    local categories visible_categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_custom_packages=$(translate "tr-tui-packages")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages")
-    
-    categories=$(get_categories)
-    visible_categories=""
-    
-    while read -r cat_id; do
-        is_hidden=$(get_category_hidden "$cat_id")
-        [ "$is_hidden" = "true" ] && continue
-        visible_categories="${visible_categories}${cat_id}
-"
-    done <<EOF
-$categories
-EOF
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            [ -z "$cat_id" ] && continue
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
-$visible_categories
-EOF
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
-            package_selection "$selected_cat" "normal" "$breadcrumb"
-        fi
-    done
 }
 
 package_selection() {
