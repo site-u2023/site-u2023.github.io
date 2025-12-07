@@ -205,7 +205,8 @@ select_ui_mode() {
         fi
     fi
     
-    echo "[TIME] UI modules ready: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    # この行を削除
+    # echo "[TIME] UI modules ready: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
