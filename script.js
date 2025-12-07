@@ -29,13 +29,13 @@ const AIOS_PATH = `${BASE_DIR}/aios`;
 const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
 const DEFAULT_TERMINALS = {
-  aios: {
-    name: 'aios',
-    command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
-  },
   aios2: {
     name: 'aios2',
     command: `mkdir -p ${BASE_DIR2}; wget --no-check-certificate -O ${AIOS_PATH2} ${AIOS_URL2} && chmod +x ${AIOS_PATH2} && ${AIOS_PATH2}`
+  },
+  aios (old): {
+    name: 'aios',
+    command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
   ssh: {
     name: 'SSH',
@@ -98,6 +98,8 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
+        aiosExplanation: 'メニュー式スクリプト',
+        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aios2Explanation: '永続化インストールスクリプト',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
         sshExplanation: 'SSHログイン',
