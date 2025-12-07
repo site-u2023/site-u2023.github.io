@@ -2787,10 +2787,20 @@ aios2_main() {
     clear
     print_banner
     
+    mkdir -p "$CONFIG_DIR"
+    
+    # config.js を先にDL
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
     init
     detect_package_manager
 
-    # 全て逐次実行（シンプル・確実）
+    # 全て逐次実行
     download_api_with_retry || {
         echo "Cannot continue without API data"
         printf "Press [Enter] to exit. "
