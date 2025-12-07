@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2132"
+VERSION="R7.1207.2134"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2791,30 +2791,18 @@ aios2_main() {
     
     echo "[TIME] After banner: $(date +%s.%N)" >&2
     
-    # config.js を最優先で並列DL
+    # config.js を最優先でDL
     mkdir -p "$CONFIG_DIR"
     echo "[TIME] Before config DL: $(date +%s.%N)" >&2
     
-    (
-        __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
-            echo "Error: Failed to download config.js" >&2
-            exit 1
-        }
-    ) &
-    CONFIG_PID=$!
-    
-    # config.js 完了を待つ
-    wait $CONFIG_PID
-    CONFIG_STATUS=$?
-    
-    echo "[TIME] After config DL: $(date +%s.%N)" >&2
-    
-    if [ $CONFIG_STATUS -ne 0 ]; then
-        echo "Cannot continue without config.js"
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
-    fi
+    }
+    
+    echo "[TIME] After config DL: $(date +%s.%N)" >&2
     
     # init（config.js パース含む）
     echo "[TIME] Before init: $(date +%s.%N)" >&2
@@ -2823,12 +2811,24 @@ aios2_main() {
     
     detect_package_manager
 
-    echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
+    echo "[TIME] Before API DL: $(date +%s.%N)" >&2
 
-    # ★グループ1：最重要ファイル（同時3つまで）
-    download_api_with_retry &
-    API_PID=$!
+    # ★ステップ1：API（最重要、単独実行）
+    download_api_with_retry || {
+        echo "Cannot continue without API data"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
     
+    echo "[TIME] After API DL: $(date +%s.%N)" >&2
+    
+    # API解析
+    get_extended_device_info
+    
+    echo "[TIME] Before group1 DL: $(date +%s.%N)" >&2
+
+    # ★ステップ2：必須ファイル2つ（並列）
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -2845,89 +2845,14 @@ aios2_main() {
     ) &
     POSTINST_PID=$!
     
-    # グループ1完了を待つ
-    wait $API_PID
+    # 完了待ち
     wait $SETUP_PID
-    wait $POSTINST_PID
-    
-    echo "[TIME] After group1 DL: $(date +%s.%N)" >&2
-
-    # ★グループ2：UI + 言語（同時4つ）
-    (
-        download_language_json "en" >/dev/null 2>&1
-    ) &
-    LANG_EN_PID=$!
-    
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-    ) &
-    WHIPTAIL_PID=$!
-    
-    (
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    SIMPLE_PID=$!
-    
-    # ★グループ3：オプション（同時3つ）
-    (
-        download_customfeeds_json >/dev/null 2>&1
-    ) &
-    CUSTOMFEEDS_PID=$!
-    
-    (
-        download_customscripts_json >/dev/null 2>&1
-    ) &
-    CUSTOMSCRIPTS_PID=$!
-    
-    prefetch_templates &
-    TEMPLATES_PID=$!
-
-    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
-    
-    # UI DL完了を待ってから選択
-    wait $WHIPTAIL_PID
-    wait $SIMPLE_PID
-    
-    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
-    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
-    
-    select_ui_mode
-
-    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
-
-    # API完了待ち（既に完了済み）
-    API_STATUS=$?
-    
-    if [ $API_STATUS -ne 0 ]; then
-        echo "Cannot continue without API data"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    get_extended_device_info
-    
-    # 母国語を並列でDL開始
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (
-            download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
-        ) &
-        LANG_LOCAL_PID=$!
-    fi
-
-    # 残りのファイル完了を待機
     SETUP_STATUS=$?
+    
+    wait $POSTINST_PID
     POSTINST_STATUS=$?
     
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
-    
-    # 母国語DL完了待ち
-    if [ -n "$LANG_LOCAL_PID" ]; then
-        wait $LANG_LOCAL_PID
-    fi
+    echo "[TIME] After group1 DL: $(date +%s.%N)" >&2
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2942,6 +2867,65 @@ aios2_main() {
         printf "Press [Enter] to exit. "
         read -r _
         return 1
+    fi
+
+    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
+
+    # ★ステップ3：UI + 言語（並列2つ）
+    (
+        download_language_json "en" >/dev/null 2>&1
+    ) &
+    LANG_EN_PID=$!
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
+    
+    # UI DL完了を待ってから選択
+    wait $UI_DL_PID
+    
+    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
+    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    
+    select_ui_mode
+
+    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
+    
+    # ★ステップ4：オプションファイル（並列2-3個）
+    (
+        download_customfeeds_json >/dev/null 2>&1
+    ) &
+    CUSTOMFEEDS_PID=$!
+    
+    (
+        download_customscripts_json >/dev/null 2>&1
+    ) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    prefetch_templates &
+    TEMPLATES_PID=$!
+    
+    # 母国語を並列でDL
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (
+            download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
+        ) &
+        LANG_LOCAL_PID=$!
+    fi
+
+    # 残りのファイル完了を待機
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    wait $LANG_EN_PID
+    
+    # 母国語DL完了待ち
+    if [ -n "$LANG_LOCAL_PID" ]; then
+        wait $LANG_LOCAL_PID
     fi
 
     # UIモジュールをロードして実行
