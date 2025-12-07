@@ -2796,10 +2796,16 @@ EOF
 
 aios2_main() {
     
+    echo "[TIME] Start: $(date +%s.%N)" >&2
+    
     clear
     print_banner
     
+    echo "[TIME] After banner: $(date +%s.%N)" >&2
+    
     mkdir -p "$CONFIG_DIR"
+    
+    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
     
     # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
@@ -2809,8 +2815,16 @@ aios2_main() {
         return 1
     }
     
+    echo "[TIME] After config DL: $(date +%s.%N)" >&2
+    echo "[TIME] Before init: $(date +%s.%N)" >&2
+    
     init
+    
+    echo "[TIME] After init: $(date +%s.%N)" >&2
+    
     detect_package_manager
+
+    echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
 
     # 全て並列ダウンロード開始
     download_api_with_retry &
@@ -2856,8 +2870,13 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
 
+    echo "[TIME] After parallel DL start: $(date +%s.%N)" >&2
+
     # API完了待ち → 解析
     wait $API_PID
+    
+    echo "[TIME] After API wait: $(date +%s.%N)" >&2
+    
     get_extended_device_info
     
     # 母国語DL
@@ -2867,7 +2886,13 @@ aios2_main() {
 
     # UI完了待ち → 選択
     wait $UI_DL_PID
+    
+    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
+    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    
     select_ui_mode
+
+    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
     # 残りのファイル完了を待機
     wait $SETUP_PID
