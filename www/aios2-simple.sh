@@ -828,6 +828,10 @@ process_items() {
 category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title breadcrumb
+    local temp_vars="$CONFIG_DIR/temp_vars_${cat_id}.txt"
+    
+    # 現在の状態をバックアップ
+    cp "$SETUP_VARS" "$temp_vars"
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
@@ -864,11 +868,23 @@ category_config() {
             echo ""
             echo "$(translate 'tr-tui-auto-config-applied')"
             sleep 2
+            rm -f "$temp_vars"
             return 0
         fi
     fi
     
     process_items "$cat_id" "" "$breadcrumb"
+    local ret=$?
+    
+    # キャンセルされた場合は元に戻す
+    if [ "$ret" -ne 0 ]; then
+        cp "$temp_vars" "$SETUP_VARS"
+        rm -f "$temp_vars"
+        return "$ret"
+    fi
+    
+    # 成功: バックアップを削除
+    rm -f "$temp_vars"
     
     auto_add_conditional_packages "$cat_id"
     auto_cleanup_conditional_variables "$cat_id"
