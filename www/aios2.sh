@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2238"
+VERSION="R7.1207.2242"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2785,12 +2785,12 @@ EOF
 
 aios2_main() {
     
-    # 起動時刻を記録
-    START_TIME=$(date +%s.%N)
+    # 起動時刻を記録（/proc/uptimeを使用）
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
-        local current=$(date +%s.%N)
-        echo "$current $START_TIME" | awk '{printf "%.3f", $1 - $2}'
+        local current=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
     }
     
     echo "[TIME] Start: 0.000s" >> "$CONFIG_DIR/debug.log"
