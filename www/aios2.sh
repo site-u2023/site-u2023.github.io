@@ -478,11 +478,8 @@ reset_detected_conn_type() {
     fi
 }
 
-get_extended_device_info() {
-    get_device_info
-    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-    
-    # APIダウンロード（リトライ3回）
+# 新関数：APIダウンロード（リトライ付き）
+download_api_with_retry() {
     local retry_count=0
     local max_retries=3
     local success=0
@@ -508,6 +505,13 @@ get_extended_device_info() {
         read -r _
         exit 1
     fi
+    
+    return 0
+}
+
+get_extended_device_info() {
+    get_device_info
+    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     
     # APIから値を抽出して変数に設定
     _set_api_value() {
@@ -536,7 +540,6 @@ get_extended_device_info() {
     _set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
     _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
-    _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
     _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
     
     # DS-Lite
@@ -2796,7 +2799,10 @@ aios2_main() {
     init
     detect_package_manager
 
-    # 全ファイルを並列ダウンロード開始
+    # APIは最優先で同期的に取得（リトライ付き）
+    download_api_with_retry
+    
+    # その他のファイルを並列ダウンロード開始
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -2832,11 +2838,6 @@ aios2_main() {
     LANG_EN_PID=$!
     
     (
-        __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"
-    ) &
-    API_DL_PID=$!
-    
-    (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
@@ -2845,8 +2846,7 @@ aios2_main() {
     # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
     select_ui_mode
 
-    # API情報を取得・パース
-    wait $API_DL_PID
+    # API情報を取得・パース（API DLは既に完了済み）
     get_extended_device_info
     
     # 言語ファイルを取得
@@ -2882,10 +2882,6 @@ aios2_main() {
         return 1
     fi
 
-    # データロード
-    # load_default_packages
-    # apply_api_defaults
-    
     # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
