@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2153"
+VERSION="R7.1207.2156"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2796,10 +2796,16 @@ EOF
 
 aios2_main() {
     
+    echo "[TIME] Start: $(date +%s.%N)" >&2
+    
     clear
     print_banner
     
+    echo "[TIME] After banner: $(date +%s.%N)" >&2
+    
     mkdir -p "$CONFIG_DIR"
+    
+    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
     
     # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
@@ -2809,8 +2815,16 @@ aios2_main() {
         return 1
     }
     
+    echo "[TIME] After config DL: $(date +%s.%N)" >&2
+    echo "[TIME] Before init: $(date +%s.%N)" >&2
+    
     init
+    
+    echo "[TIME] After init: $(date +%s.%N)" >&2
+    
     detect_package_manager
+    
+    echo "[TIME] Before API DL: $(date +%s.%N)" >&2
 
     # 全て逐次実行
     download_api_with_retry || {
@@ -2819,6 +2833,8 @@ aios2_main() {
         read -r _
         return 1
     }
+    
+    echo "[TIME] After API DL: $(date +%s.%N)" >&2
     
     get_extended_device_info
     
@@ -2846,10 +2862,16 @@ aios2_main() {
         download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
     fi
     
+    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
+    
     [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
     [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     
+    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    
     select_ui_mode
+
+    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
