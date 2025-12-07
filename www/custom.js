@@ -1484,30 +1484,30 @@ function extractLuciName(pkg) {
 
 // ==================== フォーム値収集 ====================
 
-function collectConnectionConfig(values) {
-    const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
-    
-    if (connectionType === 'disabled') {
-        return;
-    }
-    
-    const connectionCategory = state.config.setup?.categories?.find(
-        cat => cat.id === 'internet-connection'
-    );
-    if (!connectionCategory) return;
-
-    if (shouldIncludeVariable('connection_type', connectionType)) {
-        values.connection_type = connectionType;
-    }
-
-    if (connectionType === 'auto') {
-        const actualType = getActualConnectionType();
-        if (actualType) {
-            collectFieldsForConnectionType(actualType, values, true);
+function shouldIncludeVariable(category, selectedValue) {
+    const exclusionRules = {
+        wifi_mode: {
+            exclude: ['disabled'],
+            variableName: 'wifi_mode'
+        },
+        net_optimizer: {
+            exclude: ['disabled'],
+            variableName: 'net_optimizer'
+        },
+        enable_dnsmasq: {
+            exclude: ['disabled'],
+            variableName: 'enable_dnsmasq'
+        },
+        connection_type: {
+            exclude: ['disabled'],
+            variableName: 'connection_type'
         }
-    } else if (connectionType !== 'dhcp') {
-        collectFieldsForConnectionType(connectionType, values, false);
-    }
+    };
+    
+    const rule = exclusionRules[category];
+    if (!rule) return true;
+    
+    return !rule.exclude.includes(selectedValue);
 }
 
 function collectFormValues() {
@@ -1583,13 +1583,17 @@ function collectConnectionConfig(values) {
     if (shouldIncludeVariable('connection_type', connectionType)) {
         values.connection_type = connectionType;
     }
+    
+    if (connectionType === 'disabled') {
+        return;
+    }
 
     if (connectionType === 'auto') {
         const actualType = getActualConnectionType();
         if (actualType) {
             collectFieldsForConnectionType(actualType, values, true);
         }
-    } else if (connectionType !== 'dhcp' && connectionType !== 'disabled') {
+    } else if (connectionType !== 'dhcp') {
         collectFieldsForConnectionType(connectionType, values, false);
     }
 }
