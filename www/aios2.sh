@@ -586,6 +586,95 @@ get_extended_device_info() {
     echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
 }
 
+# Device Info (JSON-driven)
+
+get_deviceinfo_items() {
+    jsonfilter -i "$SETUP_JSON" -e '@.deviceInfo.items[*].id' 2>/dev/null | grep -v '^$'
+}
+
+get_deviceinfo_item_property() {
+    local item_id="$1"
+    local property="$2"
+    jsonfilter -i "$SETUP_JSON" -e "@.deviceInfo.items[@.id='$item_id'].${property}" 2>/dev/null | head -1
+}
+
+check_deviceinfo_condition() {
+    local item_id="$1"
+    local conditions
+    
+    conditions=$(jsonfilter -i "$SETUP_JSON" -e "@.deviceInfo.items[@.id='$item_id'].condition[*]" 2>/dev/null)
+    
+    [ -z "$conditions" ] && return 0
+    
+    while read -r var_name; do
+        [ -z "$var_name" ] && continue
+        local value
+        value=$(eval "echo \$$var_name")
+        [ -z "$value" ] && return 1
+    done <<EOF
+$conditions
+EOF
+    
+    return 0
+}
+
+get_deviceinfo_value() {
+    local item_id="$1"
+    local source format
+    
+    source=$(get_deviceinfo_item_property "$item_id" "source")
+    
+    case "$source" in
+        computed)
+            format=$(get_deviceinfo_item_property "$item_id" "format")
+            if [ -n "$format" ]; then
+                echo "$format" | sed \
+                    -e "s/{MEM_FREE_MB}/${MEM_FREE_MB}/g" \
+                    -e "s/{DEVICE_MEM}/${DEVICE_MEM}/g" \
+                    -e "s/{DEVICE_STORAGE_AVAIL}/${DEVICE_STORAGE_AVAIL}/g" \
+                    -e "s/{DEVICE_STORAGE}/${DEVICE_STORAGE}/g"
+            fi
+            ;;
+        current_lang)
+            local current_lang
+            current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
+            echo "$current_lang"
+            ;;
+        *)
+            eval "echo \$$source"
+            ;;
+    esac
+}
+
+build_deviceinfo_display() {
+    local info=""
+    
+    for item_id in $(get_deviceinfo_items); do
+        local item_type label value
+        
+        item_type=$(get_deviceinfo_item_property "$item_id" "type")
+        
+        if [ "$item_type" = "blank" ]; then
+            info="${info}
+"
+            continue
+        fi
+        
+        if ! check_deviceinfo_condition "$item_id"; then
+            continue
+        fi
+        
+        label=$(get_deviceinfo_item_property "$item_id" "label")
+        value=$(get_deviceinfo_value "$item_id")
+        
+        [ -n "$value" ] && info="${info}${label}: ${value}
+"
+    done
+    
+    echo "$info"
+}
+
 # Package Management
 
 package_compatible() {
@@ -762,95 +851,6 @@ get_setup_item_option_label() {
     else
         echo "$label"
     fi
-}
-
-# Device Info JSON-driven
-
-get_deviceinfo_items() {
-    jsonfilter -i "$SETUP_JSON" -e '@.deviceInfo.items[*].id' 2>/dev/null | grep -v '^$'
-}
-
-get_deviceinfo_item_property() {
-    local item_id="$1"
-    local property="$2"
-    jsonfilter -i "$SETUP_JSON" -e "@.deviceInfo.items[@.id='$item_id'].${property}" 2>/dev/null | head -1
-}
-
-check_deviceinfo_condition() {
-    local item_id="$1"
-    local conditions
-    
-    conditions=$(jsonfilter -i "$SETUP_JSON" -e "@.deviceInfo.items[@.id='$item_id'].condition[*]" 2>/dev/null)
-    
-    [ -z "$conditions" ] && return 0
-    
-    while read -r var_name; do
-        [ -z "$var_name" ] && continue
-        local value
-        value=$(eval "echo \$$var_name")
-        [ -z "$value" ] && return 1
-    done <<EOF
-$conditions
-EOF
-    
-    return 0
-}
-
-get_deviceinfo_value() {
-    local item_id="$1"
-    local source format
-    
-    source=$(get_deviceinfo_item_property "$item_id" "source")
-    
-    case "$source" in
-        computed)
-            format=$(get_deviceinfo_item_property "$item_id" "format")
-            if [ -n "$format" ]; then
-                echo "$format" | sed \
-                    -e "s/{MEM_FREE_MB}/${MEM_FREE_MB}/g" \
-                    -e "s/{DEVICE_MEM}/${DEVICE_MEM}/g" \
-                    -e "s/{DEVICE_STORAGE_AVAIL}/${DEVICE_STORAGE_AVAIL}/g" \
-                    -e "s/{DEVICE_STORAGE}/${DEVICE_STORAGE}/g"
-            fi
-            ;;
-        current_lang)
-            local current_lang
-            current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
-            echo "$current_lang"
-            ;;
-        *)
-            eval "echo \$$source"
-            ;;
-    esac
-}
-
-build_deviceinfo_display() {
-    local info=""
-    
-    for item_id in $(get_deviceinfo_items); do
-        local item_type label value
-        
-        item_type=$(get_deviceinfo_item_property "$item_id" "type")
-        
-        if [ "$item_type" = "blank" ]; then
-            info="${info}
-"
-            continue
-        fi
-        
-        if ! check_deviceinfo_condition "$item_id"; then
-            continue
-        fi
-        
-        label=$(get_deviceinfo_item_property "$item_id" "label")
-        value=$(get_deviceinfo_value "$item_id")
-        
-        [ -n "$value" ] && info="${info}${label}: ${value}
-"
-    done
-    
-    echo "$info"
 }
 
 # Package JSON Accessors
