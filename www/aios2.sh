@@ -2761,7 +2761,7 @@ show_log() {
     fi
 }
 
-XXX_aios2_main() {
+aios2_main() {
     
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -2858,127 +2858,6 @@ XXX_aios2_main() {
     
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
-    fi
-    
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
-    
-    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
-    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
-    
-    echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
-
-    if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
-    fi
-    
-    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
-        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        aios2_${UI_MODE}_main
-    else
-        echo "Error: UI module aios2-${UI_MODE}.sh not found."
-        exit 1
-    fi
-
-    echo ""
-    echo "Thank you for using aios2!"
-    echo ""
-}
-
-aios2_main() {
-    
-    START_TIME=$(cut -d' ' -f1 /proc/uptime)
-    
-    elapsed_time() {
-        local current=$(cut -d' ' -f1 /proc/uptime)
-        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
-    }
-    
-    clear
-    print_banner
-    
-    mkdir -p "$CONFIG_DIR"
-    
-    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
-        echo "Error: Failed to download config.js"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    init
-    
-    detect_package_manager
-
-    # 全てのダウンロードをバックグラウンドで開始
-    (download_api_with_retry) &
-    API_PID=$!
-    
-    (download_setup_json) &
-    SETUP_PID=$!
-    
-    (download_postinst_json) &
-    POSTINST_PID=$!
-    
-    (download_customfeeds_json >/dev/null 2>&1) &
-    CUSTOMFEEDS_PID=$!
-    
-    (download_customscripts_json >/dev/null 2>&1) &
-    CUSTOMSCRIPTS_PID=$!
-    
-    (prefetch_templates) &
-    TEMPLATES_PID=$!
-    
-    (download_language_json "en" >/dev/null 2>&1) &
-    LANG_EN_PID=$!
-    
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    UI_DL_PID=$!
-    
-    # UI表示前の時点で時間を記録
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
-    # UI選択を即座に表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # 必須ファイルの完了を待機
-    wait $API_PID
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    wait $UI_DL_PID
-    
-    if [ $SETUP_STATUS -ne 0 ]; then
-        echo "Cannot continue without setup.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    if [ $POSTINST_STATUS -ne 0 ]; then
-        echo "Cannot continue without postinst.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-
-    # デバイス情報取得
-    get_extended_device_info
-    
-    # 母国語ファイルのダウンロード（同期実行）
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}"
     fi
     
     wait $CUSTOMFEEDS_PID
