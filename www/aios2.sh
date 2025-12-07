@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2159"
+VERSION="R7.1207.2205"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2826,8 +2826,8 @@ aios2_main() {
 
     echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
 
-    # 全て並列ダウンロード開始
-    download_api_with_retry &
+    # 全て並列ダウンロード開始（デバッグタイムスタンプ付き）
+    (download_api_with_retry && echo "[TIME] API done: $(date +%s.%N)" >&2) &
     API_PID=$!
     
     (
@@ -2835,6 +2835,7 @@ aios2_main() {
             echo "Error: Failed to download setup.json" >&2
             exit 1
         fi
+        echo "[TIME] Setup done: $(date +%s.%N)" >&2
     ) &
     SETUP_PID=$!
     
@@ -2843,36 +2844,45 @@ aios2_main() {
             echo "ERROR: Failed to download postinst.json." >&2
             exit 1
         fi
+        echo "[TIME] Postinst done: $(date +%s.%N)" >&2
     ) &
     POSTINST_PID=$!
     
     (
         download_customfeeds_json >/dev/null 2>&1
+        echo "[TIME] Customfeeds done: $(date +%s.%N)" >&2
     ) &
     CUSTOMFEEDS_PID=$!
     
     (
         download_customscripts_json >/dev/null 2>&1
+        echo "[TIME] Customscripts done: $(date +%s.%N)" >&2
     ) &
     CUSTOMSCRIPTS_PID=$!
     
-    prefetch_templates &
+    (
+        prefetch_templates
+        echo "[TIME] Templates done: $(date +%s.%N)" >&2
+    ) &
     TEMPLATES_PID=$!
     
     (
         download_language_json "en" >/dev/null 2>&1
+        echo "[TIME] Language EN done: $(date +%s.%N)" >&2
     ) &
     LANG_EN_PID=$!
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+        echo "[TIME] UI modules done: $(date +%s.%N)" >&2
     ) &
     UI_DL_PID=$!
 
     echo "[TIME] After parallel DL start: $(date +%s.%N)" >&2
 
     # API完了待ち → 解析
+    echo "[TIME] Before API wait: $(date +%s.%N)" >&2
     wait $API_PID
     
     echo "[TIME] After API wait: $(date +%s.%N)" >&2
@@ -2881,10 +2891,13 @@ aios2_main() {
     
     # 母国語DL
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        echo "[TIME] Before native language DL: $(date +%s.%N)" >&2
         download_language_json "${AUTO_LANGUAGE}"
+        echo "[TIME] After native language DL: $(date +%s.%N)" >&2
     fi
 
     # UI完了待ち → 選択
+    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
     wait $UI_DL_PID
     
     echo "[TIME] After UI wait: $(date +%s.%N)" >&2
@@ -2895,6 +2908,8 @@ aios2_main() {
     echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
     # 残りのファイル完了を待機
+    echo "[TIME] Before remaining waits: $(date +%s.%N)" >&2
+    
     wait $SETUP_PID
     SETUP_STATUS=$?
     
@@ -2905,6 +2920,8 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
+    
+    echo "[TIME] After all waits: $(date +%s.%N)" >&2
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2921,14 +2938,20 @@ aios2_main() {
         return 1
     fi
 
+    echo "[TIME] Before UI customization: $(date +%s.%N)" >&2
+
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
     
+    echo "[TIME] Before UI module load: $(date +%s.%N)" >&2
+    
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        echo "[TIME] Before UI main: $(date +%s.%N)" >&2
         aios2_${UI_MODE}_main
+        echo "[TIME] After UI main: $(date +%s.%N)" >&2
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
@@ -2937,6 +2960,7 @@ aios2_main() {
     echo ""
     echo "Thank you for using aios2!"
     echo ""
+    echo "[TIME] End: $(date +%s.%N)" >&2
 }
 
 aios2_main
