@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2130"
+VERSION="R7.1207.2132"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2825,7 +2825,7 @@ aios2_main() {
 
     echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
 
-    # 全て並列ダウンロード開始（APIも含む）
+    # ★グループ1：最重要ファイル（同時3つまで）
     download_api_with_retry &
     API_PID=$!
     
@@ -2845,6 +2845,30 @@ aios2_main() {
     ) &
     POSTINST_PID=$!
     
+    # グループ1完了を待つ
+    wait $API_PID
+    wait $SETUP_PID
+    wait $POSTINST_PID
+    
+    echo "[TIME] After group1 DL: $(date +%s.%N)" >&2
+
+    # ★グループ2：UI + 言語（同時4つ）
+    (
+        download_language_json "en" >/dev/null 2>&1
+    ) &
+    LANG_EN_PID=$!
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+    ) &
+    WHIPTAIL_PID=$!
+    
+    (
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    SIMPLE_PID=$!
+    
+    # ★グループ3：オプション（同時3つ）
     (
         download_customfeeds_json >/dev/null 2>&1
     ) &
@@ -2857,23 +2881,6 @@ aios2_main() {
     
     prefetch_templates &
     TEMPLATES_PID=$!
-    
-    (
-        download_language_json "en" >/dev/null 2>&1
-    ) &
-    LANG_EN_PID=$!
-    
-    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
-    
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-    ) &
-    WHIPTAIL_PID=$!
-    
-    (
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    SIMPLE_PID=$!
 
     echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
     
@@ -2888,8 +2895,7 @@ aios2_main() {
 
     echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
-    # API完了待ち → 即座に解析 → 母国語DL開始
-    wait $API_PID
+    # API完了待ち（既に完了済み）
     API_STATUS=$?
     
     if [ $API_STATUS -ne 0 ]; then
@@ -2901,7 +2907,7 @@ aios2_main() {
     
     get_extended_device_info
     
-    # 母国語を並列でDL開始（enと並行して取得）
+    # 母国語を並列でDL開始
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (
             download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
@@ -2910,10 +2916,7 @@ aios2_main() {
     fi
 
     # 残りのファイル完了を待機
-    wait $SETUP_PID
     SETUP_STATUS=$?
-    
-    wait $POSTINST_PID
     POSTINST_STATUS=$?
     
     wait $CUSTOMFEEDS_PID
