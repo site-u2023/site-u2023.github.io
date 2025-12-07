@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0121"
+VERSION="R7.1208.0213"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2786,6 +2786,7 @@ aios2_main() {
     
     detect_package_manager
 
+    # 全てのダウンロードをバックグラウンドで開始
     (download_api_with_retry) &
     API_PID=$!
     
@@ -2812,31 +2813,24 @@ aios2_main() {
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
-
+    
+    # UI表示前の時点で時間を記録
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    
+    # UI選択を即座に表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 必須ファイルの完了を待機
     wait $API_PID
-    
-    get_extended_device_info
-    
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-
-    wait $UI_DL_PID
-    
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
-    
     wait $SETUP_PID
     SETUP_STATUS=$?
-    
     wait $POSTINST_PID
     POSTINST_STATUS=$?
-    
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] All processing complete: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    wait $UI_DL_PID
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
@@ -2852,9 +2846,17 @@ aios2_main() {
         return 1
     fi
 
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    get_extended_device_info
+    
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
@@ -2862,7 +2864,6 @@ aios2_main() {
     wait $LANG_EN_PID
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     
     echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
