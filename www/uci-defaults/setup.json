@@ -474,6 +474,7 @@
             {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
             {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
             {"value": "ap", "label": "AP", "class": "tr-ap"}
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
             "auto": [],
@@ -482,6 +483,7 @@
             "dslite": ["dslite_aftr_type", "dslite_jurisdiction", "dslite_aftr_address"],
             "mape": ["mape_type", "mape_gua_prefix", "mape_br", "mape_ealen", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_psid_offset", "mape_psidlen"],
             "ap": ["ap_ip_address", "ap_gateway"]
+            "disabled": []
           }
         },
         {
@@ -732,6 +734,19 @@
               "variable": "ap_gateway",
               "placeholder": "192.168.1.1/24",
               "default": "192.168.1.1/24"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "connection-disabled-section",
+          "showWhen": {"connection_type": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "connection-disabled-info",
+              "class": "tr-connection-disabled",
+              "content": "Internet connection will be disabled"   
             }
           ]
         }
