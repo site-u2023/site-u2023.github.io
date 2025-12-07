@@ -354,27 +354,16 @@ init() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url en_url
+    local lang_url
+    
+    lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
     
     if [ "$lang" = "en" ]; then
-        en_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/en/")"
         LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
-        
-        if ! __download_file_core "$en_url" "$LANG_JSON_EN"; then
-            echo "Warning: Failed to download English language file"
-            return 1
-        fi
-        
+        __download_file_core "$lang_url" "$LANG_JSON_EN" || return 1
         cp "$LANG_JSON_EN" "$LANG_JSON"
     else
-        lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
-        
-        if ! __download_file_core "$lang_url" "$LANG_JSON"; then
-            echo "Warning: Failed to download language file for ${lang}, using English"
-            if [ -f "$LANG_JSON_EN" ]; then
-                cp "$LANG_JSON_EN" "$LANG_JSON"
-            fi
-        fi
+        __download_file_core "$lang_url" "$LANG_JSON" || return 1
     fi
     
     return 0
