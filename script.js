@@ -99,7 +99,7 @@ const translations = {
         langJa: '日本語',
         // Terminal Explanations
         aios2Explanation: '永続化インストールスクリプト',
-        aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2-install.sh',
+        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -162,7 +162,7 @@ const translations = {
         aiosExplanation: 'Menu-based script',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aios2Explanation: 'Persistent installation script',
-        aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2-install.sh',
+        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
