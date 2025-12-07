@@ -2784,36 +2784,13 @@ EOF
 
 aios2_main() {
     
-    echo "[TIME] Start: $(date +%s.%N)" >&2
-    
     clear
     print_banner
     
-    echo "[TIME] After banner: $(date +%s.%N)" >&2
-    
-    # config.js を最優先でDL
-    mkdir -p "$CONFIG_DIR"
-    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
-    
-    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
-        echo "Error: Failed to download config.js"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    echo "[TIME] After config DL: $(date +%s.%N)" >&2
-    
-    # init（config.js パース含む）
-    echo "[TIME] Before init: $(date +%s.%N)" >&2
     init
-    echo "[TIME] After init: $(date +%s.%N)" >&2
-    
     detect_package_manager
 
-    echo "[TIME] Before API DL: $(date +%s.%N)" >&2
-
-    # ★ステップ1：API（最重要、単独実行）
+    # 全て逐次実行（シンプル・確実）
     download_api_with_retry || {
         echo "Cannot continue without API data"
         printf "Press [Enter] to exit. "
@@ -2821,114 +2798,37 @@ aios2_main() {
         return 1
     }
     
-    echo "[TIME] After API DL: $(date +%s.%N)" >&2
-    
-    # API解析
     get_extended_device_info
     
-    echo "[TIME] Before group1 DL: $(date +%s.%N)" >&2
-
-    # ★ステップ2：必須ファイル2つ（並列）
-    (
-        if ! download_setup_json; then
-            echo "Error: Failed to download setup.json" >&2
-            exit 1
-        fi
-    ) &
-    SETUP_PID=$!
-    
-    (
-        if ! download_postinst_json; then
-            echo "ERROR: Failed to download postinst.json." >&2
-            exit 1
-        fi
-    ) &
-    POSTINST_PID=$!
-    
-    # 完了待ち
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    
-    echo "[TIME] After group1 DL: $(date +%s.%N)" >&2
-    
-    # エラーチェック
-    if [ $SETUP_STATUS -ne 0 ]; then
+    if ! download_setup_json; then
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
     fi
     
-    if [ $POSTINST_STATUS -ne 0 ]; then
+    if ! download_postinst_json; then
         echo "Cannot continue without postinst.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
     fi
-
-    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
-
-    # ★ステップ3：UI + 言語（並列2つ）
-    (
-        download_language_json "en" >/dev/null 2>&1
-    ) &
-    LANG_EN_PID=$!
     
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    UI_DL_PID=$!
+    download_customfeeds_json >/dev/null 2>&1
+    download_customscripts_json >/dev/null 2>&1
+    prefetch_templates
     
-    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
+    download_language_json "en" >/dev/null 2>&1
     
-    # UI DL完了を待ってから選択
-    wait $UI_DL_PID
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
+    fi
     
-    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
-    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+    [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     
     select_ui_mode
 
-    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
-    
-    # ★ステップ4：オプションファイル（並列2-3個）
-    (
-        download_customfeeds_json >/dev/null 2>&1
-    ) &
-    CUSTOMFEEDS_PID=$!
-    
-    (
-        download_customscripts_json >/dev/null 2>&1
-    ) &
-    CUSTOMSCRIPTS_PID=$!
-    
-    prefetch_templates &
-    TEMPLATES_PID=$!
-    
-    # 母国語を並列でDL
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (
-            download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
-        ) &
-        LANG_LOCAL_PID=$!
-    fi
-
-    # 残りのファイル完了を待機
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
-    
-    # 母国語DL完了待ち
-    if [ -n "$LANG_LOCAL_PID" ]; then
-        wait $LANG_LOCAL_PID
-    fi
-
-    # UIモジュールをロードして実行
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
