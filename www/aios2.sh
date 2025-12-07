@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0026"
+VERSION="R7.1208.0036"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2914,7 +2914,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
-    echo "[TIME] All processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] All downloads and processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
