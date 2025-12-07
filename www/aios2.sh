@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2248"
+VERSION="R7.1207.2254"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2783,17 +2783,17 @@ EOF
 
 # Main Entry Point
 
-aios2_main() {
-    
-    # -log オプションチェック
-    if [ "$1" = "-log" ] || [ "$1" = "--log" ]; then
-        if [ -f "$CONFIG_DIR/debug.log" ]; then
-            cat "$CONFIG_DIR/debug.log"
-        else
-            echo "No log file found at $CONFIG_DIR/debug.log"
-        fi
-        exit 0 
+# Main Entry Point
+
+show_log() {
+    if [ -f "$BASE_TMP_DIR/aios2/debug.log" ]; then
+        cat "$BASE_TMP_DIR/aios2/debug.log"
+    else
+        echo "No log file found at $BASE_TMP_DIR/aios2/debug.log"
     fi
+}
+
+aios2_main() {
     
     # 起動時刻を記録（/proc/uptimeを使用）
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
@@ -2978,4 +2978,12 @@ aios2_main() {
     echo ""
 }
 
-aios2_main "$@"
+# オプション処理
+case "$1" in
+    l|-log|--log)
+        show_log
+        ;;
+    *)
+        aios2_main
+        ;;
+esac
