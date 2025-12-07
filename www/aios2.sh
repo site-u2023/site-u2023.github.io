@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2156"
+VERSION="R7.1207.2159"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2796,16 +2796,10 @@ EOF
 
 aios2_main() {
     
-    echo "[TIME] Start: $(date +%s.%N)" >&2
-    
     clear
     print_banner
     
-    echo "[TIME] After banner: $(date +%s.%N)" >&2
-    
     mkdir -p "$CONFIG_DIR"
-    
-    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
     
     # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
@@ -2815,63 +2809,92 @@ aios2_main() {
         return 1
     }
     
-    echo "[TIME] After config DL: $(date +%s.%N)" >&2
-    echo "[TIME] Before init: $(date +%s.%N)" >&2
-    
     init
-    
-    echo "[TIME] After init: $(date +%s.%N)" >&2
-    
     detect_package_manager
-    
-    echo "[TIME] Before API DL: $(date +%s.%N)" >&2
 
-    # 全て逐次実行
-    download_api_with_retry || {
-        echo "Cannot continue without API data"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
+    # 全て並列ダウンロード開始
+    download_api_with_retry &
+    API_PID=$!
     
-    echo "[TIME] After API DL: $(date +%s.%N)" >&2
+    (
+        if ! download_setup_json; then
+            echo "Error: Failed to download setup.json" >&2
+            exit 1
+        fi
+    ) &
+    SETUP_PID=$!
     
+    (
+        if ! download_postinst_json; then
+            echo "ERROR: Failed to download postinst.json." >&2
+            exit 1
+        fi
+    ) &
+    POSTINST_PID=$!
+    
+    (
+        download_customfeeds_json >/dev/null 2>&1
+    ) &
+    CUSTOMFEEDS_PID=$!
+    
+    (
+        download_customscripts_json >/dev/null 2>&1
+    ) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    prefetch_templates &
+    TEMPLATES_PID=$!
+    
+    (
+        download_language_json "en" >/dev/null 2>&1
+    ) &
+    LANG_EN_PID=$!
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+
+    # API完了待ち → 解析
+    wait $API_PID
     get_extended_device_info
     
-    if ! download_setup_json; then
+    # 母国語DL
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
+
+    # UI完了待ち → 選択
+    wait $UI_DL_PID
+    select_ui_mode
+
+    # 残りのファイル完了を待機
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    wait $LANG_EN_PID
+    
+    # エラーチェック
+    if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
     fi
     
-    if ! download_postinst_json; then
+    if [ $POSTINST_STATUS -ne 0 ]; then
         echo "Cannot continue without postinst.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
     fi
-    
-    download_customfeeds_json >/dev/null 2>&1
-    download_customscripts_json >/dev/null 2>&1
-    prefetch_templates
-    
-    download_language_json "en" >/dev/null 2>&1
-    
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
-    fi
-    
-    echo "[TIME] Before UI DL: $(date +%s.%N)" >&2
-    
-    [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-    [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    
-    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
-    
-    select_ui_mode
-
-    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
