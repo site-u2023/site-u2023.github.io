@@ -469,21 +469,37 @@ reset_detected_conn_type() {
     fi
 }
 
-# 新関数：APIダウンロード（リトライ付き）
+# APIダウンロード（リトライ付き）
 download_api_with_retry() {
     local retry_count=0
     local max_retries=3
     local success=0
     
+    echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >&2
+    
     while [ $retry_count -lt $max_retries ]; do
+        echo "[DEBUG] API download attempt $((retry_count + 1))/$max_retries" >&2
+        
         if __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
+            echo "[DEBUG] Download successful, checking file..." >&2
+            
             if [ -s "$AUTO_CONFIG_JSON" ]; then
+                echo "[DEBUG] File exists and not empty" >&2
+                
                 if jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
+                    echo "[DEBUG] JSON validation passed" >&2
                     success=1
                     break
+                else
+                    echo "[DEBUG] JSON validation failed" >&2
                 fi
+            else
+                echo "[DEBUG] File is empty or doesn't exist" >&2
             fi
+        else
+            echo "[DEBUG] Download failed" >&2
         fi
+        
         retry_count=$((retry_count + 1))
         [ $retry_count -lt $max_retries ] && sleep 2
     done
@@ -491,6 +507,9 @@ download_api_with_retry() {
     if [ $success -eq 0 ]; then
         echo ""
         echo "ERROR: API error"
+        echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >&2
+        echo "[DEBUG] AUTO_CONFIG_JSON=$AUTO_CONFIG_JSON" >&2
+        ls -la "$AUTO_CONFIG_JSON" 2>&1 >&2
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
