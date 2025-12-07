@@ -193,20 +193,9 @@ select_ui_mode() {
     local whiptail_pkg="whiptail"
     local choice
     
-    if [ -n "$WHIPTAIL_UI_URL" ]; then
-        if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
-            __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh" && has_whiptail=1
-        fi
-    fi
-    
-    if [ -n "$SIMPLE_UI_URL" ]; then
-        if wget -q --spider "$SIMPLE_UI_URL" 2>/dev/null; then
-            __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh" && has_simple=1
-        fi
-    fi
-    
-    # この行を削除
-    # echo "[TIME] UI modules ready: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    # ファイルが存在するかチェックするだけ（再DLしない）
+    [ -f "$CONFIG_DIR/aios2-whiptail.sh" ] && has_whiptail=1
+    [ -f "$CONFIG_DIR/aios2-simple.sh" ] && has_simple=1
     
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
