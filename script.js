@@ -100,8 +100,6 @@ const translations = {
         // Terminal Explanations
         aios2Explanation: '永続化インストールスクリプト',
         aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2-install.sh',
-        aios2Explanation: 'TUI形式スクリプト',
-        aios2ExplanationLink: 'https://site-u.pages.dev/www/aios2.sh',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
