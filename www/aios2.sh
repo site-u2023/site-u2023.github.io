@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0213"
+VERSION="R7.1208.0256"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2818,13 +2818,7 @@ aios2_main() {
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    # UI選択を即座に表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # 必須ファイルの完了を待機
+    # 必須ファイルの完了を待機（UI選択前に）
     wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -2846,7 +2840,18 @@ aios2_main() {
         return 1
     fi
 
-    get_extended_device_info
+    # デバイス情報取得をバックグラウンドで開始
+    (get_extended_device_info) &
+    DEVICE_INFO_PID=$!
+    
+    # UI選択を即座に表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # デバイス情報取得の完了を待機
+    wait $DEVICE_INFO_PID
     
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
