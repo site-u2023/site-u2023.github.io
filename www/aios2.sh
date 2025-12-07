@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0325"
+VERSION="R7.1208.0328"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -530,50 +530,6 @@ get_extended_device_info() {
     fi
     
     echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
-}
-
-export_device_info() {
-    local output_file="$1"
-    
-    # get_extended_device_info を実行してから変数をファイルに書き出す
-    get_extended_device_info
-    
-    cat > "$output_file" <<EOF
-DEVICE_MODEL='$DEVICE_MODEL'
-DEVICE_TARGET='$DEVICE_TARGET'
-OPENWRT_VERSION='$OPENWRT_VERSION'
-AUTO_LANGUAGE='$AUTO_LANGUAGE'
-AUTO_TIMEZONE='$AUTO_TIMEZONE'
-AUTO_ZONENAME='$AUTO_ZONENAME'
-AUTO_COUNTRY='$AUTO_COUNTRY'
-ISP_NAME='$ISP_NAME'
-ISP_AS='$ISP_AS'
-ISP_IPV6='$ISP_IPV6'
-MAPE_BR='$MAPE_BR'
-MAPE_EALEN='$MAPE_EALEN'
-MAPE_IPV4_PREFIX='$MAPE_IPV4_PREFIX'
-MAPE_IPV4_PREFIXLEN='$MAPE_IPV4_PREFIXLEN'
-MAPE_IPV6_PREFIX='$MAPE_IPV6_PREFIX'
-MAPE_IPV6_PREFIXLEN='$MAPE_IPV6_PREFIXLEN'
-MAPE_PSIDLEN='$MAPE_PSIDLEN'
-MAPE_PSID_OFFSET='$MAPE_PSID_OFFSET'
-MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'
-DSLITE_AFTR='$DSLITE_AFTR'
-DSLITE_AFTR_TYPE='$DSLITE_AFTR_TYPE'
-DSLITE_JURISDICTION='$DSLITE_JURISDICTION'
-DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'
-DEVICE_CPU='$DEVICE_CPU'
-DEVICE_STORAGE='$DEVICE_STORAGE'
-DEVICE_STORAGE_USED='$DEVICE_STORAGE_USED'
-DEVICE_STORAGE_AVAIL='$DEVICE_STORAGE_AVAIL'
-DEVICE_USB='$DEVICE_USB'
-MEM_FREE_MB='$MEM_FREE_MB'
-FLASH_FREE_MB='$FLASH_FREE_MB'
-DEVICE_MEM='$DEVICE_MEM'
-LAN_IF='$LAN_IF'
-LAN_ADDR='$LAN_ADDR'
-LAN_ADDR6='$LAN_ADDR6'
-EOF
 }
 
 # Device Info (JSON-driven)
@@ -2858,20 +2814,6 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # API依存の処理をバックグラウンドで開始
-    (
-        wait $API_PID
-        
-        # export_device_info 内で get_extended_device_info を実行
-        export_device_info "$CONFIG_DIR/device_vars.sh"
-        
-        AUTO_LANGUAGE=$(grep "^AUTO_LANGUAGE=" "$CONFIG_DIR/device_vars.sh" | cut -d"'" -f2)
-        if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-            download_language_json "${AUTO_LANGUAGE}"
-        fi
-    ) &
-    API_DEPENDENT_PID=$!
-    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
@@ -2883,6 +2825,7 @@ aios2_main() {
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     # 必須ファイルの完了を待機
+    wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
@@ -2902,13 +2845,19 @@ aios2_main() {
         read -r _
         return 1
     fi
+
+    # デバイス情報取得（同期実行）
+    get_extended_device_info
     
-    # API依存処理の完了を待機して変数を読み込む
-    wait $API_DEPENDENT_PID
+    # 母国語ファイルのダウンロード
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
     
-    # ファイルから変数を読み込む
-    if [ -f "$CONFIG_DIR/device_vars.sh" ]; then
-        . "$CONFIG_DIR/device_vars.sh"
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
     fi
     
     wait $CUSTOMFEEDS_PID
