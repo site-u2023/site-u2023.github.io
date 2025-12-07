@@ -489,17 +489,7 @@ device_info() {
     
     show_menu_header "$breadcrumb"
     
-    echo "Model: $DEVICE_MODEL"
-    echo "Target: $DEVICE_TARGET"
-    echo "Version: $OPENWRT_VERSION"
-    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && echo "Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)"
-    [ -n "$DEVICE_STORAGE" ] && echo "Storage: ${DEVICE_STORAGE_AVAIL} / ${DEVICE_STORAGE} (available / total)"
-    [ -n "$DEVICE_USB" ] && echo "USB: $DEVICE_USB"
-    echo "Package manager: $PKG_MGR"
-    local current_lang
-    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
-    [ -n "$current_lang" ] && echo "Language: $current_lang"
+    build_deviceinfo_display
     
     echo ""
     printf "[%s] " "$(translate "$DEFAULT_BTN_OK")"
