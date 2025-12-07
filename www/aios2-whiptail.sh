@@ -256,26 +256,8 @@ device_info() {
     tr_device_info=$(translate "tr-tui-view-device-info")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_device_info")
     
-    info="Model: $DEVICE_MODEL
-"
-    info="${info}Target: $DEVICE_TARGET
-"
-    info="${info}Version: $OPENWRT_VERSION
-"
-    [ -n "$DEVICE_MEM" ] && [ -n "$MEM_FREE_MB" ] && info="${info}Memory: ${MEM_FREE_MB}MB / ${DEVICE_MEM} (available / total)
-"
-    [ -n "$DEVICE_STORAGE" ] && info="${info}Storage: ${DEVICE_STORAGE_AVAIL} / ${DEVICE_STORAGE} (available / total)
-"
-    [ -n "$DEVICE_USB" ] && info="${info}USB: $DEVICE_USB
-"
-    info="${info}Package manager: $PKG_MGR
-"
-    local current_lang
-    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
-    [ -n "$current_lang" ] && info="${info}Language: $current_lang
-"
-
+    info=$(build_deviceinfo_display)
+    
     show_msgbox "$breadcrumb" "$info"
 }
 
