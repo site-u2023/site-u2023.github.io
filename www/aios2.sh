@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0040"
+VERSION="R7.1208.0121"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2835,7 +2835,8 @@ aios2_main() {
     wait $POSTINST_PID
     POSTINST_STATUS=$?
     
-    echo "[TIME] All processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] All processing complete: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
@@ -2851,14 +2852,20 @@ aios2_main() {
         return 1
     fi
 
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
     select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
-    echo "[TIME] Total: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    
+    echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
