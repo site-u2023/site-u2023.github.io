@@ -114,50 +114,40 @@ print_banner() {
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
-    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_JS" || {
-        echo "Error: Failed to download config.js"
-        return 1
-    }
-
-    # config.jsから値を抽出
-    _get_js_value() {
-        grep "${1}:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/'
-    }
-
-    # パス変数とURL変数を同時に設定
-    _set_path_url() {
-        local key="$1"
-        local path_var="$2"
-        local url_var="$3"
-        local path
-        path=$(_get_js_value "$key")
-        eval "${path_var}='${path}'"
-        [ -n "$url_var" ] && eval "${url_var}='${BASE_URL}/${path}'"
-    }
-
-    # BASE_URL（特殊処理）
-    BASE_URL=$(grep -E '(base_url|base_path):' "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/' | tr '\n' '/' | sed 's/\/$//')
+    # ファイルを1回だけ読み込んで、awkで全部抽出
+    eval "$(awk -F'"' '
+        /base_url:/  { print "BASE_URL_PART=\"" $4 "\"" }
+        /base_path:/ { print "BASE_PATH_PART=\"" $4 "\"" }
+        /auto_config_api_url:/ { print "AUTO_CONFIG_API_URL=\"" $4 "\"" }
+        /packages_db_path:/ { print "PACKAGES_DB_PATH=\"" $4 "\"" }
+        /postinst_template_path:/ { print "POSTINST_TEMPLATE_PATH=\"" $4 "\"" }
+        /setup_db_path:/ { print "SETUP_DB_PATH=\"" $4 "\"" }
+        /setup_template_path:/ { print "SETUP_TEMPLATE_PATH=\"" $4 "\"" }
+        /customfeeds_db_path:/ { print "CUSTOMFEEDS_DB_PATH=\"" $4 "\"" }
+        /customscripts_db_path:/ { print "CUSTOMSCRIPTS_DB_PATH=\"" $4 "\"" }
+        /language_path_template:/ { print "LANGUAGE_PATH_TEMPLATE=\"" $4 "\"" }
+        /whiptail_ui_path:/ { print "WHIPTAIL_UI_PATH=\"" $4 "\"" }
+        /simple_ui_path:/ { print "SIMPLE_UI_PATH=\"" $4 "\"" }
+        /whiptail_fallback_path:/ { print "WHIPTAIL_FALLBACK_PATH=\"" $4 "\"" }
+    ' "$CONFIG_JS")"
     
-    # 単純な値
-    AUTO_CONFIG_API_URL=$(_get_js_value 'auto_config_api_url')
+    # BASE_URL を構築
+    BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
     
-    # パス + URL のペア
-    _set_path_url 'packages_db_path'        'PACKAGES_DB_PATH'        'PACKAGES_URL'
-    _set_path_url 'postinst_template_path'  'POSTINST_TEMPLATE_PATH'  'POSTINST_TEMPLATE_URL'
-    _set_path_url 'setup_db_path'           'SETUP_DB_PATH'           'SETUP_JSON_URL'
-    _set_path_url 'setup_template_path'     'SETUP_TEMPLATE_PATH'     'SETUP_TEMPLATE_URL'
-    _set_path_url 'customfeeds_db_path'     'CUSTOMFEEDS_DB_PATH'     'CUSTOMFEEDS_JSON_URL'
-    _set_path_url 'customscripts_db_path'   'CUSTOMSCRIPTS_DB_PATH'   'CUSTOMSCRIPTS_JSON_URL'
-    _set_path_url 'language_path_template'  'LANGUAGE_PATH_TEMPLATE'  ''
-    _set_path_url 'whiptail_ui_path'        'WHIPTAIL_UI_PATH'        ''
-    _set_path_url 'simple_ui_path'          'SIMPLE_UI_PATH'          ''
-    _set_path_url 'whiptail_fallback_path'  'WHIPTAIL_FALLBACK_PATH'  'WHIPTAIL_FALLBACK_URL'
+    # URL変数を構築（シンプルな文字列結合）
+    PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
+    POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
+    SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
+    SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
+    CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
+    CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
+    WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
     
     # キャッシュバスター付きURL
     local CACHE_BUSTER="?t=$(date +%s)"
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
-
+    
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL"
@@ -167,7 +157,6 @@ load_config_from_js() {
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
         echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH"
         echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL"
-        echo "[DEBUG] REVIEW_DB_PATH=$REVIEW_DB_PATH"
         echo "[DEBUG] WHIPTAIL_UI_URL=$WHIPTAIL_UI_URL"
         echo "[DEBUG] SIMPLE_UI_URL=$SIMPLE_UI_URL"
     } >> "$CONFIG_DIR/debug.log"
