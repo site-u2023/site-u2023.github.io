@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0328"
+VERSION="R7.1208.0334"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
