@@ -2792,7 +2792,7 @@ aios2_main() {
         else
             echo "No log file found at $CONFIG_DIR/debug.log"
         fi
-        return 0
+        exit 0 
     fi
     
     # 起動時刻を記録（/proc/uptimeを使用）
