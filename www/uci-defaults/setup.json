@@ -559,7 +559,7 @@
                 {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
                 {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"}
               ],
-              "computeTarget": "dslite_aftr_address"
+              "computeTarget": "dslite-aftr-address"
             },
             {
               "type": "field",
@@ -573,7 +573,7 @@
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
               "apiSource": "aftr.jurisdiction",
-              "computeTarget": "dslite_aftr_address",
+              "computeTarget": "dslite-aftr-address",
               "showWhen": {"dslite-aftr-type": ["transix"]}
             },
             {
