@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0256"
+VERSION="R7.1208.0300"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2840,25 +2840,23 @@ aios2_main() {
         return 1
     fi
 
-    # デバイス情報取得をバックグラウンドで開始
-    (get_extended_device_info) &
-    DEVICE_INFO_PID=$!
+    # デバイス情報取得（AUTO_LANGUAGEを取得するため先に実行）
+    get_extended_device_info
     
-    # UI選択を即座に表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # デバイス情報取得の完了を待機
-    wait $DEVICE_INFO_PID
-    
+    # 母国語ファイルのダウンロードをバックグラウンドで開始
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
         NATIVE_LANG_PID=$!
     fi
     
+    # UI選択を表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 母国語ファイルの完了を待機
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
     fi
