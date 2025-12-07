@@ -336,8 +336,10 @@ init() {
     echo "$$" > "$LOCK_FILE"
     trap "rm -f '$LOCK_FILE'" EXIT INT TERM
     
-    find "$CONFIG_DIR" -maxdepth 1 -type f ! -name "$SCRIPT_NAME" ! -name ".aios2.lock" -exec rm -f {} \;
+    # find を使わず、直接削除（高速化）
+    rm -f "$CONFIG_DIR"/*.json "$CONFIG_DIR"/*.sh "$CONFIG_DIR"/*.txt "$CONFIG_DIR"/debug.log 2>/dev/null
     
+    # config.js は既にDL済みなのでパースのみ
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
         return 1
@@ -2796,6 +2798,28 @@ aios2_main() {
     clear
     print_banner
     
+    # config.js を最優先で並列DL
+    mkdir -p "$CONFIG_DIR"
+    (
+        __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+            echo "Error: Failed to download config.js" >&2
+            exit 1
+        }
+    ) &
+    CONFIG_PID=$!
+    
+    # config.js 完了を待つ（小さいファイルなので即座）
+    wait $CONFIG_PID
+    CONFIG_STATUS=$?
+    
+    if [ $CONFIG_STATUS -ne 0 ]; then
+        echo "Cannot continue without config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    # init（config.js パース含む）
     init
     detect_package_manager
 
