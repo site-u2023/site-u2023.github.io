@@ -114,22 +114,20 @@ print_banner() {
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
-    # 元のロジック: grep + sed を awk で置き換え
-    eval "$(awk '
-        /base_url:/ && /"/ { match($0, /"([^"]*)"/, arr); print "BASE_URL_PART=\"" arr[1] "\"" }
-        /base_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "BASE_PATH_PART=\"" arr[1] "\"" }
-        /auto_config_api_url:/ && /"/ { match($0, /"([^"]*)"/, arr); print "AUTO_CONFIG_API_URL=\"" arr[1] "\"" }
-        /packages_db_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "PACKAGES_DB_PATH=\"" arr[1] "\"" }
-        /postinst_template_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "POSTINST_TEMPLATE_PATH=\"" arr[1] "\"" }
-        /setup_db_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "SETUP_DB_PATH=\"" arr[1] "\"" }
-        /setup_template_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "SETUP_TEMPLATE_PATH=\"" arr[1] "\"" }
-        /customfeeds_db_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "CUSTOMFEEDS_DB_PATH=\"" arr[1] "\"" }
-        /customscripts_db_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "CUSTOMSCRIPTS_DB_PATH=\"" arr[1] "\"" }
-        /language_path_template:/ && /"/ { match($0, /"([^"]*)"/, arr); print "LANGUAGE_PATH_TEMPLATE=\"" arr[1] "\"" }
-        /whiptail_ui_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "WHIPTAIL_UI_PATH=\"" arr[1] "\"" }
-        /simple_ui_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "SIMPLE_UI_PATH=\"" arr[1] "\"" }
-        /whiptail_fallback_path:/ && /"/ { match($0, /"([^"]*)"/, arr); print "WHIPTAIL_FALLBACK_PATH=\"" arr[1] "\"" }
-    ' "$CONFIG_JS")"
+    # 元のロジックそのまま：grep + sed（1回だけ実行）
+    BASE_URL_PART=$(grep "base_url:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    BASE_PATH_PART=$(grep "base_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    PACKAGES_DB_PATH=$(grep "packages_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    POSTINST_TEMPLATE_PATH=$(grep "postinst_template_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_DB_PATH=$(grep "setup_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_TEMPLATE_PATH=$(grep "setup_template_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_DB_PATH=$(grep "customfeeds_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMSCRIPTS_DB_PATH=$(grep "customscripts_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    LANGUAGE_PATH_TEMPLATE=$(grep "language_path_template:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_UI_PATH=$(grep "whiptail_ui_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    SIMPLE_UI_PATH=$(grep "simple_ui_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_FALLBACK_PATH=$(grep "whiptail_fallback_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
     
     # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
