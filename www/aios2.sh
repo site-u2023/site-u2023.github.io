@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2145"
+VERSION="R7.1207.2147"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -114,42 +114,22 @@ print_banner() {
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
-    echo "[DEBUG] Parsing config.js: $CONFIG_JS" >&2
-    
-    if [ ! -f "$CONFIG_JS" ]; then
-        echo "[DEBUG] config.js not found!" >&2
-        return 1
-    fi
-    
-    echo "[DEBUG] config.js exists, size: $(wc -c < "$CONFIG_JS") bytes" >&2
-    
     # ファイルを1回だけ読み込んで、awkで全部抽出
-    local awk_output
-    awk_output=$(awk -F'"' '
-        /base_url:/  { print "BASE_URL_PART=\"" $4 "\"" }
-        /base_path:/ { print "BASE_PATH_PART=\"" $4 "\"" }
-        /auto_config_api_url:/ { print "AUTO_CONFIG_API_URL=\"" $4 "\"" }
-        /packages_db_path:/ { print "PACKAGES_DB_PATH=\"" $4 "\"" }
-        /postinst_template_path:/ { print "POSTINST_TEMPLATE_PATH=\"" $4 "\"" }
-        /setup_db_path:/ { print "SETUP_DB_PATH=\"" $4 "\"" }
-        /setup_template_path:/ { print "SETUP_TEMPLATE_PATH=\"" $4 "\"" }
-        /customfeeds_db_path:/ { print "CUSTOMFEEDS_DB_PATH=\"" $4 "\"" }
-        /customscripts_db_path:/ { print "CUSTOMSCRIPTS_DB_PATH=\"" $4 "\"" }
-        /language_path_template:/ { print "LANGUAGE_PATH_TEMPLATE=\"" $4 "\"" }
-        /whiptail_ui_path:/ { print "WHIPTAIL_UI_PATH=\"" $4 "\"" }
-        /simple_ui_path:/ { print "SIMPLE_UI_PATH=\"" $4 "\"" }
-        /whiptail_fallback_path:/ { print "WHIPTAIL_FALLBACK_PATH=\"" $4 "\"" }
-    ' "$CONFIG_JS")
-    
-    echo "[DEBUG] awk output:" >&2
-    echo "$awk_output" >&2
-    
-    eval "$awk_output"
-    
-    echo "[DEBUG] After eval:" >&2
-    echo "[DEBUG]   BASE_URL_PART=$BASE_URL_PART" >&2
-    echo "[DEBUG]   BASE_PATH_PART=$BASE_PATH_PART" >&2
-    echo "[DEBUG]   AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >&2
+    eval "$(awk -F'"' '
+        /base_url:/  { print "BASE_URL_PART=\"" $2 "\"" }
+        /base_path:/ { print "BASE_PATH_PART=\"" $2 "\"" }
+        /auto_config_api_url:/ { print "AUTO_CONFIG_API_URL=\"" $2 "\"" }
+        /packages_db_path:/ { print "PACKAGES_DB_PATH=\"" $2 "\"" }
+        /postinst_template_path:/ { print "POSTINST_TEMPLATE_PATH=\"" $2 "\"" }
+        /setup_db_path:/ { print "SETUP_DB_PATH=\"" $2 "\"" }
+        /setup_template_path:/ { print "SETUP_TEMPLATE_PATH=\"" $2 "\"" }
+        /customfeeds_db_path:/ { print "CUSTOMFEEDS_DB_PATH=\"" $2 "\"" }
+        /customscripts_db_path:/ { print "CUSTOMSCRIPTS_DB_PATH=\"" $2 "\"" }
+        /language_path_template:/ { print "LANGUAGE_PATH_TEMPLATE=\"" $2 "\"" }
+        /whiptail_ui_path:/ { print "WHIPTAIL_UI_PATH=\"" $2 "\"" }
+        /simple_ui_path:/ { print "SIMPLE_UI_PATH=\"" $2 "\"" }
+        /whiptail_fallback_path:/ { print "WHIPTAIL_FALLBACK_PATH=\"" $2 "\"" }
+    ' "$CONFIG_JS")"
     
     # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
