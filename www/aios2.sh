@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2209"
+VERSION="R7.1207.2234"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -451,53 +451,34 @@ reset_detected_conn_type() {
     fi
 }
 
-# APIダウンロード（リトライ付き）
+# APIダウンロード
 download_api_with_retry() {
-    local retry_count=0
-    local max_retries=3
-    local success=0
+    echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >> "$CONFIG_DIR/debug.log"
     
-    echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >&2
-    
-    while [ $retry_count -lt $max_retries ]; do
-        echo "[DEBUG] API download attempt $((retry_count + 1))/$max_retries" >&2
-        
-        if __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
-            echo "[DEBUG] Download successful, checking file..." >&2
-            
-            if [ -s "$AUTO_CONFIG_JSON" ]; then
-                echo "[DEBUG] File exists and not empty" >&2
-                
-                if jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
-                    echo "[DEBUG] JSON validation passed" >&2
-                    success=1
-                    break
-                else
-                    echo "[DEBUG] JSON validation failed" >&2
-                fi
-            else
-                echo "[DEBUG] File is empty or doesn't exist" >&2
-            fi
-        else
-            echo "[DEBUG] Download failed" >&2
-        fi
-        
-        retry_count=$((retry_count + 1))
-        [ $retry_count -lt $max_retries ] && sleep 2
-    done
-    
-    if [ $success -eq 0 ]; then
+    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
         echo ""
         echo "ERROR: API error"
-        echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >&2
-        echo "[DEBUG] AUTO_CONFIG_JSON=$AUTO_CONFIG_JSON" >&2
-        ls -la "$AUTO_CONFIG_JSON" 2>&1 >&2
+        echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
+        echo "[DEBUG] AUTO_CONFIG_JSON=$AUTO_CONFIG_JSON"
+        ls -la "$AUTO_CONFIG_JSON" 2>&1
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
         exit 1
     fi
     
+    # JSON validation
+    if ! jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
+        echo "[DEBUG] JSON validation failed" >> "$CONFIG_DIR/debug.log"
+        echo ""
+        echo "ERROR: Invalid API response"
+        echo ""
+        printf "Press [Enter] to exit. "
+        read -r _
+        exit 1
+    fi
+    
+    echo "[DEBUG] API download and validation successful" >> "$CONFIG_DIR/debug.log"
     return 0
 }
 
@@ -2055,6 +2036,8 @@ __download_file_core() {
     local url="$1"
     local output_path="$2"
     local cache_buster full_url
+    local max_retries=3
+    local retry=0
     
     if echo "$url" | grep -q '?'; then
         cache_buster="&_t=$(date +%s)"
@@ -2064,11 +2047,28 @@ __download_file_core() {
     
     full_url="${url}${cache_buster}"
     
-    if ! wget -q -O "$output_path" "$full_url"; then
-        echo "[ERROR] Failed to download: $url to $output_path" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    return 0
+    echo "[DEBUG] Downloading: $url" >> "$CONFIG_DIR/debug.log"
+    
+    while [ $retry -lt $max_retries ]; do
+        echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
+        
+        if wget -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
+            if [ -s "$output_path" ]; then
+                echo "[DEBUG] Download successful: $url" >> "$CONFIG_DIR/debug.log"
+                return 0
+            else
+                echo "[DEBUG] Downloaded file is empty: $url" >> "$CONFIG_DIR/debug.log"
+            fi
+        else
+            echo "[DEBUG] wget failed: $url" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        retry=$((retry + 1))
+        [ $retry -lt $max_retries ] && sleep 1
+    done
+    
+    echo "[ERROR] Failed to download after $max_retries attempts: $url" >> "$CONFIG_DIR/debug.log"
+    return 1
 }
 
 # File Generation
@@ -2785,16 +2785,16 @@ EOF
 
 aios2_main() {
     
-    echo "[TIME] Start: $(date +%s.%N)" >&2
+    echo "[TIME] Start: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     clear
     print_banner
     
-    echo "[TIME] After banner: $(date +%s.%N)" >&2
+    echo "[TIME] After banner: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     mkdir -p "$CONFIG_DIR"
     
-    echo "[TIME] Before config DL: $(date +%s.%N)" >&2
+    echo "[TIME] Before config DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
@@ -2804,111 +2804,111 @@ aios2_main() {
         return 1
     }
     
-    echo "[TIME] After config DL: $(date +%s.%N)" >&2
-    echo "[TIME] Before init: $(date +%s.%N)" >&2
+    echo "[TIME] After config DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Before init: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     init
     
-    echo "[TIME] After init: $(date +%s.%N)" >&2
+    echo "[TIME] After init: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     detect_package_manager
 
-    echo "[TIME] Before parallel DL: $(date +%s.%N)" >&2
+    echo "[TIME] Before parallel DL: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
 
-    # 全て並列ダウンロード開始（デバッグタイムスタンプ付き）
-    (download_api_with_retry && echo "[TIME] API done: $(date +%s.%N)" >&2) &
+    # 全て並列ダウンロード開始
+    (download_api_with_retry && echo "[TIME] API done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log") &
     API_PID=$!
     
     (
         if ! download_setup_json; then
-            echo "Error: Failed to download setup.json" >&2
+            echo "[ERROR] Failed to download setup.json" >> "$CONFIG_DIR/debug.log"
             exit 1
         fi
-        echo "[TIME] Setup done: $(date +%s.%N)" >&2
+        echo "[TIME] Setup done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     SETUP_PID=$!
     
     (
         if ! download_postinst_json; then
-            echo "ERROR: Failed to download postinst.json." >&2
+            echo "[ERROR] Failed to download postinst.json" >> "$CONFIG_DIR/debug.log"
             exit 1
         fi
-        echo "[TIME] Postinst done: $(date +%s.%N)" >&2
+        echo "[TIME] Postinst done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     POSTINST_PID=$!
     
     (
         download_customfeeds_json >/dev/null 2>&1
-        echo "[TIME] Customfeeds done: $(date +%s.%N)" >&2
+        echo "[TIME] Customfeeds done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     CUSTOMFEEDS_PID=$!
     
     (
         download_customscripts_json >/dev/null 2>&1
-        echo "[TIME] Customscripts done: $(date +%s.%N)" >&2
+        echo "[TIME] Customscripts done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     CUSTOMSCRIPTS_PID=$!
     
     (
         prefetch_templates
-        echo "[TIME] Templates done: $(date +%s.%N)" >&2
+        echo "[TIME] Templates done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     TEMPLATES_PID=$!
     
     (
         download_language_json "en" >/dev/null 2>&1
-        echo "[TIME] Language EN done: $(date +%s.%N)" >&2
+        echo "[TIME] Language EN done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     LANG_EN_PID=$!
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-        echo "[TIME] UI modules done: $(date +%s.%N)" >&2
+        echo "[TIME] UI modules done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     ) &
     UI_DL_PID=$!
 
-    echo "[TIME] After parallel DL start: $(date +%s.%N)" >&2
+    echo "[TIME] After parallel DL start: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
 
     # API完了待ち → 解析
-    echo "[TIME] Before API wait: $(date +%s.%N)" >&2
+    echo "[TIME] Before API wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     wait $API_PID
     
-    echo "[TIME] After API wait: $(date +%s.%N)" >&2
+    echo "[TIME] After API wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     get_extended_device_info
     
     # 母国語DLを並列で開始（バックグラウンド）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "[TIME] Before native language DL (parallel): $(date +%s.%N)" >&2
+        echo "[TIME] Before native language DL (parallel): $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
         (
             download_language_json "${AUTO_LANGUAGE}"
-            echo "[TIME] Native language done: $(date +%s.%N)" >&2
+            echo "[TIME] Native language done: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
         ) &
         NATIVE_LANG_PID=$!
     fi
 
     # UI完了待ち
-    echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
+    echo "[TIME] Before UI wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     wait $UI_DL_PID
-    echo "[TIME] After UI wait: $(date +%s.%N)" >&2
+    echo "[TIME] After UI wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     # 母国語DL完了待ち（開始していた場合のみ）
     if [ -n "$NATIVE_LANG_PID" ]; then
-        echo "[TIME] Before native language wait: $(date +%s.%N)" >&2
+        echo "[TIME] Before native language wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
         wait $NATIVE_LANG_PID
-        echo "[TIME] After native language wait: $(date +%s.%N)" >&2
+        echo "[TIME] After native language wait: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     fi
     
-    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
+    echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     select_ui_mode
 
-    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >&2
+    echo "[TIME] After select_ui_mode: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
 
     # 残りのファイル完了を待機
-    echo "[TIME] Before remaining waits: $(date +%s.%N)" >&2
+    echo "[TIME] Before remaining waits: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -2921,7 +2921,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
-    echo "[TIME] After all waits: $(date +%s.%N)" >&2
+    echo "[TIME] After all waits: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -2938,20 +2938,20 @@ aios2_main() {
         return 1
     fi
 
-    echo "[TIME] Before UI customization: $(date +%s.%N)" >&2
+    echo "[TIME] Before UI customization: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
     
-    echo "[TIME] Before UI module load: $(date +%s.%N)" >&2
+    echo "[TIME] Before UI module load: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        echo "[TIME] Before UI main: $(date +%s.%N)" >&2
+        echo "[TIME] Before UI main: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
         aios2_${UI_MODE}_main
-        echo "[TIME] After UI main: $(date +%s.%N)" >&2
+        echo "[TIME] After UI main: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
@@ -2960,7 +2960,7 @@ aios2_main() {
     echo ""
     echo "Thank you for using aios2!"
     echo ""
-    echo "[TIME] End: $(date +%s.%N)" >&2
+    echo "[TIME] End: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
 }
 
 aios2_main
