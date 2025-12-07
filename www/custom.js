@@ -1483,6 +1483,33 @@ function extractLuciName(pkg) {
 }
 
 // ==================== フォーム値収集 ====================
+
+function collectConnectionConfig(values) {
+    const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
+    
+    if (connectionType === 'disabled') {
+        return;
+    }
+    
+    const connectionCategory = state.config.setup?.categories?.find(
+        cat => cat.id === 'internet-connection'
+    );
+    if (!connectionCategory) return;
+
+    if (shouldIncludeVariable('connection_type', connectionType)) {
+        values.connection_type = connectionType;
+    }
+
+    if (connectionType === 'auto') {
+        const actualType = getActualConnectionType();
+        if (actualType) {
+            collectFieldsForConnectionType(actualType, values, true);
+        }
+    } else if (connectionType !== 'dhcp') {
+        collectFieldsForConnectionType(connectionType, values, false);
+    }
+}
+
 function collectFormValues() {
     const values = {};
 
@@ -1525,9 +1552,11 @@ function collectBasicConfig(values) {
 function collectWifiConfig(values) {
     const wifiMode = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
     
+    if (shouldIncludeVariable('wifi_mode', wifiMode)) {
+        values.wifi_mode = wifiMode;
+    }
+    
     if (wifiMode === 'disabled') return;
-
-    values.wifi_mode = wifiMode;
 
     const ssid = getFieldValue('#aios-wifi-ssid');
     const password = getFieldValue('#aios-wifi-password');
@@ -1551,19 +1580,16 @@ function collectConnectionConfig(values) {
     );
     if (!connectionCategory) return;
 
+    if (shouldIncludeVariable('connection_type', connectionType)) {
+        values.connection_type = connectionType;
+    }
+
     if (connectionType === 'auto') {
-        values.connection_type = 'auto';
-        
         const actualType = getActualConnectionType();
         if (actualType) {
             collectFieldsForConnectionType(actualType, values, true);
         }
-        
-    } else if (connectionType === 'dhcp') {
-        values.connection_type = 'dhcp';
-        
-    } else {
-        values.connection_type = connectionType;
+    } else if (connectionType !== 'dhcp' && connectionType !== 'disabled') {
         collectFieldsForConnectionType(connectionType, values, false);
     }
 }
@@ -1624,9 +1650,13 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
 function collectOptimizationConfig(values) {
     const netOpt = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
     
+    if (shouldIncludeVariable('net_optimizer', netOpt)) {
+        values.net_optimizer = netOpt;
+    }
+    
     if (netOpt === 'disabled') {
+        // 最適化無効時は追加設定なし
     } else if (netOpt === 'manual') {
-        values.net_optimizer = 'manual';
         const fields = {
             'netopt-rmem': 'netopt_rmem',
             'netopt-wmem': 'netopt_wmem',
@@ -1640,21 +1670,21 @@ function collectOptimizationConfig(values) {
             const value = getFieldValue(`#${fieldId}`);
             if (value) values[varName] = value;
         }
-    } else {
-        values.net_optimizer = 'auto';
     }
 
     const dnsmasq = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
     
+    if (shouldIncludeVariable('enable_dnsmasq', dnsmasq)) {
+        values.enable_dnsmasq = dnsmasq;
+    }
+    
     if (dnsmasq === 'disabled') {
+        // DNS最適化無効時は追加設定なし
     } else if (dnsmasq === 'manual') {
-        values.enable_dnsmasq = 'manual';
         const cache = getFieldValue('#dnsmasq-cache');
         const negcache = getFieldValue('#dnsmasq-negcache');
         if (cache) values.dnsmasq_cache = cache;
         if (negcache) values.dnsmasq_negcache = negcache;
-    } else {
-        values.enable_dnsmasq = 'auto';
     }
 }
 
