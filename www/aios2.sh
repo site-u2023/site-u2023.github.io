@@ -2913,8 +2913,6 @@ aios2_main() {
     
     select_ui_mode
 
-    echo "[TIME] Before remaining waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    
     wait $SETUP_PID
     SETUP_STATUS=$?
     
@@ -2926,7 +2924,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
-    echo "[TIME] After all waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] All processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
@@ -2946,8 +2944,6 @@ aios2_main() {
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
-    
-    echo "[TIME] Ready to start UI: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
