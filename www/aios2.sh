@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0309"
+VERSION="R7.1208.0310"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -530,6 +530,42 @@ get_extended_device_info() {
     fi
     
     echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
+}
+
+export_device_info() {
+    cat <<EOF
+AUTO_LANGUAGE='$AUTO_LANGUAGE'
+AUTO_TIMEZONE='$AUTO_TIMEZONE'
+AUTO_ZONENAME='$AUTO_ZONENAME'
+AUTO_COUNTRY='$AUTO_COUNTRY'
+ISP_NAME='$ISP_NAME'
+ISP_AS='$ISP_AS'
+ISP_IPV6='$ISP_IPV6'
+MAPE_BR='$MAPE_BR'
+MAPE_EALEN='$MAPE_EALEN'
+MAPE_IPV4_PREFIX='$MAPE_IPV4_PREFIX'
+MAPE_IPV4_PREFIXLEN='$MAPE_IPV4_PREFIXLEN'
+MAPE_IPV6_PREFIX='$MAPE_IPV6_PREFIX'
+MAPE_IPV6_PREFIXLEN='$MAPE_IPV6_PREFIXLEN'
+MAPE_PSIDLEN='$MAPE_PSIDLEN'
+MAPE_PSID_OFFSET='$MAPE_PSID_OFFSET'
+MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'
+DSLITE_AFTR='$DSLITE_AFTR'
+DSLITE_AFTR_TYPE='$DSLITE_AFTR_TYPE'
+DSLITE_JURISDICTION='$DSLITE_JURISDICTION'
+DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'
+DEVICE_CPU='$DEVICE_CPU'
+DEVICE_STORAGE='$DEVICE_STORAGE'
+DEVICE_STORAGE_USED='$DEVICE_STORAGE_USED'
+DEVICE_STORAGE_AVAIL='$DEVICE_STORAGE_AVAIL'
+DEVICE_USB='$DEVICE_USB'
+MEM_FREE_MB='$MEM_FREE_MB'
+FLASH_FREE_MB='$FLASH_FREE_MB'
+DEVICE_MEM='$DEVICE_MEM'
+LAN_IF='$LAN_IF'
+LAN_ADDR='$LAN_ADDR'
+LAN_ADDR6='$LAN_ADDR6'
+EOF
 }
 
 # Device Info (JSON-driven)
@@ -2814,29 +2850,19 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # API依存の処理をバックグラウンドで開始（ファイル経由で変数保存）
+    # API依存の処理をバックグラウンドで開始
     (
         wait $API_PID
         
-        # get_extended_device_info を実行して変数をファイルに保存
-        get_extended_device_info
-        
-        # 重要な変数をファイルに出力
-        cat > "$CONFIG_DIR/device_vars.sh" <<EOF
-AUTO_LANGUAGE='$AUTO_LANGUAGE'
-MAPE_BR='$MAPE_BR'
-MAPE_EALEN='$MAPE_EALEN'
-DSLITE_AFTR='$DSLITE_AFTR'
-ISP_NAME='$ISP_NAME'
-DETECTED_CONN_TYPE='$DETECTED_CONN_TYPE'
-MEM_FREE_MB='$MEM_FREE_MB'
-FLASH_FREE_MB='$FLASH_FREE_MB'
-LAN_ADDR='$LAN_ADDR'
-LAN_ADDR6='$LAN_ADDR6'
-MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'
-EOF
+        # シェルスクリプトとして実行し、結果をファイルに保存
+        {
+            . "$0"  # 自分自身を読み込んで関数定義を取得
+            get_extended_device_info
+            export_device_info
+        } > "$CONFIG_DIR/device_vars.sh"
         
         # 母国語ファイルのダウンロード
+        AUTO_LANGUAGE=$(grep "^AUTO_LANGUAGE=" "$CONFIG_DIR/device_vars.sh" | cut -d"'" -f2)
         if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
             download_language_json "${AUTO_LANGUAGE}"
         fi
@@ -2878,7 +2904,9 @@ EOF
     wait $API_DEPENDENT_PID
     
     # ファイルから変数を読み込む
-    . "$CONFIG_DIR/device_vars.sh"
+    if [ -f "$CONFIG_DIR/device_vars.sh" ]; then
+        . "$CONFIG_DIR/device_vars.sh"
+    fi
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
