@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2242"
+VERSION="R7.1207.2248"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2785,6 +2785,16 @@ EOF
 
 aios2_main() {
     
+    # -log オプションチェック
+    if [ "$1" = "-log" ] || [ "$1" = "--log" ]; then
+        if [ -f "$CONFIG_DIR/debug.log" ]; then
+            cat "$CONFIG_DIR/debug.log"
+        else
+            echo "No log file found at $CONFIG_DIR/debug.log"
+        fi
+        return 0
+    fi
+    
     # 起動時刻を記録（/proc/uptimeを使用）
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -2957,9 +2967,7 @@ aios2_main() {
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        echo "[TIME] Before UI main: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         aios2_${UI_MODE}_main
-        echo "[TIME] After UI main: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
@@ -2968,7 +2976,6 @@ aios2_main() {
     echo ""
     echo "Thank you for using aios2!"
     echo ""
-    echo "[TIME] End: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 }
 
-aios2_main
+aios2_main "$@"
