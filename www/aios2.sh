@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0300"
+VERSION="R7.1208.0303"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2814,12 +2814,31 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
+    # API依存の処理をバックグラウンドで開始
+    (
+        wait $API_PID  # API完了を待つ
+        
+        # AUTO_LANGUAGEが確定したので母国語ファイルをDL
+        if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+            download_language_json "${AUTO_LANGUAGE}"
+        fi
+        
+        # デバイス情報取得（APIの値を使う）
+        get_extended_device_info
+    ) &
+    API_DEPENDENT_PID=$!
+    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    # 必須ファイルの完了を待機（UI選択前に）
-    wait $API_PID
+    # UI選択を即座に表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 必須ファイルの完了を待機
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
@@ -2839,27 +2858,9 @@ aios2_main() {
         read -r _
         return 1
     fi
-
-    # デバイス情報取得（AUTO_LANGUAGEを取得するため先に実行）
-    get_extended_device_info
     
-    # 母国語ファイルのダウンロードをバックグラウンドで開始
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-    
-    # UI選択を表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # 母国語ファイルの完了を待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
+    # API依存処理の完了を待機
+    wait $API_DEPENDENT_PID
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
