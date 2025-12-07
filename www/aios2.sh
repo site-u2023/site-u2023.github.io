@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2259"
+VERSION="R7.1207.2345"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -204,6 +204,9 @@ select_ui_mode() {
         fi
     fi
     
+    # ★★★ ここで処理時間を記録（ユーザー入力前） ★★★
+    echo "[TIME] UI modules ready (before user input): $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
         exit 1
@@ -220,13 +223,16 @@ select_ui_mode() {
         return 0
     fi
     
-    # --- 修正箇所: 翻訳を廃止し英語ベタ書き ---
+    # ★★★ ユーザー入力開始 ★★★
     echo "Select UI Mode:"
     echo "1) whiptail (Dialog TUI)"
     echo "2) simple   (List TUI)"
     
     printf "Select [1]: "
     read -r choice
+    
+    # ★★★ ユーザー入力完了後の処理時間 ★★★
+    echo "[TIME] After user input: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     case "$choice" in
         2)
