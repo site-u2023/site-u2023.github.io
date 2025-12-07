@@ -535,12 +535,12 @@ function evaluateAllComputedFields() {
         for (const item of category.items) {
             if (item.type === 'field' && item.computed) {
                 console.log(`Found computed field: ${item.id}`);
-                computeFieldValue(item.id);
+                computeFieldValue(item.variable);  // ← variable に変更
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.computed) {
                         console.log(`Found computed field in section: ${subItem.id}`);
-                        computeFieldValue(subItem.id);
+                        computeFieldValue(subItem.variable);  // ← variable に変更
                     }
                 }
             }
