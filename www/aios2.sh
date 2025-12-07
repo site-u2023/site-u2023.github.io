@@ -114,8 +114,18 @@ print_banner() {
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     
+    echo "[DEBUG] Parsing config.js: $CONFIG_JS" >&2
+    
+    if [ ! -f "$CONFIG_JS" ]; then
+        echo "[DEBUG] config.js not found!" >&2
+        return 1
+    fi
+    
+    echo "[DEBUG] config.js exists, size: $(wc -c < "$CONFIG_JS") bytes" >&2
+    
     # ファイルを1回だけ読み込んで、awkで全部抽出
-    eval "$(awk -F'"' '
+    local awk_output
+    awk_output=$(awk -F'"' '
         /base_url:/  { print "BASE_URL_PART=\"" $4 "\"" }
         /base_path:/ { print "BASE_PATH_PART=\"" $4 "\"" }
         /auto_config_api_url:/ { print "AUTO_CONFIG_API_URL=\"" $4 "\"" }
@@ -129,12 +139,22 @@ load_config_from_js() {
         /whiptail_ui_path:/ { print "WHIPTAIL_UI_PATH=\"" $4 "\"" }
         /simple_ui_path:/ { print "SIMPLE_UI_PATH=\"" $4 "\"" }
         /whiptail_fallback_path:/ { print "WHIPTAIL_FALLBACK_PATH=\"" $4 "\"" }
-    ' "$CONFIG_JS")"
+    ' "$CONFIG_JS")
+    
+    echo "[DEBUG] awk output:" >&2
+    echo "$awk_output" >&2
+    
+    eval "$awk_output"
+    
+    echo "[DEBUG] After eval:" >&2
+    echo "[DEBUG]   BASE_URL_PART=$BASE_URL_PART" >&2
+    echo "[DEBUG]   BASE_PATH_PART=$BASE_PATH_PART" >&2
+    echo "[DEBUG]   AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL" >&2
     
     # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
     
-    # URL変数を構築（シンプルな文字列結合）
+    # URL変数を構築
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
