@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0310"
+VERSION="R7.1208.0313"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -533,7 +533,12 @@ get_extended_device_info() {
 }
 
 export_device_info() {
-    cat <<EOF
+    local output_file="$1"
+    
+    cat > "$output_file" <<EOF
+DEVICE_MODEL='$DEVICE_MODEL'
+DEVICE_TARGET='$DEVICE_TARGET'
+OPENWRT_VERSION='$OPENWRT_VERSION'
 AUTO_LANGUAGE='$AUTO_LANGUAGE'
 AUTO_TIMEZONE='$AUTO_TIMEZONE'
 AUTO_ZONENAME='$AUTO_ZONENAME'
@@ -2854,12 +2859,9 @@ aios2_main() {
     (
         wait $API_PID
         
-        # シェルスクリプトとして実行し、結果をファイルに保存
-        {
-            . "$0"  # 自分自身を読み込んで関数定義を取得
-            get_extended_device_info
-            export_device_info
-        } > "$CONFIG_DIR/device_vars.sh"
+        # デバイス情報取得して export_device_info でファイルに保存
+        get_extended_device_info
+        export_device_info "$CONFIG_DIR/device_vars.sh"
         
         # 母国語ファイルのダウンロード
         AUTO_LANGUAGE=$(grep "^AUTO_LANGUAGE=" "$CONFIG_DIR/device_vars.sh" | cut -d"'" -f2)
