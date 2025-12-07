@@ -2799,10 +2799,10 @@ aios2_main() {
     init
     detect_package_manager
 
-    # APIは最優先で同期的に取得（リトライ付き）
-    download_api_with_retry
+    # 全て並列ダウンロード開始（APIも含む）
+    download_api_with_retry &
+    API_PID=$!
     
-    # その他のファイルを並列ダウンロード開始
     (
         if ! download_setup_json; then
             echo "Error: Failed to download setup.json" >&2
@@ -2839,20 +2839,38 @@ aios2_main() {
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+    ) &
+    WHIPTAIL_PID=$!
+    
+    (
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
-    UI_DL_PID=$!
+    SIMPLE_PID=$!
 
-    # ダウンロード中にUI選択（ユーザーの思考時間を有効活用）
+    # UI DL完了を待ってから選択
+    wait $WHIPTAIL_PID
+    wait $SIMPLE_PID
     select_ui_mode
 
-    # API情報を取得・パース（API DLは既に完了済み）
+    # API完了待ち → 即座に解析 → 母国語DL開始
+    wait $API_PID
+    API_STATUS=$?
+    
+    if [ $API_STATUS -ne 0 ]; then
+        echo "Cannot continue without API data"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
     get_extended_device_info
     
-    # 言語ファイルを取得
-    wait $LANG_EN_PID
+    # 母国語を並列でDL開始（enと並行して取得）
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        download_language_json "${AUTO_LANGUAGE}"
+        (
+            download_language_json "${AUTO_LANGUAGE}" >/dev/null 2>&1
+        ) &
+        LANG_LOCAL_PID=$!
     fi
 
     # 残りのファイル完了を待機
@@ -2865,7 +2883,12 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
-    wait $UI_DL_PID
+    wait $LANG_EN_PID
+    
+    # 母国語DL完了待ち
+    if [ -n "$LANG_LOCAL_PID" ]; then
+        wait $LANG_LOCAL_PID
+    fi
     
     # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
