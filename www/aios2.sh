@@ -113,21 +113,25 @@ print_banner() {
 
 load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
+    local CONFIG_CONTENT
     
-    # 元のロジックそのまま：grep + sed（1回だけ実行）
-    BASE_URL_PART=$(grep "base_url:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    BASE_PATH_PART=$(grep "base_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    PACKAGES_DB_PATH=$(grep "packages_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    POSTINST_TEMPLATE_PATH=$(grep "postinst_template_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_DB_PATH=$(grep "setup_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_TEMPLATE_PATH=$(grep "setup_template_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMFEEDS_DB_PATH=$(grep "customfeeds_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    CUSTOMSCRIPTS_DB_PATH=$(grep "customscripts_db_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    LANGUAGE_PATH_TEMPLATE=$(grep "language_path_template:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    WHIPTAIL_UI_PATH=$(grep "whiptail_ui_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    SIMPLE_UI_PATH=$(grep "simple_ui_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
-    WHIPTAIL_FALLBACK_PATH=$(grep "whiptail_fallback_path:" "$CONFIG_JS" | sed 's/.*"\([^"]*\)".*/\1/')
+    # ファイルを1回だけ読み込み
+    CONFIG_CONTENT=$(cat "$CONFIG_JS")
+    
+    # 内容に対して grep（ファイルI/O が1回で済む）
+    BASE_URL_PART=$(echo "$CONFIG_CONTENT" | grep "base_url:" | sed 's/.*"\([^"]*\)".*/\1/')
+    BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep "base_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep "auto_config_api_url:" | sed 's/.*"\([^"]*\)".*/\1/')
+    PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "packages_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "postinst_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "customfeeds_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMSCRIPTS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "customscripts_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    LANGUAGE_PATH_TEMPLATE=$(echo "$CONFIG_CONTENT" | grep "language_path_template:" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SIMPLE_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "simple_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_FALLBACK_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_fallback_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     
     # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
@@ -141,22 +145,13 @@ load_config_from_js() {
     CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
     WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
     
-    # キャッシュバスター付きURL
     local CACHE_BUSTER="?t=$(date +%s)"
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
     
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
-        echo "[DEBUG] PACKAGES_URL=$PACKAGES_URL"
-        echo "[DEBUG] POSTINST_TEMPLATE_URL=$POSTINST_TEMPLATE_URL"
-        echo "[DEBUG] SETUP_JSON_URL=$SETUP_JSON_URL"
-        echo "[DEBUG] SETUP_TEMPLATE_URL=$SETUP_TEMPLATE_URL"
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
-        echo "[DEBUG] CUSTOMFEEDS_DB_PATH=$CUSTOMFEEDS_DB_PATH"
-        echo "[DEBUG] CUSTOMFEEDS_JSON_URL=$CUSTOMFEEDS_JSON_URL"
-        echo "[DEBUG] WHIPTAIL_UI_URL=$WHIPTAIL_UI_URL"
-        echo "[DEBUG] SIMPLE_UI_URL=$SIMPLE_UI_URL"
     } >> "$CONFIG_DIR/debug.log"
     
     return 0
