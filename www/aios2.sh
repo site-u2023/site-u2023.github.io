@@ -2753,8 +2753,6 @@ EOF
 
 # Main Entry Point
 
-# Main Entry Point
-
 show_log() {
     if [ -f "$BASE_TMP_DIR/aios2/debug.log" ]; then
         cat "$BASE_TMP_DIR/aios2/debug.log"
@@ -2888,10 +2886,7 @@ aios2_main() {
     wait $POSTINST_PID
     POSTINST_STATUS=$?
     
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
+    echo "[TIME] All processing complete: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
@@ -2908,6 +2903,13 @@ aios2_main() {
     fi
 
     select_ui_mode
+    
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    wait $LANG_EN_PID
+    
+    echo "[TIME] Total: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
