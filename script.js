@@ -33,7 +33,7 @@ const DEFAULT_TERMINALS = {
     name: 'aios2',
     command: `mkdir -p ${BASE_DIR2}; wget --no-check-certificate -O ${AIOS_PATH2} ${AIOS_URL2} && chmod +x ${AIOS_PATH2} && ${AIOS_PATH2}`
   },
-  aios (old): {
+  aios: {
     name: 'aios',
     command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
   },
@@ -84,7 +84,7 @@ const translations = {
         qrCodeArea: 'QRコード表示エリア',
         OpenWrtCustom: 'キッティングツール（カスタムビルダー）',
         firmwareDownload: 'デバイス用のOpenWtファームウェアをダウンロード',
-        githubRepo: 'コンソールツール',
+        githubRepo: 'コンソールツール (旧版)',
         aiosScript: 'オールインワンスクリプト',
         configSoftware: 'コンフィグソフトウェア',
         disclaimerPageTitle: '免責事項',
@@ -98,7 +98,7 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'メニュー式スクリプト',
+        aiosExplanation: 'メニュー式スクリプト (旧版)',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aios2Explanation: '永続化インストールスクリプト',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
@@ -147,7 +147,7 @@ const translations = {
         explanation: 'Explanation',
         OpenWrtCustom: 'Kitting Tools (Custom Builder)',
         firmwareDownload: 'Download OpenWrt firmware for your device',
-        githubRepo: 'Console Tools',
+        githubRepo: 'Console Tools (Old version)',
         aiosScript: 'all in one script',
         configSoftware: 'config software',
         disclaimerPageTitle: 'Disclaimer',
@@ -161,7 +161,7 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'Menu-based script',
+        aiosExplanation: 'Menu-based script (Old version)',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
         aios2Explanation: 'Persistent installation script',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
