@@ -26,6 +26,112 @@
     }
   },
   
+  "deviceInfo": {
+    "items": [
+      {
+        "id": "model",
+        "label": "Model",
+        "source": "DEVICE_MODEL"
+      },
+      {
+        "id": "target",
+        "label": "Target",
+        "source": "DEVICE_TARGET"
+      },
+      {
+        "id": "version",
+        "label": "Version",
+        "source": "OPENWRT_VERSION"
+      },
+      {
+        "id": "memory",
+        "label": "Memory",
+        "source": "computed",
+        "format": "{MEM_FREE_MB}MB / {DEVICE_MEM} (available / total)",
+        "condition": ["MEM_FREE_MB", "DEVICE_MEM"]
+      },
+      {
+        "id": "storage",
+        "label": "Storage",
+        "source": "computed",
+        "format": "{DEVICE_STORAGE_AVAIL} / {DEVICE_STORAGE} (available / total)",
+        "condition": ["DEVICE_STORAGE"]
+      },
+      {
+        "id": "usb",
+        "label": "USB",
+        "source": "DEVICE_USB",
+        "condition": ["DEVICE_USB"]
+      },
+      {
+        "id": "pkg_manager",
+        "label": "Package manager",
+        "source": "PKG_MGR"
+      },
+      {
+        "id": "separator",
+        "type": "blank"
+      },
+      {
+        "id": "country",
+        "label": "Country",
+        "source": "AUTO_COUNTRY"
+      },
+      {
+        "id": "language",
+        "label": "Language",
+        "source": "current_lang"
+      },
+      {
+        "id": "zonename",
+        "label": "Zonename",
+        "source": "AUTO_ZONENAME"
+      },
+      {
+        "id": "timezone",
+        "label": "Timezone",
+        "source": "AUTO_TIMEZONE"
+      }
+    ]
+  },
+  
+  "apiMapping": {
+    "basic": {
+      "language": "language",
+      "country": "country",
+      "regionName": "regionName",
+      "region": "region",
+      "timezone": "timezone",
+      "zonename": "zonename"
+    },
+    "connection": {
+      "ipv4": "ipv4",
+      "ipv6": "ipv6",
+      "isp": "isp",
+      "as": "as"
+    },
+    "dslite": {
+      "aftrType": "aftr.aftrType",
+      "jurisdiction": "aftr.jurisdiction",
+      "aftrIpv6Address": "aftr.aftrIpv6Address",
+      "aftrFqdn": "aftr.aftrFqdn",
+      "aftrAddress": "aftr.aftrAddress",
+      "peeraddr": "aftr.peeraddr"
+    },
+    "mape": {
+      "brIpv6Address": "mape.brIpv6Address",
+      "eaBitLength": "mape.eaBitLength",
+      "ipv4Prefix": "mape.ipv4Prefix",
+      "ipv4PrefixLength": "mape.ipv4PrefixLength",
+      "ipv6Prefix": "mape.ipv6Prefix",
+      "ipv6PrefixLength": "mape.ipv6PrefixLength",
+      "psidlen": "mape.psidlen",
+      "psIdOffset": "mape.psIdOffset",
+      "ipv6Prefix_gua": "mape.ipv6Prefix_gua",
+      "calculatedOffset": "mape.calculatedOffset"
+    }
+  },
+  
   "constants": {
     "interfaces": {
       "dsl": "dsl",
