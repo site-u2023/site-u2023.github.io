@@ -1484,30 +1484,8 @@ function extractLuciName(pkg) {
 
 // ==================== フォーム値収集 ====================
 
-function shouldIncludeVariable(category, selectedValue) {
-    const exclusionRules = {
-        wifi_mode: {
-            exclude: ['disabled'],
-            variableName: 'wifi_mode'
-        },
-        net_optimizer: {
-            exclude: ['disabled'],
-            variableName: 'net_optimizer'
-        },
-        enable_dnsmasq: {
-            exclude: ['disabled'],
-            variableName: 'enable_dnsmasq'
-        },
-        connection_type: {
-            exclude: ['disabled'],
-            variableName: 'connection_type'
-        }
-    };
-    
-    const rule = exclusionRules[category];
-    if (!rule) return true;
-    
-    return !rule.exclude.includes(selectedValue);
+function shouldIncludeVariable(value) {
+    return value !== 'disabled' && value !== null && value !== undefined && value !== '';
 }
 
 function collectFormValues() {
@@ -1541,16 +1519,19 @@ function collectBasicConfig(values) {
     for (const item of basicCategory.items) {
         if (item.type === 'field' && item.variable) {
             const value = getFieldValue(`#${item.id}`);
-            if (value !== null && value !== undefined && value !== "") {
-                if (item.variable === 'language' && value === 'en') continue;
-                values[item.variable] = value;
-            }
+            
+            if (!shouldIncludeVariable(value)) continue;
+            if (item.variable === 'language' && value === 'en') continue;
+            
+            values[item.variable] = value;
         }
     }
 }
 
 function collectWifiConfig(values) {
     const wifiMode = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
+    
+    if (!shouldIncludeVariable(wifiMode)) return;
     
     if (shouldIncludeVariable('wifi_mode', wifiMode)) {
         values.wifi_mode = wifiMode;
@@ -1561,14 +1542,14 @@ function collectWifiConfig(values) {
     const ssid = getFieldValue('#aios-wifi-ssid');
     const password = getFieldValue('#aios-wifi-password');
     
-    if (ssid) values.wlan_ssid = ssid;
-    if (password) values.wlan_password = password;
+    if (ssid && shouldIncludeVariable(ssid)) values.wlan_ssid = ssid;
+    if (password && shouldIncludeVariable(password)) values.wlan_password = password;
 
     if (wifiMode === 'usteer') {
         const mobility = getFieldValue('#aios-wifi-mobility-domain');
         const snr = getFieldValue('#aios-wifi-snr');
-        if (mobility) values.mobility_domain = mobility;
-        if (snr) values.snr = snr;
+        if (mobility && shouldIncludeVariable(mobility)) values.mobility_domain = mobility;
+        if (snr && shouldIncludeVariable(snr)) values.snr = snr;
     }
 }
 
@@ -1580,7 +1561,7 @@ function collectConnectionConfig(values) {
     );
     if (!connectionCategory) return;
 
-    if (shouldIncludeVariable('connection_type', connectionType)) {
+    if (shouldIncludeVariable(connectionType)) {
         values.connection_type = connectionType;
     }
     
@@ -1654,12 +1635,11 @@ function collectFieldsForConnectionType(type, values, isAutoMode) {
 function collectOptimizationConfig(values) {
     const netOpt = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
     
-    if (shouldIncludeVariable('net_optimizer', netOpt)) {
+    if (shouldIncludeVariable(netOpt)) {
         values.net_optimizer = netOpt;
     }
     
     if (netOpt === 'disabled') {
-        // 最適化無効時は追加設定なし
     } else if (netOpt === 'manual') {
         const fields = {
             'netopt-rmem': 'netopt_rmem',
@@ -1672,23 +1652,22 @@ function collectOptimizationConfig(values) {
         
         for (const [fieldId, varName] of Object.entries(fields)) {
             const value = getFieldValue(`#${fieldId}`);
-            if (value) values[varName] = value;
+            if (shouldIncludeVariable(value)) values[varName] = value;
         }
     }
 
     const dnsmasq = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
     
-    if (shouldIncludeVariable('enable_dnsmasq', dnsmasq)) {
+    if (shouldIncludeVariable(dnsmasq)) {
         values.enable_dnsmasq = dnsmasq;
     }
     
     if (dnsmasq === 'disabled') {
-        // DNS最適化無効時は追加設定なし
     } else if (dnsmasq === 'manual') {
         const cache = getFieldValue('#dnsmasq-cache');
         const negcache = getFieldValue('#dnsmasq-negcache');
-        if (cache) values.dnsmasq_cache = cache;
-        if (negcache) values.dnsmasq_negcache = negcache;
+        if (shouldIncludeVariable(cache)) values.dnsmasq_cache = cache;
+        if (shouldIncludeVariable(negcache)) values.dnsmasq_negcache = negcache;
     }
 }
 
