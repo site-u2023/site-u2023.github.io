@@ -191,7 +191,6 @@ select_ui_mode() {
     local whiptail_pkg="whiptail"
     local choice
     
-    # UIモジュール取得（ここはキャッシュがあれば速いのでそのままでOK）
     if [ -n "$WHIPTAIL_UI_URL" ]; then
         if wget -q --spider "$WHIPTAIL_UI_URL" 2>/dev/null; then
             __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh" && has_whiptail=1
@@ -204,15 +203,13 @@ select_ui_mode() {
         fi
     fi
     
-    # ★★★ ここで処理時間を記録（ユーザー入力前） ★★★
-    echo "[TIME] UI modules ready (before user input): $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] UI modules ready: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ $has_whiptail -eq 0 ] && [ $has_simple -eq 0 ]; then
         echo "Error: No UI module found"
         exit 1
     fi
     
-    # 優先順位による自動決定
     if [ $has_whiptail -eq 1 ] && [ $has_simple -eq 0 ]; then
         UI_MODE="whiptail"
         return 0
@@ -223,16 +220,12 @@ select_ui_mode() {
         return 0
     fi
     
-    # ★★★ ユーザー入力開始 ★★★
     echo "Select UI Mode:"
     echo "1) whiptail (Dialog TUI)"
     echo "2) simple   (List TUI)"
     
     printf "Select [1]: "
     read -r choice
-    
-    # ★★★ ユーザー入力完了後の処理時間 ★★★
-    echo "[TIME] After user input: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     case "$choice" in
         2)
@@ -2801,7 +2794,6 @@ show_log() {
 
 aios2_main() {
     
-    # 起動時刻を記録（/proc/uptimeを使用）
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
@@ -2820,7 +2812,6 @@ aios2_main() {
     
     echo "[TIME] Before config DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
-    # config.js を先にDL
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
@@ -2839,7 +2830,6 @@ aios2_main() {
 
     echo "[TIME] Before parallel DL: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
-    # 全て並列ダウンロード開始
     (download_api_with_retry && echo "[TIME] API done: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log") &
     API_PID=$!
     
@@ -2894,7 +2884,6 @@ aios2_main() {
 
     echo "[TIME] After parallel DL start: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
 
-    # API完了待ち → 解析
     echo "[TIME] Before API wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $API_PID
     
@@ -2902,7 +2891,6 @@ aios2_main() {
     
     get_extended_device_info
     
-    # 母国語DLを並列で開始（バックグラウンド）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         echo "[TIME] Before native language DL (parallel): $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
@@ -2913,25 +2901,18 @@ aios2_main() {
         NATIVE_LANG_PID=$!
     fi
 
-    # UI完了待ち
     echo "[TIME] Before UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     wait $UI_DL_PID
     echo "[TIME] After UI wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
-    # 母国語DL完了待ち（開始していた場合のみ）
     if [ -n "$NATIVE_LANG_PID" ]; then
         echo "[TIME] Before native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
         wait $NATIVE_LANG_PID
         echo "[TIME] After native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     fi
     
-    echo "[TIME] Before select_ui_mode: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-    
     select_ui_mode
 
-    echo "[TIME] After select_ui_mode: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-
-    # 残りのファイル完了を待機
     echo "[TIME] Before remaining waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     wait $SETUP_PID
@@ -2947,7 +2928,6 @@ aios2_main() {
     
     echo "[TIME] After all waits: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
-    # エラーチェック
     if [ $SETUP_STATUS -ne 0 ]; then
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
@@ -2962,14 +2942,12 @@ aios2_main() {
         return 1
     fi
 
-    echo "[TIME] Before UI customization: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
-
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
     fi
     
-    echo "[TIME] Before UI module load: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
+    echo "[TIME] Ready to start UI: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
