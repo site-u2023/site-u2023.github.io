@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0017"
+VERSION="R7.1208.0026"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2913,8 +2913,6 @@ aios2_main() {
         echo "[TIME] After native language wait: $(elapsed_time)s" >> "$CONFIG_DIR/debug.log"
     fi
     
-    select_ui_mode
-
     wait $SETUP_PID
     SETUP_STATUS=$?
     
@@ -2941,6 +2939,8 @@ aios2_main() {
         read -r _
         return 1
     fi
+
+    select_ui_mode
 
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
