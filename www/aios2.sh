@@ -2941,20 +2941,6 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # API依存の処理をバックグラウンドで開始
-    (
-        wait $API_PID
-        
-        # AUTO_LANGUAGEだけ抽出
-        AUTO_LANGUAGE=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.language" 2>/dev/null)
-        
-        # 母国語ファイルのダウンロード
-        if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-            download_language_json "${AUTO_LANGUAGE}"
-        fi
-    ) &
-    API_DEPENDENT_PID=$!
-    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
@@ -2966,6 +2952,7 @@ aios2_main() {
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     # 必須ファイルの完了を待機
+    wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
@@ -2985,27 +2972,20 @@ aios2_main() {
         read -r _
         return 1
     fi
-    
-    # API依存処理の完了を待機
-    wait $API_DEPENDENT_PID
-    
-    # デバイス情報取得（全てのAPI情報を変数に設定）
+
+    # デバイス情報取得
     get_extended_device_info
+    
+    # 母国語ファイルのダウンロード（同期実行）
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        download_language_json "${AUTO_LANGUAGE}"
+    fi
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
-
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        # custom.ja.json が存在するか確認
-        NATIVE_LANG_FILE="$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
-        if [ -f "$NATIVE_LANG_FILE" ] && [ -s "$NATIVE_LANG_FILE" ]; then
-            # 日本語ファイルを LANG_JSON にコピー
-            cp "$NATIVE_LANG_FILE" "$LANG_JSON"
-        fi
-    fi
-
+    
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     
