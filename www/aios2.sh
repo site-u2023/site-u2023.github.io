@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1207.2205"
+VERSION="R7.1207.2209"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2889,18 +2889,29 @@ aios2_main() {
     
     get_extended_device_info
     
-    # 母国語DL
+    # 母国語DLを並列で開始（バックグラウンド）
+    NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        echo "[TIME] Before native language DL: $(date +%s.%N)" >&2
-        download_language_json "${AUTO_LANGUAGE}"
-        echo "[TIME] After native language DL: $(date +%s.%N)" >&2
+        echo "[TIME] Before native language DL (parallel): $(date +%s.%N)" >&2
+        (
+            download_language_json "${AUTO_LANGUAGE}"
+            echo "[TIME] Native language done: $(date +%s.%N)" >&2
+        ) &
+        NATIVE_LANG_PID=$!
     fi
 
-    # UI完了待ち → 選択
+    # UI完了待ち
     echo "[TIME] Before UI wait: $(date +%s.%N)" >&2
     wait $UI_DL_PID
-    
     echo "[TIME] After UI wait: $(date +%s.%N)" >&2
+    
+    # 母国語DL完了待ち（開始していた場合のみ）
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        echo "[TIME] Before native language wait: $(date +%s.%N)" >&2
+        wait $NATIVE_LANG_PID
+        echo "[TIME] After native language wait: $(date +%s.%N)" >&2
+    fi
+    
     echo "[TIME] Before select_ui_mode: $(date +%s.%N)" >&2
     
     select_ui_mode
