@@ -2996,7 +2996,16 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
-    
+
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        # custom.ja.json が存在するか確認
+        NATIVE_LANG_FILE="$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        if [ -f "$NATIVE_LANG_FILE" ] && [ -s "$NATIVE_LANG_FILE" ]; then
+            # 日本語ファイルを LANG_JSON にコピー
+            cp "$NATIVE_LANG_FILE" "$LANG_JSON"
+        fi
+    fi
+
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     
