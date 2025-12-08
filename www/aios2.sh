@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1300"
+VERSION="R7.1208.1344"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -456,10 +456,7 @@ download_api_with_retry() {
     return 0
 }
 
-get_extended_device_info() {
-    get_device_info
-    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-
+get_language() {
     # LuCIから言語設定を事前取得
     if [ -f /etc/config/luci ]; then
         AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
@@ -483,6 +480,14 @@ get_extended_device_info() {
             AUTO_LANGUAGE=""
         fi
     fi
+}
+
+get_extended_device_info() {
+    get_device_info
+    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+
+    # LuCIから言語設定を事前取得
+    get_language
     
     # APIから値を抽出して変数に設定
     _set_api_value() {
@@ -2804,12 +2809,7 @@ aios2_main() {
     mkdir -p "$CONFIG_DIR"
     
     # LuCIから言語設定を事前取得
-    if [ -f /etc/config/luci ]; then
-        AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
-        if [ "$AUTO_LANGUAGE" = "auto" ] || [ -z "$AUTO_LANGUAGE" ]; then
-            AUTO_LANGUAGE=""
-        fi
-    fi
+    get_language
     
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
