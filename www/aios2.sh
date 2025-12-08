@@ -430,22 +430,40 @@ XXX_translate() {
 
 translate() {
     local key="$1"
-    local lang_file="$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    local current_lang="${AUTO_LANGUAGE:-en}"
+    local lang_file="$CONFIG_DIR/lang_${current_lang}.json"
     local translation
     
-    # 母国語ファイルから検索
-    if [ -f "$lang_file" ]; then
-        translation=$(jsonfilter -i "$lang_file" -e "@['$key']" 2>/dev/null)
-        [ -n "$translation" ] && echo "$translation" && return 0
+    # キャッシュチェック
+    if [ -z "$_TRANSLATIONS_LOADED" ]; then
+        if [ -f "$lang_file" ]; then
+            _TRANSLATIONS_DATA=$(cat "$lang_file" 2>/dev/null)
+        fi
+        _TRANSLATIONS_LOADED=1
+    fi
+    
+    translation=$(echo "$_TRANSLATIONS_DATA" | jsonfilter -e "@['$key']" 2>/dev/null)
+    
+    if [ -n "$translation" ]; then
+        echo "$translation"
+        return 0
     fi
     
     # フォールバック: 英語
-    if [ -f "$CONFIG_DIR/lang_en.json" ]; then
-        translation=$(jsonfilter -i "$CONFIG_DIR/lang_en.json" -e "@['$key']" 2>/dev/null)
-        [ -n "$translation" ] && echo "$translation" && return 0
+    if [ "$current_lang" != "en" ] && [ -f "$CONFIG_DIR/lang_en.json" ]; then
+        if [ -z "$_TRANSLATIONS_EN_LOADED" ]; then
+            _TRANSLATIONS_EN_DATA=$(cat "$CONFIG_DIR/lang_en.json" 2>/dev/null)
+            _TRANSLATIONS_EN_LOADED=1
+        fi
+        
+        translation=$(echo "$_TRANSLATIONS_EN_DATA" | jsonfilter -e "@['$key']" 2>/dev/null)
+        
+        if [ -n "$translation" ]; then
+            echo "$translation"
+            return 0
+        fi
     fi
     
-    # キーをそのまま返す
     echo "$key"
 }
 
@@ -3092,9 +3110,9 @@ aios2_main() {
     
     echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
     
-    if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
