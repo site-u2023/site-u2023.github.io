@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1635"
+VERSION="R7.1208.1621"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -692,7 +692,7 @@ package_compatible() {
 
 # Setup JSON Accessors
 
-XXX_get_setup_item_property() {
+get_setup_item_property() {
     local item_id="$1"
     local property="$2"
     local result
@@ -730,11 +730,11 @@ get_setup_category_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$1'].items[*].id" 2>/dev/null | grep -v '^$'
 }
 
-XXX_get_setup_item_type() {
+get_setup_item_type() {
     get_setup_item_property "$1" "type"
 }
 
-XXX_get_setup_item_label() {
+get_setup_item_label() {
     local item_id="$1"
     local label class
     
@@ -758,15 +758,15 @@ XXX_get_setup_item_label() {
     fi
 }
 
-XXX_get_setup_item_variable() {
+get_setup_item_variable() {
     get_setup_item_property "$1" "variable"
 }
 
-XXX_get_setup_item_default() {
+get_setup_item_default() {
     get_setup_item_property "$1" "default"
 }
 
-XXX_get_setup_item_api_source() {
+get_setup_item_api_source() {
     local item_id="$1"
     local result
     
@@ -785,7 +785,7 @@ get_api_value() {
     jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${api_source}" 2>/dev/null | head -1
 }
 
-XXX_get_setup_item_field_type() {
+get_setup_item_field_type() {
     local item_id="$1"
     local result
     
@@ -831,108 +831,6 @@ get_setup_item_option_label() {
     fi
 }
 
-# setup.jsonの項目情報を一括キャッシュする関数（新規追加）
-_cache_setup_item_properties() {
-    local item_id="$1"
-    local cache_key="SETUP_ITEM_${item_id}"
-    
-    # 既にキャッシュされている場合はスキップ
-    if eval "[ -n \"\${${cache_key}_CACHED}\" ]"; then
-        return 0
-    fi
-    
-    # 一度のjsonfilter呼び出しで全プロパティを取得
-    local item_json
-    item_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id']" 2>/dev/null | head -1)
-    
-    if [ -z "$item_json" ]; then
-        item_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id']" 2>/dev/null | head -1)
-    fi
-    
-    [ -z "$item_json" ] && return 1
-    
-    # 各プロパティを個別の変数に展開
-    eval "${cache_key}_TYPE=\"$(echo "$item_json" | jsonfilter -e '@.type' 2>/dev/null)\""
-    eval "${cache_key}_LABEL=\"$(echo "$item_json" | jsonfilter -e '@.label' 2>/dev/null)\""
-    eval "${cache_key}_TITLE=\"$(echo "$item_json" | jsonfilter -e '@.title' 2>/dev/null)\""
-    eval "${cache_key}_CLASS=\"$(echo "$item_json" | jsonfilter -e '@.class' 2>/dev/null)\""
-    eval "${cache_key}_VARIABLE=\"$(echo "$item_json" | jsonfilter -e '@.variable' 2>/dev/null)\""
-    eval "${cache_key}_DEFAULT=\"$(echo "$item_json" | jsonfilter -e '@.default' 2>/dev/null)\""
-    eval "${cache_key}_FIELD_TYPE=\"$(echo "$item_json" | jsonfilter -e '@.fieldType' 2>/dev/null)\""
-    eval "${cache_key}_API_SOURCE=\"$(echo "$item_json" | jsonfilter -e '@.apiSource' 2>/dev/null)\""
-    eval "${cache_key}_HIDDEN=\"$(echo "$item_json" | jsonfilter -e '@.hidden' 2>/dev/null)\""
-    eval "${cache_key}_SHOW_WHEN=\"$(echo "$item_json" | jsonfilter -e '@.showWhen' 2>/dev/null)\""
-    eval "${cache_key}_CACHED=1"
-    
-    return 0
-}
-
-# 修正版：get_setup_item_property
-get_setup_item_property() {
-    local item_id="$1"
-    local property="$2"
-    local cache_key="SETUP_ITEM_${item_id}"
-    
-    # キャッシュを構築
-    _cache_setup_item_properties "$item_id" || return 1
-    
-    # プロパティ名を大文字に変換
-    local prop_upper
-    prop_upper=$(echo "$property" | tr '[:lower:]' '[:upper:]' | sed 's/\./_/g')
-    
-    # キャッシュから取得
-    eval "echo \"\${${cache_key}_${prop_upper}}\""
-}
-
-# 修正版：get_setup_item_type
-get_setup_item_type() {
-    get_setup_item_property "$1" "type"
-}
-
-# 修正版：get_setup_item_label
-get_setup_item_label() {
-    local item_id="$1"
-    local cache_key="SETUP_ITEM_${item_id}"
-    
-    _cache_setup_item_properties "$item_id" || return 1
-    
-    local label class
-    eval "label=\"\${${cache_key}_LABEL}\""
-    eval "class=\"\${${cache_key}_CLASS}\""
-    
-    # labelが空の場合はtitleを使用
-    if [ -z "$label" ]; then
-        eval "label=\"\${${cache_key}_TITLE}\""
-    fi
-    
-    # classがtr-で始まる場合は翻訳
-    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
-        translate "$class"
-    else
-        echo "$label"
-    fi
-}
-
-# 修正版：get_setup_item_variable
-get_setup_item_variable() {
-    get_setup_item_property "$1" "variable"
-}
-
-# 修正版：get_setup_item_default
-get_setup_item_default() {
-    get_setup_item_property "$1" "default"
-}
-
-# 修正版：get_setup_item_api_source
-get_setup_item_api_source() {
-    get_setup_item_property "$1" "apiSource"
-}
-
-# 修正版：get_setup_item_field_type
-get_setup_item_field_type() {
-    get_setup_item_property "$1" "fieldType"
-}
-
 # Package JSON Accessors
 
 get_categories() {
@@ -943,7 +841,7 @@ get_categories() {
     echo "$_CATEGORIES_CACHE"
 }
 
-XXX_get_category_name() {
+get_category_name() {
     local cat_id="$1"
     local name class
     
@@ -962,7 +860,7 @@ XXX_get_category_name() {
     fi
 }
 
-XXX_get_category_desc() {
+get_category_desc() {
     local cat_id="$1"
     local desc
     
@@ -971,7 +869,7 @@ XXX_get_category_desc() {
     echo "$desc"
 }
 
-XXX_get_category_hidden() {
+get_category_hidden() {
     local cat_id="$1"
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | head -1 | grep -q . && echo "false" && return
     local hidden
@@ -987,80 +885,6 @@ get_category_packages() {
     [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
     
     echo "$pkgs" | sort -u
-}
-
-# カテゴリ情報を一括キャッシュする関数（新規追加）
-_cache_category_info() {
-    local cat_id="$1"
-    local cache_key="CATEGORY_${cat_id}"
-    
-    if eval "[ -n \"\${${cache_key}_CACHED}\" ]"; then
-        return 0
-    fi
-    
-    # customfeeds.jsonから検索
-    local cat_json
-    cat_json=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | head -1)
-    
-    # 見つからなければpackages.jsonから検索
-    if [ -z "$cat_json" ]; then
-        cat_json=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | head -1)
-    fi
-    
-    [ -z "$cat_json" ] && return 1
-    
-    # プロパティを展開
-    eval "${cache_key}_NAME=\"$(echo "$cat_json" | jsonfilter -e '@.name' 2>/dev/null)\""
-    eval "${cache_key}_CLASS=\"$(echo "$cat_json" | jsonfilter -e '@.class' 2>/dev/null)\""
-    eval "${cache_key}_DESC=\"$(echo "$cat_json" | jsonfilter -e '@.description' 2>/dev/null)\""
-    eval "${cache_key}_HIDDEN=\"$(echo "$cat_json" | jsonfilter -e '@.hidden' 2>/dev/null)\""
-    eval "${cache_key}_CACHED=1"
-    
-    return 0
-}
-
-# 修正版：get_category_name
-get_category_name() {
-    local cat_id="$1"
-    local cache_key="CATEGORY_${cat_id}"
-    
-    _cache_category_info "$cat_id" || return 1
-    
-    local name class
-    eval "name=\"\${${cache_key}_NAME}\""
-    eval "class=\"\${${cache_key}_CLASS}\""
-    
-    if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
-        translate "$class"
-    else
-        printf '%s\n' "$name"
-    fi
-}
-
-# 修正版：get_category_desc
-get_category_desc() {
-    local cat_id="$1"
-    local cache_key="CATEGORY_${cat_id}"
-    
-    _cache_category_info "$cat_id" || return 1
-    
-    eval "echo \"\${${cache_key}_DESC}\""
-}
-
-# 修正版：get_category_hidden
-get_category_hidden() {
-    local cat_id="$1"
-    local cache_key="CATEGORY_${cat_id}"
-    
-    # customfeeds.jsonに存在すればfalse
-    if jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id']" 2>/dev/null | head -1 | grep -q .; then
-        echo "false"
-        return
-    fi
-    
-    _cache_category_info "$cat_id" || return 1
-    
-    eval "echo \"\${${cache_key}_HIDDEN}\""
 }
 
 get_package_checked() {
@@ -1353,7 +1177,7 @@ get_customscript_all_scripts() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e '@.scripts[*].id' 2>/dev/null | grep -v '^$'
 }
 
-XXX_get_customscript_name() {
+get_customscript_name() {
     local script_id="$1"
     local class
     
@@ -1365,7 +1189,7 @@ XXX_get_customscript_name() {
     fi
 }
 
-XXX_get_customscript_file() {
+get_customscript_file() {
     local script_id="$1"
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].script" 2>/dev/null | head -1
 }
@@ -1397,55 +1221,6 @@ get_customscript_option_skip_inputs() {
     local script_id="$1"
     local option_id="$2"
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
-}
-
-# カスタムスクリプト情報を一括キャッシュする関数（新規追加）
-_cache_customscript_info() {
-    local script_id="$1"
-    local cache_key="CUSTOMSCRIPT_${script_id}"
-    
-    if eval "[ -n \"\${${cache_key}_CACHED}\" ]"; then
-        return 0
-    fi
-    
-    local script_json
-    script_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id']" 2>/dev/null | head -1)
-    
-    [ -z "$script_json" ] && return 1
-    
-    eval "${cache_key}_NAME=\"$(echo "$script_json" | jsonfilter -e '@.name' 2>/dev/null)\""
-    eval "${cache_key}_CLASS=\"$(echo "$script_json" | jsonfilter -e '@.class' 2>/dev/null)\""
-    eval "${cache_key}_FILE=\"$(echo "$script_json" | jsonfilter -e '@.script' 2>/dev/null)\""
-    eval "${cache_key}_CACHED=1"
-    
-    return 0
-}
-
-# 修正版：get_customscript_name
-get_customscript_name() {
-    local script_id="$1"
-    local cache_key="CUSTOMSCRIPT_${script_id}"
-    
-    _cache_customscript_info "$script_id" || return 1
-    
-    local class
-    eval "class=\"\${${cache_key}_CLASS}\""
-    
-    if [ -n "$class" ]; then
-        translate "$class"
-    else
-        eval "echo \"\${${cache_key}_NAME}\""
-    fi
-}
-
-# 修正版：get_customscript_file
-get_customscript_file() {
-    local script_id="$1"
-    local cache_key="CUSTOMSCRIPT_${script_id}"
-    
-    _cache_customscript_info "$script_id" || return 1
-    
-    eval "echo \"\${${cache_key}_FILE}\""
 }
 
 # =============================================================================
