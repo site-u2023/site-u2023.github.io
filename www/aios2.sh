@@ -2958,6 +2958,14 @@ aios2_main() {
     
     mkdir -p "$CONFIG_DIR"
     
+    # LuCIから言語設定を事前取得
+    if [ -f /etc/config/luci ]; then
+        AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
+        if [ "$AUTO_LANGUAGE" = "auto" ] || [ -z "$AUTO_LANGUAGE" ]; then
+            AUTO_LANGUAGE=""
+        fi
+    fi
+    
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
@@ -2990,6 +2998,13 @@ aios2_main() {
     
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
+    
+    # 言語ファイルのダウンロード（LuCIから取得した言語コードを使用）
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
     
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
@@ -3029,16 +3044,10 @@ aios2_main() {
         return 1
     fi
     
-    # デバイス情報取得（同期実行）
+    # デバイス情報取得（API情報で上書き）
     get_extended_device_info
     
-    # 母国語ファイルのダウンロード
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-    
+    # 母国語ファイルのダウンロード完了を待機
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
     fi
