@@ -2939,6 +2939,9 @@ aios2_main() {
     (download_api_with_retry) &
     API_PID=$!
     
+    # デバイス情報取得完了を待機
+    wait $DEVICE_INFO_PID
+    
     init
     
     # 並列グループ2（同時実行）
@@ -2965,9 +2968,6 @@ aios2_main() {
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
-    
-    # デバイス情報取得完了待機（母国語DL直前）
-    wait $DEVICE_INFO_PID
     
     # デバイスから取得した言語があれば並列ダウンロード開始
     NATIVE_LANG_PID=""
