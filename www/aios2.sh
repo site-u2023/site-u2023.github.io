@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1120"
+VERSION="R7.1208.1144"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -556,12 +556,27 @@ get_extended_device_info() {
     get_device_info
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
 
-    # LuCIから言語設定を取得
+    # LuCIから言語設定を事前取得
     if [ -f /etc/config/luci ]; then
-        local lang
-        lang=$(uci get luci.main.lang 2>/dev/null)
-        if [ -n "$lang" ] && [ "$lang" != "auto" ]; then
-            AUTO_LANGUAGE="$lang"
+        AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
+        if [ "$AUTO_LANGUAGE" = "auto" ]; then
+            # autoの場合、利用可能な言語（DL済み）を確認
+            local available_langs
+            available_langs=$(uci show luci.languages 2>/dev/null | grep -o "luci.languages.[^=]*" | cut -d. -f3)
+            local lang_count
+            lang_count=$(echo "$available_langs" | grep -c "^")
+            
+            if [ "$lang_count" -eq 1 ]; then
+                # 1つだけならそれを使用
+                AUTO_LANGUAGE="$available_langs"
+            else
+                # 複数ある場合、APIを待つ
+                AUTO_LANGUAGE=""
+            fi
+        fi
+        
+        if [ -z "$AUTO_LANGUAGE" ]; then
+            AUTO_LANGUAGE=""
         fi
     fi
     
@@ -3104,6 +3119,13 @@ aios2_main() {
     
     # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
+
+    # APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+            download_language_json "${AUTO_LANGUAGE}"
+        fi
+    fi
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
@@ -3114,7 +3136,7 @@ aios2_main() {
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     
     echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
-    
+
     if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
