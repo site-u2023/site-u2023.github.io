@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1344"
+VERSION="R7.1208.1427"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -456,7 +456,7 @@ download_api_with_retry() {
     return 0
 }
 
-get_language_code() {
+XXX_get_language_code() {
     # LuCIから言語設定を事前取得
     if [ -f /etc/config/luci ]; then
         AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
@@ -480,6 +480,29 @@ get_language_code() {
             AUTO_LANGUAGE=""
         fi
     fi
+}
+
+get_language_code() {
+    # uci呼び出しを1回に統合
+    local lang_data
+    lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
+    
+    AUTO_LANGUAGE=$(echo "$lang_data" | grep "^luci.main.lang=" | cut -d"'" -f2)
+    
+    if [ "$AUTO_LANGUAGE" = "auto" ]; then
+        local available_langs
+        available_langs=$(echo "$lang_data" | grep "^luci.languages\." | cut -d. -f3 | cut -d= -f1 | sort -u)
+        local lang_count
+        lang_count=$(echo "$available_langs" | wc -l)
+        
+        if [ "$lang_count" -eq 1 ]; then
+            AUTO_LANGUAGE="$available_langs"
+        else
+            AUTO_LANGUAGE=""
+        fi
+    fi
+    
+    [ -z "$AUTO_LANGUAGE" ] && AUTO_LANGUAGE=""
 }
 
 get_extended_device_info() {
@@ -2794,7 +2817,7 @@ show_log() {
     fi
 }
 
-aios2_main() {
+XXX_aios2_main() {
     
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -2934,6 +2957,217 @@ aios2_main() {
         AFTER_SOURCE=$(cut -d' ' -f1 /proc/uptime)
         SOURCE_DURATION=$(awk "BEGIN {printf \"%.3f\", $AFTER_SOURCE - $BEFORE_SOURCE}")
         echo "[TIME] Source duration: ${SOURCE_DURATION}s" >> "$CONFIG_DIR/debug.log"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        exit 1
+    fi
+    
+    echo ""
+    echo "Thank you for using aios2!"
+    echo ""
+}
+
+# =============================================================================
+# Download Management - Modular Approach
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Phase 1: Critical Files (Must complete before UI)
+# -----------------------------------------------------------------------------
+download_critical_files() {
+    local pids=""
+    local failed=0
+    
+    echo "[PHASE1] Starting critical file downloads..." >> "$CONFIG_DIR/debug.log"
+    
+    # API - Highest priority
+    (download_api_with_retry) &
+    local api_pid=$!
+    
+    # Setup JSON - Required for UI
+    (download_setup_json) &
+    local setup_pid=$!
+    
+    # Package JSON - Required for package selection
+    (download_postinst_json) &
+    local postinst_pid=$!
+    
+    # Wait for all critical files
+    wait $api_pid || failed=$((failed + 1))
+    wait $setup_pid || failed=$((failed + 1))
+    wait $postinst_pid || failed=$((failed + 1))
+    
+    if [ $failed -gt 0 ]; then
+        echo "[PHASE1] Failed to download $failed critical files" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    echo "[PHASE1] All critical files downloaded successfully" >> "$CONFIG_DIR/debug.log"
+    return 0
+}
+
+# -----------------------------------------------------------------------------
+# Phase 2: Language Files (Parallel with UI selection)
+# -----------------------------------------------------------------------------
+download_language_files() {
+    local target_lang="${1:-en}"
+    
+    echo "[PHASE2] Starting language file downloads..." >> "$CONFIG_DIR/debug.log"
+    
+    # English fallback (always needed)
+    (download_language_json "en" >/dev/null 2>&1) &
+    local en_pid=$!
+    
+    # Native language if different from English
+    local native_pid=""
+    if [ -n "$target_lang" ] && [ "$target_lang" != "en" ]; then
+        (download_language_json "$target_lang") &
+        native_pid=$!
+    fi
+    
+    # Wait for native language (UI needs this)
+    if [ -n "$native_pid" ]; then
+        wait $native_pid
+        echo "[PHASE2] Native language ($target_lang) downloaded" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # English can complete in background
+    # We'll wait for it later if needed
+    echo "$en_pid"  # Return PID for later wait if needed
+}
+
+# -----------------------------------------------------------------------------
+# Phase 3: UI Module Files (Parallel with language)
+# -----------------------------------------------------------------------------
+download_ui_modules() {
+    echo "[PHASE3] Starting UI module downloads..." >> "$CONFIG_DIR/debug.log"
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    
+    echo $!  # Return PID
+}
+
+# -----------------------------------------------------------------------------
+# Phase 4: Optional Files (Background, not blocking)
+# -----------------------------------------------------------------------------
+download_optional_files() {
+    echo "[PHASE4] Starting optional file downloads..." >> "$CONFIG_DIR/debug.log"
+    
+    local pids=""
+    
+    # Custom feeds
+    (download_customfeeds_json >/dev/null 2>&1) &
+    pids="$pids $!"
+    
+    # Custom scripts
+    (download_customscripts_json >/dev/null 2>&1) &
+    pids="$pids $!"
+    
+    # Templates
+    (prefetch_templates) &
+    pids="$pids $!"
+    
+    echo "$pids"  # Return all PIDs
+}
+
+# -----------------------------------------------------------------------------
+# Main Download Orchestration
+# -----------------------------------------------------------------------------
+orchestrate_downloads() {
+    local phase1_start phase2_start phase3_start phase4_start
+    local ui_pid optional_pids lang_en_pid
+    
+    # PHASE 1: Critical files (blocking)
+    phase1_start=$(cut -d' ' -f1 /proc/uptime)
+    if ! download_critical_files; then
+        echo "Cannot continue without critical files"
+        return 1
+    fi
+    echo "[TIME] Phase 1 (critical files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase1_start}")s" >> "$CONFIG_DIR/debug.log"
+    
+    # PHASE 2: Language files (parallel with UI selection)
+    phase2_start=$(cut -d' ' -f1 /proc/uptime)
+    lang_en_pid=$(download_language_files "$AUTO_LANGUAGE")
+    echo "[TIME] Phase 2 (language files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase2_start}")s" >> "$CONFIG_DIR/debug.log"
+    
+    # PHASE 3: UI modules (parallel)
+    phase3_start=$(cut -d' ' -f1 /proc/uptime)
+    ui_pid=$(download_ui_modules)
+    
+    # User selects UI mode while downloads continue
+    select_ui_mode
+    
+    # Wait for UI modules
+    wait $ui_pid
+    echo "[TIME] Phase 3 (UI modules): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase3_start}")s" >> "$CONFIG_DIR/debug.log"
+    
+    # PHASE 4: Optional files (background)
+    phase4_start=$(cut -d' ' -f1 /proc/uptime)
+    optional_pids=$(download_optional_files)
+    
+    # Get extended device info (needs API data)
+    get_extended_device_info
+    
+    # Download additional language if API returned different one
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+            download_language_json "$AUTO_LANGUAGE"
+        fi
+    fi
+    
+    # Wait for all optional files
+    for pid in $optional_pids $lang_en_pid; do
+        wait $pid 2>/dev/null
+    done
+    echo "[TIME] Phase 4 (optional files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase4_start}")s" >> "$CONFIG_DIR/debug.log"
+    
+    return 0
+}
+
+aios2_main() {
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
+    
+    clear
+    print_banner
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    # Bootstrap: Download config.js
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    # Initialize
+    init
+    detect_package_manager
+    
+    # Get initial language code from LuCI
+    get_language_code
+    
+    # Orchestrate all downloads in phases
+    if ! orchestrate_downloads; then
+        echo "Error: Download orchestration failed"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    # Apply UI-specific language modifications
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    fi
+    
+    # Load and run UI module
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
