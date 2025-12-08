@@ -3094,14 +3094,14 @@ orchestrate_downloads() {
     lang_en_pid=$(download_language_files "$AUTO_LANGUAGE")
     echo "[TIME] Phase 2 (language files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase2_start}")s" >> "$CONFIG_DIR/debug.log"
     
-    # PHASE 3: UI modules (parallel)
+    # PHASE 3: UI modules (start in background, don't wait yet)
     phase3_start=$(cut -d' ' -f1 /proc/uptime)
     ui_pid=$(download_ui_modules)
     
-    # User selects UI mode while downloads continue
+    # User selects UI mode immediately (downloads continue in background)
     select_ui_mode
     
-    # Wait for UI modules
+    # Now wait for UI modules to complete
     wait $ui_pid
     echo "[TIME] Phase 3 (UI modules): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase3_start}")s" >> "$CONFIG_DIR/debug.log"
     
