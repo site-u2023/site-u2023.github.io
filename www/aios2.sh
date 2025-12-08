@@ -3142,8 +3142,11 @@ aios2_main() {
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
     
+    echo "[DEBUG] About to source: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+    
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        echo "[DEBUG] Source complete: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
         aios2_${UI_MODE}_main
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
