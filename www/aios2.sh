@@ -3078,38 +3078,41 @@ download_optional_files() {
 # Main Download Orchestration
 # -----------------------------------------------------------------------------
 orchestrate_downloads() {
-    local phase1_start phase2_start phase3_start phase4_start
-    local ui_pid optional_pids lang_en_pid
+    local lang_en_pid native_lang_pid ui_pid optional_pids
     
     # PHASE 1: Critical files (blocking)
-    phase1_start=$(cut -d' ' -f1 /proc/uptime)
     if ! download_critical_files; then
         echo "Cannot continue without critical files"
         return 1
     fi
-    echo "[TIME] Phase 1 (critical files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase1_start}")s" >> "$CONFIG_DIR/debug.log"
     
-    # PHASE 2: Language files (parallel with UI selection)
-    phase2_start=$(cut -d' ' -f1 /proc/uptime)
-    lang_en_pid=$(download_language_files "$AUTO_LANGUAGE")
-    echo "[TIME] Phase 2 (language files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase2_start}")s" >> "$CONFIG_DIR/debug.log"
+    # PHASE 2: Language files (start in background)
+    (download_language_json "en" >/dev/null 2>&1) &
+    lang_en_pid=$!
     
-    # PHASE 3: UI modules (start in background, don't wait yet)
-    phase3_start=$(cut -d' ' -f1 /proc/uptime)
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "$AUTO_LANGUAGE") &
+        native_lang_pid=$!
+    fi
+    
+    # PHASE 3: UI modules (start in background)
     ui_pid=$(download_ui_modules)
     
-    # User selects UI mode immediately (downloads continue in background)
+    # Wait for native language only (UI needs this)
+    if [ -n "$native_lang_pid" ]; then
+        wait $native_lang_pid
+    fi
+    
+    # User selects UI mode immediately after native language is ready
     select_ui_mode
     
-    # Now wait for UI modules to complete
+    # Wait for UI modules (usually already complete by now)
     wait $ui_pid
-    echo "[TIME] Phase 3 (UI modules): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase3_start}")s" >> "$CONFIG_DIR/debug.log"
     
-    # PHASE 4: Optional files (background)
-    phase4_start=$(cut -d' ' -f1 /proc/uptime)
+    # PHASE 4: Optional files and device info (background)
     optional_pids=$(download_optional_files)
     
-    # Get extended device info (needs API data)
+    # Get extended device info (may update AUTO_LANGUAGE)
     get_extended_device_info
     
     # Download additional language if API returned different one
@@ -3123,7 +3126,6 @@ orchestrate_downloads() {
     for pid in $optional_pids $lang_en_pid; do
         wait $pid 2>/dev/null
     done
-    echo "[TIME] Phase 4 (optional files): $(awk "BEGIN {printf \"%.3f\", $(cut -d' ' -f1 /proc/uptime) - $phase4_start}")s" >> "$CONFIG_DIR/debug.log"
     
     return 0
 }
