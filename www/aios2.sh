@@ -456,29 +456,6 @@ download_api_with_retry() {
     return 0
 }
 
-XXX_get_language_code() {
-    # uci呼び出しを1回に統合
-    local lang_data
-    lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
-    
-    AUTO_LANGUAGE=$(echo "$lang_data" | grep "^luci.main.lang=" | cut -d"'" -f2)
-    
-    if [ "$AUTO_LANGUAGE" = "auto" ]; then
-        local available_langs
-        available_langs=$(echo "$lang_data" | grep "^luci.languages\." | cut -d. -f3 | cut -d= -f1 | sort -u)
-        local lang_count
-        lang_count=$(echo "$available_langs" | wc -l)
-        
-        if [ "$lang_count" -eq 1 ]; then
-            AUTO_LANGUAGE="$available_langs"
-        else
-            AUTO_LANGUAGE=""
-        fi
-    fi
-    
-    [ -z "$AUTO_LANGUAGE" ] && AUTO_LANGUAGE=""
-}
-
 get_language_code() {
     AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
     echo "[DEBUG] get_language_code: Initial AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
