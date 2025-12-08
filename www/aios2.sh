@@ -2999,7 +2999,7 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
-    # 言語ファイルのダウンロード（LuCIから取得した言語コードを使用）
+    # 母国語ファイルのダウンロード（LuCIから取得した言語コードを使用）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
@@ -3011,6 +3011,11 @@ aios2_main() {
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
+    
+    # 母国語ファイルのダウンロード完了を待機
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
     
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
@@ -3044,13 +3049,8 @@ aios2_main() {
         return 1
     fi
     
-    # デバイス情報取得（API情報で上書き）
+    # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
-    
-    # 母国語ファイルのダウンロード完了を待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
     
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
