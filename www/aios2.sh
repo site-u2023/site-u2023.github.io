@@ -456,7 +456,7 @@ download_api_with_retry() {
     return 0
 }
 
-get_language() {
+get_language_code() {
     # LuCIから言語設定を事前取得
     if [ -f /etc/config/luci ]; then
         AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
@@ -487,7 +487,7 @@ get_extended_device_info() {
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
 
     # LuCIから言語設定を事前取得
-    get_language
+    get_language_code
     
     # APIから値を抽出して変数に設定
     _set_api_value() {
@@ -2808,8 +2808,7 @@ aios2_main() {
     
     mkdir -p "$CONFIG_DIR"
     
-    # LuCIから言語設定を事前取得
-    get_language
+    get_language_code
     
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
