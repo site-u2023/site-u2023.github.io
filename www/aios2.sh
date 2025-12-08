@@ -388,23 +388,14 @@ XXX_download_language_json() {
 
 download_language_json() {
     local lang="${1:-en}"
-    local lang_url
+    local lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    local output_file="$CONFIG_DIR/lang_${lang}.json"
     
-    lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
-    
-    if [ "$lang" = "en" ]; then
-        LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
-        __download_file_core "$lang_url" "$LANG_JSON_EN" || return 1
-        # LANG_JSONが存在しない場合のみコピー
-        [ ! -f "$LANG_JSON" ] && cp "$LANG_JSON_EN" "$LANG_JSON"
-    else
-        __download_file_core "$lang_url" "$LANG_JSON" || return 1
-    fi
-    
-    return 0
+    __download_file_core "$lang_url" "$output_file"
+    return $?
 }
 
-translate() {
+XXX_translate() {
     local key="$1"
     local translation
 
@@ -434,6 +425,27 @@ translate() {
         fi
     fi
     
+    echo "$key"
+}
+
+translate() {
+    local key="$1"
+    local lang_file="$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    local translation
+    
+    # 母国語ファイルから検索
+    if [ -f "$lang_file" ]; then
+        translation=$(jsonfilter -i "$lang_file" -e "@['$key']" 2>/dev/null)
+        [ -n "$translation" ] && echo "$translation" && return 0
+    fi
+    
+    # フォールバック: 英語
+    if [ -f "$CONFIG_DIR/lang_en.json" ]; then
+        translation=$(jsonfilter -i "$CONFIG_DIR/lang_en.json" -e "@['$key']" 2>/dev/null)
+        [ -n "$translation" ] && echo "$translation" && return 0
+    fi
+    
+    # キーをそのまま返す
     echo "$key"
 }
 
