@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.0933"
+VERSION="R7.1208.1021"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2974,6 +2974,11 @@ aios2_main() {
         NATIVE_LANG_PID=$!
     fi
     
+    # 母国語ファイルのダウンロード完了を待機
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
+    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
@@ -3003,11 +3008,6 @@ aios2_main() {
         printf "Press [Enter] to exit. "
         read -r _
         return 1
-    fi
-
-    # 母国語ファイルのダウンロード待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
     fi
     
     wait $CUSTOMFEEDS_PID
