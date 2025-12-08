@@ -2913,9 +2913,6 @@ aios2_main() {
     (get_extended_device_info) &
     DEVICE_INFO_PID=$!
     
-    (download_api_with_retry) &
-    API_PID=$!
-    
     (__download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js") &
     CONFIG_PID=$!
     
@@ -2932,6 +2929,15 @@ aios2_main() {
         read -r _
         return 1
     fi
+    
+    # AUTO_CONFIG_API_URLをセット
+    if [ -z "$AUTO_CONFIG_API_URL" ]; then
+        AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_DIR/config.js" | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
+    fi
+    
+    # APIダウンロード開始
+    (download_api_with_retry) &
+    API_PID=$!
     
     init
     
