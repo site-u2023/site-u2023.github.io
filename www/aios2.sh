@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1427"
+VERSION="R7.1208.1513"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -456,7 +456,7 @@ download_api_with_retry() {
     return 0
 }
 
-XXXXXXXXXXXXXXXX_get_language_code() {
+XXX_get_language_code() {
     # uci呼び出しを1回に統合
     local lang_data
     lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
@@ -480,9 +480,9 @@ XXXXXXXXXXXXXXXX_get_language_code() {
 }
 
 get_language_code() {
-    # uci呼び出しを1回に統合
+    # uciコマンドを分割して実行
     local lang_data
-    lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
+    lang_data=$(uci show luci.main.lang 2>/dev/null; uci show luci.languages 2>/dev/null)
     
     AUTO_LANGUAGE=$(echo "$lang_data" | grep "^luci.main.lang=" | cut -d"'" -f2)
     echo "[DEBUG] get_language_code: Initial AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
