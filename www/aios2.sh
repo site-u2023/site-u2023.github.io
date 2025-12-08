@@ -2907,42 +2907,31 @@ aios2_main() {
         awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
     }
     
-    mkdir -p "$CONFIG_DIR"
-    
-    # config.jsダウンロード
-    (__download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js") &
-    CONFIG_PID=$!
-    
-    detect_package_manager
-    
     clear
     print_banner
     
-    # config.js DL完了待機
-    wait $CONFIG_PID
-    if [ $? -ne 0 ]; then
+    mkdir -p "$CONFIG_DIR"
+    
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
-    fi
+    }
     
-    # AUTO_CONFIG_API_URLをセット
+    # AUTO_CONFIG_API_URLをセット（ベタ書き優先）
     if [ -z "$AUTO_CONFIG_API_URL" ]; then
         AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_DIR/config.js" | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
     fi
     
-    # APIダウンロード開始して完了待機
-    (download_api_with_retry) &
-    API_PID=$!
-    wait $API_PID
-    
-    # API取得完了後にデバイス情報を取得
-    get_extended_device_info
-    
     init
     
-    # 並列グループ2（同時実行）
+    detect_package_manager
+    
+    # 全てのダウンロードをバックグラウンドで開始
+    (download_api_with_retry) &
+    API_PID=$!
+    
     (download_setup_json) &
     SETUP_PID=$!
     
@@ -2967,18 +2956,6 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # デバイスから取得した言語があれば並列ダウンロード開始
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-    
-    # 母国語ファイルのダウンロード完了を待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
-    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
@@ -2990,6 +2967,7 @@ aios2_main() {
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     # 必須ファイルの完了を待機
+    wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
@@ -3010,6 +2988,20 @@ aios2_main() {
         return 1
     fi
     
+    # デバイス情報取得（API完了後）
+    get_extended_device_info
+    
+    # 母国語ファイルのダウンロード
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
+    
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
@@ -3019,7 +3011,7 @@ aios2_main() {
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     
     echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
-
+    
     if [ "$UI_MODE" = "simple" ] && [ -f "$LANG_JSON" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$LANG_JSON"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$LANG_JSON"
@@ -3032,7 +3024,7 @@ aios2_main() {
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
     fi
-
+    
     echo ""
     echo "Thank you for using aios2!"
     echo ""
