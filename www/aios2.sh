@@ -114,7 +114,7 @@ print_banner() {
     fi
 }
 
-load_config_from_js() {
+XXX_load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     local CONFIG_CONTENT
     
@@ -125,6 +125,52 @@ load_config_from_js() {
     BASE_URL_PART=$(echo "$CONFIG_CONTENT" | grep "base_url:" | sed 's/.*"\([^"]*\)".*/\1/')
     BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep "base_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep "auto_config_api_url:" | sed 's/.*"\([^"]*\)".*/\1/')
+    PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "packages_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "postinst_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMFEEDS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "customfeeds_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    CUSTOMSCRIPTS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "customscripts_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    LANGUAGE_PATH_TEMPLATE=$(echo "$CONFIG_CONTENT" | grep "language_path_template:" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    SIMPLE_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "simple_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    WHIPTAIL_FALLBACK_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_fallback_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    
+    # BASE_URL を構築
+    BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
+    
+    # URL変数を構築
+    PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
+    POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
+    SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
+    SETUP_TEMPLATE_URL="${BASE_URL}/${SETUP_TEMPLATE_PATH}"
+    CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
+    CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
+    WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
+    
+    local CACHE_BUSTER="?t=$(date +%s)"
+    WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
+    SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
+    
+    {
+        echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
+        echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
+    } >> "$CONFIG_DIR/debug.log"
+    
+    return 0
+}
+
+load_config_from_js() {
+    local CONFIG_JS="$CONFIG_DIR/config.js"
+    local CONFIG_CONTENT
+    
+    # ファイルを1回だけ読み込み
+    CONFIG_CONTENT=$(cat "$CONFIG_JS")
+    
+    # 内容に対して grep（ファイルI/O が1回で済む）
+    BASE_URL_PART=$(echo "$CONFIG_CONTENT" | grep "base_url:" | sed 's/.*"\([^"]*\)".*/\1/')
+    BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep "base_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    [ -z "$AUTO_CONFIG_API_URL" ] && AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep "auto_config_api_url:" | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "packages_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "postinst_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -2791,7 +2837,7 @@ XXX_aios2_main() {
         read -r _
         return 1
     }
-    
+
     init
     
     detect_package_manager
@@ -2919,11 +2965,6 @@ aios2_main() {
         return 1
     }
     
-    # AUTO_CONFIG_API_URLをセット（ベタ書き優先）
-    if [ -z "$AUTO_CONFIG_API_URL" ]; then
-        AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_DIR/config.js" | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
-    fi
-    
     init
     
     detect_package_manager
@@ -2931,6 +2972,13 @@ aios2_main() {
     # 全てのダウンロードをバックグラウンドで開始
     (download_api_with_retry) &
     API_PID=$!
+    
+    # APIダウンロードと並列でデバイス情報を取得
+    (
+        wait $API_PID
+        get_extended_device_info
+    ) &
+    DEVICE_INFO_PID=$!
     
     (download_setup_json) &
     SETUP_PID=$!
@@ -2956,6 +3004,21 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
+    # デバイス情報取得完了を待機
+    wait $DEVICE_INFO_PID
+    
+    # 母国語ファイルのダウンロード（デバイス情報取得後）
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    # 母国語ファイルのダウンロード完了を待機
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
+    
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
@@ -2967,7 +3030,6 @@ aios2_main() {
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     # 必須ファイルの完了を待機
-    wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
@@ -2988,20 +3050,6 @@ aios2_main() {
         return 1
     fi
     
-    # デバイス情報取得（API完了後）
-    get_extended_device_info
-    
-    # 母国語ファイルのダウンロード（英語以外の場合）
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-    
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
-    
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
@@ -3018,8 +3066,7 @@ aios2_main() {
     fi
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
-        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        aios2_${UI_MODE}_main
+        . "$CONFIG_DIR/aios2-${UI_MODE}_main
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         exit 1
