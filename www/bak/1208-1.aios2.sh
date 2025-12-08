@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1144"
+VERSION="R7.1208.1300"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -3012,7 +3012,7 @@ XXX_aios2_main() {
     echo ""
 }
 
-aios2_main() {
+XXXX_aios2_main() {
     
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -3147,6 +3147,163 @@ aios2_main() {
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         echo "[DEBUG] Source complete: $(date +%s.%N)" >> "$CONFIG_DIR/debug.log"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        exit 1
+    fi
+    
+    echo ""
+    echo "Thank you for using aios2!"
+    echo ""
+}
+
+aios2_main() {
+    
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
+    
+    elapsed_time() {
+        local current=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
+    }
+    
+    clear
+    print_banner
+    
+    mkdir -p "$CONFIG_DIR"
+    
+    # LuCIから言語設定を事前取得
+    if [ -f /etc/config/luci ]; then
+        AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
+        if [ "$AUTO_LANGUAGE" = "auto" ] || [ -z "$AUTO_LANGUAGE" ]; then
+            AUTO_LANGUAGE=""
+        fi
+    fi
+    
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    init
+    
+    detect_package_manager
+    
+    # 全てのダウンロードをバックグラウンドで開始
+    (download_api_with_retry) &
+    API_PID=$!
+    
+    (download_setup_json) &
+    SETUP_PID=$!
+    
+    (download_postinst_json) &
+    POSTINST_PID=$!
+    
+    (download_customfeeds_json >/dev/null 2>&1) &
+    CUSTOMFEEDS_PID=$!
+    
+    (download_customscripts_json >/dev/null 2>&1) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    (prefetch_templates) &
+    TEMPLATES_PID=$!
+    
+    (download_language_json "en" >/dev/null 2>&1) &
+    LANG_EN_PID=$!
+    
+    # 母国語ファイルのダウンロード（LuCIから取得した言語コードを使用）
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    # 母国語ファイルのダウンロード完了を待機
+    if [ -n "$NATIVE_LANG_PID" ]; then
+        wait $NATIVE_LANG_PID
+    fi
+    
+    # UI表示前の時点で時間を記録
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    
+    # UI選択を即座に表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    echo "[TIME] UI selection duration: ${UI_DURATION}s" >> "$CONFIG_DIR/debug.log"
+    
+    AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
+    
+    # 必須ファイルの完了を待機
+    wait $API_PID
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    wait $UI_DL_PID
+    
+    if [ $SETUP_STATUS -ne 0 ]; then
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    if [ $POSTINST_STATUS -ne 0 ]; then
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    # デバイス情報取得（API情報で上書き・補完）
+    get_extended_device_info
+
+    # APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+            download_language_json "${AUTO_LANGUAGE}"
+        fi
+    fi
+    
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    wait $LANG_EN_PID
+    
+    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    
+    echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
+
+    BEFORE_SED=$(cut -d' ' -f1 /proc/uptime)
+    POST_UI_WAIT_DURATION=$(awk "BEGIN {printf \"%.3f\", $BEFORE_SED - $AFTER_UI_SELECT}")
+    echo "[TIME] Post-UI wait and processing: ${POST_UI_WAIT_DURATION}s" >> "$CONFIG_DIR/debug.log"
+
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    fi
+    
+    BEFORE_SOURCE=$(cut -d' ' -f1 /proc/uptime)
+    SED_DURATION=$(awk "BEGIN {printf \"%.3f\", $BEFORE_SOURCE - $BEFORE_SED}")
+    echo "[TIME] sed processing: ${SED_DURATION}s" >> "$CONFIG_DIR/debug.log"
+    
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        AFTER_SOURCE=$(cut -d' ' -f1 /proc/uptime)
+        SOURCE_DURATION=$(awk "BEGIN {printf \"%.3f\", $AFTER_SOURCE - $BEFORE_SOURCE}")
+        echo "[TIME] Source duration: ${SOURCE_DURATION}s" >> "$CONFIG_DIR/debug.log"
         aios2_${UI_MODE}_main
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
