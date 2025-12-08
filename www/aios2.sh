@@ -428,9 +428,16 @@ XXX_translate() {
 
 translate() {
     local key="$1"
-    local current_lang="${AUTO_LANGUAGE:-en}"
-    local lang_file="$CONFIG_DIR/lang_${current_lang}.json"
+    local lang="${AUTO_LANGUAGE:-en}"
+    local lang_file="$CONFIG_DIR/lang_${lang}.json"
     local translation
+    
+    # 言語が変わったらキャッシュをクリア
+    if [ "$_CURRENT_LANG" != "$lang" ]; then
+        unset _TRANSLATIONS_LOADED
+        unset _TRANSLATIONS_DATA
+        _CURRENT_LANG="$lang"
+    fi
     
     # キャッシュチェック
     if [ -z "$_TRANSLATIONS_LOADED" ]; then
@@ -448,7 +455,7 @@ translate() {
     fi
     
     # フォールバック: 英語
-    if [ "$current_lang" != "en" ] && [ -f "$CONFIG_DIR/lang_en.json" ]; then
+    if [ "$lang" != "en" ] && [ -f "$CONFIG_DIR/lang_en.json" ]; then
         if [ -z "$_TRANSLATIONS_EN_LOADED" ]; then
             _TRANSLATIONS_EN_DATA=$(cat "$CONFIG_DIR/lang_en.json" 2>/dev/null)
             _TRANSLATIONS_EN_LOADED=1
