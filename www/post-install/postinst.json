@@ -123,8 +123,19 @@
         },
         {
           "id": "luci-app-ddns",
-          "name": "luci-app-ddns"
+          "name": "luci-app-ddns",
+          "dependencies": ["wget-ssl", "bind-host"]
         },
+        {
+          "id": "wget-ssl",
+          "name": "wget-ssl",
+          "hidden": true        
+        },
+        {
+          "id": "bind-host",
+          "name": "bind-host",
+          "hidden": true        
+        },  
         {
           "id": "luci-app-tor",
           "name": "luci-app-tor"         
