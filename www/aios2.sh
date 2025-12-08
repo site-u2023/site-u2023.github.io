@@ -2919,6 +2919,8 @@ aios2_main() {
     (__download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js") &
     CONFIG_PID=$!
     
+    detect_package_manager
+    
     clear
     print_banner
     
@@ -2930,11 +2932,6 @@ aios2_main() {
         read -r _
         return 1
     fi
-    
-    load_config_from_js || {
-        echo "Fatal: Cannot load configuration"
-        return 1
-    }
     
     init
     
@@ -2957,7 +2954,13 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
-    # デバイス情報取得完了待機
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    # デバイス情報取得完了待機（母国語DL直前）
     wait $DEVICE_INFO_PID
     
     # デバイスから取得した言語があれば並列ダウンロード開始
@@ -2966,14 +2969,6 @@ aios2_main() {
         (download_language_json "${AUTO_LANGUAGE}") &
         NATIVE_LANG_PID=$!
     fi
-    
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    UI_DL_PID=$!
-    
-    detect_package_manager
     
     # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
