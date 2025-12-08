@@ -456,33 +456,7 @@ download_api_with_retry() {
     return 0
 }
 
-XXX_get_language_code() {
-    # LuCIから言語設定を事前取得
-    if [ -f /etc/config/luci ]; then
-        AUTO_LANGUAGE=$(uci get luci.main.lang 2>/dev/null)
-        if [ "$AUTO_LANGUAGE" = "auto" ]; then
-            # autoの場合、利用可能な言語（DL済み）を確認
-            local available_langs
-            available_langs=$(uci show luci.languages 2>/dev/null | grep -o "luci.languages.[^=]*" | cut -d. -f3)
-            local lang_count
-            lang_count=$(echo "$available_langs" | grep -c "^")
-            
-            if [ "$lang_count" -eq 1 ]; then
-                # 1つだけならそれを使用
-                AUTO_LANGUAGE="$available_langs"
-            else
-                # 複数ある場合、APIを待つ
-                AUTO_LANGUAGE=""
-            fi
-        fi
-        
-        if [ -z "$AUTO_LANGUAGE" ]; then
-            AUTO_LANGUAGE=""
-        fi
-    fi
-}
-
-get_language_code() {
+XXXXXXXXXXXXXXXX_get_language_code() {
     # uci呼び出しを1回に統合
     local lang_data
     lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
@@ -503,6 +477,35 @@ get_language_code() {
     fi
     
     [ -z "$AUTO_LANGUAGE" ] && AUTO_LANGUAGE=""
+}
+
+get_language_code() {
+    # uci呼び出しを1回に統合
+    local lang_data
+    lang_data=$(uci show luci.main.lang luci.languages 2>/dev/null)
+    
+    AUTO_LANGUAGE=$(echo "$lang_data" | grep "^luci.main.lang=" | cut -d"'" -f2)
+    echo "[DEBUG] get_language_code: Initial AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
+    
+    if [ "$AUTO_LANGUAGE" = "auto" ]; then
+        local available_langs
+        available_langs=$(echo "$lang_data" | grep "^luci.languages\." | cut -d. -f3 | cut -d= -f1 | sort -u)
+        local lang_count
+        lang_count=$(echo "$available_langs" | wc -l)
+        
+        echo "[DEBUG] get_language_code: available_langs='$available_langs', lang_count=$lang_count" >> "$CONFIG_DIR/debug.log"
+        
+        if [ "$lang_count" -eq 1 ]; then
+            AUTO_LANGUAGE="$available_langs"
+            echo "[DEBUG] get_language_code: Single language detected, AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
+        else
+            AUTO_LANGUAGE=""
+            echo "[DEBUG] get_language_code: Multiple languages detected, AUTO_LANGUAGE cleared" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+    
+    [ -z "$AUTO_LANGUAGE" ] && AUTO_LANGUAGE=""
+    echo "[DEBUG] get_language_code: Final AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
 }
 
 get_extended_device_info() {
