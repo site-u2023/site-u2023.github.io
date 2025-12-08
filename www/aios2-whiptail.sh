@@ -856,6 +856,53 @@ category_config() {
     return $RETURN_STAY
 }
 
+package_categories() {
+    local tr_main_menu tr_custom_packages breadcrumb
+    local menu_items i cat_id cat_name choice selected_cat is_hidden
+    local categories visible_categories
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_custom_packages=$(translate "tr-tui-packages")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_packages")
+    
+    categories=$(get_categories)
+    visible_categories=""
+    
+    while read -r cat_id; do
+        is_hidden=$(get_category_hidden "$cat_id")
+        [ "$is_hidden" = "true" ] && continue
+        visible_categories="${visible_categories}${cat_id}
+"
+    done <<EOF
+$categories
+EOF
+    
+    while true; do
+        menu_items="" 
+        i=1
+        
+        while read -r cat_id; do
+            [ -z "$cat_id" ] && continue
+            cat_name=$(get_category_name "$cat_id")
+            menu_items="$menu_items $i \"$cat_name\""
+            i=$((i+1))
+        done <<EOF
+$visible_categories
+EOF
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
+            package_selection "$selected_cat" "normal" "$breadcrumb"
+        fi
+    done
+}
+
 package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
