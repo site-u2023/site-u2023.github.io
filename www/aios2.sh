@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1208.1051"
+VERSION="R7.1208.1103"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -369,7 +369,7 @@ init() {
 
 # Language and Translation
 
-download_language_json() {
+XXX_download_language_json() {
     local lang="${1:-en}"
     local lang_url
     
@@ -379,6 +379,24 @@ download_language_json() {
         LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
         __download_file_core "$lang_url" "$LANG_JSON_EN" || return 1
         cp "$LANG_JSON_EN" "$LANG_JSON"
+    else
+        __download_file_core "$lang_url" "$LANG_JSON" || return 1
+    fi
+    
+    return 0
+}
+
+download_language_json() {
+    local lang="${1:-en}"
+    local lang_url
+    
+    lang_url="${BASE_URL}/$(echo "$LANGUAGE_PATH_TEMPLATE" | sed "s/{lang}/${lang}/")"
+    
+    if [ "$lang" = "en" ]; then
+        LANG_JSON_EN="$CONFIG_DIR/lang_en.json"
+        __download_file_core "$lang_url" "$LANG_JSON_EN" || return 1
+        # LANG_JSONが存在しない場合のみコピー
+        [ ! -f "$LANG_JSON" ] && cp "$LANG_JSON_EN" "$LANG_JSON"
     else
         __download_file_core "$lang_url" "$LANG_JSON" || return 1
     fi
