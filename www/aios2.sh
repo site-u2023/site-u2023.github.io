@@ -2991,7 +2991,7 @@ aios2_main() {
     # デバイス情報取得（API完了後）
     get_extended_device_info
     
-    # 母国語ファイルのダウンロード
+    # 母国語ファイルのダウンロード（英語以外の場合）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
