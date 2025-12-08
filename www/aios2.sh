@@ -2909,10 +2909,7 @@ aios2_main() {
     
     mkdir -p "$CONFIG_DIR"
     
-    # 並列グループ1（同時実行）
-    (get_extended_device_info) &
-    DEVICE_INFO_PID=$!
-    
+    # config.jsダウンロード
     (__download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js") &
     CONFIG_PID=$!
     
@@ -2935,12 +2932,13 @@ aios2_main() {
         AUTO_CONFIG_API_URL=$(grep "auto_config_api_url:" "$CONFIG_DIR/config.js" | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
     fi
     
-    # APIダウンロード開始
+    # APIダウンロード開始して完了待機
     (download_api_with_retry) &
     API_PID=$!
+    wait $API_PID
     
-    # デバイス情報取得完了を待機
-    wait $DEVICE_INFO_PID
+    # API取得完了後にデバイス情報を取得
+    get_extended_device_info
     
     init
     
@@ -2987,7 +2985,6 @@ aios2_main() {
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     # 必須ファイルの完了を待機
-    wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
     wait $POSTINST_PID
