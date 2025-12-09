@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2341"
+VERSION="R7.1209.2355"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -1141,22 +1141,13 @@ generate_yaml() {
     sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
     sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
     
-    local yaml_dir
-    yaml_dir="$(dirname "$yaml_path")"
-    if [ ! -d "$yaml_dir" ]; then
-        if ! mkdir -p "$yaml_dir"; then
-            printf "\033[1;31mFailed to create directory: %s\033[0m\n" "$yaml_dir"
-            rm -f "$yaml_tmp"
-            return 1
-        fi
-    fi
-    
+    # Move to final location
     if ! mv "$yaml_tmp" "$yaml_path"; then
         printf "\033[1;31mFailed to move YAML file to: %s\033[0m\n" "$yaml_path"
         rm -f "$yaml_tmp"
         return 1
     fi
-    
+
     if ! chmod 600 "$yaml_path"; then
         printf "\033[1;31mFailed to set permissions on: %s\033[0m\n" "$yaml_path"
         return 1
@@ -1165,21 +1156,16 @@ generate_yaml() {
     # Set ownership for OpenWrt package version
     if [ "$SERVICE_NAME" = "adguardhome" ]; then
         if id adguardhome >/dev/null 2>&1; then
-            if ! chown adguardhome:adguardhome "$yaml_path"; then
-                printf "\033[1;33mWarning: Failed to set ownership on: %s\033[0m\n" "$yaml_path"
-            fi
+            chown adguardhome:adguardhome "$yaml_path"
             
             # Set ownership for parent directory (apk/SNAPSHOT only)
             if [ "$PACKAGE_MANAGER" = "apk" ]; then
-                if [ -d "/etc/adguardhome" ]; then
-                    chown adguardhome:adguardhome /etc/adguardhome 2>/dev/null || true
-                fi
+                [ -d "/etc/adguardhome" ] && chown adguardhome:adguardhome /etc/adguardhome
             fi
         fi
     fi
     
     printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
-    return 0
 }
 
 # =============================================================================
