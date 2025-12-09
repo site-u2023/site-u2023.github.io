@@ -758,6 +758,105 @@ install_cacertificates() {
     esac
 }
 
+# =============================================================================
+# Download Module
+# =============================================================================
+
+# Download large binary file with resume support and progress bar
+# Args:
+#   $1 - URL
+#   $2 - Output file path
+#   $3 - Optional: wget additional options (e.g., "--no-check-certificate")
+# Returns:
+#   0 - Success
+#   1 - Failed
+# Usage:
+#   download_file "https://example.com/file.tar.gz" "/tmp/file.tar.gz"
+#   download_file "https://example.com/file.tar.gz" "/tmp/file.tar.gz" "--no-check-certificate"
+download_file() {
+    local url="$1"
+    local output="$2"
+    local extra_opts="${3:-}"
+    
+    printf "Downloading: %s\n" "$url"
+    
+    # shellcheck disable=SC2086
+    if ! wget -c --timeout=30 --tries=3 --progress=bar:force $extra_opts "$url" -O "$output"; then
+        printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
+        rm -f "$output"
+        return 1
+    fi
+    
+    # Verify downloaded file
+    if [ ! -s "$output" ]; then
+        printf "\033[1;31mDownloaded file is empty or missing.\033[0m\n"
+        rm -f "$output"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Download small index/HTML page (quiet mode, no progress bar)
+# Args:
+#   $1 - URL
+#   $2 - Output file path
+# Returns:
+#   0 - Success
+#   1 - Failed
+# Usage:
+#   download_index "https://downloads.openwrt.org/packages/" "/tmp/index.html"
+download_index() {
+    local url="$1"
+    local output="$2"
+    
+    if ! wget -q --timeout=15 "$url" -O "$output"; then
+        printf "\033[1;31mFailed to fetch index from: %s\033[0m\n" "$url"
+        rm -f "$output"
+        return 1
+    fi
+    
+    # Verify downloaded file
+    if [ ! -s "$output" ]; then
+        printf "\033[1;31mDownloaded index is empty.\033[0m\n"
+        rm -f "$output"
+        return 1
+    fi
+    
+    return 0
+}
+
+# Download text file (YAML, config, script, etc.) with SSL fallback
+# Args:
+#   $1 - URL
+#   $2 - Output file path
+# Returns:
+#   0 - Success
+#   1 - Failed
+# Usage:
+#   download_text_file "https://example.com/config.yaml" "/tmp/config.yaml"
+download_text_file() {
+    local url="$1"
+    local output="$2"
+    
+    # Try with SSL verification first, then without
+    if ! { wget -q --timeout=15 -O "$output" "$url" || \
+           wget -q --timeout=15 --no-check-certificate -O "$output" "$url"; }; then
+        printf "\033[1;31mFailed to download from: %s\033[0m\n" "$url"
+        rm -f "$output"
+        return 1
+    fi
+    
+    # Verify downloaded file
+    if [ ! -s "$output" ]; then
+        printf "\033[1;31mDownloaded file is empty or missing.\033[0m\n"
+        rm -f "$output"
+        return 1
+    fi
+    
+    return 0
+}
+
 XXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
     
@@ -795,7 +894,7 @@ XXX_install_openwrt() {
     SERVICE_NAME="adguardhome"
 }
 
-install_openwrt() {
+XXXXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
 
     case "$PACKAGE_MANAGER" in
@@ -821,10 +920,7 @@ install_openwrt() {
             printf "Fetching apk index: %s\n" "$BASEURL"
 
             INDEX="/tmp/agh_index_apk.html"
-            wget -q "${BASEURL}/" -O "$INDEX"
-            RET=$?
-
-            if [ "$RET" -ne 0 ]; then
+            if ! wget -q --timeout=15 "${BASEURL}/" -O "$INDEX"; then
                 printf "\033[1;31mFailed to fetch apk index. Falling back to official.\033[0m\n"
                 install_official
                 return
@@ -841,16 +937,26 @@ install_openwrt() {
             FULLURL="${BASEURL}/${PKG_NAME}"
             printf "Downloading with resume support: %s\n" "$FULLURL"
 
-            if ! wget -c "$FULLURL" -O /tmp/adguardhome.apk; then
-                printf "\033[1;31mDownload failed.\033[0m\n"
-                return
+            if ! wget -c --timeout=30 --tries=3 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.apk; then
+                printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
+                return 1
+            fi
+
+            # Verify downloaded file
+            if [ ! -s /tmp/adguardhome.apk ]; then
+                printf "\033[1;31mDownloaded file is empty or missing.\033[0m\n"
+                return 1
             fi
 
             printf "Installing local apk package...\n"
             if ! apk add --allow-untrusted /tmp/adguardhome.apk; then
                 printf "\033[1;31mLocal apk install failed.\033[0m\n"
-                return
+                rm -f /tmp/adguardhome.apk
+                return 1
             fi
+
+            # Cleanup after successful install
+            rm -f /tmp/adguardhome.apk
 
             printf "\033[1;32madguardhome %s has been installed (local apk)\033[0m\n" "$PKG_VER"
             ;;
@@ -871,10 +977,13 @@ install_openwrt() {
             BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
 
             INDEX="/tmp/agh_index.txt"
-            wget -q "${BASEURL}/" -O "$INDEX"
+            if ! wget -q --timeout=15 "${BASEURL}/" -O "$INDEX"; then
+                printf "\033[1;31mFailed to fetch opkg index. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
 
             PKGNAME=$(grep -o 'adguardhome[^">]*\.ipk' "$INDEX" | sort | tail -n1)
-
 
             if [ -z "$PKGNAME" ]; then
                 printf "\033[1;31mFailed to determine ipk filename. Falling back to official.\033[0m\n"
@@ -883,18 +992,28 @@ install_openwrt() {
             fi
 
             FULLURL="${BASEURL}/${PKGNAME}"
-            printf "Downloading (resume supported): %s\n" "$FULLURL"
+            printf "Downloading with resume support: %s\n" "$FULLURL"
 
-            if ! wget -c "$FULLURL" -O /tmp/adguardhome.ipk; then
-                printf "\033[1;31mDownload failed.\033[0m\n"
-                return
+            if ! wget -c --timeout=30 --tries=3 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.ipk; then
+                printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
+                return 1
+            fi
+
+            # Verify downloaded file
+            if [ ! -s /tmp/adguardhome.ipk ]; then
+                printf "\033[1;31mDownloaded file is empty or missing.\033[0m\n"
+                return 1
             fi
 
             printf "Installing local ipk package...\n"
             if ! opkg install /tmp/adguardhome.ipk; then
                 printf "\033[1;31mLocal install failed.\033[0m\n"
-                return
+                rm -f /tmp/adguardhome.ipk
+                return 1
             fi
+
+            # Cleanup after successful install
+            rm -f /tmp/adguardhome.ipk
 
             printf "\033[1;32madguardhome %s has been installed (local ipk)\033[0m\n" "$PKG_VER"
             ;;
@@ -903,8 +1022,110 @@ install_openwrt() {
     SERVICE_NAME="adguardhome"
 }
 
+install_openwrt() {
+    printf "Installing adguardhome (OpenWrt package)\n"
 
-install_official() {
+    case "$PACKAGE_MANAGER" in
+        apk)
+            printf "Checking apk repository for adguardhome...\n"
+
+            PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            ARCH=$(awk -F"'" '/DISTRIB_ARCH/{print $2}' /etc/openwrt_release)
+            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
+
+            if [ "$VER" = "SNAPSHOT" ]; then
+                BASEURL="https://downloads.openwrt.org/snapshots/packages/${ARCH}/packages"
+            else
+                BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
+            fi
+
+            INDEX="/tmp/agh_index_apk.html"
+            if ! download_index "${BASEURL}/" "$INDEX"; then
+                printf "\033[1;31mFalling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            PKG_NAME=$(grep -o 'adguardhome-[0-9A-Za-z._\-]*\.apk' "$INDEX" | sort | tail -n1)
+            if [ -z "$PKG_NAME" ]; then
+                printf "\033[1;31mFailed to determine apk filename. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            FULLURL="${BASEURL}/${PKG_NAME}"
+            
+            if ! download_file "$FULLURL" /tmp/adguardhome.apk; then
+                return 1
+            fi
+
+            printf "Installing local apk package...\n"
+            if ! apk add --allow-untrusted /tmp/adguardhome.apk; then
+                printf "\033[1;31mLocal apk install failed.\033[0m\n"
+                rm -f /tmp/adguardhome.apk
+                return 1
+            fi
+
+            rm -f /tmp/adguardhome.apk
+            printf "\033[1;32madguardhome %s has been installed (local apk)\033[0m\n" "$PKG_VER"
+            ;;
+
+        opkg)
+            printf "Checking opkg repository for adguardhome...\n"
+
+            PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
+                install_official
+                return
+            fi
+
+            ARCH=$(opkg print-architecture | awk 'END{print $2}')
+            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
+            BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
+
+            INDEX="/tmp/agh_index.txt"
+            if ! download_index "${BASEURL}/" "$INDEX"; then
+                printf "\033[1;31mFalling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            PKGNAME=$(grep -o 'adguardhome[^">]*\.ipk' "$INDEX" | sort | tail -n1)
+            if [ -z "$PKGNAME" ]; then
+                printf "\033[1;31mFailed to determine ipk filename. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            FULLURL="${BASEURL}/${PKGNAME}"
+            
+            if ! download_file "$FULLURL" /tmp/adguardhome.ipk; then
+                return 1
+            fi
+
+            printf "Installing local ipk package...\n"
+            if ! opkg install /tmp/adguardhome.ipk; then
+                printf "\033[1;31mLocal install failed.\033[0m\n"
+                rm -f /tmp/adguardhome.ipk
+                return 1
+            fi
+
+            rm -f /tmp/adguardhome.ipk
+            printf "\033[1;32madguardhome %s has been installed (local ipk)\033[0m\n" "$PKG_VER"
+            ;;
+    esac
+
+    SERVICE_NAME="adguardhome"
+}
+
+XXXXX_install_official() {
     local ARCH
     
     CA="--no-check-certificate"
@@ -937,6 +1158,60 @@ install_official() {
     
     tar -C /etc/ -xzf "/etc/AdGuardHome/${TAR}"
     rm "/etc/AdGuardHome/${TAR}"
+    chmod +x /etc/AdGuardHome/AdGuardHome
+    SERVICE_NAME="AdGuardHome"
+    
+    /etc/AdGuardHome/AdGuardHome -s install >/dev/null 2>&1 || {
+        printf "\033[1;31mInitialization failed. Check AdGuardHome.yaml and port availability.\033[0m\n"
+        exit 1
+    }
+    chmod 700 /etc/"$SERVICE_NAME"
+}
+
+install_official() {
+    local ARCH
+    
+    CA="--no-check-certificate"
+    URL="https://api.github.com/repos/AdguardTeam/AdGuardHome/releases/latest"
+    
+    # Get version from GitHub API
+    VER=$( { wget -q -O - "$URL" || wget -q "$CA" -O - "$URL"; } | jsonfilter -e '@.tag_name' )
+    [ -n "$VER" ] || { 
+        printf "\033[1;31mError: Failed to get AdGuardHome version from GitHub API.\033[0m\n"
+        exit 1
+    }
+    
+    mkdir -p /etc/AdGuardHome
+    
+    # Determine architecture
+    case "$(uname -m)" in
+        aarch64|arm64) ARCH=arm64 ;;
+        armv7l)        ARCH=armv7 ;;
+        armv6l)        ARCH=armv6 ;;
+        armv5l)        ARCH=armv5 ;;
+        x86_64|amd64)  ARCH=amd64 ;;
+        i386|i686)     ARCH=386 ;;
+        mips)          ARCH=mipsle ;;
+        mips64)        ARCH=mips64le ;;
+        *) printf "Unsupported arch: %s\n" "$(uname -m)"; exit 1 ;;
+    esac
+    
+    TAR="AdGuardHome_linux_${ARCH}.tar.gz"
+    URL2="https://github.com/AdguardTeam/AdGuardHome/releases/download/${VER}/${TAR}"
+    DEST="/etc/AdGuardHome/${TAR}"
+    
+    printf "Downloading AdGuardHome (official binary)\n"
+    
+    # Use download_file helper
+    if ! download_file "$URL2" "$DEST" "$CA"; then
+        printf '\033[1;31mDownload failed. Please check network connection.\033[0m\n'
+        exit 1
+    fi
+    
+    printf "\033[1;32mAdGuardHome %s has been downloaded\033[0m\n" "$VER"
+    
+    tar -C /etc/ -xzf "$DEST"
+    rm "$DEST"
     chmod +x /etc/AdGuardHome/AdGuardHome
     SERVICE_NAME="AdGuardHome"
     
@@ -998,7 +1273,7 @@ generate_password_hash() {
 # YAML Configuration
 # =============================================================================
 
-generate_yaml() {
+XXXXX_generate_yaml() {
     local yaml_path yaml_template_url yaml_tmp
     
     if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
@@ -1023,6 +1298,40 @@ generate_yaml() {
     sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
     sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
     
+    mv "$yaml_tmp" "$yaml_path"
+    chmod 600 "$yaml_path"
+    
+    printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
+}
+
+generate_yaml() {
+    local yaml_path yaml_template_url yaml_tmp
+    
+    if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
+        yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
+    else
+        yaml_path="/etc/adguardhome.yaml"
+    fi
+    
+    yaml_template_url="${SCRIPT_BASE_URL}/adguardhome.yaml"
+    yaml_tmp="/tmp/adguardhome.yaml.tmp"
+    
+    printf "\033[1;34mDownloading AdGuard Home configuration template\033[0m\n"
+    
+    # Use helper function
+    if ! download_text_file "$yaml_template_url" "$yaml_tmp"; then
+        printf "\033[1;31mFailed to download YAML template.\033[0m\n"
+        return 1
+    fi
+    
+    # Replace placeholders
+    sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
+    sed -i "s|{{AGH_PASS_HASH}}|${AGH_PASS_HASH}|g" "$yaml_tmp"
+    sed -i "s|{{DNS_PORT}}|${DNS_PORT}|g" "$yaml_tmp"
+    sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
+    sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
+    
+    # Move to final location
     mv "$yaml_tmp" "$yaml_path"
     chmod 600 "$yaml_path"
     
