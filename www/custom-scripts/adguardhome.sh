@@ -472,7 +472,7 @@ update_credentials() {
     
     if ! detect_adguardhome_service; then
         printf "\033[1;31mAdGuard Home not found.\033[0m\n"
-        exit 1
+        return 1
     fi
     
     CONFIG_FILE="$DETECTED_CONFIG_FILE"
@@ -522,14 +522,14 @@ update_credentials() {
             printf "\033[1;31mhtpasswd not found. Installing dependencies...\033[0m\n"
             install_dependencies || {
                 printf "\033[1;31mFailed to install htpasswd. Cannot update password.\033[0m\n"
-                exit 1
+                return 1
             }
         fi
         
         NEW_PASS_HASH=$(htpasswd -B -n -b "" "$NEW_PASS" 2>/dev/null | cut -d: -f2)
         if [ -z "$NEW_PASS_HASH" ]; then
             printf "\033[1;31mFailed to generate password hash.\033[0m\n"
-            exit 1
+            return 1
         fi
     fi
     
@@ -978,10 +978,10 @@ EOF
     
     uci commit dhcp
     
-    # restart_service dnsmasq || exit 1
-    # restart_service odhcpd || exit 1
+    restart_service dnsmasq || exit 1
+    restart_service odhcpd || exit 1
     /etc/init.d/"$SERVICE_NAME" enable
-    # /etc/init.d/"$SERVICE_NAME" start
+    /etc/init.d/"$SERVICE_NAME" start
     
     printf "Router IPv4: %s\n" "$NET_ADDR"
     if [ -z "$NET_ADDR6_LIST" ]; then
@@ -1122,7 +1122,7 @@ EOF
 
     printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
     
-    prompt_reboot
+    # prompt_reboot
 }
 
 # =============================================================================
@@ -1155,7 +1155,8 @@ get_access() {
     printf "\033[1;33m  Password: %s\033[0m\n" "$AGH_PASS"
     printf "\033[1;32m========================================\033[0m\n"
     
-    printf "\033[1;33mNote: Web interface will be available after reboot\033[0m\n\n"
+    # printf "\033[1;33mNote: Web interface will be available after reboot\033[0m\n\n"
+    printf "\033[1;32mWeb interface is now available:\033[0m\n\n"
     
     printf "\033[1;32mWeb interface IPv4:\033[0m\n"
     printf "  http://%s:%s/\n" "$NET_ADDR" "$port"
@@ -1268,7 +1269,7 @@ adguardhome_main() {
         printf "\n\033[1;32mAdGuard Home installed. Configure via web interface.\033[0m\n"
         printf "Access: http://%s:3000/\n" "$NET_ADDR"
         
-        prompt_reboot
+        # prompt_reboot
     fi
     
     # Install dependencies (htpasswd)
@@ -1307,7 +1308,7 @@ adguardhome_main() {
     printf "\n\033[1;32mAdGuard Home installation and configuration completed successfully.\033[0m\n\n"
     get_access
     
-    prompt_reboot
+    # prompt_reboot
 }
 
 # =============================================================================
