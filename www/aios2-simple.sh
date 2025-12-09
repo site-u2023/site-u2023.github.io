@@ -449,11 +449,7 @@ EOF
             fi
         done
         
-        # needs_reboot_check を rm の前に実行
-        local needs_reboot
-        needs_reboot=$(needs_reboot_check)
-        
-        # script_vars を削除（needs_reboot_check の後）
+        # script_vars を削除
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
@@ -464,16 +460,8 @@ EOF
 
 Warning: $failed_count script(s) failed:
 $failed_scripts"
-        fi
-        
-        if [ "$needs_reboot" -eq 1 ]; then
-            if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
-                reboot
-            fi
         else
-            if [ "$failed_count" -eq 0 ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-            fi
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
         fi
     fi
     
