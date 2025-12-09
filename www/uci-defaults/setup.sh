@@ -391,10 +391,8 @@ fi
 }
 [ -n "${enable_adguardhome}" ] && {
 local agh_yaml="/etc/adguardhome.yaml"
-local cfg_net="/etc/config/network"
 local cfg_dhcp="/etc/config/dhcp"
 local cfg_fw="/etc/config/firewall"
-cp "$cfg_net" "$cfg_net.adguard.bak"
 cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
 cp "$cfg_fw" "$cfg_fw.adguard.bak"
 local agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
