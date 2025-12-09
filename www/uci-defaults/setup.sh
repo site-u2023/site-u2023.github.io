@@ -305,6 +305,69 @@ fi
         SET "$IDX".enabled='1'
     }
 }
+[ -n "${enable_usb_rndis}" ] && {
+    printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
+    local SEC=network
+    ADDLIST @device[0].ports='usb0'
+}
+[ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
+    echo 'dtoverlay=dwc2' >> /boot/config.txt
+    sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
+    printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
+    local SEC=network
+    ADDLIST @device[0].ports='usb0'
+}
+[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
+    C=/etc/sysctl.d/99-net-opt.conf
+    P=$(grep -c ^processor /proc/cpuinfo)
+    
+    [ "${net_optimizer}" = "auto" ] && {
+        if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ $MEM -ge  400 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
+        fi
+        [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
+        [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
+        CONG=cubic
+    }
+    
+    [ "${net_optimizer}" = "manual" ] && {
+        R=$(echo "${netopt_rmem}" | awk '{print $3}')
+        W=$(echo "${netopt_wmem}" | awk '{print $3}')
+        TR="${netopt_rmem}"
+        TW="${netopt_wmem}"
+        CT="${netopt_conntrack}"
+        NB="${netopt_backlog}"
+        SC="${netopt_somaxconn}"
+        CONG="${netopt_congestion:-cubic}"
+    }
+    
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+    "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
+    sysctl -p "$C"
+}
+[ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
+    local SEC=dhcp
+    
+    [ "${enable_dnsmasq}" = "auto" ] && {
+        if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
+        elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
+        elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
+        fi
+        NEG_CACHE=1
+    }
+    
+    [ "${enable_dnsmasq}" = "manual" ] && {
+        CACHE_SIZE="${dnsmasq_cache}"
+        NEG_CACHE="${dnsmasq_negcache}"
+    }
+    
+    SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
+    SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
+}
+[ -n "${enable_sd_resize}" ] && {
+    :
+}
 [ -n "${enable_htpasswd}" ] && {
     [ -z "${apache_keep}" ] && {
         local htpasswd_bin="/usr/bin/htpasswd"
@@ -465,69 +528,6 @@ ADDLIST ${agh_rule}.proto='udp'
 SET ${agh_rule}.src_dport="${agh_dns_port}"
 SET ${agh_rule}.dest_port="${agh_dns_port}"
 SET ${agh_rule}.target='DNAT'
-}
-[ -n "${enable_usb_rndis}" ] && {
-    printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-    local SEC=network
-    ADDLIST @device[0].ports='usb0'
-}
-[ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
-    echo 'dtoverlay=dwc2' >> /boot/config.txt
-    sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    local SEC=network
-    ADDLIST @device[0].ports='usb0'
-}
-[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
-    C=/etc/sysctl.d/99-net-opt.conf
-    P=$(grep -c ^processor /proc/cpuinfo)
-    
-    [ "${net_optimizer}" = "auto" ] && {
-        if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-        elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
-        elif [ $MEM -ge  400 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
-        fi
-        [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
-        [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-        CONG=cubic
-    }
-    
-    [ "${net_optimizer}" = "manual" ] && {
-        R=$(echo "${netopt_rmem}" | awk '{print $3}')
-        W=$(echo "${netopt_wmem}" | awk '{print $3}')
-        TR="${netopt_rmem}"
-        TW="${netopt_wmem}"
-        CT="${netopt_conntrack}"
-        NB="${netopt_backlog}"
-        SC="${netopt_somaxconn}"
-        CONG="${netopt_congestion:-cubic}"
-    }
-    
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
-    "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
-    sysctl -p "$C"
-}
-[ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
-    local SEC=dhcp
-    
-    [ "${enable_dnsmasq}" = "auto" ] && {
-        if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
-        elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
-        elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
-        fi
-        NEG_CACHE=1
-    }
-    
-    [ "${enable_dnsmasq}" = "manual" ] && {
-        CACHE_SIZE="${dnsmasq_cache}"
-        NEG_CACHE="${dnsmasq_negcache}"
-    }
-    
-    SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
-    SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
-}
-[ -n "${enable_sd_resize}" ] && {
-    :
 }
 # BEGIN_CMDS
 # END_CMDS
