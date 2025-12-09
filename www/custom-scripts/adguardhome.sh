@@ -1087,8 +1087,8 @@ EOF
     
     uci commit dhcp
     
-    restart_service dnsmasq || exit 1
-    restart_service odhcpd || exit 1
+    restart_service dnsmasq || { restore_defaults; exit 1; }
+    restart_service odhcpd || { restore_defaults; exit 1; }
     /etc/init.d/"$SERVICE_NAME" enable
     /etc/init.d/"$SERVICE_NAME" start
     
@@ -1128,6 +1128,40 @@ EOF
     restart_service firewall || exit 1
     
     printf "\033[1;32mFirewall configuration completed\033[0m\n"
+}
+
+# =============================================================================
+# Configuration Restore Module
+# =============================================================================
+
+# Restore network configuration to OpenWrt defaults
+# This ensures network connectivity even if installation fails
+restore_defaults() {
+    printf "\033[1;31mRestoring network configuration to defaults\033[0m\n"
+    
+    # Restore dnsmasq
+    uci batch << EOF 2>/dev/null
+del dhcp.@dnsmasq[0].noresolv
+del dhcp.@dnsmasq[0].cachesize
+del dhcp.@dnsmasq[0].rebind_protection
+set dhcp.@dnsmasq[0].port='53'
+del dhcp.@dnsmasq[0].server
+del dhcp.lan.dhcp_option
+del dhcp.lan.dhcp_option6
+commit dhcp
+EOF
+    
+    # Remove firewall rule
+    local rule_name="adguardhome_dns_${DNS_PORT:-53}"
+    uci -q delete firewall."$rule_name" 2>/dev/null
+    uci commit firewall 2>/dev/null
+    
+    # Restart services
+    restart_service dnsmasq 2>/dev/null
+    restart_service odhcpd 2>/dev/null
+    restart_service firewall 2>/dev/null
+    
+    printf "\033[1;32mDefaults restored\033[0m\n"
 }
 
 # =============================================================================
@@ -1201,20 +1235,8 @@ remove_adguardhome() {
     done
     
     # Restore defaults if no backup
-    if [ ! -f "/etc/config/dhcp.adguard.bak" ]; then
-        printf "\033[1;34mRestoring dnsmasq to default configuration\033[0m\n"
-        uci batch << EOF 2>/dev/null
-del dhcp.@dnsmasq[0].noresolv
-del dhcp.@dnsmasq[0].cachesize
-del dhcp.@dnsmasq[0].rebind_protection
-set dhcp.@dnsmasq[0].port='53'
-del dhcp.@dnsmasq[0].server
-del dhcp.lan.dhcp_option
-del dhcp.lan.dhcp_option6
-commit dhcp
-EOF
-    fi
-    
+    restore_dnsmasq_defaults
+
     # Remove firewall rule
     rule_name="adguardhome_dns_${DNS_PORT:-53}"
     if uci -q get firewall."$rule_name" >/dev/null 2>&1; then
