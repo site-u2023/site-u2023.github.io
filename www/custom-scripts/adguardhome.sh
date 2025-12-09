@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.1449"
+VERSION="R7.1209.1857"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -1087,8 +1087,8 @@ EOF
     
     uci commit dhcp
     
-    restart_service dnsmasq || { restore_defaults; exit 1; }
-    restart_service odhcpd || { restore_defaults; exit 1; }
+    restart_service dnsmasq || { rollback_to_backup; exit 1; }
+    restart_service odhcpd || { rollback_to_backup; exit 1; }
     /etc/init.d/"$SERVICE_NAME" enable
     /etc/init.d/"$SERVICE_NAME" start
     
@@ -1133,6 +1133,24 @@ EOF
 # =============================================================================
 # Configuration Restore Module
 # =============================================================================
+
+# Rollback to backup files (for installation errors)
+rollback_to_backup() {
+    printf "\033[1;31mRolling back to backup configuration\033[0m\n"
+    
+    for cfg in network dhcp firewall; do
+        bak="/etc/config/${cfg}.adguard.bak"
+        if [ -f "$bak" ]; then
+            cp "$bak" "/etc/config/${cfg}"
+        fi
+    done
+    
+    restart_service dnsmasq 2>/dev/null
+    restart_service odhcpd 2>/dev/null
+    restart_service firewall 2>/dev/null
+    
+    printf "\033[1;32mRollback completed\033[0m\n"
+}
 
 # Restore network configuration to OpenWrt defaults
 # This ensures network connectivity even if installation fails
@@ -1225,17 +1243,17 @@ remove_adguardhome() {
         fi
     fi
 
-    for cfg in network dhcp firewall; do
-        bak="/etc/config/${cfg}.adguard.bak"
-        if [ -f "$bak" ]; then
-            printf "\033[1;34mRestoring %s configuration from backup\033[0m\n" "$cfg"
-            cp "$bak" "/etc/config/${cfg}"
-            rm -f "$bak"
-        fi
-    done
-    
-    # Restore defaults if no backup
-    restore_dnsmasq_defaults
+    # Restore from backup if exists, otherwise use defaults
+    if [ -f "/etc/config/dhcp.adguard.bak" ]; then
+        rollback_to_backup
+        # Remove backup files
+        for cfg in network dhcp firewall; do
+            rm -f "/etc/config/${cfg}.adguard.bak"
+        done
+    else
+        printf "\033[1;33mNo backup found, restoring safe defaults\033[0m\n"
+        restore_defaults
+    fi
 
     # Remove firewall rule
     rule_name="adguardhome_dns_${DNS_PORT:-53}"
@@ -1429,9 +1447,22 @@ adguardhome_main() {
     # =========================================================================
     # Phase 5: Install and configure
     # =========================================================================
-    install_cacertificates
-    install_"$INSTALL_MODE"
-    generate_yaml
+    
+    if ! install_"$INSTALL_MODE"; then
+        printf "\033[1;31mInstallation failed. Aborting.\033[0m\n"
+        exit 1
+    fi
+
+    if [ -z "$SERVICE_NAME" ]; then
+        printf "\033[1;31mSERVICE_NAME not set. Installation failed.\033[0m\n"
+        exit 1
+    fi
+
+    if ! generate_yaml; then
+        printf "\033[1;31mYAML generation failed. Aborting.\033[0m\n"
+        exit 1
+    fi
+    
     get_iface_addrs
     common_config
     common_config_firewall
