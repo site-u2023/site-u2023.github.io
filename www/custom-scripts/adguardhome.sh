@@ -758,7 +758,7 @@ install_cacertificates() {
     esac
 }
 
-install_openwrt() {
+XXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
     
     case "$PACKAGE_MANAGER" in
@@ -794,6 +794,114 @@ install_openwrt() {
     
     SERVICE_NAME="adguardhome"
 }
+
+install_openwrt() {
+    printf "Installing adguardhome (OpenWrt package)\n"
+
+    case "$PACKAGE_MANAGER" in
+        apk)
+            printf "Checking apk repository for adguardhome...\n"
+
+            PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            ARCH=$(awk -F"'" '/DISTRIB_ARCH/{print $2}' /etc/openwrt_release)
+            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
+
+            if [ "$VER" = "SNAPSHOT" ]; then
+                BASEURL="https://downloads.openwrt.org/snapshots/packages/${ARCH}/packages"
+            else
+                BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
+            fi
+
+            printf "Fetching apk index: %s\n" "$BASEURL"
+
+            INDEX="/tmp/agh_index_apk.html"
+            wget -q "${BASEURL}/" -O "$INDEX"
+            RET=$?
+
+            if [ "$RET" -ne 0 ]; then
+                printf "\033[1;31mFailed to fetch apk index. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            PKG_NAME=$(grep -o 'adguardhome-[0-9A-Za-z._\-]*\.apk' "$INDEX" | sort | tail -n1)
+
+            if [ -z "$PKG_NAME" ]; then
+                printf "\033[1;31mFailed to determine apk filename. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            FULLURL="${BASEURL}/${PKG_NAME}"
+            printf "Downloading with resume support: %s\n" "$FULLURL"
+
+            if ! wget -c "$FULLURL" -O /tmp/adguardhome.apk; then
+                printf "\033[1;31mDownload failed.\033[0m\n"
+                return
+            fi
+
+            printf "Installing local apk package...\n"
+            if ! apk add --allow-untrusted /tmp/adguardhome.apk; then
+                printf "\033[1;31mLocal apk install failed.\033[0m\n"
+                return
+            fi
+
+            printf "\033[1;32madguardhome %s has been installed (local apk)\033[0m\n" "$PKG_VER"
+            ;;
+
+        opkg)
+            printf "Checking opkg repository for adguardhome...\n"
+
+            PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
+                install_official
+                return
+            fi
+
+            ARCH=$(opkg print-architecture | awk 'END{print $2}')
+            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
+
+            BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
+
+            INDEX="/tmp/agh_index.txt"
+            wget -q "${BASEURL}/" -O "$INDEX"
+
+            PKGNAME=$(grep -o 'adguardhome_.*\.ipk' "$INDEX" | sort | tail -n1)
+
+            if [ -z "$PKGNAME" ]; then
+                printf "\033[1;31mFailed to determine ipk filename. Falling back to official.\033[0m\n"
+                install_official
+                return
+            fi
+
+            FULLURL="${BASEURL}/${PKGNAME}"
+            printf "Downloading (resume supported): %s\n" "$FULLURL"
+
+            if ! wget -c "$FULLURL" -O /tmp/adguardhome.ipk; then
+                printf "\033[1;31mDownload failed.\033[0m\n"
+                return
+            fi
+
+            printf "Installing local ipk package...\n"
+            if ! opkg install /tmp/adguardhome.ipk; then
+                printf "\033[1;31mLocal install failed.\033[0m\n"
+                return
+            fi
+
+            printf "\033[1;32madguardhome %s has been installed (local ipk)\033[0m\n" "$PKG_VER"
+            ;;
+    esac
+
+    SERVICE_NAME="adguardhome"
+}
+
 
 install_official() {
     local ARCH
