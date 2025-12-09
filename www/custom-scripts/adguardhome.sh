@@ -486,7 +486,7 @@ remove_adguardhome() {
       *) printf "\033[1;33mCancelled\033[0m\n"; return 0 ;;
     esac
   else
-    printf "\033[1;33mAuto-removing due to installation error\033[0m\n"
+    printf "\033[1;33mProceeding with automatic removal\033[0m\n"
   fi
   
   /etc/init.d/"${AGH}" stop    2>/dev/null || true
