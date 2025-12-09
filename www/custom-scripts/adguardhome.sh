@@ -758,7 +758,7 @@ install_cacertificates() {
     esac
 }
 
-install_openwrt() {
+XXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
     
     case "$PACKAGE_MANAGER" in
@@ -795,7 +795,7 @@ install_openwrt() {
     SERVICE_NAME="adguardhome"
 }
 
-XXX_install_openwrt() {
+install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
 
     case "$PACKAGE_MANAGER" in
@@ -873,7 +873,8 @@ XXX_install_openwrt() {
             INDEX="/tmp/agh_index.txt"
             wget -q "${BASEURL}/" -O "$INDEX"
 
-            PKGNAME=$(grep -o 'adguardhome_.*\.ipk' "$INDEX" | sort | tail -n1)
+            PKGNAME=$(grep -o 'adguardhome[^">]*\.ipk' "$INDEX" | sort | tail -n1)
+
 
             if [ -z "$PKGNAME" ]; then
                 printf "\033[1;31mFailed to determine ipk filename. Falling back to official.\033[0m\n"
