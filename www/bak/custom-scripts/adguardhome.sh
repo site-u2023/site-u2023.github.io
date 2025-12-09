@@ -773,7 +773,7 @@ install_cacertificates() {
 # Usage:
 #   download_file "https://example.com/file.tar.gz" "/tmp/file.tar.gz"
 #   download_file "https://example.com/file.tar.gz" "/tmp/file.tar.gz" "--no-check-certificate"
-download_file() {
+XXX_download_file() {
     local url="$1"
     local output="$2"
     local extra_opts="${3:-}"
@@ -795,6 +795,27 @@ download_file() {
     fi
     
     return 0
+}
+
+download_file() {
+    local url="$1"
+    local output="$2"
+    local extra_opts="${3:-}"
+
+    printf "Downloading: %s\n" "$url"
+
+    if wget --no-check-certificate -c --timeout=60 "$url" -O "$output"; then
+        [ -s "$output" ] && return 0
+    fi
+
+    printf "\033[1;33mIPv6 failed, falling back to IPv4...\033[0m\n"
+    if wget --no-check-certificate -4 -c --timeout=60 "$url" -O "$output"; then
+        [ -s "$output" ] && return 0
+    fi
+
+    printf "\033[1;31mDownload failed.\033[0m\n"
+    rm -f "$output"
+    return 1
 }
 
 # Download small index/HTML page (quiet mode, no progress bar)
