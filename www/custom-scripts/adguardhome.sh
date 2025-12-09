@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2035"
+VERSION="R7.1209.2106"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -1125,7 +1125,6 @@ get_iface_addrs() {
 }
 
 common_config() {
-    cp /etc/config/network  /etc/config/network.adguard.bak
     cp /etc/config/dhcp     /etc/config/dhcp.adguard.bak
     cp /etc/config/firewall /etc/config/firewall.adguard.bak
     
@@ -1202,10 +1201,9 @@ EOF
 
 # Rollback to backup files (for installation errors)
 rollback_to_backup() {
-    # printf "\033[1;31mRolling back to backup configuration\033[0m\n"
     printf "Rolling back to backup configuration\n"
     
-    for cfg in network dhcp firewall; do
+    for cfg in dhcp firewall; do
         bak="/etc/config/${cfg}.adguard.bak"
         if [ -f "$bak" ]; then
             cp "$bak" "/etc/config/${cfg}"
@@ -1314,7 +1312,7 @@ remove_adguardhome() {
     if [ -f "/etc/config/dhcp.adguard.bak" ]; then
         rollback_to_backup
         # Remove backup files
-        for cfg in network dhcp firewall; do
+        for cfg in dhcp firewall; do
             rm -f "/etc/config/${cfg}.adguard.bak"
         done
     else
@@ -1331,8 +1329,6 @@ delete firewall.${rule_name}
 commit firewall
 EOF
     fi
-
-    uci commit network
 
     restart_network_services
 
