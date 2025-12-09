@@ -640,10 +640,10 @@ install_packages() {
 is_apache_installed() {
     case "$PACKAGE_MANAGER" in
         opkg)
-            opkg list-installed 2>/dev/null | grep -q "^apache "
+            opkg list-installed 2>/dev/null | grep -q "^${HTPASSWD_PROVIDER} "
             ;;
         apk)
-            apk info -e apache >/dev/null 2>&1
+            apk info -e "$HTPASSWD_PROVIDER" >/dev/null 2>&1
             ;;
     esac
 }
@@ -653,10 +653,10 @@ is_apache_installed() {
 install_apache_package() {
     case "$PACKAGE_MANAGER" in
         opkg)
-            opkg install --nodeps apache >/dev/null 2>&1
+            opkg install --nodeps "$HTPASSWD_PROVIDER" >/dev/null 2>&1
             ;;
         apk)
-            apk add --force apache >/dev/null 2>&1
+            apk add --force "$HTPASSWD_PROVIDER" >/dev/null 2>&1
             ;;
     esac
 }
@@ -666,10 +666,10 @@ install_apache_package() {
 remove_apache_package() {
     case "$PACKAGE_MANAGER" in
         opkg)
-            opkg remove --force-depends apache >/dev/null 2>&1
+            opkg remove --force-depends "$HTPASSWD_PROVIDER" >/dev/null 2>&1
             ;;
         apk)
-            apk del --force apache >/dev/null 2>&1
+            apk del --force "$HTPASSWD_PROVIDER" >/dev/null 2>&1
             ;;
     esac
 }
@@ -680,14 +680,11 @@ remove_apache_package() {
 install_htpasswd_from_apache() {
     local apache_was_installed=0
     
-    # Check if apache was already installed
     is_apache_installed && apache_was_installed=1
     
-    # If htpasswd doesn't exist, install apache
     if [ ! -f /usr/bin/htpasswd ]; then
-        printf "Installing apache package to obtain htpasswd... "
+        printf "Installing %s package to obtain htpasswd... " "$HTPASSWD_PROVIDER"
         
-        # Force reinstall if apache exists but htpasswd is missing
         if [ "$apache_was_installed" -eq 1 ]; then
             remove_apache_package
         fi
@@ -696,9 +693,8 @@ install_htpasswd_from_apache() {
             chmod +x /usr/bin/htpasswd 2>/dev/null
             printf "Done\n"
             
-            # Only remove apache if it wasn't originally installed
             if [ "$apache_was_installed" -eq 0 ]; then
-                printf "Preserving htpasswd and removing apache... "
+                printf "Preserving htpasswd and removing %s... " "$HTPASSWD_PROVIDER"
                 cp /usr/bin/htpasswd /tmp/htpasswd 2>/dev/null
                 remove_apache_package
                 mv /tmp/htpasswd /usr/bin/htpasswd 2>/dev/null
@@ -711,7 +707,6 @@ install_htpasswd_from_apache() {
             return 1
         fi
     elif [ ! -x /usr/bin/htpasswd ]; then
-        # File exists but not executable
         chmod +x /usr/bin/htpasswd 2>/dev/null
     fi
     
@@ -721,7 +716,6 @@ install_htpasswd_from_apache() {
 install_dependencies() {
     printf "\033[1;34mEnsuring htpasswd and dependencies are available\033[0m\n"
     
-    # Check if htpasswd is already available and functional
     if command -v htpasswd >/dev/null 2>&1; then
         if htpasswd -B -n -b "" "test" >/dev/null 2>&1; then
             printf "\033[1;32mhtpasswd is already available and functional\033[0m\n"
@@ -731,19 +725,17 @@ install_dependencies() {
     
     # Install dependencies
     printf "Installing dependencies: "
-    for p in libaprutil libapr libexpat libuuid1; do
+    for p in $HTPASSWD_DEPS; do
         printf "%s " "$p"
         install_packages "" "$p"
     done
     printf "Done\n"
     
-    # Install htpasswd from apache
     if ! install_htpasswd_from_apache; then
         printf "\033[1;31mhtpasswd installation failed\033[0m\n"
         return 1
     fi
     
-    # Verify installation
     if command -v htpasswd >/dev/null 2>&1; then
         printf "\033[1;32mhtpasswd is ready\033[0m\n"
         return 0
@@ -756,10 +748,10 @@ install_dependencies() {
 install_cacertificates() {
     case "$PACKAGE_MANAGER" in
         apk)
-            install_packages "" ca-bundle
+            install_packages "" "$CA_BUNDLE_PKG"
             ;;
         opkg)
-            install_packages "--verbosity=0" ca-bundle
+            install_packages "--verbosity=0" "$CA_BUNDLE_PKG"
             ;;
     esac
 }
@@ -1323,6 +1315,52 @@ EOF
 # Removal Functions
 # =============================================================================
 
+remove_dependencies() {
+    printf "\033[1;34mCleaning up dependencies\033[0m\n"
+    
+    # Check if apache was originally installed
+    if is_apache_installed; then
+        printf "%s is installed - skipping htpasswd and dependencies cleanup\n" "$HTPASSWD_PROVIDER"
+        return 0
+    fi
+    
+    # Remove htpasswd binary
+    if [ -f /usr/bin/htpasswd ]; then
+        printf "Removing htpasswd... "
+        rm -f /usr/bin/htpasswd && printf "Done\n" || printf "Failed\n"
+    fi
+    
+    # Remove dependency libraries
+    printf "Removing dependency libraries... "
+    case "$PACKAGE_MANAGER" in
+        apk)
+            for pkg in $HTPASSWD_DEPS; do
+                apk del "$pkg" >/dev/null 2>&1
+            done
+            ;;
+        opkg)
+            for pkg in $HTPASSWD_DEPS; do
+                opkg remove --force-depends "$pkg" >/dev/null 2>&1
+            done
+            ;;
+    esac
+    printf "Done\n"
+    
+    # Remove ca-bundle
+    printf "Removing %s... " "$CA_BUNDLE_PKG"
+    case "$PACKAGE_MANAGER" in
+        apk)
+            apk del "$CA_BUNDLE_PKG" >/dev/null 2>&1
+            ;;
+        opkg)
+            opkg remove "$CA_BUNDLE_PKG" >/dev/null 2>&1
+            ;;
+    esac
+    printf "Done\n"
+    
+    printf "\033[1;32mDependency cleanup completed\033[0m\n"
+}
+
 remove_adguardhome() {
     local auto_confirm="${1:-$REMOVE_MODE}"
     local detected_service
@@ -1401,6 +1439,9 @@ delete firewall.${rule_name}
 commit firewall
 EOF
     fi
+
+    # Clean up dependencies (NEW!)
+    remove_dependencies
 
     restart_network_services
 
