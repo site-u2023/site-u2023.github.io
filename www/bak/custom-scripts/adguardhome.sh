@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2035"
+VERSION="R7.1209.2146"
 
 # =============================================================================
 # Variable Initialization (empty by default)
