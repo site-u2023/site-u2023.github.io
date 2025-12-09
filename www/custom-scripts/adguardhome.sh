@@ -778,8 +778,6 @@ download_file() {
     local output="$2"
     local extra_opts="${3:-}"
     
-    printf "Downloading: %s\n" "$url"
-    
     # shellcheck disable=SC2086
     if ! wget -c --timeout=30 $extra_opts "$url" -O "$output"; then
         printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
