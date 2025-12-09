@@ -6,7 +6,6 @@
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
-      "reboot": true,
       "inputs": [
         {
           "id": "username",
@@ -72,7 +71,6 @@
           "envVars": {
             "UPDATE_CREDENTIALS": "1"
           },
-          "reboot": false,
           "requireInstalled": true
         },
         {
