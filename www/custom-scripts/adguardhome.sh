@@ -1198,7 +1198,6 @@ EOF
     restart_service dnsmasq || { rollback_to_backup; exit 1; }
     restart_service odhcpd || { rollback_to_backup; exit 1; }
     /etc/init.d/"$SERVICE_NAME" enable
-    /etc/init.d/"$SERVICE_NAME" start
     
     printf "Router IPv4: %s\n" "$NET_ADDR"
     if [ -z "$NET_ADDR6_LIST" ]; then
@@ -1575,6 +1574,8 @@ adguardhome_main() {
     get_iface_addrs
     common_config
     common_config_firewall
+
+    /etc/init.d/"$SERVICE_NAME" start
     
     printf "\n\033[1;32mAdGuard Home installation and configuration completed successfully.\033[0m\n\n"
     get_access
