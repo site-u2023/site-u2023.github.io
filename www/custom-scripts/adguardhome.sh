@@ -1317,6 +1317,3 @@ adguardhome_main() {
 if [ "$(basename "$0")" = "adguardhome.sh" ]; then
     adguardhome_main "$@"
 fi
-
-
-    
