@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.1857"
+VERSION="R7.1209.2035"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -1047,14 +1047,15 @@ install_openwrt() {
 
             INDEX="/tmp/agh_index_apk.html"
             if ! download_index "${BASEURL}/" "$INDEX"; then
-                printf "\033[1;31mFalling back to official.\033[0m\n"
-                install_official
-                return
+                # Network error or Index not found -> Abort
+                printf "\033[1;31mError: Failed to fetch apk index. Aborting.\033[0m\n"
+                return 1
             fi
 
             PKG_NAME=$(grep -o 'adguardhome-[0-9A-Za-z._\-]*\.apk' "$INDEX" | sort | tail -n1)
             if [ -z "$PKG_NAME" ]; then
-                printf "\033[1;31mFailed to determine apk filename. Falling back to official.\033[0m\n"
+                # Index exists but package missing -> Fallback
+                printf "\033[1;31mPackage not found in index. Falling back to official.\033[0m\n"
                 install_official
                 return
             fi
@@ -1092,14 +1093,15 @@ install_openwrt() {
 
             INDEX="/tmp/agh_index.txt"
             if ! download_index "${BASEURL}/" "$INDEX"; then
-                printf "\033[1;31mFalling back to official.\033[0m\n"
-                install_official
-                return
+                # Network error or Index not found -> Abort
+                printf "\033[1;31mError: Failed to fetch opkg index. Aborting.\033[0m\n"
+                return 1
             fi
 
             PKGNAME=$(grep -o 'adguardhome[^">]*\.ipk' "$INDEX" | sort | tail -n1)
             if [ -z "$PKGNAME" ]; then
-                printf "\033[1;31mFailed to determine ipk filename. Falling back to official.\033[0m\n"
+                # Index exists but package missing -> Fallback
+                printf "\033[1;31mPackage not found in index. Falling back to official.\033[0m\n"
                 install_official
                 return
             fi
