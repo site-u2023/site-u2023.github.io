@@ -781,7 +781,7 @@ download_file() {
     printf "Downloading: %s\n" "$url"
     
     # shellcheck disable=SC2086
-    if ! wget -c --timeout=30 --tries=3 --progress=bar:force $extra_opts "$url" -O "$output"; then
+    if ! wget -c --timeout=30 --progress=bar:force $extra_opts "$url" -O "$output"; then
         printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
         rm -f "$output"
         return 1
@@ -937,7 +937,7 @@ XXXXX_install_openwrt() {
             FULLURL="${BASEURL}/${PKG_NAME}"
             printf "Downloading with resume support: %s\n" "$FULLURL"
 
-            if ! wget -c --timeout=30 --tries=3 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.apk; then
+            if ! wget -c --timeout=30 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.apk; then
                 printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
                 return 1
             fi
@@ -994,7 +994,7 @@ XXXXX_install_openwrt() {
             FULLURL="${BASEURL}/${PKGNAME}"
             printf "Downloading with resume support: %s\n" "$FULLURL"
 
-            if ! wget -c --timeout=30 --tries=3 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.ipk; then
+            if ! wget -c --timeout=30 --progress=bar:force "$FULLURL" -O /tmp/adguardhome.ipk; then
                 printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
                 return 1
             fi
