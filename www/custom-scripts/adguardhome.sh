@@ -1141,23 +1141,45 @@ generate_yaml() {
     sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
     sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
     
-    # Move to final location
-    mv "$yaml_tmp" "$yaml_path"
-    chmod 600 "$yaml_path"
+    local yaml_dir
+    yaml_dir="$(dirname "$yaml_path")"
+    if [ ! -d "$yaml_dir" ]; then
+        if ! mkdir -p "$yaml_dir"; then
+            printf "\033[1;31mFailed to create directory: %s\033[0m\n" "$yaml_dir"
+            rm -f "$yaml_tmp"
+            return 1
+        fi
+    fi
+    
+    if ! mv "$yaml_tmp" "$yaml_path"; then
+        printf "\033[1;31mFailed to move YAML file to: %s\033[0m\n" "$yaml_path"
+        rm -f "$yaml_tmp"
+        return 1
+    fi
+    
+    if ! chmod 600 "$yaml_path"; then
+        printf "\033[1;31mFailed to set permissions on: %s\033[0m\n" "$yaml_path"
+        return 1
+    fi
     
     # Set ownership for OpenWrt package version
     if [ "$SERVICE_NAME" = "adguardhome" ]; then
         if id adguardhome >/dev/null 2>&1; then
-            chown adguardhome:adguardhome "$yaml_path"
+            if ! chown adguardhome:adguardhome "$yaml_path"; then
+                printf "\033[1;33mWarning: Failed to set ownership on: %s\033[0m\n" "$yaml_path"
+            fi
             
             # Set ownership for parent directory (apk/SNAPSHOT only)
             if [ "$PACKAGE_MANAGER" = "apk" ]; then
-                [ -d "/etc/adguardhome" ] && chown adguardhome:adguardhome /etc/adguardhome
+                if [ -d "/etc/adguardhome" ]; then
+                    chown adguardhome:adguardhome /etc/adguardhome 2>/dev/null || true
+                fi
             fi
         fi
     fi
     
     printf "\033[1;32mConfiguration file created: %s\033[0m\n" "$yaml_path"
+    return 0
 }
 
 # =============================================================================
@@ -1588,6 +1610,9 @@ adguardhome_main() {
             ;;
         openwrt)
             SERVICE_NAME="adguardhome"
+            if [ "$PACKAGE_MANAGER" = "apk" ]; then
+                mkdir -p /etc/adguardhome
+            fi
             ;;
     esac
     
