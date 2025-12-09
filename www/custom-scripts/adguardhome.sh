@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2355"
+VERSION="R7.1210.0056"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -91,6 +91,17 @@ export MINIMUM_MEM="20"
 export MINIMUM_FLASH="25"
 export RECOMMENDED_MEM="50"
 export RECOMMENDED_FLASH="100"
+
+# =============================================================================
+# Package Name Definitions
+# =============================================================================
+
+# Dependency packages for htpasswd
+HTPASSWD_DEPS="libaprutil libapr libexpat libuuid1"
+HTPASSWD_PROVIDER="apache"
+
+# SSL certificate bundle
+CA_BUNDLE_PKG="ca-bundle"
 
 # =============================================================================
 # Script Configuration
@@ -850,107 +861,6 @@ download_text_file() {
     return 0
 }
 
-XXX_install_openwrt() {
-    printf "Installing adguardhome (OpenWrt package)\n"
-
-    case "$PACKAGE_MANAGER" in
-        apk)
-            printf "Checking apk repository for adguardhome...\n"
-
-            PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
-            
-            if [ -z "$PKG_VER" ]; then
-                printf "\033[1;31mPackage 'adguardhome' not found in apk repository, falling back to official.\033[0m\n"
-                install_official
-                return
-            fi
-
-            ARCH=$(awk -F"'" '/DISTRIB_ARCH/{print $2}' /etc/openwrt_release)
-            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
-
-            if [ "$VER" = "SNAPSHOT" ]; then
-                BASEURL="https://downloads.openwrt.org/snapshots/packages/${ARCH}/packages"
-            else
-                BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
-            fi
-
-            INDEX="/tmp/agh_index_apk.html"
-            if ! download_index "${BASEURL}/" "$INDEX"; then
-                printf "\033[1;31mError: Failed to fetch apk index. Aborting.\033[0m\n"
-                return 1
-            fi
-
-            PKG_NAME=$(grep -o 'adguardhome-[0-9A-Za-z._\-]*\.apk' "$INDEX" | sort | tail -n1)
-            if [ -z "$PKG_NAME" ]; then
-                printf "\033[1;31mError: Failed to determine apk filename from index. Aborting.\033[0m\n"
-                return 1
-            fi
-
-            FULLURL="${BASEURL}/${PKG_NAME}"
-            
-            if ! download_file "$FULLURL" /tmp/adguardhome.apk; then
-                return 1
-            fi
-
-            printf "Installing local apk package...\n"
-            if ! apk add --allow-untrusted /tmp/adguardhome.apk; then
-                printf "\033[1;31mLocal apk install failed.\033[0m\n"
-                rm -f /tmp/adguardhome.apk
-                return 1
-            fi
-
-            rm -f /tmp/adguardhome.apk
-            printf "\033[1;32madguardhome %s has been installed (local apk)\033[0m\n" "$PKG_VER"
-            ;;
-
-        opkg)
-            printf "Checking opkg repository for adguardhome...\n"
-
-            PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
-            
-            if [ -z "$PKG_VER" ]; then
-                printf "\033[1;31mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
-                install_official
-                return
-            fi
-
-            ARCH=$(opkg print-architecture | awk 'END{print $2}')
-            VER=$(awk -F"'" '/DISTRIB_RELEASE/{print $2}' /etc/openwrt_release)
-            BASEURL="https://downloads.openwrt.org/releases/${VER}/packages/${ARCH}/packages"
-
-            INDEX="/tmp/agh_index.txt"
-            if ! download_index "${BASEURL}/" "$INDEX"; then
-                printf "\033[1;31mError: Failed to fetch opkg index. Aborting.\033[0m\n"
-                return 1
-            fi
-
-            PKGNAME=$(grep -o 'adguardhome[^">]*\.ipk' "$INDEX" | sort | tail -n1)
-            if [ -z "$PKGNAME" ]; then
-                printf "\033[1;31mError: Failed to determine ipk filename from index. Aborting.\033[0m\n"
-                return 1
-            fi
-
-            FULLURL="${BASEURL}/${PKGNAME}"
-            
-            if ! download_file "$FULLURL" /tmp/adguardhome.ipk; then
-                return 1
-            fi
-
-            printf "Installing local ipk package...\n"
-            if ! opkg install /tmp/adguardhome.ipk; then
-                printf "\033[1;31mLocal install failed.\033[0m\n"
-                rm -f /tmp/adguardhome.ipk
-                return 1
-            fi
-
-            rm -f /tmp/adguardhome.ipk
-            printf "\033[1;32madguardhome %s has been installed (local ipk)\033[0m\n" "$PKG_VER"
-            ;;
-    esac
-
-    SERVICE_NAME="adguardhome"
-}
-
 install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
     
@@ -1393,10 +1303,15 @@ remove_adguardhome() {
     if [ "$DETECTED_SERVICE_TYPE" = "official" ]; then
         "/etc/${detected_service}/${detected_service}" -s uninstall 2>/dev/null || true
     else
-        if command -v apk >/dev/null 2>&1; then
-            apk del "${detected_service}" 2>/dev/null || true
-        else
-            opkg remove --verbosity=0 "${detected_service}" 2>/dev/null || true
+        if [ -z "$PACKAGE_MANAGER" ]; then
+            if command -v apk >/dev/null 2>&1; then
+                PACKAGE_MANAGER="apk"
+            elif command -v opkg >/dev/null 2>&1; then
+                PACKAGE_MANAGER="opkg"
+            else
+                printf "\033[1;31mPackage manager not detected\033[0m\n"
+                return 1
+            fi
         fi
     fi
 
@@ -1596,6 +1511,7 @@ adguardhome_main() {
         common_config_firewall
         printf "\n\033[1;32mAdGuard Home installed. Configure via web interface.\033[0m\n"
         printf "Access: http://%s:3000/\n" "$NET_ADDR"
+        return 0
         
         # prompt_reboot
     fi
