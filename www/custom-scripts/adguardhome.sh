@@ -1445,7 +1445,8 @@ EOF
 
 # Rollback to backup files (for installation errors)
 rollback_to_backup() {
-    printf "\033[1;31mRolling back to backup configuration\033[0m\n"
+    # printf "\033[1;31mRolling back to backup configuration\033[0m\n"
+    printf "Rolling back to backup configuration\n"
     
     for cfg in network dhcp firewall; do
         bak="/etc/config/${cfg}.adguard.bak"
