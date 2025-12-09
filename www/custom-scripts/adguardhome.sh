@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2148"
+VERSION="R7.1209.2217"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -778,8 +778,6 @@ download_file() {
     local output="$2"
     local extra_opts="${3:-}"
 
-    printf "Downloading: %s\n" "$url"
-
     if wget --no-check-certificate -c --timeout=60 "$url" -O "$output"; then
         [ -s "$output" ] && return 0
     fi
@@ -854,7 +852,7 @@ download_text_file() {
     return 0
 }
 
-install_openwrt() {
+XXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
 
     case "$PACKAGE_MANAGER" in
@@ -952,6 +950,52 @@ install_openwrt() {
             ;;
     esac
 
+    SERVICE_NAME="adguardhome"
+}
+
+install_openwrt() {
+    printf "Installing adguardhome (OpenWrt package)\n"
+    
+    case "$PACKAGE_MANAGER" in
+        apk)
+            printf "Checking apk repository for adguardhome...\n"
+            
+            PKG_VER=$(apk search adguardhome | grep "^adguardhome-" | sed 's/^adguardhome-//' | sed 's/-r[0-9]*$//')
+            
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;33mPackage 'adguardhome' not found in apk repository, falling back to official\033[0m\n"
+                install_official
+                return
+            fi
+            
+            apk add adguardhome || {
+                printf "\033[1;31mInstallation failed. Please check your network and try again.\033[0m\n"
+                exit 1
+            }
+            
+            printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
+            ;;
+            
+        opkg)
+            printf "Checking opkg repository for adguardhome...\n"
+            
+            PKG_VER=$(opkg list | grep "^adguardhome " | awk '{print $3}')
+            
+            if [ -z "$PKG_VER" ]; then
+                printf "\033[1;33mPackage 'adguardhome' not found in opkg repository, falling back to official\033[0m\n"
+                install_official
+                return
+            fi
+            
+            opkg install adguardhome || {
+                printf "\033[1;31mInstallation failed. Please check your network and try again.\033[0m\n"
+                exit 1
+            }
+            
+            printf "\033[1;32madguardhome %s has been installed\033[0m\n" "$PKG_VER"
+            ;;
+    esac
+    
     SERVICE_NAME="adguardhome"
 }
 
