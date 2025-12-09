@@ -1304,13 +1304,7 @@ EOF
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
-        if [ "$needs_reboot" -eq 1 ]; then
-            if show_yesno "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n$(translate 'tr-tui-reboot-question')"; then
-                reboot
-            fi
-        else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
-        fi
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
     fi
     
     return 0
