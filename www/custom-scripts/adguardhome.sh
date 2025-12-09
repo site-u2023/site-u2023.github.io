@@ -1125,7 +1125,7 @@ set firewall.${rule_name}.target='DNAT'
 commit firewall
 EOF
     
-    restart_service firewall || exit 1
+    restart_service firewall || { rollback_to_backup; exit 1; }
     
     printf "\033[1;32mFirewall configuration completed\033[0m\n"
 }
@@ -1411,7 +1411,10 @@ adguardhome_main() {
     if [ -n "$NO_YAML" ]; then
         printf "\033[1;33mYAML generation skipped (-n option). Use web interface for initial setup.\033[0m\n"
         install_cacertificates
-        install_"$INSTALL_MODE"
+        if ! install_"$INSTALL_MODE"; then
+            printf "\033[1;31mInstallation failed. Aborting.\033[0m\n"
+            exit 1
+        fi
         get_iface_addrs
         common_config
         common_config_firewall
