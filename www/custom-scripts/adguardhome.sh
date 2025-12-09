@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1209.2106"
+VERSION="R7.1209.2148"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -777,22 +777,21 @@ download_file() {
     local url="$1"
     local output="$2"
     local extra_opts="${3:-}"
-    
-    # shellcheck disable=SC2086
-    if ! wget -c --timeout=30 $extra_opts "$url" -O "$output"; then
-        printf "\033[1;31mDownload failed after 3 attempts.\033[0m\n"
-        rm -f "$output"
-        return 1
+
+    printf "Downloading: %s\n" "$url"
+
+    if wget --no-check-certificate -c --timeout=60 "$url" -O "$output"; then
+        [ -s "$output" ] && return 0
     fi
-    
-    # Verify downloaded file
-    if [ ! -s "$output" ]; then
-        printf "\033[1;31mDownloaded file is empty or missing.\033[0m\n"
-        rm -f "$output"
-        return 1
+
+    printf "\033[1;33mIPv6 failed, falling back to IPv4...\033[0m\n"
+    if wget --no-check-certificate -4 -c --timeout=60 "$url" -O "$output"; then
+        [ -s "$output" ] && return 0
     fi
-    
-    return 0
+
+    printf "\033[1;31mDownload failed.\033[0m\n"
+    rm -f "$output"
+    return 1
 }
 
 # Download small index/HTML page (quiet mode, no progress bar)
