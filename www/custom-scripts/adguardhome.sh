@@ -681,7 +681,7 @@ adguardhome_main() {
   generate_password_hash || {
     printf "\033[1;31mFailed to generate password hash. Aborting.\033[0m\n"
     exit 1
-  fi
+  }
   install_cacertificates
   install_"$INSTALL_MODE"
   generate_yaml
