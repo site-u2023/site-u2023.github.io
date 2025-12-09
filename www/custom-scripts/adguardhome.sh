@@ -758,7 +758,7 @@ install_cacertificates() {
     esac
 }
 
-XXX_install_openwrt() {
+install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
     
     case "$PACKAGE_MANAGER" in
@@ -795,7 +795,7 @@ XXX_install_openwrt() {
     SERVICE_NAME="adguardhome"
 }
 
-install_openwrt() {
+XXX_install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
 
     case "$PACKAGE_MANAGER" in
