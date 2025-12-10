@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.12067.2042"
+VERSION="R7.1210.1144"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -1276,27 +1276,50 @@ EOF
         # パッケージマネージャーのアップデート
         update_package_manager
         
-        echo "$(translate 'tr-tui-installing-packages')"
-        sh "$CONFIG_DIR/postinst.sh"
+        # パッケージインストール
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            echo "$(translate 'tr-tui-installing-packages')"
+            sh "$CONFIG_DIR/postinst.sh"
+        fi
         
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-packages')"
+        # カスタムフィードパッケージインストール
+        local has_custom_packages=0
         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] && sh "$script"
+            [ -f "$script" ] || continue
+            [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+            
+            if grep -q '^PACKAGES=' "$script" && [ -n "$(grep '^PACKAGES=' "$script" | cut -d'"' -f2)" ]; then
+                if [ "$has_custom_packages" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-packages')"
+                    has_custom_packages=1
+                fi
+                
+                sh "$script"
+            fi
         done
         
-        echo ""
-        echo "$(translate 'tr-tui-applying-config')"
-        sh "$CONFIG_DIR/setup.sh"
+        # システム設定適用
+        if [ -s "$SETUP_VARS" ]; then
+            echo ""
+            echo "$(translate 'tr-tui-applying-config')"
+            sh "$CONFIG_DIR/setup.sh"
+        fi
         
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-scripts')"
+        # カスタムスクリプト実行
+        local has_custom_scripts=0
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] || continue
             
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                if [ "$has_custom_scripts" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-scripts')"
+                    has_custom_scripts=1
+                fi
+                
                 sh "$script"
             fi
         done
