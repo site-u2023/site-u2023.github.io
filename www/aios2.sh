@@ -2800,6 +2800,45 @@ EOF
     echo "$summary_file"
 }
 
+# 選択されたパッケージからrequiresUpdateフラグを抽出
+check_requires_update() {
+    # postinst.jsonをチェック（全階層）
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        # ファイルレベル
+        local file_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.requiresUpdate" 2>/dev/null)
+        [ "$file_update" = "true" ] && return 0
+        
+        # カテゴリ/パッケージレベル
+        while read -r cache_line; do
+            local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            
+            # カテゴリレベル
+            local cat_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$cat_update" = "true" ] && return 0
+            
+            # パッケージレベル
+            local pkg_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$pkg_update" = "true" ] && return 0
+        done < "$SELECTED_PACKAGES"
+    fi
+    
+    # customfeeds.jsonをチェック（全階層）
+    if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+        local file_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.requiresUpdate" 2>/dev/null)
+        [ "$file_update" = "true" ] && return 0
+        
+        while read -r pkg_id; do
+            local cat_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$cat_update" = "true" ] && return 0
+            
+            local pkg_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$pkg_update" = "true" ] && return 0
+        done < "$SELECTED_CUSTOM_PACKAGES"
+    fi
+    
+    return 1
+}
+
 needs_reboot_check() {
     local needs_reboot=0
     
