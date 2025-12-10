@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1752"
+VERSION="R7.1210.1854"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2507,11 +2507,18 @@ generate_config_summary() {
             # id_opts_list を構築（generate_files()と同じロジック）
             local id_opts_list=""
             while read -r cache_line; do
-                local pkg_id install_opts
+                local pkg_id install_opts install_opts_value
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 install_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                id_opts_list="${id_opts_list}${pkg_id}|${install_opts}
+                # installOptionsキー名を実際のオプション値に変換
+                if [ -n "$install_opts" ]; then
+                    install_opts_value=$(convert_install_option "$install_opts")
+                else
+                    install_opts_value=""
+                fi
+                
+                id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
 "
             done < "$SELECTED_PACKAGES"
             
