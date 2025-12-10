@@ -2547,53 +2547,58 @@ EOF
 update_package_manager() {
     echo "[DEBUG] === update_package_manager START ===" >> "$CONFIG_DIR/debug.log"
     
-    # 新しいJSONを追加する場合はここに追加
     local UPDATE_CHECK_JSONS="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
-    
     local needs_update=0
     
-    # 1. ファイルレベルチェック（全JSON）
-    echo "[DEBUG] Checking file level..." >> "$CONFIG_DIR/debug.log"
-    for json in $UPDATE_CHECK_JSONS; do
-        [ ! -f "$json" ] && continue
-        local update=$(jsonfilter -i "$json" -e "@.requiresUpdate" 2>/dev/null)
-        echo "[DEBUG] File: $json, requiresUpdate=$update" >> "$CONFIG_DIR/debug.log"
-        [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND at file level!" >> "$CONFIG_DIR/debug.log" && break
-    done
-    
-    # 2. postinst.json - 選択済みパッケージ
+    # 1. postinst.json - 選択済みパッケージがある場合のみチェック
     echo "[DEBUG] Checking SELECTED_PACKAGES..." >> "$CONFIG_DIR/debug.log"
     if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_PACKAGES" ]; then
-        while read -r line; do
-            local id=$(echo "$line" | cut -d= -f1)
-            
-            local update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
-            echo "[DEBUG] Package $id (category level): $update" >> "$CONFIG_DIR/debug.log"
-            [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in packages!" >> "$CONFIG_DIR/debug.log" && break
-            
-            update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
-            echo "[DEBUG] Package $id (item level): $update" >> "$CONFIG_DIR/debug.log"
-            [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in packages!" >> "$CONFIG_DIR/debug.log" && break
-        done < "$SELECTED_PACKAGES"
+        # ファイルレベル
+        local update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.requiresUpdate" 2>/dev/null)
+        echo "[DEBUG] postinst.json file level: $update" >> "$CONFIG_DIR/debug.log"
+        [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND at file level!" >> "$CONFIG_DIR/debug.log"
+        
+        # カテゴリ/アイテムレベル
+        if [ "$needs_update" -eq 0 ]; then
+            while read -r line; do
+                local id=$(echo "$line" | cut -d= -f1)
+                
+                local update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
+                echo "[DEBUG] Package $id (category level): $update" >> "$CONFIG_DIR/debug.log"
+                [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in packages!" >> "$CONFIG_DIR/debug.log" && break
+                
+                update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
+                echo "[DEBUG] Package $id (item level): $update" >> "$CONFIG_DIR/debug.log"
+                [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in packages!" >> "$CONFIG_DIR/debug.log" && break
+            done < "$SELECTED_PACKAGES"
+        fi
     fi
     
-    # 3. customfeeds.json - 選択済みカスタムパッケージ
+    # 2. customfeeds.json - 選択済みカスタムパッケージがある場合のみチェック
     echo "[DEBUG] Checking SELECTED_CUSTOM_PACKAGES..." >> "$CONFIG_DIR/debug.log"
     if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-        while read -r line; do
-            local id=$(echo "$line" | cut -d= -f1)
-            
-            local update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
-            echo "[DEBUG] Custom package $id (category level): $update" >> "$CONFIG_DIR/debug.log"
-            [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in custom packages!" >> "$CONFIG_DIR/debug.log" && break
-            
-            update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
-            echo "[DEBUG] Custom package $id (item level): $update" >> "$CONFIG_DIR/debug.log"
-            [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in custom packages!" >> "$CONFIG_DIR/debug.log" && break
-        done < "$SELECTED_CUSTOM_PACKAGES"
+        # ファイルレベル
+        local update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.requiresUpdate" 2>/dev/null)
+        echo "[DEBUG] customfeeds.json file level: $update" >> "$CONFIG_DIR/debug.log"
+        [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND at file level!" >> "$CONFIG_DIR/debug.log"
+        
+        # カテゴリ/アイテムレベル
+        if [ "$needs_update" -eq 0 ]; then
+            while read -r line; do
+                local id=$(echo "$line" | cut -d= -f1)
+                
+                local update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
+                echo "[DEBUG] Custom package $id (category level): $update" >> "$CONFIG_DIR/debug.log"
+                [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in custom packages!" >> "$CONFIG_DIR/debug.log" && break
+                
+                update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
+                echo "[DEBUG] Custom package $id (item level): $update" >> "$CONFIG_DIR/debug.log"
+                [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND in custom packages!" >> "$CONFIG_DIR/debug.log" && break
+            done < "$SELECTED_CUSTOM_PACKAGES"
+        fi
     fi
     
-    # 4. customscripts.json - 実行予定スクリプト
+    # 3. customscripts.json - 実行予定スクリプトがある場合のみチェック
     echo "[DEBUG] Checking customscripts..." >> "$CONFIG_DIR/debug.log"
     if [ "$needs_update" -eq 0 ]; then
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
@@ -2602,10 +2607,12 @@ update_package_manager() {
             
             echo "[DEBUG] Found script var file: $var_file (script_id=$script_id)" >> "$CONFIG_DIR/debug.log"
             
+            # スクリプトレベル
             local update=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
             echo "[DEBUG] Script level - script_id=$script_id, update='$update'" >> "$CONFIG_DIR/debug.log"
             [ "$update" = "true" ] && needs_update=1 && echo "[DEBUG] FOUND at script level!" >> "$CONFIG_DIR/debug.log" && break
             
+            # オプションレベル
             local option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
             echo "[DEBUG] Option found: '$option'" >> "$CONFIG_DIR/debug.log"
             [ -n "$option" ] && {
