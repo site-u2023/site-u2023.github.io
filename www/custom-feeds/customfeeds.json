@@ -141,7 +141,7 @@
           "requiresUpdate": false,
           "minOpenWrtVersion": "18.06",
           "description": "Argon theme configuration app",
-          "packageManager": ["opkg", "apk"], 
+          "packageManager": ["apk"], 
           "dependencies": ["luci-theme-argon"]
         }
       ]
