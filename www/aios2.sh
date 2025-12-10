@@ -2573,7 +2573,12 @@ EOF3
             (
                 cat_id=$(echo "$cat_entry" | cut -d'|' -f1)
                 selected_pkgs=$(echo "$cat_entry" | cut -d'|' -f2 | sed 's/ $//')
-                
+
+                if [ -z "$selected_pkgs" ]; then
+                    echo "[DEBUG] No packages selected for $cat_id, skipping script generation" >> "$CONFIG_DIR/debug.log"
+                    exit 0
+                fi
+            
                 template_url=$(get_customfeed_template_url "$cat_id")
                 
                 [ -z "$template_url" ] && exit 0
