@@ -13,21 +13,21 @@ echo ""
 echo "Fetching latest release information from: ${API_URL}"
 RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL")
 
-if [ -z "$RESPONSE" ]; then
+[ -z "$RESPONSE" ] && {
     echo "[ERROR] Failed to fetch release information from API"
     exit 1
-fi
+}
 
 TAG_NAME=$(echo "$RESPONSE" | jsonfilter -e '@.tag_name' 2>/dev/null)
 
-if [ -z "$TAG_NAME" ]; then
+[ -z "$TAG_NAME" ] && {
     echo "[ERROR] Failed to extract tag name from API response"
     exit 1
-fi
+}
 
 echo "Latest release version: ${TAG_NAME}"
 
-echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
+while read -r pattern; do
     [ -z "$pattern" ] && continue
     
     echo ""
@@ -35,27 +35,26 @@ echo "$PACKAGES" | tr ' ' '\n' | while read -r pattern; do
     
     PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@.assets[*].name' | grep "${pattern}.*\.ipk" | head -n1)
     
-    if [ -z "$PACKAGE_NAME" ]; then
+    [ -z "$PACKAGE_NAME" ] && {
         echo "[ERROR] Package not found: ${pattern}"
         continue
-    fi
+    }
     
     echo "Found: ${PACKAGE_NAME}"
     
     DOWNLOAD_URL="${DOWNLOAD_BASE_URL}/${TAG_NAME}/${PACKAGE_NAME}"
     
-    wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"
-    
-    if [ $? -eq 0 ]; then
-        # Install package
+    if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
         opkg install "${CONFIG_DIR}/${PACKAGE_NAME}"
-        rm "${CONFIG_DIR}/${PACKAGE_NAME}"
+        rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
         echo "Installation completed: ${PACKAGE_NAME}"
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
-        continue
     fi
-done
+done <<EOF
+$(echo "$PACKAGES" | tr ' ' '\n')
+EOF
 
 echo ""
 echo "All packages processed."
+exit 0
