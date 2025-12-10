@@ -2803,35 +2803,53 @@ EOF
 update_package_manager() {
     local needs_update=0
     
-    # postinst.jsonをチェック（全階層）
+    # postinst.jsonをチェック
     if [ -s "$SELECTED_PACKAGES" ]; then
+        # ファイルレベル
         local file_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.requiresUpdate" 2>/dev/null)
-        [ "$file_update" = "true" ] && needs_update=1
-        
-        if [ "$needs_update" -eq 0 ]; then
+        if [ "$file_update" = "true" ]; then
+            needs_update=1
+        else
+            # カテゴリレベル
             while read -r cache_line; do
                 local pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 local cat_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                [ "$cat_update" = "true" ] && needs_update=1 && break
+                if [ "$cat_update" = "true" ]; then
+                    needs_update=1
+                    break
+                fi
                 
+                # パッケージレベル
                 local pkg_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                [ "$pkg_update" = "true" ] && needs_update=1 && break
+                if [ "$pkg_update" = "true" ]; then
+                    needs_update=1
+                    break
+                fi
             done < "$SELECTED_PACKAGES"
         fi
     fi
     
-    # customfeeds.jsonをチェック（全階層）
+    # customfeeds.jsonをチェック
     if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+        # ファイルレベル
         local file_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.requiresUpdate" 2>/dev/null)
-        [ "$file_update" = "true" ] && needs_update=1
-        
-        if [ "$needs_update" -eq 0 ]; then
+        if [ "$file_update" = "true" ]; then
+            needs_update=1
+        else
+            # カテゴリレベル
             while read -r pkg_id; do
                 local cat_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                [ "$cat_update" = "true" ] && needs_update=1 && break
+                if [ "$cat_update" = "true" ]; then
+                    needs_update=1
+                    break
+                fi
                 
+                # パッケージレベル
                 local pkg_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                [ "$pkg_update" = "true" ] && needs_update=1 && break
+                if [ "$pkg_update" = "true" ]; then
+                    needs_update=1
+                    break
+                fi
             done < "$SELECTED_CUSTOM_PACKAGES"
         fi
     fi
