@@ -2786,7 +2786,7 @@ EOF
             script_name=$(get_customscript_name "$script_id")
             [ -z "$script_name" ] && script_name="$script_id"
             
-            printf "🔴 %s [%s]\n\n" "$tr_customscripts" "$script_name"
+            printf "🔴 %s\n\n" "$tr_customscripts"
             cat "$var_file"
             echo ""
             has_content=1
