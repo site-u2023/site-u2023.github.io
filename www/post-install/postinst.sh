@@ -4,6 +4,10 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
+BASE_DIR="/tmp"
+CONFIG_DIR="$BASE_DIR/aios2"
+exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
+
 if command -v opkg >/dev/null 2>&1; then
     PKG_MGR="opkg"
 elif command -v apk >/dev/null 2>&1; then
