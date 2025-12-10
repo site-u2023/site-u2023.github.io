@@ -33,6 +33,9 @@ var config = {
   
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
+
+  // Package manager configuration
+  package_manager_config_path: "variables/package-manager.json",
   
   // UCI-defaults setup.sh URL
   information_path: "auto-config/information.json",
