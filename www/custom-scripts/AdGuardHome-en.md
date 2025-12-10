@@ -454,22 +454,23 @@ The removal process executes the following operations sequentially.
 
 ## Installation Behavior Details
 
-### Non-Disruptive Installation
+### Staged Installation Approach
 
-The script adopts a non-disruptive installation approach to maintain network connectivity during installation.
+The script adopts a staged installation approach to maintain network connectivity throughout the process.
 
-All configuration changes are committed to the UCI system, but service restarts are not executed. The dnsmasq, odhcpd, and firewall services continue operating with existing configurations, and AdGuard Home is activated for the first time on next system boot.
+All configuration changes are committed to the UCI system, followed by sequential restart of dnsmasq, odhcpd, and firewall services. Each service restart is executed individually, and in case of failure, configuration is restored from backup. The AdGuard Home service is started after all configuration changes and network service restarts are completed.
 
-This avoids DNS service interruption during the installation process.
+This ensures configuration consistency while maintaining the ability to reliably rollback in case of failure.
 
 ### State After Installation Completion
 
 At the time of installation completion, the state is as follows.
 
-- The AdGuard Home service is enabled but not started (only `/etc/init.d/SERVICE_NAME enable` is executed)
-- Configuration changes for dnsmasq, odhcpd, and firewall are committed but not applied
-- The existing dnsmasq continues to function as the DNS resolver
-- On next reboot, AdGuard Home will listen on TCP/UDP port 53, and dnsmasq will migrate to the backup port (default 54)
+- The AdGuard Home service is enabled and immediately started
+- Configuration changes for dnsmasq, odhcpd, and firewall are applied and each service has completed restart
+- dnsmasq operates on the backup port (default 54) and references 127.0.0.1#53 (AdGuard Home) as the upstream DNS
+- AdGuard Home listens on TCP/UDP port 53 and immediately provides DNS service
+- The web interface is accessible immediately after startup
 
 ### Package Update Behavior
 
