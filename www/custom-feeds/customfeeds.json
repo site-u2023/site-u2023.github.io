@@ -14,10 +14,10 @@
           "pattern": "luci-app-log-viewer",
           "exclude": "",
           "name": "luci-app-log-viewer",
-          "minOpenWrtVersion": "21.02",
+          "minOpenWrtVersion": "22.03",
           "description": "System log viewer for LuCI",
           "packageManager": ["opkg"],
-          "dependencies": []
+          "dependencies": ["ucode", "ucode-mod-fs"]
         },
         {
           "id": "luci-app-cpu-status",
@@ -34,10 +34,10 @@
           "pattern": "luci-app-cpu-perf",
           "exclude": "",
           "name": "luci-app-cpu-perf",
-          "minOpenWrtVersion": "21.02",
+          "minOpenWrtVersion": "22.03",
           "description": "CPU performance monitor",
           "packageManager": ["opkg"],
-          "dependencies": []
+          "dependencies": ["ucode", "ucode-mod-fs"]
         },
         {
           "id": "luci-app-temp-status",
@@ -57,7 +57,7 @@
           "minOpenWrtVersion": "21.02",
           "description": "Disk information display",
           "packageManager": ["opkg"],
-          "dependencies": []
+          "dependencies": ["fdisk", "smartmontools", "smartmontools-drivedb"]
         },
         {
           "id": "internet-detector",
@@ -118,7 +118,7 @@
           "pattern": "luci-theme-argon_",
           "exclude": "",
           "name": "luci-theme-argon",
-          "minOpenWrtVersion": "21.02",
+          "minOpenWrtVersion": "18.06",
           "description": "A brand new Argon theme for LuCI",
           "packageManager": ["opkg"],
           "dependencies": ["luci-compat", "luci-lib-ipkg"]
@@ -128,7 +128,7 @@
           "pattern": "luci-app-argon-config_",
           "exclude": "",
           "name": "luci-app-argon-config",
-          "minOpenWrtVersion": "21.02",
+          "minOpenWrtVersion": "18.06",
           "description": "Argon theme configuration app",
           "packageManager": ["opkg"],
           "dependencies": ["luci-theme-argon"]
