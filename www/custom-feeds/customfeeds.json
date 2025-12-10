@@ -124,7 +124,7 @@
       "packages": [
         {
           "id": "luci-theme-argon",
-          "pattern": "luci-theme-argon_",
+          "pattern": "luci-theme-argon",
           "exclude": "",
           "name": "luci-theme-argon",
           "requiresUpdate": true,
@@ -135,7 +135,7 @@
         },
         {
           "id": "luci-app-argon-config",
-          "pattern": "luci-app-argon-config_",
+          "pattern": "luci-app-argon-config",
           "exclude": "",
           "name": "luci-app-argon-config",
           "requiresUpdate": false,
