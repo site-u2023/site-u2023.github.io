@@ -399,6 +399,9 @@ EOF
         
         clear
         
+        # パッケージマネージャーのアップデート
+        update_package_manager
+        
         # 失敗カウンタ
         local failed_count=0
         local failed_scripts=""
