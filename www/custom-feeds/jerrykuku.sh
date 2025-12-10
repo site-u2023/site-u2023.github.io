@@ -81,7 +81,7 @@ while read -r pattern; do
     echo "Downloading from: ${DOWNLOAD_URL}"
     
     if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
-        ${PKG_INSTALL_CMD} "${CONFIG_DIR}/${PACKAGE_NAME}"
+        ${PKG_INSTALL_CMD} ${PKG_OPTION_ALLOW_UNTRUSTED} "${CONFIG_DIR}/${PACKAGE_NAME}"
         INSTALL_STATUS=$?
         rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
         
