@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2034,SC2086,SC3043
+# shellcheck shell=sh disable=SC2034,SC2154,SC2086,SC3001,SC3043
 # OpenWrt Device Setup Tool - CLI Version
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
