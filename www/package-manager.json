@@ -1,0 +1,26 @@
+{
+  "opkg": {
+    "ext": "ipk",
+    "installCommand": "opkg install {allowUntrusted} {package}",
+    "removeCommand": "opkg remove {package}",
+    "updateCommand": "opkg update",
+    "upgradeCommand": "opkg upgrade",
+    "options": {
+      "ignoreDeps": "--nodeps",
+      "forceOverwrite": "--force-overwrite",
+      "allowUntrusted": ""
+    }
+  },
+  "apk": {
+    "ext": "apk",
+    "installCommand": "apk add {allowUntrusted} {package}",
+    "removeCommand": "apk del {package}",
+    "updateCommand": "apk update",
+    "upgradeCommand": "apk upgrade",
+    "options": {
+      "ignoreDeps": "--force-broken-world",
+      "forceOverwrite": "--force-overwrite",
+      "allowUntrusted": "--allow-untrusted"
+    }
+  }
+}
