@@ -1,4 +1,5 @@
 {
+  "requiresUpdate": true,
   "_schema": {
     "_description": "Package definition schema for postinst.json. This block is ignored by custom.js.",
     "category_options": {
