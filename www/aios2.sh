@@ -2298,7 +2298,7 @@ EOF
             
             local selected_patterns=""
             while read -r pkg_id; do
-                if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                if grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     pattern=$(get_customfeed_package_pattern "$pkg_id")
                     selected_patterns="${selected_patterns}${pattern} "
                 fi
