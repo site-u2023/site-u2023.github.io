@@ -371,9 +371,9 @@ fi
 }
 [ -n "${enable_htpasswd}" ] && {
     [ -z "${apache_keep}" ] && {
-        local htpasswd_bin="/usr/bin/htpasswd"
-        local htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
-        local tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
+        htpasswd_bin="/usr/bin/htpasswd"
+        htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
+        tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
         
         [ -f "$htpasswd_bin" ] && cp "$htpasswd_bin" /tmp/htpasswd
         for lib in $htpasswd_libs; do
