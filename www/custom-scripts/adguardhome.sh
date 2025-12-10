@@ -97,7 +97,7 @@ export RECOMMENDED_FLASH="100"
 # =============================================================================
 
 # Dependency packages for htpasswd
-HTPASSWD_DEPS="libaprutil libapr libexpat libuuid1"
+HTPASSWD_DEPS="libaprutil libapr libexpat libuuid1 libpcre2"
 HTPASSWD_PROVIDER="apache"
 
 # SSL certificate bundle
