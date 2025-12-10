@@ -2125,271 +2125,6 @@ EOF
     fi
 }
 
-XXX_generate_files() {
-    local pkgs selected_pkgs cat_id template_url api_url download_url temp_pkg_file pkg_id pattern
-    local tpl_custom enable_var
-    local script_id script_file template_path script_url
-    local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
-
-    : > "$temp_enablevars"
-    
-    if [ -s "$SELECTED_PACKAGES" ]; then
-        while read -r cache_line; do
-            local pkg_id unique_id enable_var
-            pkg_id=$(echo "$cache_line" | cut -d= -f1)
-            unique_id=$(echo "$cache_line" | cut -d= -f3)
-            
-            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
-            
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${enable_var}='1'" >> "$temp_enablevars"
-            fi
-        done < "$SELECTED_PACKAGES"
-        
-        [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
-    fi
-    rm -f "$temp_enablevars"
-    
-    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
-    
-    if [ -f "$TPL_POSTINST" ]; then
-        if [ -s "$SELECTED_PACKAGES" ]; then
-            # id_opts_list を構築
-            local id_opts_list=""
-            
-            while read -r cache_line; do
-                local pkg_id install_opts
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                install_opts=$(echo "$cache_line" | cut -d= -f4)
-                
-                id_opts_list="${id_opts_list}${pkg_id}|${install_opts}
-"
-            done < "$SELECTED_PACKAGES"
-            
-            local final_list=""
-            local processed_ids=""
-            
-            while read -r line; do
-                [ -z "$line" ] && continue
-                
-                local current_id current_opts
-                current_id=$(echo "$line" | cut -d'|' -f1)
-                current_opts=$(echo "$line" | cut -d'|' -f2)
-                
-                if echo "$processed_ids" | grep -q "^${current_id}\$"; then
-                    continue
-                fi
-                
-                local same_id_lines
-                same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
-                local count
-                count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
-                
-                if [ "$count" -gt 1 ]; then
-                    # 同じIDが複数ある場合、オプションなしを優先
-                    local no_opts_line
-                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
-                    
-                    if [ -n "$no_opts_line" ]; then
-                        # オプションなしがある場合はそれを使う
-                        final_list="${final_list}${current_id}
-"
-                    else
-                        # オプションなしがない場合は最初のオプション付きを使う
-                        local has_opts_line
-                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
-                        
-                        if [ -n "$has_opts_line" ]; then
-                            local opts_value
-                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
-                            final_list="${final_list}${opts_value} ${current_id}
-"
-                        else
-                            final_list="${final_list}${current_id}
-"
-                        fi
-                    fi
-                else
-                    if [ -n "$current_opts" ]; then
-                        final_list="${final_list}${current_opts} ${current_id}
-"
-                    else
-                        final_list="${final_list}${current_id}
-"
-                    fi
-                fi
-                
-                processed_ids="${processed_ids}${current_id}
-"
-            done <<EOF
-$id_opts_list
-EOF
-            
-            pkgs=$(echo "$final_list" | xargs)
-        else
-            pkgs=""
-        fi
-        
-        awk -v packages="$pkgs" '
-            /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                print
-                print "PACKAGES=\"" packages "\""
-                skip=1
-                next
-            }
-            /^# END_VARIABLE_DEFINITIONS/ {
-                skip=0
-            }
-            !skip
-        ' "$TPL_POSTINST" > "$CONFIG_DIR/postinst.sh"
-        
-        chmod +x "$CONFIG_DIR/postinst.sh"
-    fi
-    
-    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
-    
-    if [ -f "$TPL_SETUP" ]; then
-        awk '
-            /^# BEGIN_VARS/ {
-                print
-                if (vars_file != "") {
-                    while ((getline line < vars_file) > 0) {
-                        print line
-                    }
-                    close(vars_file)
-                }
-                skip=1
-                next
-            }
-            /^# END_VARS/ {
-                skip=0
-            }
-            !skip
-        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh"
-        
-        chmod +x "$CONFIG_DIR/setup.sh"
-    fi
-    
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        local pids=""
-        
-        while read -r cat_id; do
-            (
-                template_url=$(get_customfeed_template_url "$cat_id")
-                
-                [ -z "$template_url" ] && exit 0
-                
-                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
-                
-                fetch_cached_template "$template_url" "$tpl_custom"
-                
-                [ ! -f "$tpl_custom" ] && exit 0
-                
-                api_url=$(get_customfeed_api_base "$cat_id")
-                download_url=$(get_customfeed_download_base "$cat_id")
-                
-                temp_pkg_file="$CONFIG_DIR/temp_${cat_id}.txt"
-                : > "$temp_pkg_file"
-                
-                while read -r pkg_id; do
-                    if grep -q "^${pkg_id}$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                        pattern=$(get_customfeed_package_pattern "$pkg_id")
-                        echo "$pattern" >> "$temp_pkg_file"
-                    fi
-                done <<EOF2
-$(get_category_packages "$cat_id")
-EOF2
-                
-                selected_pkgs=""
-                if [ -s "$temp_pkg_file" ]; then
-                    selected_pkgs=$(awk 'BEGIN{ORS=" "} {print} END{print ""}' "$temp_pkg_file" | sed 's/ $//')
-                fi
-                
-                awk -v packages="$selected_pkgs" \
-                    -v api="$api_url" \
-                    -v download="$download_url" '
-                    /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                        print
-                        print "PACKAGES=\"" packages "\""
-                        print "API_URL=\"" api "\""
-                        print "DOWNLOAD_BASE_URL=\"" download "\""
-                        print "RUN_OPKG_UPDATE=\"0\""
-                        skip=1
-                        next
-                    }
-                    /^# END_VARIABLE_DEFINITIONS/ {
-                        skip=0
-                    }
-                    !skip
-                ' "$tpl_custom" > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-                
-                chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
-                rm -f "$temp_pkg_file"
-            ) &
-            pids="$pids $!"
-        done <<EOF3
-$(get_customfeed_categories)
-EOF3
-        
-        for pid in $pids; do
-            wait $pid
-        done
-        
-        echo "[DEBUG] customfeeds generation completed in parallel" >> "$CONFIG_DIR/debug.log"
-    else
-        {
-            echo "#!/bin/sh"
-            echo "# No custom feeds configured"
-            echo "exit 0"
-        } > "$CONFIG_DIR/customfeeds-none.sh"
-        chmod +x "$CONFIG_DIR/customfeeds-none.sh"
-    fi
-    
-    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        while read -r script_id; do
-            script_file=$(get_customscript_file "$script_id")
-            [ -z "$script_file" ] && continue
-            
-            script_url="${BASE_URL}/custom-script/${script_file}"
-            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
-            if [ -f "$template_path" ]; then
-                {
-                    awk '
-                        /^# BEGIN_VARIABLE_DEFINITIONS/ {
-                            print
-                            if (vars_file != "") {
-                                while ((getline line < vars_file) > 0) {
-                                    print line
-                                }
-                                close(vars_file)
-                            }
-                            skip=1
-                            next
-                        }
-                        /^# END_VARIABLE_DEFINITIONS/ {
-                            skip=0
-                        }
-                        !skip
-                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
-                    
-                    echo ""
-                    echo "${script_id}_main -t"
-                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
-                
-                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
-            fi
-        done <<SCRIPTS
-$(get_customscript_all_scripts)
-SCRIPTS
-        
-        echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
-    fi
-
-    # ファイル生成後、次回のために選択キャッシュをクリア
-    clear_selection_cache
-}
-
 generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url pkg_id pattern
     local tpl_custom enable_var
@@ -2496,15 +2231,24 @@ EOF
 $id_opts_list
 EOF
             
-            pkgs=$(echo "$final_list" | xargs)
+            # PKG_MGRに基づいてインストールコマンドを生成
+            local install_cmd=""
+            if [ "$PKG_MGR" = "apk" ]; then
+                pkgs=$(echo "$final_list" | sed 's/--nodeps/--force-broken-world/g' | xargs)
+                install_cmd="apk add $pkgs"
+            else
+                pkgs=$(echo "$final_list" | xargs)
+                install_cmd="opkg install $pkgs"
+            fi
         else
             pkgs=""
+            install_cmd=""
         fi
         
-        awk -v packages="$pkgs" '
+        awk -v install_cmd="$install_cmd" '
             /^# BEGIN_VARIABLE_DEFINITIONS/ {
                 print
-                print "PACKAGES=\"" packages "\""
+                print "INSTALL_CMD=\"" install_cmd "\""
                 skip=1
                 next
             }
