@@ -83,6 +83,8 @@ filters:
     id: 1764215106
 
 user_rules:
+  - '# google analytecs'
+  - '@@||analytics.google.com'
   - '# 日本の主要サービス'
   - '@@||amazon.co.jp^$important'
   - '@@||rakuten.co.jp^$important'
