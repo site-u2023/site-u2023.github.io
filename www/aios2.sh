@@ -1493,10 +1493,8 @@ collect_script_inputs() {
         local validation_json
         validation_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].validation" 2>/dev/null | head -1)
         
-        # ★ ラベルに条件を追加
         local display_label="$input_label"
         if [ -n "$min_length" ]; then
-            # display_label="${input_label} (${min_length}+ chars)"
             display_label="${input_label}"
         fi
         
