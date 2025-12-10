@@ -1,4 +1,18 @@
 {
+  "installOptions": {
+    "ignoreDeps": {
+      "opkg": "--nodeps",
+      "apk": "--force-broken-world"
+    },
+    "forceOverwrite": {
+      "opkg": "--force-overwrite",
+      "apk": "--force-overwrite"
+    },
+    "allowUntrusted": {
+      "opkg": "",
+      "apk": "--allow-untrusted"
+    }
+  },
   "categories": [
     {
       "id": "gspotx2f",
