@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.0928"
+VERSION="R7.1210.1429"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2596,6 +2596,24 @@ update_package_manager() {
                 fi
             done < "$SELECTED_CUSTOM_PACKAGES"
         fi
+    fi
+    
+    # customscripts.jsonをチェック
+    if [ "$needs_update" -eq 0 ]; then
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local script_id
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            
+            local script_update
+            script_update=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
+            
+            if [ "$script_update" = "true" ]; then
+                needs_update=1
+                break
+            fi
+        done
     fi
     
     # アップデート実行
