@@ -12,9 +12,11 @@ exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
 if command -v opkg >/dev/null 2>&1; then
     PKG_MGR="opkg"
     PKG_EXT="ipk"
+    INSTALL_CMD="opkg install"
 elif command -v apk >/dev/null 2>&1; then
     PKG_MGR="apk"
     PKG_EXT="apk"
+    INSTALL_CMD="apk add"
 else
     echo "[ERROR] No supported package manager found"
     exit 1
@@ -33,7 +35,6 @@ ALL_RELEASES=$(wget --no-check-certificate -q -O - "https://api.github.com/repos
 }
 
 # 依存関係を考慮してパッケージをソート
-# luci-theme-argon を先にインストール、luci-app-argon-config を後にする
 SORTED_PACKAGES=""
 THEME_PACKAGES=""
 CONFIG_PACKAGES=""
@@ -53,12 +54,18 @@ done <<EOF
 $(echo "$PACKAGES" | tr ' ' '\n')
 EOF
 
-# テーマを先に、設定アプリを後に
 SORTED_PACKAGES="${THEME_PACKAGES}${CONFIG_PACKAGES}"
+
+# 失敗カウンター
+FAILED_COUNT=0
+SUCCESS_COUNT=0
+TOTAL_COUNT=0
 
 # ソート済みパッケージを処理
 while read -r pattern; do
     [ -z "$pattern" ] && continue
+    
+    TOTAL_COUNT=$((TOTAL_COUNT + 1))
     
     echo ""
     echo "Processing package pattern: ${pattern}"
@@ -69,12 +76,11 @@ while read -r pattern; do
     PACKAGE_NAME=""
     TAG_NAME=""
     
-    # 各リリースをインデックスでループ（サブシェルを回避）
+    # 各リリースをインデックスでループ
     i=0
     while [ $i -lt $RELEASE_COUNT ]; do
         current_tag=$(echo "$ALL_RELEASES" | jsonfilter -e "@[$i].tag_name" 2>/dev/null)
         
-        # このリリースのアセットから対応する拡張子のファイルを探す
         found_pkg=$(echo "$ALL_RELEASES" | jsonfilter -e "@[$i].assets[*].name" | grep "${pattern}" | grep "\.${PKG_EXT}$" | head -n1)
         
         if [ -n "$found_pkg" ]; then
@@ -89,6 +95,7 @@ while read -r pattern; do
     
     if [ -z "$PACKAGE_NAME" ]; then
         echo "[ERROR] No .${PKG_EXT} package found for pattern: ${pattern}"
+        FAILED_COUNT=$((FAILED_COUNT + 1))
         continue
     fi
     
@@ -96,22 +103,35 @@ while read -r pattern; do
     echo "Downloading from: ${DOWNLOAD_URL}"
     
     if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
-        ${PKG_MGR} install "${CONFIG_DIR}/${PACKAGE_NAME}"
+        ${INSTALL_CMD} "${CONFIG_DIR}/${PACKAGE_NAME}"
         INSTALL_STATUS=$?
         rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
         
         if [ $INSTALL_STATUS -eq 0 ]; then
             echo "Installation completed: ${PACKAGE_NAME}"
+            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
         else
             echo "[ERROR] Installation failed with status ${INSTALL_STATUS}: ${PACKAGE_NAME}"
+            FAILED_COUNT=$((FAILED_COUNT + 1))
         fi
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
+        FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
 done <<EOF
 $(echo "$SORTED_PACKAGES" | tr ' ' '\n')
 EOF
 
 echo ""
-echo "All packages processed."
-exit 0
+echo "=========================================="
+echo "Summary: ${SUCCESS_COUNT}/${TOTAL_COUNT} packages installed successfully"
+
+if [ $FAILED_COUNT -gt 0 ]; then
+    echo "Warning: ${FAILED_COUNT} package(s) failed"
+    echo "=========================================="
+    exit 1
+else
+    echo "All packages processed successfully"
+    echo "=========================================="
+    exit 0
+fi
