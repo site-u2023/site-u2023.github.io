@@ -232,16 +232,12 @@ dns:
     - https://unfiltered.adguard-dns.com/dns-query
     - https://jp.tiar.app/dns-query
     - https://dns.nextdns.io
+  upstream_mode: parallel
   cache_size: 1048576
   enable_dnssec: false
   use_private_ptr_resolvers: true
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
-```
-
-### upstream_mod セクション
-```yaml
-  upstream_mode: parallel
 ```
 
 ### tls セクション
@@ -274,6 +270,8 @@ filters:
 ### user_rules セクション
 ```yaml
 user_rules:
+  - '# google analytecs'
+  - '@@||analytics.google.com'
   - '# 日本の主要サービス'
   - '@@||amazon.co.jp^$important'
   - '@@||rakuten.co.jp^$important'
