@@ -2,6 +2,7 @@
   "scripts": [
     {
       "id": "adguardhome",
+      "requiresUpdate": true,
       "name": "AdGuard Home",
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
