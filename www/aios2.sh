@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1552"
+VERSION="R7.1210.1709"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -72,6 +72,22 @@ clear_selection_cache() {
     _SELECTED_CUSTOM_CACHE_LOADED=0
     _SELECTED_PACKAGES_CACHE=""
     _SELECTED_CUSTOM_CACHE=""
+}
+
+expand_template() {
+    local template="$1"
+    shift
+    
+    local result="$template"
+    
+    while [ $# -gt 0 ]; do
+        local key="$1"
+        local value="$2"
+        result=$(echo "$result" | sed "s|{$key}|$value|g")
+        shift 2
+    done
+    
+    echo "$result"
 }
 
 # adguardhome
@@ -265,22 +281,44 @@ check_packages_installed() {
     [ -z "$MISSING_UI_PKGS" ]
 }
 
+load_package_manager_config() {
+    local config_json="$CONFIG_DIR/package-manager.json"
+    
+    [ ! -f "$config_json" ] && return 1
+    
+    PKG_EXT=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.ext")
+    
+    # オプションを取得
+    PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.ignoreDeps")
+    PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.forceOverwrite")
+    PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.allowUntrusted")
+    
+    # テンプレートを取得
+    local install_template remove_template update_template upgrade_template
+    
+    install_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.installCommand")
+    remove_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.removeCommand")
+    update_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.updateCommand")
+    upgrade_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.upgradeCommand")
+    
+    # {package} は使用時に展開するため、他のプレースホルダーだけ先に展開
+    PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$install_template" \
+        "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED" \
+        "ignoreDeps" "$PKG_OPTION_IGNORE_DEPS" \
+        "forceOverwrite" "$PKG_OPTION_FORCE_OVERWRITE")
+    
+    PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$remove_template")
+    PKG_UPDATE_CMD=$(expand_template "$update_template")
+    PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
+}
+
 install_package() {
-    case "$PKG_MGR" in
-        opkg)
-            opkg update
-            opkg install "$@" || return 1
-            ;;
-        apk)
-            apk update
-            apk add "$@" || return 1
-            ;;
-        *)
-            echo "Cannot install packages: no supported package manager"
-            return 1
-            ;;
-    esac
-    return 0
+    local package="$1"
+    local cmd
+    
+    cmd=$(expand_template "$PKG_INSTALL_CMD_TEMPLATE" "package" "$package")
+    
+    eval "$cmd"
 }
 
 init() {
