@@ -1496,7 +1496,8 @@ collect_script_inputs() {
         # ★ ラベルに条件を追加
         local display_label="$input_label"
         if [ -n "$min_length" ]; then
-            display_label="${input_label} (${min_length}+ chars)"
+            # display_label="${input_label} (${min_length}+ chars)"
+            display_label="${input_label}"
         fi
         
         if [ -n "$validation_json" ]; then
