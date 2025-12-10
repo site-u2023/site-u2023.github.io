@@ -1273,6 +1273,9 @@ EOF
         
         clear
         
+        # パッケージマネージャーのアップデート
+        update_package_manager
+        
         echo "$(translate 'tr-tui-installing-packages')"
         sh "$CONFIG_DIR/postinst.sh"
         
