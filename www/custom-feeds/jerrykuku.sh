@@ -22,7 +22,7 @@ fi
 
 echo ""
 echo "Detected package manager: ${PKG_MGR} (extension: .${PKG_EXT})"
-echo "Fetching release information from: ${API_URL}"
+echo "Fetching release information from GitHub API"
 
 # すべてのリリースを取得
 ALL_RELEASES=$(wget --no-check-certificate -q -O - "https://api.github.com/repos/jerrykuku/luci-theme-argon/releases")
@@ -38,33 +38,29 @@ while read -r pattern; do
     echo ""
     echo "Processing package pattern: ${pattern}"
     
-    # すべてのリリースから対応するパッケージを探す
-    FOUND_RELEASE=""
+    # リリースの数を取得
+    RELEASE_COUNT=$(echo "$ALL_RELEASES" | jsonfilter -e '@[*].tag_name' | wc -l)
+    
     PACKAGE_NAME=""
     TAG_NAME=""
     
-    # 各リリースを順番にチェック（新しい順）
-    echo "$ALL_RELEASES" | jsonfilter -e '@[*]' | while read -r release_json; do
-        # このリリースのタグ名を取得
-        current_tag=$(echo "$release_json" | jsonfilter -e '@.tag_name' 2>/dev/null)
+    # 各リリースをインデックスでループ（サブシェルを回避）
+    i=0
+    while [ $i -lt $RELEASE_COUNT ]; do
+        current_tag=$(echo "$ALL_RELEASES" | jsonfilter -e "@[$i].tag_name" 2>/dev/null)
         
         # このリリースのアセットから対応する拡張子のファイルを探す
-        found_pkg=$(echo "$release_json" | jsonfilter -e '@.assets[*].name' | grep "${pattern}" | grep "\.${PKG_EXT}$" | head -n1)
+        found_pkg=$(echo "$ALL_RELEASES" | jsonfilter -e "@[$i].assets[*].name" | grep "${pattern}" | grep "\.${PKG_EXT}$" | head -n1)
         
         if [ -n "$found_pkg" ]; then
-            echo "Found: ${found_pkg} in release ${current_tag}"
-            echo "${current_tag}|${found_pkg}"
+            PACKAGE_NAME="$found_pkg"
+            TAG_NAME="$current_tag"
+            echo "Found: ${PACKAGE_NAME} in release ${TAG_NAME}"
             break
         fi
-    done > "$CONFIG_DIR/jerrykuku_${pattern}.tmp"
-    
-    # 結果を読み込み
-    if [ -f "$CONFIG_DIR/jerrykuku_${pattern}.tmp" ] && [ -s "$CONFIG_DIR/jerrykuku_${pattern}.tmp" ]; then
-        read -r result < "$CONFIG_DIR/jerrykuku_${pattern}.tmp"
-        TAG_NAME=$(echo "$result" | cut -d'|' -f1)
-        PACKAGE_NAME=$(echo "$result" | cut -d'|' -f2)
-        rm -f "$CONFIG_DIR/jerrykuku_${pattern}.tmp"
-    fi
+        
+        i=$((i + 1))
+    done
     
     if [ -z "$PACKAGE_NAME" ]; then
         echo "[ERROR] No .${PKG_EXT} package found for pattern: ${pattern}"
