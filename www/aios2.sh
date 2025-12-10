@@ -33,6 +33,8 @@ FLASH_FREE_MB=""
 LAN_IF=""
 LAN_ADDR=""
 LAN_ADDR6=""
+DISTRIB_RELEASE=""
+OPENWRT_VERSION=""
 
 BREADCRUMB_SEP=" > "
 
@@ -482,11 +484,12 @@ get_language_code() {
 }
 
 get_extended_device_info() {
-    get_device_info
-    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-
     # LuCIから言語設定を事前取得
     get_language_code
+    
+    get_device_info
+    OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+    OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2) 
     
     # APIから値を抽出して変数に設定
     _set_api_value() {
@@ -2578,7 +2581,15 @@ EOF3
                     echo "[DEBUG] No packages selected for $cat_id, skipping script generation" >> "$CONFIG_DIR/debug.log"
                     exit 0
                 fi
-            
+
+                min_version=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+                if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
+                    if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
+                        echo "[DEBUG] Skipping $cat_id: requires OpenWrt $min_version+, current is $OPENWRT_VERSION_MAJOR" >> "$CONFIG_DIR/debug.log"
+                        exit 0
+                    fi
+                fi
+        
                 template_url=$(get_customfeed_template_url "$cat_id")
                 
                 [ -z "$template_url" ] && exit 0
