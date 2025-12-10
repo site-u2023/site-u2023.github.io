@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1210.0056"
+VERSION="R7.1210.1326"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -63,7 +63,7 @@ NET_ADDR6_LIST=""
 SERVICE_NAME=""
 PACKAGE_MANAGER=""
 FAMILY_TYPE=""
-LAN=""
+LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
 
 # Service detection variables (set by detect_adguardhome_service)
 DETECTED_SERVICE_TYPE=""
@@ -354,7 +354,6 @@ check_system() {
     
     printf "\033[1;34mChecking system requirements\033[0m\n"
     
-    LAN="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
     if [ -z "$LAN" ]; then
         printf "\033[1;31mLAN interface not found. Aborting.\033[0m\n"
         exit 1
@@ -486,6 +485,11 @@ read_password() {
 
 update_credentials() {
     printf "\033[1;34mUpdating AdGuard Home Credentials\033[0m\n\n"
+    
+    if [ -z "$LAN" ]; then
+        printf "\033[1;31mLAN interface not found. Aborting.\033[0m\n"
+        return 1
+    fi
     
     if ! detect_adguardhome_service; then
         printf "\033[1;31mAdGuard Home not found.\033[0m\n"
