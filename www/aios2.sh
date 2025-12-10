@@ -1427,6 +1427,46 @@ get_adguardhome_current_user() {
     ' "$yaml_file"
 }
 
+validate_input_value() {
+    local value="$1"
+    local validation_json="$2"
+    local label="$3"
+    
+    [ -z "$validation_json" ] && return 0
+    
+    local val_type
+    val_type=$(echo "$validation_json" | jsonfilter -e '@.type' 2>/dev/null)
+    
+    case "$val_type" in
+        port)
+            # 数値チェック
+            case "$value" in
+                ''|*[!0-9]*)
+                    show_msgbox "$label" "$(translate 'tr-validation-number-required')"
+                    return 1
+                    ;;
+            esac
+            
+            # 範囲チェック
+            local min max
+            min=$(echo "$validation_json" | jsonfilter -e '@.min' 2>/dev/null)
+            max=$(echo "$validation_json" | jsonfilter -e '@.max' 2>/dev/null)
+            
+            if [ -n "$min" ] && [ "$value" -lt "$min" ]; then
+                show_msgbox "$label" "$(translate 'tr-validation-min-value'): $min"
+                return 1
+            fi
+            
+            if [ -n "$max" ] && [ "$value" -gt "$max" ]; then
+                show_msgbox "$label" "$(translate 'tr-validation-max-value'): $max"
+                return 1
+            fi
+            ;;
+    esac
+    
+    return 0
+}
+
 collect_script_inputs() {
     local script_id="$1"
     local breadcrumb="$2"
@@ -1456,6 +1496,10 @@ collect_script_inputs() {
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
         input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
         min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
+        
+        # ★ バリデーション設定を取得
+        local validation_json
+        validation_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].validation" 2>/dev/null | head -1)
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1488,11 +1532,17 @@ collect_script_inputs() {
                 fi
             fi
             
+            # 最小文字数チェック
             if [ -n "$min_length" ]; then
                 local value_length="${#value}"
                 if [ "$value_length" -lt "$min_length" ]; then
                     continue
                 fi
+            fi
+            
+            # ★ 汎用バリデーション
+            if ! validate_input_value "$value" "$validation_json" "$input_label"; then
+                continue
             fi
             
             break
