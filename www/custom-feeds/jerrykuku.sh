@@ -32,6 +32,31 @@ ALL_RELEASES=$(wget --no-check-certificate -q -O - "https://api.github.com/repos
     exit 1
 }
 
+# 依存関係を考慮してパッケージをソート
+# luci-theme-argon を先にインストール、luci-app-argon-config を後にする
+SORTED_PACKAGES=""
+THEME_PACKAGES=""
+CONFIG_PACKAGES=""
+
+while read -r pattern; do
+    [ -z "$pattern" ] && continue
+    
+    case "$pattern" in
+        *config*)
+            CONFIG_PACKAGES="${CONFIG_PACKAGES}${pattern} "
+            ;;
+        *)
+            THEME_PACKAGES="${THEME_PACKAGES}${pattern} "
+            ;;
+    esac
+done <<EOF
+$(echo "$PACKAGES" | tr ' ' '\n')
+EOF
+
+# テーマを先に、設定アプリを後に
+SORTED_PACKAGES="${THEME_PACKAGES}${CONFIG_PACKAGES}"
+
+# ソート済みパッケージを処理
 while read -r pattern; do
     [ -z "$pattern" ] && continue
     
@@ -72,13 +97,19 @@ while read -r pattern; do
     
     if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
         ${PKG_MGR} install "${CONFIG_DIR}/${PACKAGE_NAME}"
+        INSTALL_STATUS=$?
         rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
-        echo "Installation completed: ${PACKAGE_NAME}"
+        
+        if [ $INSTALL_STATUS -eq 0 ]; then
+            echo "Installation completed: ${PACKAGE_NAME}"
+        else
+            echo "[ERROR] Installation failed with status ${INSTALL_STATUS}: ${PACKAGE_NAME}"
+        fi
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
     fi
 done <<EOF
-$(echo "$PACKAGES" | tr ' ' '\n')
+$(echo "$SORTED_PACKAGES" | tr ' ' '\n')
 EOF
 
 echo ""
