@@ -7,7 +7,7 @@
 BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 
-exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
 
 echo ""
 echo "Fetching latest release information from: ${API_URL}"
