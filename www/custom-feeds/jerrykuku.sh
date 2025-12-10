@@ -7,27 +7,6 @@
 BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 
-OPENWRT_RELEASE=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2 | cut -c 1-2)
-
-if [ -z "$OPENWRT_RELEASE" ]; then
-    echo "[ERROR] Unable to detect OpenWrt version"
-    exit 1
-fi
-
-if [ "$OPENWRT_RELEASE" = "SN" ]; then
-    echo "OpenWrt version: SNAPSHOT [OK]"
-elif [ "$OPENWRT_RELEASE" -ge 19 ] 2>/dev/null; then
-    echo "OpenWrt version: $OPENWRT_RELEASE [OK]"
-else
-    echo "[ERROR] Unsupported OpenWrt version: $OPENWRT_RELEASE (requires 19 or later)"
-    exit 1
-fi
-
-if [ "$RUN_OPKG_UPDATE" = "1" ]; then
-    echo "Running opkg update..."
-    opkg update
-fi
-
 echo ""
 echo "Fetching latest release information from: ${API_URL}"
 RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL")
