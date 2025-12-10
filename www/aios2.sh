@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1745"
+VERSION="R7.1210.1752"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -258,14 +258,25 @@ load_package_manager_config() {
     
     [ ! -f "$config_json" ] && return 1
     
+    # ★ 1. 最初にパッケージマネージャーを検出
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Error: No supported package manager found" >&2
+        return 1
+    fi
+    
+    echo "[DEBUG] PKG_MGR detected: $PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    
+    # ★ 2. 検出したPKG_MGRを使ってJSONから読み込む
     PKG_EXT=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.ext")
     
-    # オプションを取得
     PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.ignoreDeps")
     PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.forceOverwrite")
     PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.allowUntrusted")
     
-    # テンプレートを取得
     local install_template remove_template update_template upgrade_template
     
     install_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.installCommand")
@@ -273,7 +284,6 @@ load_package_manager_config() {
     update_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.updateCommand")
     upgrade_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.upgradeCommand")
     
-    # {package} は使用時に展開するため、他のプレースホルダーだけ先に展開
     PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$install_template" \
         "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED" \
         "ignoreDeps" "$PKG_OPTION_IGNORE_DEPS" \
