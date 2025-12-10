@@ -27,7 +27,12 @@
           "type": "number",
           "label": "tr-tui-customscript-webport",
           "default": "8000",
-          "envVar": "WEB_PORT"
+          "envVar": "WEB_PORT",
+          "validation": {
+            "type": "port",
+            "min": 1,
+            "max": 65535
+          }
         },
         {
           "id": "dns_port",
