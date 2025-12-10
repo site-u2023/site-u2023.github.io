@@ -2544,101 +2544,62 @@ EOF
     echo "$summary_file"
 }
 
+# ==========================================
+# UPDATE CHECK CONFIGURATION（新しいJSONを追加する場合はここに追加）
+# ==========================================
+UPDATE_CHECK_JSONS="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
+UPDATE_CHECK_SELECTED_FILES="$SELECTED_PACKAGES $SELECTED_CUSTOM_PACKAGES"
+
 update_package_manager() {
     local needs_update=0
-    local json_files="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
     
-    # 1. ファイルレベルチェック（最も浅い階層）
-    for json in $json_files; do
+    # 1. ファイルレベルチェック（全JSON）
+    for json in $UPDATE_CHECK_JSONS; do
         [ ! -f "$json" ] && continue
-        local file_update=$(jsonfilter -i "$json" -e "@.requiresUpdate" 2>/dev/null)
-        if [ "$file_update" = "true" ]; then
-            needs_update=1
-            break  # 見つかったら即終了
-        fi
+        local update=$(jsonfilter -i "$json" -e "@.requiresUpdate" 2>/dev/null)
+        [ "$update" = "true" ] && needs_update=1 && break
     done
     
-    # 2. カテゴリレベルチェック
-    if [ "$needs_update" -eq 0 ]; then
-        for json in $json_files; do
-            [ ! -f "$json" ] && continue
+    # 2. postinst.json - 選択済みパッケージ
+    if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r line; do
+            local id=$(echo "$line" | cut -d= -f1)
             
-            # 各JSONの選択済みアイテムに対応するカテゴリをチェック
-            local selected_file=""
-            case "$json" in
-                *postinst.json) selected_file="$SELECTED_PACKAGES" ;;
-                *customfeeds.json) selected_file="$SELECTED_CUSTOM_PACKAGES" ;;
-                *customscripts.json)
-                    # スクリプトの場合はscript_vars_*.txtから取得
-                    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                        [ -f "$var_file" ] || continue
-                        local script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-                        local cat_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
-                        if [ "$cat_update" = "true" ]; then
-                            needs_update=1
-                            break 2  # 外側のループも抜ける
-                        fi
-                    done
-                    continue
-                    ;;
-            esac
+            local update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$update" = "true" ] && needs_update=1 && break
             
-            [ ! -f "$selected_file" ] || [ ! -s "$selected_file" ] && continue
-            
-            while read -r line; do
-                local item_id=$(echo "$line" | cut -d= -f1)
-                local cat_update=$(jsonfilter -i "$json" -e "@.categories[@.packages[*].id='$item_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$cat_update" = "true" ]; then
-                    needs_update=1
-                    break 2  # 外側のループも抜ける
-                fi
-            done < "$selected_file"
-        done
+            update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$update" = "true" ] && needs_update=1 && break
+        done < "$SELECTED_PACKAGES"
     fi
     
-    # 3. アイテムレベルチェック
+    # 3. customfeeds.json - 選択済みカスタムパッケージ
+    if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+        while read -r line; do
+            local id=$(echo "$line" | cut -d= -f1)
+            
+            local update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$update" = "true" ] && needs_update=1 && break
+            
+            update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$update" = "true" ] && needs_update=1 && break
+        done < "$SELECTED_CUSTOM_PACKAGES"
+    fi
+    
+    # 4. customscripts.json - 実行予定スクリプト
     if [ "$needs_update" -eq 0 ]; then
-        for json in $json_files; do
-            [ ! -f "$json" ] && continue
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            local script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             
-            local selected_file=""
-            case "$json" in
-                *postinst.json) selected_file="$SELECTED_PACKAGES" ;;
-                *customfeeds.json) selected_file="$SELECTED_CUSTOM_PACKAGES" ;;
-                *customscripts.json)
-                    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                        [ -f "$var_file" ] || continue
-                        local script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-                        local script_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
-                        if [ "$script_update" = "true" ]; then
-                            needs_update=1
-                            break 2
-                        fi
-                        
-                        # オプションレベルもチェック
-                        local selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
-                        if [ -n "$selected_option" ]; then
-                            local opt_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].requiresUpdate" 2>/dev/null | head -1)
-                            if [ "$opt_update" = "true" ]; then
-                                needs_update=1
-                                break 2
-                            fi
-                        fi
-                    done
-                    continue
-                    ;;
-            esac
+            local update=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ "$update" = "true" ] && needs_update=1 && break
             
-            [ ! -f "$selected_file" ] || [ ! -s "$selected_file" ] && continue
-            
-            while read -r line; do
-                local item_id=$(echo "$line" | cut -d= -f1)
-                local item_update=$(jsonfilter -i "$json" -e "@.categories[*].packages[@.id='$item_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$item_update" = "true" ]; then
-                    needs_update=1
-                    break 2
-                fi
-            done < "$selected_file"
+            local option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+            [ -n "$option" ] && {
+                update=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option'].requiresUpdate" 2>/dev/null | head -1)
+                [ "$update" = "true" ] && needs_update=1 && break
+            }
         done
     fi
     
