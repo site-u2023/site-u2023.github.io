@@ -104,6 +104,7 @@ TUI_MODE=""            # -t: tui mode
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
+PACKAGE_MANAGER_JSON="$CONFIG_DIR/package-manager.json"
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
@@ -161,6 +162,7 @@ load_config_from_js() {
     WHIPTAIL_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     SIMPLE_UI_PATH=$(echo "$CONFIG_CONTENT" | grep "simple_ui_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     WHIPTAIL_FALLBACK_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_fallback_path:" | sed 's/.*"\([^"]*\)".*/\1/')
+    PACKAGE_MANAGER_CONFIG_PATH=$(echo "$CONFIG_CONTENT" | grep "package_manager_config_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     
     # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
@@ -173,7 +175,8 @@ load_config_from_js() {
     CUSTOMFEEDS_JSON_URL="${BASE_URL}/${CUSTOMFEEDS_DB_PATH}"
     CUSTOMSCRIPTS_JSON_URL="${BASE_URL}/${CUSTOMSCRIPTS_DB_PATH}"
     WHIPTAIL_FALLBACK_URL="${BASE_URL}/${WHIPTAIL_FALLBACK_PATH}"
-    
+    PACKAGE_MANAGER_CONFIG_URL="${BASE_URL}/${PACKAGE_MANAGER_CONFIG_PATH}"
+ 
     local CACHE_BUSTER="?t=$(date +%s)"
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
