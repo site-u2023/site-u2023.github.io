@@ -249,27 +249,6 @@ select_ui_mode() {
 
 # Package Manager Detection
 
-detect_package_manager() {
-    if command -v opkg >/dev/null 2>&1; then
-        PKG_MGR="opkg"
-        PKG_EXT="ipk"
-        PKG_INSTALL_CMD="opkg install"
-        PKG_REMOVE_CMD="opkg remove"
-        PKG_UPDATE_CMD="opkg update"
-        PKG_UPGRADE_CMD="opkg upgrade"
-    elif command -v apk >/dev/null 2>&1; then
-        PKG_MGR="apk"
-        PKG_EXT="apk"
-        PKG_INSTALL_CMD="apk add"
-        PKG_REMOVE_CMD="apk del"
-        PKG_UPDATE_CMD="apk update"
-        PKG_UPGRADE_CMD="apk upgrade"
-    else
-        echo "Warning: No supported package manager found"
-        PKG_MGR="none"
-    fi
-}
-
 check_packages_installed() {
     MISSING_UI_PKGS=""
     
@@ -2969,156 +2948,6 @@ show_log() {
     fi
 }
 
-XXX_aios2_main() {
-    
-    START_TIME=$(cut -d' ' -f1 /proc/uptime)
-    
-    elapsed_time() {
-        local current=$(cut -d' ' -f1 /proc/uptime)
-        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
-    }
-    
-    clear
-    print_banner
-    
-    mkdir -p "$CONFIG_DIR"
-    
-    get_language_code
-    
-    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
-        echo "Error: Failed to download config.js"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    init
-    
-    detect_package_manager
-    
-    # 全てのダウンロードをバックグラウンドで開始
-    (download_api_with_retry) &
-    API_PID=$!
-    
-    (download_setup_json) &
-    SETUP_PID=$!
-    
-    (download_postinst_json) &
-    POSTINST_PID=$!
-    
-    (download_customfeeds_json >/dev/null 2>&1) &
-    CUSTOMFEEDS_PID=$!
-    
-    (download_customscripts_json >/dev/null 2>&1) &
-    CUSTOMSCRIPTS_PID=$!
-    
-    (prefetch_templates) &
-    TEMPLATES_PID=$!
-    
-    (download_language_json "en" >/dev/null 2>&1) &
-    LANG_EN_PID=$!
-    
-    # 母国語ファイルのダウンロード（LuCIから取得した言語コードを使用）
-    NATIVE_LANG_PID=""
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        (download_language_json "${AUTO_LANGUAGE}") &
-        NATIVE_LANG_PID=$!
-    fi
-    
-    (
-        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
-    ) &
-    UI_DL_PID=$!
-    
-    # 母国語ファイルのダウンロード完了を待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
-    
-    # UI表示前の時点で時間を記録
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
-    # UI選択を即座に表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
-    
-    # 必須ファイルの完了を待機
-    wait $API_PID
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    wait $UI_DL_PID
-    
-    if [ $SETUP_STATUS -ne 0 ]; then
-        echo "Cannot continue without setup.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    if [ $POSTINST_STATUS -ne 0 ]; then
-        echo "Cannot continue without postinst.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    fi
-    
-    # デバイス情報取得（API情報で上書き・補完）
-    get_extended_device_info
-
-    # APIから言語コードが取得できた場合、母国語ファイルをダウンロード
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
-            download_language_json "${AUTO_LANGUAGE}"
-        fi
-    fi
-    
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
-    
-    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
-    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
-    
-    echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
-
-    BEFORE_SED=$(cut -d' ' -f1 /proc/uptime)
-    POST_UI_WAIT_DURATION=$(awk "BEGIN {printf \"%.3f\", $BEFORE_SED - $AFTER_UI_SELECT}")
-    echo "[TIME] Post-UI wait and processing: ${POST_UI_WAIT_DURATION}s" >> "$CONFIG_DIR/debug.log"
-
-    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
-    fi
-    
-    BEFORE_SOURCE=$(cut -d' ' -f1 /proc/uptime)
-    SED_DURATION=$(awk "BEGIN {printf \"%.3f\", $BEFORE_SOURCE - $BEFORE_SED}")
-    echo "[TIME] sed processing: ${SED_DURATION}s" >> "$CONFIG_DIR/debug.log"
-    
-    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
-        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        AFTER_SOURCE=$(cut -d' ' -f1 /proc/uptime)
-        SOURCE_DURATION=$(awk "BEGIN {printf \"%.3f\", $AFTER_SOURCE - $BEFORE_SOURCE}")
-        echo "[TIME] Source duration: ${SOURCE_DURATION}s" >> "$CONFIG_DIR/debug.log"
-        aios2_${UI_MODE}_main
-    else
-        echo "Error: UI module aios2-${UI_MODE}.sh not found."
-        exit 1
-    fi
-    
-    echo ""
-    echo "Thank you for using aios2!"
-    echo ""
-}
-
 aios2_main() {
     
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
@@ -3144,8 +2973,6 @@ aios2_main() {
     
     init
     
-    detect_package_manager
-    
     # 全てのダウンロードをバックグラウンドで開始
     (download_api_with_retry) &
     API_PID=$!
@@ -3167,6 +2994,10 @@ aios2_main() {
     
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
+    
+    # package-manager.jsonのダウンロード追加
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
+    PKG_MGR_CONFIG_PID=$!
     
     # 母国語ファイルのダウンロード（LuCIから取得した言語コードを使用）
     NATIVE_LANG_PID=""
@@ -3204,6 +3035,7 @@ aios2_main() {
     SETUP_STATUS=$?
     wait $POSTINST_PID
     POSTINST_STATUS=$?
+    wait $PKG_MGR_CONFIG_PID
     wait $UI_DL_PID
     
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -3219,6 +3051,14 @@ aios2_main() {
         read -r _
         return 1
     fi
+    
+    # パッケージマネージャー設定読み込み（検出含む）
+    load_package_manager_config || {
+        echo "Failed to load package manager config"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
     
     # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
