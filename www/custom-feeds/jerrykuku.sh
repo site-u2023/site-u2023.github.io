@@ -8,20 +8,6 @@ BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
 
-# パッケージマネージャーを検出
-if command -v opkg >/dev/null 2>&1; then
-    PKG_MGR="opkg"
-    PKG_EXT="ipk"
-    INSTALL_CMD="opkg install"
-elif command -v apk >/dev/null 2>&1; then
-    PKG_MGR="apk"
-    PKG_EXT="apk"
-    INSTALL_CMD="apk add"
-else
-    echo "[ERROR] No supported package manager found"
-    exit 1
-fi
-
 echo ""
 echo "Detected package manager: ${PKG_MGR} (extension: .${PKG_EXT})"
 echo "Fetching release information from GitHub API"
@@ -56,16 +42,9 @@ EOF
 
 SORTED_PACKAGES="${THEME_PACKAGES}${CONFIG_PACKAGES}"
 
-# 失敗カウンター
-FAILED_COUNT=0
-SUCCESS_COUNT=0
-TOTAL_COUNT=0
-
 # ソート済みパッケージを処理
 while read -r pattern; do
     [ -z "$pattern" ] && continue
-    
-    TOTAL_COUNT=$((TOTAL_COUNT + 1))
     
     echo ""
     echo "Processing package pattern: ${pattern}"
@@ -95,7 +74,6 @@ while read -r pattern; do
     
     if [ -z "$PACKAGE_NAME" ]; then
         echo "[ERROR] No .${PKG_EXT} package found for pattern: ${pattern}"
-        FAILED_COUNT=$((FAILED_COUNT + 1))
         continue
     fi
     
@@ -103,35 +81,22 @@ while read -r pattern; do
     echo "Downloading from: ${DOWNLOAD_URL}"
     
     if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
-        ${INSTALL_CMD} "${CONFIG_DIR}/${PACKAGE_NAME}"
+        ${PKG_INSTALL_CMD} "${CONFIG_DIR}/${PACKAGE_NAME}"
         INSTALL_STATUS=$?
         rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
         
         if [ $INSTALL_STATUS -eq 0 ]; then
             echo "Installation completed: ${PACKAGE_NAME}"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
         else
             echo "[ERROR] Installation failed with status ${INSTALL_STATUS}: ${PACKAGE_NAME}"
-            FAILED_COUNT=$((FAILED_COUNT + 1))
         fi
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
-        FAILED_COUNT=$((FAILED_COUNT + 1))
     fi
 done <<EOF
 $(echo "$SORTED_PACKAGES" | tr ' ' '\n')
 EOF
 
 echo ""
-echo "=========================================="
-echo "Summary: ${SUCCESS_COUNT}/${TOTAL_COUNT} packages installed successfully"
-
-if [ $FAILED_COUNT -gt 0 ]; then
-    echo "Warning: ${FAILED_COUNT} package(s) failed"
-    echo "=========================================="
-    exit 1
-else
-    echo "All packages processed successfully"
-    echo "=========================================="
-    exit 0
-fi
+echo "All packages processed."
+exit 0
