@@ -7,6 +7,8 @@
 BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 
+exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+
 echo ""
 echo "Fetching package information from: ${API_URL}"
 RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL") || {
