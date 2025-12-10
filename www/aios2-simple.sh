@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1206.1203"
+VERSION="R7.1210.1146"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -406,6 +406,7 @@ EOF
         local failed_count=0
         local failed_scripts=""
         
+        # パッケージインストール
         if [ -s "$SELECTED_PACKAGES" ]; then
             echo "$(translate 'tr-tui-installing-packages')"
             sh "$CONFIG_DIR/postinst.sh"
@@ -415,17 +416,28 @@ EOF
             fi
         fi
         
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-packages')"
+        # カスタムフィードパッケージインストール
+        local has_custom_packages=0
         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
             [ -f "$script" ] || continue
-            sh "$script"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}$(basename "$script") "
+            [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+            
+            if grep -q '^PACKAGES=' "$script" && [ -n "$(grep '^PACKAGES=' "$script" | cut -d'"' -f2)" ]; then
+                if [ "$has_custom_packages" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-packages')"
+                    has_custom_packages=1
+                fi
+                
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
             fi
         done
         
+        # システム設定適用
         if [ -s "$SETUP_VARS" ]; then
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
@@ -436,14 +448,20 @@ EOF
             fi
         fi
         
-        echo ""
-        echo "$(translate 'tr-tui-installing-custom-scripts')"
+        # カスタムスクリプト実行
+        local has_custom_scripts=0
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] || continue
             
             script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
             
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                if [ "$has_custom_scripts" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-scripts')"
+                    has_custom_scripts=1
+                fi
+                
                 sh "$script"
                 if [ $? -ne 0 ]; then
                     failed_count=$((failed_count + 1))
