@@ -33,7 +33,7 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1210.1326"
+VERSION="R7.1211.0007"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -111,6 +111,22 @@ SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-scripts}
 
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
+
+# =============================================================================
+# Error Handling Policy
+# =============================================================================
+# This script uses three error handling patterns:
+#
+#   1. Critical (no recovery possible):
+#      command || exit 1
+#
+#   2. After configuration changes (rollback required):
+#      command || { rollback_to_backup; exit 1; }
+#
+#   3. Ignorable (cleanup, optional features):
+#      command 2>/dev/null || true
+#
+# =============================================================================
 
 # =============================================================================
 # Option Parser
@@ -446,7 +462,7 @@ read_password() {
         # Handle empty input
         if [ -z "$input_pass" ]; then
             if [ "$allow_empty" = "1" ]; then
-                printf "\n\033[1;33mPassword skipped\033[0m\n"
+                printf "\n"
                 PASSWORD_INPUT=""
                 return 1
             else
@@ -791,6 +807,7 @@ download_file() {
     local output="$2"
     local extra_opts="${3:-}"
 
+    # Try IPv6 first (native connection for MAP-E/DS-Lite environments)
     if wget --no-check-certificate -c --timeout=60 "$url" -O "$output"; then
         [ -s "$output" ] && return 0
     fi
