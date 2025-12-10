@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1709"
+VERSION="R7.1210.1745"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -35,16 +35,6 @@ LAN_ADDR=""
 LAN_ADDR6=""
 DISTRIB_RELEASE=""
 OPENWRT_VERSION=""
-
-export PKG_MGR=""
-export PKG_EXT=""
-export PKG_INSTALL_CMD=""
-export PKG_REMOVE_CMD=""
-export PKG_UPDATE_CMD=""
-export PKG_UPGRADE_CMD=""
-export PKG_OPTION_IGNORE_DEPS=""
-export PKG_OPTION_FORCE_OVERWRITE=""
-export PKG_OPTION_ALLOW_UNTRUSTED=""
 
 BREADCRUMB_SEP=" > "
 
