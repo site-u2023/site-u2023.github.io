@@ -8,6 +8,23 @@ BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
 
+# 変数展開関数
+expand_template() {
+    local template="$1"
+    shift
+    
+    local result="$template"
+    
+    while [ $# -gt 0 ]; do
+        local key="$1"
+        local value="$2"
+        result=$(echo "$result" | sed "s|{$key}|$value|g")
+        shift 2
+    done
+    
+    echo "$result"
+}
+
 echo ""
 echo "Fetching package information from: ${API_URL}"
 RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL") || {
@@ -16,15 +33,12 @@ RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL") || {
 }
 [ -z "$RESPONSE" ] && { echo "[ERROR] Empty response from API"; exit 1; }
 
-# Process each package in PACKAGES variable
-# Format: "pattern:exclude:filename:enable_service:restart_service"
 while IFS=':' read -r pattern exclude filename enable_service restart_service; do
     [ -z "$pattern" ] && continue
 
     echo ""
     echo "Processing package pattern: ${pattern}"
 
-    # Find package in API response
     if [ -n "$exclude" ]; then
         PACKAGE_NAME=$(echo "$RESPONSE" | jsonfilter -e '@[*].name' | grep "${pattern}.*\.ipk" | grep -v "$exclude" | head -n1)
     else
@@ -39,7 +53,8 @@ while IFS=':' read -r pattern exclude filename enable_service restart_service; d
     echo "Found: ${PACKAGE_NAME}"
 
     if wget --no-check-certificate -O "${CONFIG_DIR}/${filename}.ipk" "${DOWNLOAD_BASE_URL}/${PACKAGE_NAME}"; then
-        opkg install "${CONFIG_DIR}/${filename}.ipk" && rm -f "${CONFIG_DIR}/${filename}.ipk"
+        INSTALL_CMD=$(expand_template "$PKG_INSTALL_CMD_TEMPLATE" "package" "${CONFIG_DIR}/${filename}.ipk")
+        eval "$INSTALL_CMD" && rm -f "${CONFIG_DIR}/${filename}.ipk"
         echo "Installation completed: ${PACKAGE_NAME}"
 
         [ -n "$enable_service" ] && {
