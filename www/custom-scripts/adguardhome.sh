@@ -1474,29 +1474,35 @@ adguardhome_main() {
     # Select install mode (interactive if not specified)
     select_install_mode
 
-    # Update package lists
-    case "$PACKAGE_MANAGER" in
-        opkg)
-            printf "Updating package lists... "
-            if opkg update >/dev/null 2>&1; then
-                printf "Done\n"
-            else
-                printf "Failed\n"
-                opkg update
-                exit 1
-            fi
-            ;;
-        apk)
-            printf "Updating package lists... "
-            if apk update >/dev/null 2>&1; then
-                printf "Done\n"
-            else
-                printf "Failed\n"
-                apk update
-                exit 1
-            fi
-            ;;
-    esac
+    # Update package lists (only in standalone mode)
+    if [ -z "$TUI_MODE" ]; then
+        # Standalone mode: perform package list update
+        case "$PACKAGE_MANAGER" in
+            opkg)
+                printf "Updating package lists... "
+                if opkg update >/dev/null 2>&1; then
+                    printf "Done\n"
+                else
+                    printf "Failed\n"
+                    opkg update
+                    exit 1
+                fi
+                ;;
+            apk)
+                printf "Updating package lists... "
+                if apk update >/dev/null 2>&1; then
+                    printf "Done\n"
+                else
+                    printf "Failed\n"
+                    apk update
+                    exit 1
+                fi
+                ;;
+        esac
+    else
+        # TUI mode: package list update already handled by update_package_manager()
+        printf "Package lists already updated (TUI mode)\n"
+    fi
     
     # Handle YAML generation skip
     if [ -n "$NO_YAML" ]; then
