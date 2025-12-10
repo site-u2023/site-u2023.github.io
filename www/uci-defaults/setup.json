@@ -362,6 +362,7 @@
       "class": "tr-wi-fi-configuration",
       "link": "https://openwrt.org/docs/guide-user/network/wifi/basic",
       "description": "Configure wireless network settings including SSID, password, and roaming optimization",
+      "requiresUpdate": true,
       
       "items": [
         {
@@ -457,6 +458,7 @@
       "class": "tr-internet-connection",
       "link": "https://openwrt.org/docs/guide-user/network/start",
       "description": "Configure your internet connection type",
+      "requiresUpdate": true,
       
       "items": [
         {
