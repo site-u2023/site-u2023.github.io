@@ -292,6 +292,16 @@ load_package_manager_config() {
     PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$remove_template")
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
+
+    export PKG_MGR
+    export PKG_EXT
+    export PKG_INSTALL_CMD_TEMPLATE
+    export PKG_REMOVE_CMD_TEMPLATE
+    export PKG_UPDATE_CMD
+    export PKG_UPGRADE_CMD
+    export PKG_OPTION_IGNORE_DEPS
+    export PKG_OPTION_FORCE_OVERWRITE
+    export PKG_OPTION_ALLOW_UNTRUSTED
 }
 
 install_package() {
