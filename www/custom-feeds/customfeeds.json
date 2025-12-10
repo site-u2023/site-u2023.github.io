@@ -1,7 +1,7 @@
 {
   "categories": [
     {
-      "id": "custom-feeds-gspotx2f",
+      "id": "gspotx2f",
       "name": "gSpotx2f Repository",
       "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
@@ -14,6 +14,7 @@
           "pattern": "luci-app-log-viewer",
           "exclude": "",
           "name": "luci-app-log-viewer",
+          "minOpenWrtVersion": "21.02",
           "description": "System log viewer for LuCI",
           "packageManager": ["opkg"],
           "dependencies": []
@@ -23,6 +24,7 @@
           "pattern": "luci-app-cpu-status",
           "exclude": "luci-app-cpu-status-mini",
           "name": "luci-app-cpu-status",
+          "minOpenWrtVersion": "21.02",
           "description": "CPU status monitor",
           "packageManager": ["opkg"],
           "dependencies": []
@@ -32,6 +34,7 @@
           "pattern": "luci-app-cpu-perf",
           "exclude": "",
           "name": "luci-app-cpu-perf",
+          "minOpenWrtVersion": "21.02",
           "description": "CPU performance monitor",
           "packageManager": ["opkg"],
           "dependencies": []
@@ -41,15 +44,17 @@
           "pattern": "luci-app-temp-status",
           "exclude": "",
           "name": "luci-app-temp-status",
+          "minOpenWrtVersion": "22.03",
           "description": "System temperature monitor",
           "packageManager": ["opkg"],
-          "dependencies": []
+          "dependencies": ["ucode", "ucode-mod-fs"]
         },
         {
           "id": "luci-app-disks-info",
           "pattern": "luci-app-disks-info",
           "exclude": "",
           "name": "luci-app-disks-info",
+          "minOpenWrtVersion": "21.02",
           "description": "Disk information display",
           "packageManager": ["opkg"],
           "dependencies": []
@@ -59,6 +64,7 @@
           "pattern": "internet-detector_",
           "exclude": "",
           "name": "internet-detector",
+          "minOpenWrtVersion": "21.02",
           "description": "Internet connection monitoring daemon",
           "enable_service": "internet-detector",
           "packageManager": ["opkg"],
@@ -69,6 +75,7 @@
           "pattern": "luci-app-internet-detector",
           "exclude": "",
           "name": "luci-app-internet-detector",
+          "minOpenWrtVersion": "21.02",
           "description": "LuCI interface for Internet Detector",
           "packageManager": ["opkg"],
           "dependencies": ["internet-detector"]
@@ -78,6 +85,7 @@
           "pattern": "internet-detector-mod-modem",
           "exclude": "",
           "name": "internet-detector-mod-modem",
+          "minOpenWrtVersion": "21.02",
           "description": "Modem restart module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
@@ -88,6 +96,7 @@
           "pattern": "internet-detector-mod-email",
           "exclude": "",
           "name": "internet-detector-mod-email",
+          "minOpenWrtVersion": "21.02",
           "description": "Email notification module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
@@ -96,7 +105,7 @@
       ]
     },
     {
-      "id": "custom-feeds-jerrykuku",
+      "id": "jerrykuku",
       "name": "jerrykuku Repository",
       "class": "tr-tui-feed-jerrykuku",
       "description": "Argon theme and related packages from jerrykuku",
@@ -109,6 +118,7 @@
           "pattern": "luci-theme-argon_",
           "exclude": "",
           "name": "luci-theme-argon",
+          "minOpenWrtVersion": "21.02",
           "description": "A brand new Argon theme for LuCI",
           "packageManager": ["opkg"],
           "dependencies": ["luci-compat", "luci-lib-ipkg"]
@@ -118,6 +128,7 @@
           "pattern": "luci-app-argon-config_",
           "exclude": "",
           "name": "luci-app-argon-config",
+          "minOpenWrtVersion": "21.02",
           "description": "Argon theme configuration app",
           "packageManager": ["opkg"],
           "dependencies": ["luci-theme-argon"]
