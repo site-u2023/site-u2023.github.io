@@ -2,164 +2,159 @@
 
 ## Quick Start
 
-The script can be downloaded and executed with the following one-liner command.
+The script can be downloaded and executed with the following one-liner:
 ```bash
 mkdir -p /tmp && wget --no-check-certificate -O /tmp/adguardhome.sh "https://site-u.pages.dev/www/custom-scripts/adguardhome.sh" && chmod +x /tmp/adguardhome.sh && sh /tmp/adguardhome.sh
 ```
 
-This command executes the following operations sequentially.
+This command executes the following steps sequentially:
 
-1. Creates the `/tmp` directory (skipped if already exists)
-2. Downloads the script (SSL certificate verification disabled)
-3. Grants execution permissions
-4. Executes the script
+1. Create `/tmp` directory (skip if exists)
+2. Download the script (SSL certificate verification disabled)
+3. Grant execution permission
+4. Execute the script
 
-The script will prompt for installation mode selection and credential input interactively. For non-interactive execution, specify options as additional arguments.
+Interactive prompts for installation mode and credential input will appear. For non-interactive execution, add options:
 ```bash
 sh /tmp/adguardhome.sh -i official
 ```
 
-For detailed usage instructions, refer to the Usage Examples section.
+Refer to the "Usage Examples" section for detailed usage instructions.
 
-## File Location
+## File Locations
 
-The files related to this script are maintained in the following repository.
+Files related to this script are managed in the following repository.
 
-### Executable File
+### Executable
 
 [adguardhome.sh](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/adguardhome.sh)
 
-This is the main script file. All functionality is implemented in this single file.
+The main script. All functionality is implemented in this single file.
 
 ### Configuration File Template
 
 [adguardhome.yaml](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/adguardhome.yaml)
 
-This is the YAML configuration file template. The script downloads this file from the URL specified by the environment variable `SCRIPT_BASE_URL`, replaces placeholders with actual values, and uses it. The default download location is `https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml`.
+YAML configuration file template. The script downloads this file from the URL specified by the `SCRIPT_BASE_URL` environment variable and replaces placeholders with actual values. The default download source is `https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml`.
 
-### Technical Specification Document
+### Technical Specification
 
 [AdGuardHome.md](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-scripts/AdGuardHome.md)
 
-This is the present document. It provides detailed information on the script's specifications, behavior, and usage methods.
+This document. Contains detailed specifications, behavior, and usage instructions for the script.
 
-## Syntax
+## Synopsis
 ```
-adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>] [-m] [-t] [-h]
+adguardhome.sh [-c] [-n] [-r <mode>] [-i <source>]
 ```
 
 ## Options
 
 **-c**
 
-Disables system resource checking. Equivalent to setting the environment variable `SKIP_RESOURCE_CHECK=1`.
+Disable system resource check. Equivalent to environment variable `SKIP_RESOURCE_CHECK=1`.
 
 **-n**
 
-Disables automatic generation of YAML configuration file. Equivalent to setting the environment variable `NO_YAML=1`. In this case, initial setup via the web interface (default port 3000) is required.
+Disable automatic YAML configuration file generation. Equivalent to environment variable `NO_YAML=1`. In this case, initial setup via the web interface (default port 3000) is required.
 
 **-m**
 
-Credential update mode. Updates the username, password, and web port number of an existing AdGuard Home installation. Equivalent to setting the environment variable `UPDATE_CREDENTIALS=1`.
+Credential update mode. Updates the username, password, and web port number of an existing AdGuard Home installation. Equivalent to environment variable `UPDATE_CREDENTIALS=1`.
 
 **-r** *mode*
 
-Specifies the removal mode. The environment variable `REMOVE_MODE` takes precedence if specified.
+Specify removal mode. Environment variable `REMOVE_MODE` takes precedence.
 
 - **auto** - Automatic removal without confirmation. Configuration files are also automatically deleted.
-- **manual** - Removal after interactive confirmation. Confirmation is requested twice: before removal execution and before configuration file deletion.
+- **manual** - Interactive removal with confirmation. Confirmation is requested twice: before removal execution and before configuration file deletion.
 
 **-i** *source*
 
-Specifies the installation source. The environment variable `INSTALL_MODE` takes precedence if specified.
+Specify installation source. Environment variable `INSTALL_MODE` takes precedence.
 
 - **openwrt** - OpenWrt repository package
 - **official** - GitHub official binary
 
 **-t**
 
-TUI mode (internal use). Used when executing in integrated mode. Equivalent to setting the environment variable `TUI_MODE=1`.
+TUI mode (internal use). Used during integrated mode execution.
 
 **-h**
 
-Displays usage information and exits.
+Display usage information and exit.
 
-The order of option specification is arbitrary.
+Options can be specified in any order.
 
 ## Environment Variables
 
-Environment variables for controlling behavior are primarily intended for integrated execution from other scripts. For standalone execution, the use of command line options is recommended. When command line options are specified, the values of corresponding environment variables are ignored.
+Environment variable control is primarily intended for integrated execution from other scripts. Command-line options are recommended for standalone execution. When command-line options are specified, corresponding environment variable values are ignored.
 
 **INSTALL_MODE**
 
-Specifies the installation source. The values `openwrt` or `official` can be set. Command line option `-i` takes precedence.
+Specify installation source. Can be set to `openwrt` or `official`. Overridden by command-line option `-i`.
 
 **NO_YAML**
 
-Disables automatic YAML generation when set to `1`. Equivalent to command line option `-n`.
+When set to `1`, disables YAML auto-generation. Equivalent to command-line option `-n`.
 
 **UPDATE_CREDENTIALS**
 
-Executes in credential update mode when set to `1`. Equivalent to command line option `-m`.
+When set to `1`, runs in credential update mode. Equivalent to command-line option `-m`.
 
 **REMOVE_MODE**
 
-Specifies the removal mode. The values `auto` or `manual` can be set. Command line option `-r` takes precedence.
+Specify removal mode. Can be set to `auto` or `manual`. Overridden by command-line option `-r`.
 
 **AGH_USER**
 
-Specifies the administrator username. The default value is `admin`. Valid only when `NO_YAML` is not set.
+Specify administrator username. Default value is `admin`. Only effective when `NO_YAML` is not set.
 
 **AGH_PASS**
 
-Specifies the administrator password. The default value is `password`, with a minimum length of 8 characters. Valid only when `NO_YAML` is not set. The password is hashed using the bcrypt algorithm.
+Specify administrator password. Default value is `password`, minimum 8 characters. Only effective when `NO_YAML` is not set. Hashed using bcrypt algorithm.
 
 Note: The default value `password` is weak and must be changed in production environments.
 
 **WEB_PORT**
 
-Specifies the web interface port number. The default value is `8000`. Valid only when `NO_YAML` is not set. When `NO_YAML=1`, AdGuard Home uses port 3000 by default.
+Specify web interface port number. Default value is `8000`. Only effective when `NO_YAML` is not set. When `NO_YAML=1`, AdGuard Home uses port 3000 by default.
 
 **DNS_PORT**
 
-Specifies the DNS service port number. The default value is `53`. Valid only when `NO_YAML` is not set.
+Specify DNS service port number. Default value is `53`. Only effective when `NO_YAML` is not set.
 
 **DNS_BACKUP_PORT**
 
-Specifies the backup dnsmasq port number. The default value is `54`. Valid only when `NO_YAML` is not set.
+Specify backup dnsmasq port number. Default value is `54`. Only effective when `NO_YAML` is not set.
 
 **LAN_ADDR**
 
-Specifies the LAN interface IPv4 address. Automatically detected when not set.
+Specify LAN interface IPv4 address. Auto-detected when not set.
 
 **SCRIPT_BASE_URL**
 
-Specifies the URL for downloading the YAML template. The default value is `https://site-u.pages.dev/www/custom-scripts`.
+Specify YAML template download source URL. Default value is `https://site-u.pages.dev/www/custom-scripts`.
 
 **SKIP_RESOURCE_CHECK**
 
-Disables system resource checking when set to `1`. Equivalent to command line option `-c`.
+When set to `1`, disables system resource check. Equivalent to command-line option `-c`.
 
 **TUI_MODE**
 
-Executes in TUI (integrated) mode when set to `1`. Equivalent to command line option `-t`. In this case, reboot prompts are suppressed.
+When set to `1`, runs in TUI (integrated) mode. Equivalent to command-line option `-t`.
 
 ## YAML Configuration File Specification (Custom Specification)
 
-When the `-n` option or `NO_YAML=1` is not specified, the script retrieves a template from `https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml`, replaces the following placeholders with environment variable values, and generates `AdGuardHome.yaml`.
+When `-n` option or `NO_YAML=1` is not specified, this script retrieves a template from `https://site-u.pages.dev/www/custom-script/adguardhome.yaml` and generates `AdGuardHome.yaml` by replacing the following placeholders with environment variable values.
 
-| Placeholder           | Replaced Value                    | Default Value |
-|-----------------------|-----------------------------------|---------------|
-| `{{AGH_USER}}`        | Administrator username            | `admin`       |
-| `{{AGH_PASS_HASH}}`   | bcrypt hashed password            | (input value) |
-| `{{WEB_PORT}}`        | Web management interface port     | `8000`        |
-| `{{DNS_PORT}}`        | DNS service port                  | `53`          |
-| `{{DNS_BACKUP_PORT}}` | dnsmasq backup port               | `54`          |
-
-### schema_version
-```yaml
-schema_version: 29
-```
+| Placeholder             | Replaced Value                  | Default Value |
+|-------------------------|--------------------------------|---------------|
+| `{{AGH_USER}}`          | Administrator username          | `admin`       |
+| `{{AGH_PASS_HASH}}`     | bcrypt hashed password          | (input value) |
+| `{{WEB_PORT}}`          | Web admin panel port            | `8000`        |
+| `{{DNS_PORT}}`          | DNS service port                | `53`          |
+| `{{DNS_BACKUP_PORT}}`   | dnsmasq backup port             | `54`          |
 
 ### http Section
 ```yaml
@@ -232,16 +227,12 @@ dns:
     - https://unfiltered.adguard-dns.com/dns-query
     - https://jp.tiar.app/dns-query
     - https://dns.nextdns.io
+  upstream_mode: parallel
   cache_size: 1048576
   enable_dnssec: false
   use_private_ptr_resolvers: true
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
-```
-
-### upstream_mode Section
-```yaml
-  upstream_mode: parallel
 ```
 
 ### tls Section
@@ -267,18 +258,20 @@ filters:
     id: 1764215105
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
-    name: 豆腐フィルタ
+    name: Tofu Filter
     id: 1764215106
 ```
 
 ### user_rules Section
 ```yaml
 user_rules:
-  - '# 日本の主要サービス'
+  - '# Google Analytics'
+  - '@@||analytics.google.com'
+  - '# Major Japanese Services'
   - '@@||amazon.co.jp^$important'
   - '@@||rakuten.co.jp^$important'
   - '@@||yahoo.co.jp^$important'
-  - '# LINE関連'
+  - '# LINE Related'
   - '@@||line.me^$important'
   - '@@||line-scdn.net^$important'
 ```
@@ -302,13 +295,18 @@ log:
   file: ""
 ```
 
+### schema_version
+```yaml
+schema_version: 29
+```
+
 ## Non-Interactive Mode Execution
 
-Non-interactive mode execution is possible by specifying all environment variables. When `AGH_USER`, `AGH_PASS`, and `WEB_PORT` are specified, interactive input is not executed.
+Non-interactive mode execution is possible by specifying all environment variables. When `AGH_USER`, `AGH_PASS`, and `WEB_PORT` are specified, interactive input is not performed.
 
 ## System Requirements
 
-The script sets the following values.
+This script sets the following values:
 ```
 MINIMUM_MEM="20"
 MINIMUM_FLASH="25"
@@ -316,79 +314,107 @@ RECOMMENDED_MEM="50"
 RECOMMENDED_FLASH="100"
 ```
 
-The script terminates with an error if available memory falls below `MINIMUM_MEM` or free flash storage falls below `MINIMUM_FLASH`. The check can be disabled with command line option `-c` or environment variable `SKIP_RESOURCE_CHECK=1`.
+If available memory is less than `MINIMUM_MEM`, or free flash storage is less than `MINIMUM_FLASH`, the script exits with an error. The check can be disabled with command-line option `-c` or environment variable `SKIP_RESOURCE_CHECK=1`.
 
-If values fall below the recommended values, they are displayed in yellow as a warning, but installation continues if minimum values are met.
+Values below recommended thresholds are displayed as warnings in yellow, but installation continues if minimum values are met.
 
-Reference: Third-party sources document 256MB RAM as the minimum requirement for AdGuard Home. This script sets a lower threshold (20MB) considering OpenWrt's constrained environments, but for actual operation, 50MB or more of RAM and 100MB or more of flash storage are recommended. Operation in environments that do not meet official requirements is not guaranteed.
+Reference: This script sets lower thresholds (20MB) considering OpenWrt's constrained environment, but 50MB or more RAM and 100MB or more flash storage are recommended for actual operation. Operation in environments not meeting official requirements is not guaranteed.
 
 ## Package Manager Detection
 
-The script automatically detects opkg or apk. If neither exists, it terminates with an error.
+opkg or apk is auto-detected. If neither exists, the script exits with an error.
 
 ## Backup and Restore Functionality
 
-The script automatically backs up configuration files under `/etc/config/` during installation. The backup targets are two files: `dhcp` and `firewall`, which are saved with a timestamped `.backup.YYYYMMDDHHMMSS` extension (e.g., `dhcp.backup.20231210132600`).
+The script automatically backs up configuration files under `/etc/config/` during installation. Backup targets are the 2 files `dhcp` and `firewall`, each saved with a timestamped `.backup.YYYYMMDDHHMMSS` extension (e.g., `dhcp.backup.20231210132600`).
 
-When backup files exist during removal, they are automatically restored to the original configuration. If backup files do not exist, only the dnsmasq configuration is reset to default values. Backup files are automatically deleted after the removal process is completed.
+During removal, if backup files exist, settings are automatically restored to their original state. If backup files do not exist, only dnsmasq settings are reset to default values. Backup files are automatically deleted after the removal process completes.
+
+## Installation Behavior Details
+
+### Non-Disruptive Installation
+
+This script adopts a non-disruptive installation approach to maintain network connectivity during installation.
+
+After all configuration changes are committed to the UCI system, dnsmasq, odhcpd, and firewall services are restarted sequentially. Each service restart is executed individually, and in case of failure, restoration from backup is performed. The AdGuard Home service starts after all configuration changes and network service restarts are complete.
+This maintains configuration consistency while ensuring reliable rollback capability in case of failure.
+
+### State After Installation Completion
+
+At installation completion, the following state is achieved:
+
+- AdGuard Home service is enabled and started immediately
+- dnsmasq, odhcpd, firewall configuration changes are applied and each service restart is complete
+- dnsmasq operates on backup port (default 54) and references 127.0.0.1#53 (AdGuard Home) as upstream DNS
+- AdGuard Home listens on TCP/UDP port 53 and provides DNS service immediately
+- Web interface is available immediately after startup
+
+### Package Update Behavior
+
+At installation start, package manager repository lists are updated.
+
+- For opkg: Executes `opkg update`
+- For apk: Executes `apk update`
+
+If the update fails, detailed output is displayed and the script exits with an error.
 
 ## Automatic System Configuration Changes
 
 ### dnsmasq Configuration
 
-The following configuration changes are executed during installation.
+The following configuration changes are executed during installation:
 
-- Disables resolver functionality (`noresolv='1'`)
-- Sets cache size to zero (`cachesize='0'`)
-- Disables rebind protection (`rebind_protection='0'`)
-- Changes port number (`port='${DNS_BACKUP_PORT}'`)
-- Specifies upstream DNS servers (`127.0.0.1#${DNS_PORT}` and `::1#${DNS_PORT}`)
-- Configures local domain settings (`domain='lan'`, `local='/lan/'`, `expandhosts='1'`)
+- Disable resolver function (`noresolv='1'`)
+- Set cache size to zero (`cachesize='0'`)
+- Disable rebind protection (`rebind_protection='0'`)
+- Change port number (`port='${DNS_BACKUP_PORT}'`)
+- Specify upstream DNS servers (`127.0.0.1#${DNS_PORT}` and `::1#${DNS_PORT}`)
+- Local domain settings (`domain='lan'`, `local='/lan/'`, `expandhosts='1'`)
 
 ### DHCP Server Configuration
 
-The following DNS server options are configured for the LAN interface.
+The following DNS server options are set for the LAN interface:
 
 - IPv4: `dhcp_option='6,${NET_ADDR}'`
 - IPv6: `dhcp_option6="option6:dns=[${NET_ADDR6}]"` (all detected global addresses)
 
 ### Firewall Configuration
 
-Redirect rules for capturing DNS traffic are added. The rule name is `adguardhome_dns_${DNS_PORT}`, with `ipv4`, `ipv6`, or `any` set according to the detected IP address family. Both TCP and UDP protocols are targeted.
+Redirect rules are added to capture DNS traffic. The rule name is `adguardhome_dns_${DNS_PORT}`, and `ipv4`, `ipv6`, or `any` is set according to the detected IP address family. Both TCP and UDP protocols are targeted.
 
-During removal, all configurations are restored if backup files exist, or only dnsmasq is reset to default configuration if backup files do not exist. In either case, related services (dnsmasq, odhcpd, firewall) are restarted.
+During removal, if backup files exist, all settings are restored; if not, only dnsmasq is reset to default settings. In either case, related services (dnsmasq, odhcpd, firewall) are restarted.
 
-## Network Detection and Automatic Configuration
+## Network Detection and Auto-Configuration
 
-The LAN interface is automatically detected by `ubus call network.interface.lan status`. The process terminates with an error if detection fails.
+The LAN interface is auto-detected via `ubus call network.interface.lan status`. If detection fails, the script exits with an error.
 
-The IPv4 address is obtained by `ip -4 -o addr show dev ${LAN} scope global`. IPv6 global addresses are obtained by `ip -6 -o addr show dev ${LAN} scope global`, with temporary addresses excluded. Only addresses matching the regular expression `^(2|fd|fc)` are targeted.
+IPv4 address is obtained via `ip -4 -o addr show dev ${LAN} scope global`. IPv6 global addresses are obtained via `ip -6 -o addr show dev ${LAN} scope global`, excluding temporary addresses. Only addresses matching the regular expression `^(2|fd|fc)` are targeted.
 
-The address family for firewall rules is determined based on the detection results. `ipv4` is set if only IPv4 is detected, `ipv6` if only IPv6, and `any` if both exist. If no addresses can be detected, firewall configuration is skipped and a warning message is displayed.
+Firewall rule address family is determined based on detection results. If only IPv4 is detected, `ipv4` is set; if only IPv6, `ipv6`; if both exist, `any`. If neither address is detected, firewall configuration is skipped and a warning message is displayed.
 
 ## Password Hashing Process
 
-When `NO_YAML` is not set, the administrator password is hashed with the bcrypt algorithm. The `htpasswd` command is required for this process, and the script temporarily installs `apache` as a dependency package.
+When `NO_YAML` is not set, the administrator password is hashed using the bcrypt algorithm. The `htpasswd` command is required for this process.
 
-The script ensures the availability of `htpasswd` through the following procedure.
+The script ensures `htpasswd` availability through the following steps:
 
-1. If the existing `htpasswd` command is functional, no additional installation is performed
+1. If an existing `htpasswd` command is functional, no additional installation is executed
 2. If `htpasswd` does not exist or is not functional:
-   - Installs dependency packages (`libaprutil`, `libapr`, `libexpat`, `libuuid1`, `libpcre2`)
-   - Checks if the `apache` package is already installed
-   - Installs the `apache` package to obtain `htpasswd`
-   - If `apache` was not originally installed, saves the `htpasswd` binary and then removes the `apache` package
-   - If `apache` was originally installed, retains the package
+   - Install dependency packages (`libaprutil`, `libapr`, `libexpat`, `libuuid1`, `libpcre2`)
+   - Check if `apache` package is already installed
+   - Install `apache` package to obtain `htpasswd`
+   - Only if `apache` was not originally installed, save the `htpasswd` binary and then remove the `apache` package
+   - If `apache` was originally installed, the package is preserved
 
-This process protects `apache` when it is an existing system component and performs cleanup when it is only needed as a temporary dependency.
+This process protects `apache` if it is an existing system component and cleans up when only needed as a temporary dependency.
 
-An error message is displayed and processing is interrupted if `htpasswd` installation fails.
+If `htpasswd` installation or functionality verification fails, an error message is displayed and processing is aborted.
 
 ## Official Binary Installation Behavior
 
-When `INSTALL_MODE=official` is specified, the `ca-bundle` package is first installed. Subsequently, the latest release information is retrieved from the GitHub API and the appropriate binary for the architecture is downloaded.
+When `INSTALL_MODE=official` is specified, the latest release information is retrieved from the GitHub API and the appropriate binary for the architecture is downloaded.
 
-Supported architectures are as follows.
+Supported architectures are as follows:
 
 - `aarch64`, `arm64` → `arm64`
 - `armv7l` → `armv7`
@@ -399,67 +425,61 @@ Supported architectures are as follows.
 - `mips` → `mipsle`
 - `mips64` → `mips64le`
 
-An error message is displayed and the process terminates if an architecture other than the above is detected.
+If an architecture other than the above is detected, an error message is displayed and the script exits.
 
-The downloaded tarball is extracted to `/etc/AdGuardHome`, and execution permissions are granted to the binary. Subsequently, service installation processing is executed by `/etc/AdGuardHome/AdGuardHome -s install`. An error message is displayed and the process terminates on failure.
+The downloaded tarball is extracted to `/etc/AdGuardHome`, and execution permission is granted to the binary. Then, service installation processing is executed via `/etc/AdGuardHome/AdGuardHome -s install`. On failure, an error message is displayed and the script exits.
 
 The service name for official binary installation is `AdGuardHome`, which differs from `adguardhome` for OpenWrt package installation.
 
 ## OpenWrt Package Installation Behavior
 
-When `INSTALL_MODE=openwrt` is specified, the `adguardhome` package is installed from the package manager's repository.
+When `INSTALL_MODE=openwrt` is specified, the `adguardhome` package is installed from the package manager repository.
 
-If the package manager is opkg, available versions are checked with `opkg list`, and `opkg install --verbosity=0 adguardhome` is executed. For apk, `apk search adguardhome` and `apk add adguardhome` are executed.
+For opkg, available versions are checked via `opkg list`, and `opkg install --verbosity=0 adguardhome` is executed. For apk, `apk search adguardhome` and `apk add adguardhome` are executed.
 
-If the package does not exist in the repository, a warning message is displayed and the script automatically falls back to official binary installation. An error message is displayed and the process terminates if a network error occurs.
+If the package does not exist in the repository, a warning message is displayed and automatic fallback to official binary installation occurs. If a network error occurs, an error message is displayed and the script exits.
 
 The service name for OpenWrt package installation is `adguardhome`.
 
 ## YAML Configuration File Generation Timing
 
-The YAML configuration file is generated before installing the AdGuard Home package. This allows the existing configuration file to be used during package installation, applying the initial configuration automatically.
+The YAML configuration file is generated before AdGuard Home package installation. This allows the existing configuration file to be used during package installation, and initial settings are automatically applied.
 
-The generation process flow is as follows.
+The generation process flow is as follows:
 
-1. Determines `SERVICE_NAME` according to the installation mode (`openwrt` or `official`)
-2. Creates the destination directory for the configuration file
-3. Downloads the template and replaces placeholders
-4. Executes package or binary installation
+1. Determine `SERVICE_NAME` according to installation mode (`openwrt` or `official`)
+2. Create configuration file destination directory
+3. Download template and replace placeholders
+4. Execute package or binary installation
 
-## Detailed Removal Mode Behavior
+## Removal Mode Detailed Behavior
 
-Removal mode is specified by the `-r` option or the `REMOVE_MODE` environment variable. Command line option `-r` takes precedence over environment variable `REMOVE_MODE`.
+Removal mode is specified via `-r` option or `REMOVE_MODE` environment variable. Command-line option `-r` takes precedence over environment variable `REMOVE_MODE`.
 
 ### auto Mode
 
-All confirmation prompts are skipped, and configuration files are automatically deleted. This mode is also used in automatic removal processing during installation errors. Reboot prompts after processing completion are not displayed.
+Skips all confirmation prompts, and configuration files are also automatically deleted.
 
-An "Auto-removing..." warning message is displayed in yellow before removal execution.
+Before removal execution, a warning message "Auto-removing..." is displayed in yellow.
 
 ### manual Mode
 
-User confirmation is requested twice: before removal execution and before configuration file deletion. Processing is cancelled and exits normally if anything other than `y` or `Y` is entered in response to confirmation.
-
-### Behavior When Not Specified
-
-When `REMOVE_MODE` is not set, reboot prompts are displayed after processing completion only when executing in standalone mode (TUI_MODE is not set). The `reboot` command is executed immediately upon pressing the Enter key.
-
-In integrated mode (TUI_MODE is set), reboot prompts are not displayed.
+Confirmation is requested twice: before removal execution and before configuration file deletion. If input other than `y` or `Y` is entered for confirmation, processing is cancelled and exits normally.
 
 ### Removal Process Execution Contents
 
-The removal process executes the following operations sequentially.
+The following operations are executed sequentially during removal processing:
 
 1. AdGuard Home service detection (detect_adguardhome_service function)
-2. Service stop and disable
-3. For official binary version: execution of uninstall command
-4. For OpenWrt package version: removal by package manager
-5. Configuration file deletion (automatic in auto mode, after confirmation otherwise)
-6. Configuration restoration from backup files (if they exist)
-7. dnsmasq configuration reset to default values if backups do not exist
-8. Firewall rule (`adguardhome_dns_${DNS_PORT}`) deletion
-9. Dependency package cleanup (htpasswd, dependency libraries, ca-bundle)
-10. Related service (dnsmasq, odhcpd, firewall) restart
+2. Stop and disable service
+3. For official binary version: Execute uninstall command
+4. For OpenWrt package version: Remove via package manager
+5. Delete configuration files (automatic for auto mode, after confirmation otherwise)
+6. Restore settings from backup files (if they exist)
+7. If backup does not exist: Reset dnsmasq settings to default values
+8. Delete firewall rule (`adguardhome_dns_${DNS_PORT}`)
+9. Cleanup dependency packages (htpasswd, dependency libraries, ca-bundle)
+10. Restart related services (dnsmasq, odhcpd, firewall)
 
 ### Dependency Package Cleanup
 
@@ -470,45 +490,42 @@ Cleanup targets:
 - Dependency libraries (`libaprutil`, `libapr`, `libexpat`, `libuuid1`, `libpcre2`)
 - `ca-bundle` package
 
-## Installation Behavior Details
+## Error Handling and Recovery Processing
 
-### Staged Installation Approach
+### System Resource Check
 
-The script adopts a staged installation approach to maintain network connectivity throughout the process.
+If available memory is less than `MINIMUM_MEM` or free flash storage is less than `MINIMUM_FLASH`, an error message is displayed and the script exits. This check can be disabled with `-c` option or `SKIP_RESOURCE_CHECK=1`.
 
-All configuration changes are committed to the UCI system, followed by sequential restart of dnsmasq, odhcpd, and firewall services. Each service restart is executed individually, and in case of failure, configuration is restored from backup. The AdGuard Home service is started after all configuration changes and network service restarts are completed.
+### Package Manager Update
 
-This ensures configuration consistency while maintaining the ability to reliably rollback in case of failure.
+If package list update via opkg or apk fails, detailed output is displayed and the script exits with an error. Network connection problems or repository failures are the main causes.
 
-### State After Installation Completion
+### Dependency Package Installation
 
-At the time of installation completion, the state is as follows.
+If `htpasswd` installation fails, an error message is displayed and processing is aborted. This processing is skipped when `NO_YAML=1` is set.
 
-- The AdGuard Home service is enabled and immediately started
-- Configuration changes for dnsmasq, odhcpd, and firewall are applied and each service has completed restart
-- dnsmasq operates on the backup port (default 54) and references 127.0.0.1#53 (AdGuard Home) as the upstream DNS
-- AdGuard Home listens on TCP/UDP port 53 and immediately provides DNS service
-- The web interface is accessible immediately after startup
+### AdGuard Home Installation
 
-### Package Update Behavior
+On official binary download failure, service installation failure, or OpenWrt package installation failure, respective error messages are displayed and the script exits. If the OpenWrt package is unavailable, automatic fallback to official binary occurs.
 
-At the start of installation, the package manager's repository list is updated.
+### Service Restart
 
-- For opkg: executes `opkg update`
-- For apk: executes `apk update`
+If dnsmasq, odhcpd, or firewall restart fails, an error message is displayed and the script exits.
 
-Detailed output is displayed and the process terminates with an error if the update fails.
+### LAN Interface Detection
+
+If LAN interface detection via `ubus` fails, an error message is displayed and the script exits. This may occur when executed in non-OpenWrt environments.
 
 ## Web Interface Information Display
 
-Upon installation completion, access information is displayed in the following format. This display is processed by the `get_access` function.
+At installation completion, access information is displayed in the following format. This display is processed by the `get_access` function.
 
-### Port Number Acquisition
+### Port Number Retrieval
 
-The web interface port number is determined in the following priority order.
+Web interface port number is determined in the following priority order:
 
 1. Retrieved from the `address:` field in the `http:` section of the YAML configuration file (`/etc/AdGuardHome/AdGuardHome.yaml` or `/etc/adguardhome.yaml`)
-2. Uses the value of environment variable `WEB_PORT` if the configuration file does not exist or cannot be read
+2. If the configuration file does not exist or cannot be read, the value of environment variable `WEB_PORT` is used
 
 ### IPv4 Access URL
 
@@ -516,29 +533,25 @@ Displayed in the format `http://${NET_ADDR}:${WEB_PORT}/`.
 
 ### IPv6 Access URL
 
-Displayed in the format `http://[${NET_ADDR6}]:${WEB_PORT}/` if IPv6 global addresses are detected. Only the first address is displayed if multiple IPv6 addresses exist.
+If IPv6 global addresses are detected, displayed in the format `http://[${NET_ADDR6}]:${WEB_PORT}/`. If multiple IPv6 addresses exist, only the first address is displayed.
 
 ### Authentication Information
 
-The administrator username (`AGH_USER`) and password (`AGH_PASS`) are displayed with emphasis in green and yellow when `NO_YAML` is not set.
+When `NO_YAML` is not set, administrator username (`AGH_USER`) and password (`AGH_PASS`) are highlighted in green and yellow.
 
-When `NO_YAML=1`, authentication information is not displayed, and instead a "Configure via web interface" message and the default setup URL (`http://${NET_ADDR}:3000/`) are displayed.
-
-### Reboot Notice
-
-After installation completion, the message "Note: Web interface will be available after reboot" is displayed in yellow. This is because configuration changes are committed but the actual startup of the AdGuard Home service occurs on next system boot.
+When `NO_YAML=1`, authentication information is not displayed; instead, a "Configure via web interface" message and default setup URL (`http://${NET_ADDR}:3000/`) are displayed.
 
 ### QR Code Generation
 
-QR codes corresponding to IPv4 and IPv6 access URLs are automatically generated in environments where the `qrencode` command is available. QR codes are displayed directly in the terminal in UTF-8 format, version 3, facilitating access from mobile devices.
+In environments where the `qrencode` command is available, QR codes corresponding to IPv4 and IPv6 access URLs are automatically generated. QR codes are displayed directly in the terminal in UTF-8 format, version 3, facilitating access from mobile devices.
 
 ## Usage Examples
 
-The formal interface of this script is command line options. Control via environment variables is also technically possible, but this is an implementation detail primarily intended for integrated execution from other scripts and is not recommended for normal use.
+The official interface for this script is command-line options. Control via environment variables is technically possible but is an implementation detail primarily intended for integrated execution from other scripts and is not recommended for normal use.
 
 ### Interactive Installation
 
-Executing without option specification prompts for installation mode selection and credential input interactively.
+Running without options prompts for interactive installation mode selection and credential input.
 ```bash
 sh adguardhome.sh
 ```
@@ -548,30 +561,30 @@ sh adguardhome.sh
 sh adguardhome.sh -i official
 ```
 
-Input of username, password, and web port number is requested during execution.
+Prompts for username, password, and web port number at runtime.
 
 ### Installation from OpenWrt Package
 ```bash
 sh adguardhome.sh -i openwrt
 ```
 
-Automatically falls back to official binary if the package does not exist in the repository.
+If the package does not exist in the repository, automatic fallback to official binary occurs.
 
 ### Credential Update
 ```bash
 sh adguardhome.sh -m
 ```
 
-Interactively updates the username, password, and web port number of an existing installation.
+Interactively updates username, password, and web port number of an existing installation.
 
-### YAML Generation Skip
+### Skip YAML Generation
 ```bash
 sh adguardhome.sh -i official -n
 ```
 
-Omits automatic generation of configuration file and performs initial setup via the web interface (default port 3000).
+Skips automatic configuration file generation and performs initial setup via web interface (default port 3000).
 
-### System Resource Check Disable
+### Disable System Resource Check
 ```bash
 sh adguardhome.sh -i official -c
 ```
@@ -597,56 +610,30 @@ Confirmation prompts are displayed twice: before removal execution and before co
 sh adguardhome.sh -i official -c -n
 ```
 
-Multiple options can be specified simultaneously. The order of specification is arbitrary.
+Multiple options can be specified simultaneously. Options can be specified in any order.
 
-### TUI Integrated Mode
+### TUI Integration Mode
 ```bash
 sh adguardhome.sh -t -i official
 ```
 
-Mode for integrated execution from other scripts. Reboot prompts after processing completion are suppressed.
+Mode for integrated execution from other scripts.
 
-### Display Usage Information
+### Display Usage
 ```bash
 sh adguardhome.sh -h
 ```
 
-Displays option list and usage information.
+Displays option list and usage instructions.
 
-## Standalone Mode and Integrated Mode
+## Standalone Mode and Integration Mode
 
-The script changes behavior depending on the execution form.
+Script behavior varies depending on execution context.
 
 ### Standalone Mode
 
-Executed as standalone mode when `$(basename "$0")` matches `adguardhome.sh`. In this mode, reboot prompts are displayed after processing completion only when `INSTALL_MODE` and `REMOVE_MODE` are not set.
+Executed as standalone mode when `$(basename "$0")` matches `adguardhome.sh`.
 
-### Integrated Mode
+### Integration Mode
 
-Operates as integrated mode when loaded from other scripts via `source` or `.`. In this mode, all behavior can be controlled by environment variables, and reboot prompts are not displayed. The design assumes control from external sources.
-
-## Error Handling and Recovery Processing
-
-### System Resource Check
-
-An error message is displayed and the process terminates if available memory is less than `MINIMUM_MEM` or free flash storage is less than `MINIMUM_FLASH`. This check can be disabled with `-c` option or `SKIP_RESOURCE_CHECK=1`.
-
-### Package Manager Update
-
-Detailed output is displayed and the process terminates with an error if package list update by opkg or apk fails. The main causes are network connection issues or repository failures.
-
-### Dependency Package Installation
-
-An error message is displayed and processing is interrupted if `htpasswd` installation fails. This process is skipped when `NO_YAML=1` is set.
-
-### AdGuard Home Installation
-
-Error messages are displayed and the process terminates for official binary download failure, service installation failure, and OpenWrt package installation failure respectively. Automatic fallback to official binary occurs when OpenWrt packages are unavailable.
-
-### Service Restart
-
-An error message is displayed and the process terminates if restart of dnsmasq, odhcpd, or firewall fails. The main causes are configuration inconsistencies or service abnormalities.
-
-### LAN Interface Detection
-
-An error message is displayed and the process terminates if LAN interface detection by `ubus` fails. This may occur when executed in environments other than OpenWrt.
+Operates in integration mode when loaded from other scripts via `source` or `.`. In this mode, all behavior can be controlled via environment variables. Designed for external control.
