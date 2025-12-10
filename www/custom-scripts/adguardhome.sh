@@ -129,6 +129,38 @@ SCRIPT_BASE_URL="${SCRIPT_BASE_URL:-https://site-u.pages.dev/www/custom-scripts}
 # =============================================================================
 
 # =============================================================================
+# Input Validation Module
+# =============================================================================
+
+# Validate port number
+# Args:
+#   $1 - Port number
+#   $2 - Port name (for error message, e.g., "WEB_PORT")
+# Returns:
+#   0 - Valid
+#   1 - Invalid
+validate_port() {
+    local port="$1"
+    local name="${2:-Port}"
+    
+    # Check if numeric
+    case "$port" in
+        ''|*[!0-9]*)
+            printf "\033[1;31mError: %s must be a number (got: '%s')\033[0m\n" "$name" "$port"
+            return 1
+            ;;
+    esac
+    
+    # Check range (1-65535)
+    if [ "$port" -lt 1 ] || [ "$port" -gt 65535 ]; then
+        printf "\033[1;31mError: %s must be 1-65535 (got: %s)\033[0m\n" "$name" "$port"
+        return 1
+    fi
+    
+    return 0
+}
+
+# =============================================================================
 # Option Parser
 # =============================================================================
 
@@ -218,6 +250,17 @@ apply_environment_variables() {
     WEB_PORT="${WEB_PORT:-$DEFAULT_WEB_PORT}"
     DNS_PORT="${DNS_PORT:-$DEFAULT_DNS_PORT}"
     DNS_BACKUP_PORT="${DNS_BACKUP_PORT:-$DEFAULT_DNS_BACKUP_PORT}"
+    
+    # Validate ports (only if set from environment, not defaults)
+    if ! validate_port "$WEB_PORT" "WEB_PORT"; then
+        exit 1
+    fi
+    if ! validate_port "$DNS_PORT" "DNS_PORT"; then
+        exit 1
+    fi
+    if ! validate_port "$DNS_BACKUP_PORT" "DNS_BACKUP_PORT"; then
+        exit 1
+    fi
     
     # AGH_USER and AGH_PASS remain as-is from environment (may be empty)
     # They will be handled by prompt_credentials() or set_default_credentials()
@@ -525,6 +568,11 @@ update_credentials() {
         NEW_PASS="$AGH_PASS"
         NEW_PORT="$WEB_PORT"
         UPDATE_PASSWORD=1
+
+        # Validate port
+        if ! validate_port "$NEW_PORT" "WEB_PORT"; then
+            return 1
+        fi
         
         printf "Updating credentials (non-interactive mode)\n"
         printf "  Username: %s\n" "$NEW_USER"
@@ -548,9 +596,17 @@ update_credentials() {
             UPDATE_PASSWORD=0
         fi
         
-        printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
-        read -r input_port
-        NEW_PORT="${input_port:-${CURRENT_PORT:-8000}}"
+        # Web port input with validation loop
+        while true; do
+            printf "Enter new web port [%s]: " "${CURRENT_PORT:-8000}"
+            read -r input_port
+            NEW_PORT="${input_port:-${CURRENT_PORT:-8000}}"
+            
+            if validate_port "$NEW_PORT" "Web port"; then
+                break
+            fi
+            printf "\033[1;33mPlease try again.\033[0m\n"
+        done
     fi
     
     # Generate password hash if needed
@@ -1004,10 +1060,35 @@ prompt_credentials() {
     read_password "Enter admin password" || exit 1
     AGH_PASS="$PASSWORD_INPUT"
     
-    # Web port input
-    printf "Enter web interface port [%s]: " "$DEFAULT_WEB_PORT"
-    read -r input_port
-    WEB_PORT="${input_port:-$DEFAULT_WEB_PORT}"
+    # Web port input with validation loop
+    while true; do
+        printf "Enter web interface port [%s]: " "$DEFAULT_WEB_PORT"
+        read -r input_port
+        WEB_PORT="${input_port:-$DEFAULT_WEB_PORT}"
+        
+        if validate_port "$WEB_PORT" "Web port"; then
+            break
+        fi
+        printf "\033[1;33mPlease try again.\033[0m\n"
+    done
+    
+    # DNS port input with validation loop
+    while true; do
+        printf "Enter DNS service port [%s]: " "$DEFAULT_DNS_PORT"
+        read -r input_dns
+        DNS_PORT="${input_dns:-$DEFAULT_DNS_PORT}"
+        
+        if validate_port "$DNS_PORT" "DNS port"; then
+            # WEBポートとの衝突チェック
+            if [ "$DNS_PORT" = "$WEB_PORT" ]; then
+                printf "\033[1;31mError: DNS port cannot be same as Web port (%s)\033[0m\n" "$WEB_PORT"
+                printf "\033[1;33mPlease try again.\033[0m\n"
+                continue
+            fi
+            break
+        fi
+        printf "\033[1;33mPlease try again.\033[0m\n"
+    done
     
     printf "\n"
 }
