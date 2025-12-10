@@ -8,22 +8,7 @@ BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
 exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
 
-# 変数展開関数（親から継承できないので再定義）
-expand_template() {
-    local template="$1"
-    shift
-    
-    local result="$template"
-    
-    while [ $# -gt 0 ]; do
-        local key="$1"
-        local value="$2"
-        result=$(echo "$result" | sed "s|{$key}|$value|g")
-        shift 2
-    done
-    
-    echo "$result"
-}
+echo "Using package manager: ${PKG_MGR}"
 
 echo ""
 echo "Detected package manager: ${PKG_MGR} (extension: .${PKG_EXT})"
@@ -93,7 +78,7 @@ while read -r pattern; do
     echo "Downloading from: ${DOWNLOAD_URL}"
     
     if wget --no-check-certificate -O "${CONFIG_DIR}/${PACKAGE_NAME}" "${DOWNLOAD_URL}"; then
-        INSTALL_CMD=$(expand_template "$PKG_INSTALL_CMD_TEMPLATE" "package" "${CONFIG_DIR}/${PACKAGE_NAME}")
+        INSTALL_CMD="${PKG_INSTALL_CMD_TEMPLATE//\{package\}/${CONFIG_DIR}/${PACKAGE_NAME}}"
         eval "$INSTALL_CMD"
         INSTALL_STATUS=$?
         rm -f "${CONFIG_DIR}/${PACKAGE_NAME}"
