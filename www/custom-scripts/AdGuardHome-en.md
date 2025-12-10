@@ -366,10 +366,6 @@ The IPv4 address is obtained by `ip -4 -o addr show dev ${LAN} scope global`. IP
 
 The address family for firewall rules is determined based on the detection results. `ipv4` is set if only IPv4 is detected, `ipv6` if only IPv6, and `any` if both exist. If no addresses can be detected, firewall configuration is skipped and a warning message is displayed.
 
-## Certificate Package Installation
-
-Certificate packages are automatically installed to perform downloads via HTTPS. The target is `ca-bundle` if the package manager is opkg, or `ca-certificates` if apk. This installation process is not rolled back during removal.
-
 ## Password Hashing Process
 
 When `NO_YAML` is not set, the administrator password is hashed with the bcrypt algorithm. The `htpasswd` command is required for this process, and the script temporarily installs `apache` as a dependency package.
