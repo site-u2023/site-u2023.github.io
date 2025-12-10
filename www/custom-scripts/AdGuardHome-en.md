@@ -328,7 +328,7 @@ The script automatically detects opkg or apk. If neither exists, it terminates w
 
 ## Backup and Restore Functionality
 
-The script automatically backs up configuration files under `/etc/config/` during installation. The backup targets are three files: `network`, `dhcp`, and `firewall`, which are saved with the `.adguard.bak` extension appended.
+The script automatically backs up configuration files under `/etc/config/` during installation. The backup targets are two files: `dhcp` and `firewall`, which are saved with a timestamped `.backup.YYYYMMDDHHMMSS` extension (e.g., `dhcp.backup.20231210132600`).
 
 When backup files exist during removal, they are automatically restored to the original configuration. If backup files do not exist, only the dnsmasq configuration is reset to default values. Backup files are automatically deleted after the removal process is completed.
 
@@ -370,21 +370,23 @@ The address family for firewall rules is determined based on the detection resul
 
 When `NO_YAML` is not set, the administrator password is hashed with the bcrypt algorithm. The `htpasswd` command is required for this process, and the script temporarily installs `apache` as a dependency package.
 
-The processing procedure is as follows.
+The script ensures the availability of `htpasswd` through the following procedure.
 
-1. Checks if `apache` was originally installed
-2. If `htpasswd` does not exist, installs the `apache` package
-3. Grants execution permissions to `/usr/bin/htpasswd`
-4. Removes only the `apache` package if it was not originally installed (preserves htpasswd binary)
-5. Keeps the `apache` package if it was originally installed
+1. If the existing `htpasswd` command is functional, no additional installation is performed
+2. If `htpasswd` does not exist or is not functional:
+   - Installs dependency packages (`libaprutil`, `libapr`, `libexpat`, `libuuid1`, `libpcre2`)
+   - Checks if the `apache` package is already installed
+   - Installs the `apache` package to obtain `htpasswd`
+   - If `apache` was not originally installed, saves the `htpasswd` binary and then removes the `apache` package
+   - If `apache` was originally installed, retains the package
 
-This process protects `apache` when it is an existing system component, and performs cleanup when it is only needed as a temporary dependency.
+This process protects `apache` when it is an existing system component and performs cleanup when it is only needed as a temporary dependency.
 
 An error message is displayed and processing is interrupted if `htpasswd` installation fails.
 
 ## Official Binary Installation Behavior
 
-When `INSTALL_MODE=official` is specified, the latest release information is retrieved from the GitHub API and the appropriate binary for the architecture is downloaded.
+When `INSTALL_MODE=official` is specified, the `ca-bundle` package is first installed. Subsequently, the latest release information is retrieved from the GitHub API and the appropriate binary for the architecture is downloaded.
 
 Supported architectures are as follows.
 
@@ -412,6 +414,17 @@ If the package manager is opkg, available versions are checked with `opkg list`,
 If the package does not exist in the repository, a warning message is displayed and the script automatically falls back to official binary installation. An error message is displayed and the process terminates if a network error occurs.
 
 The service name for OpenWrt package installation is `adguardhome`.
+
+## YAML Configuration File Generation Timing
+
+The YAML configuration file is generated before installing the AdGuard Home package. This allows the existing configuration file to be used during package installation, applying the initial configuration automatically.
+
+The generation process flow is as follows.
+
+1. Determines `SERVICE_NAME` according to the installation mode (`openwrt` or `official`)
+2. Creates the destination directory for the configuration file
+3. Downloads the template and replaces placeholders
+4. Executes package or binary installation
 
 ## Detailed Removal Mode Behavior
 
@@ -445,8 +458,17 @@ The removal process executes the following operations sequentially.
 6. Configuration restoration from backup files (if they exist)
 7. dnsmasq configuration reset to default values if backups do not exist
 8. Firewall rule (`adguardhome_dns_${DNS_PORT}`) deletion
-9. Related service (dnsmasq, odhcpd, firewall) restart
-10. Reboot prompt display (only in standalone mode and when REMOVE_MODE is not set)
+9. Dependency package cleanup (htpasswd, dependency libraries, ca-bundle)
+10. Related service (dnsmasq, odhcpd, firewall) restart
+
+### Dependency Package Cleanup
+
+During removal, dependency packages added during installation are automatically cleaned up. However, if the `apache` package was originally installed on the system, it is protected and not removed.
+
+Cleanup targets:
+- `htpasswd` binary
+- Dependency libraries (`libaprutil`, `libapr`, `libexpat`, `libuuid1`, `libpcre2`)
+- `ca-bundle` package
 
 ## Installation Behavior Details
 
