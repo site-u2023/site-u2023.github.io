@@ -1,5 +1,5 @@
 #!/bin/sh
-# shellcheck shell=sh disable=SC2034,SC2086,SC3043
+# shellcheck shell=sh disable=SC2034,SC2154,SC2086,SC3043
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
@@ -28,14 +28,14 @@ MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 exec >/tmp/aios-setup.log 2>&1
 disable_wan() {
-    local SEC=network
+    SEC=network
     SET wan.disabled='1'
     SET wan.auto='0'
     SET wan6.disabled='1'
     SET wan6.auto='0'
 }
 dhcp_relay() {
-    local SEC=dhcp
+    SEC=dhcp
     SET $1=dhcp
     SET $1.interface="$1"
     SET $1.master='1'
@@ -49,7 +49,7 @@ dhcp_relay() {
     SET lan.force='1'
 }
 firewall_wan() {
-    local SEC=firewall
+    SEC=firewall
     DELLIST @zone[1].network="wan"
     DELLIST @zone[1].network="wan6"
     ADDLIST @zone[1].network="$1"
@@ -58,54 +58,53 @@ firewall_wan() {
     SET @zone[1].mtu_fix='1'
 }
 [ -n "${enable_notes}" ] && {
-    local SEC=system
+    SEC=system
     SET @system[0].description="${DATE}"
     SET @system[0].notes="site-u.pages.dev"
 }
 [ -n "${enable_ntp}" ] && {
-    local SEC=system
+    SEC=system
     SET ntp=timeserver
     SET ntp.enabled='1'
     SET ntp.enable_server='1'
     SET ntp.interface='lan'
     DEL ntp.server
-    COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
-    for i in 0 1 2 3; do
-        s="${i:0:2}.${COUNTRY_LC}${NTPDOMAIN}"
-        [ $i -gt 1 ] && s="${i}${NTPDOMAIN}"
-        ADDLIST ntp.server="$s"
+    COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr '[:upper:]' '[:lower:]')
+    for i in 0 1; do
+        ADDLIST ntp.server="${i}.${COUNTRY_LC}${NTPDOMAIN}"
+        ADDLIST ntp.server="${i}${NTPDOMAIN}"
     done
 }
 [ -n "${enable_log}" ] && {
-    local SEC=system
+    SEC=system
     SET @system[0].log_size='32'
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
 }
 
 [ -n "${enable_diag}" ] && {
-    local SEC=luci
+    SEC=luci
     SET diag=diag
     SET diag.ping="${DIAG}"
     SET diag.route="${DIAG}"
     SET diag.dns="${DIAG}"
 }
-[ -n "${device_name}" ] && { local SEC=system; SET @system[0].hostname="${device_name}"; }
+[ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
-[ -n "${lan_ip_address}" ] && { local SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
-[ -n "${lan_ipv6_address}" ] && { local SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
-[ -n "${language}" ] && { local SEC=system; SET @system[0].language="${language}"; }
-[ -n "${timezone}" ] && { local SEC=system; SET @system[0].timezone="${timezone}"; }
-[ -n "${zonename}" ] && { local SEC=system; SET @system[0].zonename="${zonename}"; }
-[ -n "${ssh_interface}" ] && { local SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
-[ -n "${ssh_port}" ] && { local SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
+[ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
+[ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
+[ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
+[ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
+[ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
+[ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
+[ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
 [ -n "${flow_offloading_type}" ] && {
-    local SEC=firewall
+    SEC=firewall
     SET @defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
-    local SEC=wireless
+    SEC=wireless
     wireless_cfg=$(uci -q show wireless)
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET ${radio}.disabled='0'
@@ -140,7 +139,7 @@ firewall_wan() {
         }
     done
     [ "${wifi_mode}" = "usteer" ] && {
-        local SEC=usteer
+        SEC=usteer
         SET @usteer[0].band_steering='1'
         SET @usteer[0].load_balancing='1'
         SET @usteer[0].sta_block_timeout='300'
@@ -150,13 +149,13 @@ firewall_wan() {
     }
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
-    local SEC=network
+    SEC=network
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-[ "${connection_type}" = "auto" -o "${connection_type}" = "dslite" ] && [ -n "${dslite_aftr_address}" ] && {
-    local SEC=network
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ] && {
+    SEC=network
     disable_wan
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
@@ -172,8 +171,8 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-[ "${connection_type}" = "auto" -o "${connection_type}" = "mape" ] && [ -n "${mape_br}" ] && {
-    local SEC=network
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ] && {
+    SEC=network
     disable_wan
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
@@ -240,7 +239,7 @@ fi
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
     disable_wan
     {
-        local SEC=network
+        SEC=network
         SET ${AP}=interface
         SET ${AP}.proto='static'
         SET ${AP}.device="${LAN}"
@@ -256,7 +255,7 @@ fi
         SET ${AP6}.reqprefix='no'
     }
     {
-        local SEC=wireless
+        SEC=wireless
         for r in 0 1 2; do
             [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
@@ -267,16 +266,16 @@ fi
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
 [ -n "${enable_ttyd}" ] && {
-    local SEC=ttyd
+    SEC=ttyd
     SET @ttyd[0].command='/bin/login -f root'
 }
 [ -n "${enable_irqbalance}" ] && {
-    local SEC=irqbalance
+    SEC=irqbalance
     SET irqbalance=irqbalance
     SET irqbalance.enabled='1'
 }
 [ -n "${enable_samba4}" ] && {
-    local SEC=samba4
+    SEC=samba4
     SET @samba[0]=samba
     SET @samba[0].workgroup='WORKGROUP'
     SET @samba[0].charset='UTF-8'
@@ -294,11 +293,12 @@ fi
     SET sambashare.dir_mask='0777'
 }
 [ -n "${enable_adblock_fast}" ] && {
-    local SEC=adblock-fast
+    SEC=adblock-fast
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
     [ -n "${enable_tofukko_filter}" ] && {
-        local IDX=$(uci add "$SEC" file_url)
+        local IDX
+        IDX=$(uci add "$SEC" file_url)
         SET "$IDX".name='Tofukko Filter'
         SET "$IDX".url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
         SET "$IDX".action='block'
@@ -307,14 +307,14 @@ fi
 }
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-    local SEC=network
+    SEC=network
     ADDLIST @device[0].ports='usb0'
 }
 [ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    local SEC=network
+    SEC=network
     ADDLIST @device[0].ports='usb0'
 }
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
@@ -347,7 +347,7 @@ fi
     sysctl -p "$C"
 }
 [ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
-    local SEC=dhcp
+    SEC=dhcp
     
     [ "${enable_dnsmasq}" = "auto" ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
@@ -395,7 +395,8 @@ local cfg_dhcp="/etc/config/dhcp"
 local cfg_fw="/etc/config/firewall"
 cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
 cp "$cfg_fw" "$cfg_fw.adguard.bak"
-local agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
+local agh_hash
+agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
 [ -z "$agh_hash" ] && { echo "Error: Failed to generate AdGuard Home password hash"; exit 1; }
 cat > "$agh_yaml" << 'AGHEOF'
 http:
@@ -499,7 +500,7 @@ sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
 sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
 sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
 chmod 600 "$agh_yaml"
-local SEC=dhcp
+SEC=dhcp
 SET @dnsmasq[0].noresolv='1'
 SET @dnsmasq[0].cachesize='0'
 SET @dnsmasq[0].rebind_protection='0'
@@ -513,8 +514,8 @@ ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
 DEL lan.dhcp_option
 [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
 DEL lan.dhcp_option6
-local SEC=firewall
-local agh_rule="adguardhome_dns_${agh_dns_port}"
+SEC=firewall
+agh_rule="adguardhome_dns_${agh_dns_port}"
 DEL "${agh_rule}" 2>/dev/null || true
 SET ${agh_rule}=redirect
 SET ${agh_rule}.name="AdGuard Home DNS Redirect"
