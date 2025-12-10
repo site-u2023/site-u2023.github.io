@@ -3043,12 +3043,17 @@ aios2_main() {
     fi
     
     # パッケージマネージャー設定読み込み（検出含む）
+    echo "[DEBUG] Before load_package_manager_config" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] PACKAGE_MANAGER_JSON=$PACKAGE_MANAGER_JSON" >> "$CONFIG_DIR/debug.log"
+    ls -la "$PACKAGE_MANAGER_JSON" >> "$CONFIG_DIR/debug.log" 2>&1
     load_package_manager_config || {
         echo "Failed to load package manager config"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
     }
+
+    echo "[DEBUG] After load_package_manager_config: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
     
     # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
