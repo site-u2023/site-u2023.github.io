@@ -35,12 +35,16 @@ LAN_ADDR=""
 LAN_ADDR6=""
 DISTRIB_RELEASE=""
 OPENWRT_VERSION=""
-PKG_MGR=""
-PKG_INSTALL_CMD=""
-PKG_REMOVE_CMD=""
-PKG_UPDATE_CMD=""
-PKG_UPGRADE_CMD=""
-PKG_EXT=""
+
+export PKG_MGR=""
+export PKG_EXT=""
+export PKG_INSTALL_CMD=""
+export PKG_REMOVE_CMD=""
+export PKG_UPDATE_CMD=""
+export PKG_UPGRADE_CMD=""
+export PKG_OPTION_IGNORE_DEPS=""
+export PKG_OPTION_FORCE_OVERWRITE=""
+export PKG_OPTION_ALLOW_UNTRUSTED=""
 
 BREADCRUMB_SEP=" > "
 
@@ -229,22 +233,22 @@ select_ui_mode() {
 detect_package_manager() {
     if command -v opkg >/dev/null 2>&1; then
         PKG_MGR="opkg"
-        export PKG_INSTALL_CMD="opkg install"
-        export PKG_REMOVE_CMD="opkg remove"
-        export PKG_UPDATE_CMD="opkg update"
-        export PKG_UPGRADE_CMD="opkg upgrade"
+        PKG_EXT="ipk"
+        PKG_INSTALL_CMD="opkg install"
+        PKG_REMOVE_CMD="opkg remove"
+        PKG_UPDATE_CMD="opkg update"
+        PKG_UPGRADE_CMD="opkg upgrade"
     elif command -v apk >/dev/null 2>&1; then
         PKG_MGR="apk"
-        export PKG_INSTALL_CMD="apk add"
-        export PKG_REMOVE_CMD="apk del"
-        export PKG_UPDATE_CMD="apk update"
-        export PKG_UPGRADE_CMD="apk upgrade"
+        PKG_EXT="apk"
+        PKG_INSTALL_CMD="apk add"
+        PKG_REMOVE_CMD="apk del"
+        PKG_UPDATE_CMD="apk update"
+        PKG_UPGRADE_CMD="apk upgrade"
     else
         echo "Warning: No supported package manager found"
         PKG_MGR="none"
     fi
-    
-    export PKG_MGR
 }
 
 check_packages_installed() {
