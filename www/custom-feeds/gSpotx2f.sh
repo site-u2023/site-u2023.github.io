@@ -19,7 +19,7 @@ RESPONSE=$(wget --no-check-certificate -q -O - "$API_URL") || {
 
 # Process each package in PACKAGES variable
 # Format: "pattern:exclude:filename:enable_service:restart_service"
-echo "$PACKAGES" | tr ' ' '\n' | while IFS=':' read -r pattern exclude filename enable_service restart_service; do
+while IFS=':' read -r pattern exclude filename enable_service restart_service; do
     [ -z "$pattern" ] && continue
 
     echo ""
@@ -43,20 +43,22 @@ echo "$PACKAGES" | tr ' ' '\n' | while IFS=':' read -r pattern exclude filename 
         opkg install "${CONFIG_DIR}/${filename}.ipk" && rm -f "${CONFIG_DIR}/${filename}.ipk"
         echo "Installation completed: ${PACKAGE_NAME}"
 
-        if [ -n "$enable_service" ]; then
+        [ -n "$enable_service" ] && {
             echo "Enabling and starting service: ${enable_service}"
             /etc/init.d/"${enable_service}" enable
             /etc/init.d/"${enable_service}" start
-        fi
+        }
 
-        if [ -n "$restart_service" ]; then
+        [ -n "$restart_service" ] && {
             echo "Restarting service: ${restart_service}"
             /etc/init.d/"${restart_service}" restart
-        fi
+        }
     else
         echo "[ERROR] Download failed: ${PACKAGE_NAME}"
     fi
-done
+done <<EOF
+$(echo "$PACKAGES" | tr ' ' '\n')
+EOF
 
 echo ""
 echo "All packages processed."
