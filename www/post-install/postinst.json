@@ -17,7 +17,7 @@
       "description": "Package description shown as tooltip",
       "dependencies": "Array of package ids to select together",
       "enableVar": "Variable name to set in setup.sh when selected",
-      "installOptions": "opkg/apk install options (e.g. --nodeps, --force). When same id appears multiple times, entry with installOptions takes priority (priority flag)",
+      "installOptions": "Key name from top-level installOptions mapping (e.g. ignoreDeps, forceOverwrite)",
       "hidden": "If true, package is not displayed (for dependency-only packages)",
       "virtual": "If true, skip package availability check (for non-existent packages)",
       "reboot": "If true, package requires reboot after install",
@@ -30,11 +30,21 @@
       "description": "Password hash tool (extracted from apache)",
       "dependencies": ["libaprutil", "libapr"],
       "enableVar": "enable_htpasswd",
-      "installOptions": "--nodeps",
+      "installOptions": "ignoreDeps",
       "hidden": false,
       "virtual": false,
       "reboot": false,
       "checked": false
+    }
+  },
+  "installOptions": {
+    "ignoreDeps": {
+      "opkg": "--nodeps",
+      "apk": "--force-broken-world"
+    },
+    "forceOverwrite": {
+      "opkg": "--force-overwrite",
+      "apk": "--force-overwrite"
     }
   },
   "categories": [
