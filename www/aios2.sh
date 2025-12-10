@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1854"
+VERSION="R7.1211.0144"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1430,7 +1430,6 @@ get_adguardhome_current_user() {
 validate_input_value() {
     local value="$1"
     local validation_json="$2"
-    local label="$3"
     
     [ -z "$validation_json" ] && return 0
     
@@ -1442,8 +1441,7 @@ validate_input_value() {
             # 数値チェック
             case "$value" in
                 ''|*[!0-9]*)
-                    show_msgbox "$label" "$(translate 'tr-validation-number-required')"
-                    return 1
+                    return 1  # エラーメッセージなし
                     ;;
             esac
             
@@ -1453,12 +1451,10 @@ validate_input_value() {
             max=$(echo "$validation_json" | jsonfilter -e '@.max' 2>/dev/null)
             
             if [ -n "$min" ] && [ "$value" -lt "$min" ]; then
-                show_msgbox "$label" "$(translate 'tr-validation-min-value'): $min"
                 return 1
             fi
             
             if [ -n "$max" ] && [ "$value" -gt "$max" ]; then
-                show_msgbox "$label" "$(translate 'tr-validation-max-value'): $max"
                 return 1
             fi
             ;;
@@ -1479,14 +1475,11 @@ collect_script_inputs() {
         required_inputs=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].requiredInputs[*]" 2>/dev/null)
         
         if [ -z "$required_inputs" ]; then
-            # Fallback to all inputs if requiredInputs not defined (backward compatibility)
             inputs=$(get_customscript_inputs "$script_id")
         else
-            # Use only required inputs
             inputs="$required_inputs"
         fi
     else
-        # No option specified, use all inputs
         inputs=$(get_customscript_inputs "$script_id")
     fi
     
@@ -1497,9 +1490,28 @@ collect_script_inputs() {
         input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
         min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
         
-        # ★ バリデーション設定を取得
         local validation_json
         validation_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].validation" 2>/dev/null | head -1)
+        
+        # ★ ラベルに条件を追加
+        local display_label="$input_label"
+        if [ -n "$min_length" ]; then
+            display_label="${input_label} (${min_length}+ chars)"
+        fi
+        
+        if [ -n "$validation_json" ]; then
+            local val_type min_val max_val
+            val_type=$(echo "$validation_json" | jsonfilter -e '@.type' 2>/dev/null)
+            
+            if [ "$val_type" = "port" ]; then
+                min_val=$(echo "$validation_json" | jsonfilter -e '@.min' 2>/dev/null)
+                max_val=$(echo "$validation_json" | jsonfilter -e '@.max' 2>/dev/null)
+                
+                if [ -n "$min_val" ] && [ -n "$max_val" ]; then
+                    display_label="${input_label} (${min_val}-${max_val})"
+                fi
+            fi
+        fi
         
         if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
             local current_user
@@ -1517,7 +1529,7 @@ collect_script_inputs() {
         fi
         
         while true; do
-            value=$(show_inputbox "$breadcrumb" "$input_label" "$input_default")
+            value=$(show_inputbox "$breadcrumb" "$display_label" "$input_default")
             
             if ! [ $? -eq 0 ]; then
                 rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
@@ -1532,7 +1544,6 @@ collect_script_inputs() {
                 fi
             fi
             
-            # 最小文字数チェック
             if [ -n "$min_length" ]; then
                 local value_length="${#value}"
                 if [ "$value_length" -lt "$min_length" ]; then
@@ -1540,8 +1551,7 @@ collect_script_inputs() {
                 fi
             fi
             
-            # ★ 汎用バリデーション
-            if ! validate_input_value "$value" "$validation_json" "$input_label"; then
+            if ! validate_input_value "$value" "$validation_json"; then
                 continue
             fi
             
