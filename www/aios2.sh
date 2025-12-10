@@ -2544,13 +2544,10 @@ EOF
     echo "$summary_file"
 }
 
-# ==========================================
-# UPDATE CHECK CONFIGURATION（新しいJSONを追加する場合はここに追加）
-# ==========================================
-UPDATE_CHECK_JSONS="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
-UPDATE_CHECK_SELECTED_FILES="$SELECTED_PACKAGES $SELECTED_CUSTOM_PACKAGES"
-
 update_package_manager() {
+    # 新しいJSONを追加する場合はここに追加
+    local UPDATE_CHECK_JSONS="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
+    
     local needs_update=0
     
     # 1. ファイルレベルチェック（全JSON）
