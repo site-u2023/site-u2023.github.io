@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1210.1429"
+VERSION="R7.1210.1516"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2546,77 +2546,103 @@ EOF
 
 update_package_manager() {
     local needs_update=0
+    local json_files="$PACKAGES_JSON $CUSTOMFEEDS_JSON $CUSTOMSCRIPTS_JSON"
     
-    # postinst.jsonをチェック
-    if [ -s "$SELECTED_PACKAGES" ]; then
-        # ファイルレベル
-        local file_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.requiresUpdate" 2>/dev/null)
+    # 1. ファイルレベルチェック（最も浅い階層）
+    for json in $json_files; do
+        [ ! -f "$json" ] && continue
+        local file_update=$(jsonfilter -i "$json" -e "@.requiresUpdate" 2>/dev/null)
         if [ "$file_update" = "true" ]; then
             needs_update=1
-        else
-            # カテゴリレベル
-            while read -r cache_line; do
-                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                local cat_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$cat_update" = "true" ]; then
-                    needs_update=1
-                    break
-                fi
-                
-                # パッケージレベル
-                local pkg_update=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$pkg_update" = "true" ]; then
-                    needs_update=1
-                    break
-                fi
-            done < "$SELECTED_PACKAGES"
+            break  # 見つかったら即終了
         fi
-    fi
+    done
     
-    # customfeeds.jsonをチェック
-    if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-        # ファイルレベル
-        local file_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.requiresUpdate" 2>/dev/null)
-        if [ "$file_update" = "true" ]; then
-            needs_update=1
-        else
-            # カテゴリレベル
-            while read -r pkg_id; do
-                local cat_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.packages[*].id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$cat_update" = "true" ]; then
-                    needs_update=1
-                    break
-                fi
-                
-                # パッケージレベル
-                local pkg_update=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].requiresUpdate" 2>/dev/null | head -1)
-                if [ "$pkg_update" = "true" ]; then
-                    needs_update=1
-                    break
-                fi
-            done < "$SELECTED_CUSTOM_PACKAGES"
-        fi
-    fi
-    
-    # customscripts.jsonをチェック
+    # 2. カテゴリレベルチェック
     if [ "$needs_update" -eq 0 ]; then
-        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-            [ -f "$var_file" ] || continue
+        for json in $json_files; do
+            [ ! -f "$json" ] && continue
             
-            local script_id
-            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            # 各JSONの選択済みアイテムに対応するカテゴリをチェック
+            local selected_file=""
+            case "$json" in
+                *postinst.json) selected_file="$SELECTED_PACKAGES" ;;
+                *customfeeds.json) selected_file="$SELECTED_CUSTOM_PACKAGES" ;;
+                *customscripts.json)
+                    # スクリプトの場合はscript_vars_*.txtから取得
+                    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                        [ -f "$var_file" ] || continue
+                        local script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                        local cat_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
+                        if [ "$cat_update" = "true" ]; then
+                            needs_update=1
+                            break 2  # 外側のループも抜ける
+                        fi
+                    done
+                    continue
+                    ;;
+            esac
             
-            local script_update
-            script_update=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
+            [ ! -f "$selected_file" ] || [ ! -s "$selected_file" ] && continue
             
-            if [ "$script_update" = "true" ]; then
-                needs_update=1
-                break
-            fi
+            while read -r line; do
+                local item_id=$(echo "$line" | cut -d= -f1)
+                local cat_update=$(jsonfilter -i "$json" -e "@.categories[@.packages[*].id='$item_id'].requiresUpdate" 2>/dev/null | head -1)
+                if [ "$cat_update" = "true" ]; then
+                    needs_update=1
+                    break 2  # 外側のループも抜ける
+                fi
+            done < "$selected_file"
         done
     fi
     
-    # アップデート実行
+    # 3. アイテムレベルチェック
+    if [ "$needs_update" -eq 0 ]; then
+        for json in $json_files; do
+            [ ! -f "$json" ] && continue
+            
+            local selected_file=""
+            case "$json" in
+                *postinst.json) selected_file="$SELECTED_PACKAGES" ;;
+                *customfeeds.json) selected_file="$SELECTED_CUSTOM_PACKAGES" ;;
+                *customscripts.json)
+                    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                        [ -f "$var_file" ] || continue
+                        local script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                        local script_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].requiresUpdate" 2>/dev/null | head -1)
+                        if [ "$script_update" = "true" ]; then
+                            needs_update=1
+                            break 2
+                        fi
+                        
+                        # オプションレベルもチェック
+                        local selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+                        if [ -n "$selected_option" ]; then
+                            local opt_update=$(jsonfilter -i "$json" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].requiresUpdate" 2>/dev/null | head -1)
+                            if [ "$opt_update" = "true" ]; then
+                                needs_update=1
+                                break 2
+                            fi
+                        fi
+                    done
+                    continue
+                    ;;
+            esac
+            
+            [ ! -f "$selected_file" ] || [ ! -s "$selected_file" ] && continue
+            
+            while read -r line; do
+                local item_id=$(echo "$line" | cut -d= -f1)
+                local item_update=$(jsonfilter -i "$json" -e "@.categories[*].packages[@.id='$item_id'].requiresUpdate" 2>/dev/null | head -1)
+                if [ "$item_update" = "true" ]; then
+                    needs_update=1
+                    break 2
+                fi
+            done < "$selected_file"
+        done
+    fi
+    
+    # 更新実行
     if [ "$needs_update" -eq 1 ]; then
         echo "Updating package database..."
         case "$PKG_MGR" in
