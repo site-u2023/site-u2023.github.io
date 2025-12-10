@@ -313,6 +313,14 @@ install_package() {
     eval "$cmd"
 }
 
+# installOptionsキー名を実際のオプション値に変換
+convert_install_option() {
+    local opt_key="$1"
+    [ -z "$opt_key" ] && return
+    
+    jsonfilter -i "$PACKAGE_MANAGER_JSON" -e "@.${PKG_MGR}.options.${opt_key}" 2>/dev/null
+}
+
 init() {
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
     
@@ -2215,11 +2223,18 @@ EOF
             local id_opts_list=""
             
             while read -r cache_line; do
-                local pkg_id install_opts
+                local pkg_id install_opts install_opts_value
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 install_opts=$(echo "$cache_line" | cut -d= -f4)
                 
-                id_opts_list="${id_opts_list}${pkg_id}|${install_opts}
+                # installOptionsキー名を実際のオプション値に変換
+                if [ -n "$install_opts" ]; then
+                    install_opts_value=$(convert_install_option "$install_opts")
+                else
+                    install_opts_value=""
+                fi
+                
+                id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
 "
             done <<EOF
 $selected_packages_content
@@ -2281,15 +2296,10 @@ EOF
 $id_opts_list
 EOF
             
-            # PKG_MGRに基づいてインストールコマンドを生成
+            # PKG_INSTALL_CMD_TEMPLATEを使用してインストールコマンドを生成
             local install_cmd=""
-            if [ "$PKG_MGR" = "apk" ]; then
-                pkgs=$(echo "$final_list" | sed 's/--nodeps/--force-broken-world/g' | xargs)
-                install_cmd="apk add $pkgs"
-            else
-                pkgs=$(echo "$final_list" | xargs)
-                install_cmd="opkg install $pkgs"
-            fi
+            pkgs=$(echo "$final_list" | xargs)
+            install_cmd=$(echo "$PKG_INSTALL_CMD_TEMPLATE" | sed "s|{package}|$pkgs|g" | sed "s|{allowUntrusted}||g" | sed 's/  */ /g')
         else
             pkgs=""
             install_cmd=""
