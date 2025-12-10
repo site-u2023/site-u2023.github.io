@@ -671,7 +671,7 @@
           "uniqueId": "htpasswd-from-apache",
           "description": "Password hash tool (extracted from apache)",
           "enableVar": "enable_htpasswd",
-          "installOptions": "--nodeps"
+          "installOptions": "ignoreDeps"
         }
       ]
     },   
