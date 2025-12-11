@@ -972,6 +972,117 @@
           ]
         }
       ]
+    },
+    
+    {
+      "id": "custom-scripts",
+      "title": "Custom Scripts",
+      "class": "tr-custom-scripts",
+      "description": "Custom scripts for advanced configuration (GUI only)",
+      "guiOnly": true,
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "adguardhome-mode",
+          "title": "AdGuard Home (Lite)",
+          "class": "tr-adguardhome-lite",
+          "variable": "enable_adguardhome",
+          "default": "disabled",
+          "options": [
+            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ],
+          "exclusiveVars": {
+            "1": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port", "agh_dns_backup_port"],
+            "disabled": []
+          },
+          "dependencies": {
+            "1": {"enable_htpasswd": "1"}
+          }
+        },
+        {
+          "type": "section",
+          "id": "adguardhome-section",
+          "showWhen": {"enable_adguardhome": "1"},
+          "items": [
+            {
+              "type": "field",
+              "id": "agh-user",
+              "label": "Username",
+              "class": "tr-agh-username",
+              "fieldType": "text",
+              "variable": "agh_user",
+              "placeholder": "admin",
+              "default": "admin"
+            },
+            {
+              "type": "field",
+              "id": "agh-pass",
+              "label": "Password",
+              "class": "tr-agh-password",
+              "fieldType": "text",
+              "variable": "agh_pass",
+              "placeholder": "password",
+              "default": "password"
+            },
+            {
+              "type": "field",
+              "id": "agh-web-port",
+              "label": "Web Port",
+              "class": "tr-agh-web-port",
+              "fieldType": "number",
+              "variable": "agh_web_port",
+              "placeholder": "8000",
+              "default": "8000",
+              "min": 1,
+              "max": 65535
+            },
+            {
+              "type": "field",
+              "id": "agh-dns-port",
+              "label": "DNS Port",
+              "class": "tr-agh-dns-port",
+              "fieldType": "number",
+              "variable": "agh_dns_port",
+              "placeholder": "53",
+              "default": "53",
+              "min": 1,
+              "max": 65535
+            },
+            {
+              "type": "field",
+              "id": "agh-dns-backup-port",
+              "label": "DNS Backup Port",
+              "class": "tr-agh-dns-backup-port",
+              "fieldType": "number",
+              "variable": "agh_dns_backup_port",
+              "placeholder": "54",
+              "default": "54",
+              "min": 1,
+              "max": 65535
+            }
+          ]
+        },
+        {
+          "type": "info-display",
+          "id": "adguardhome-disabled-info",
+          "class": "tr-adguardhome-disabled-info",
+          "content": "AdGuard Home will not be configured",
+          "showWhen": {"enable_adguardhome": "disabled"}
+        }
+      ],
+      
+      "packages": [
+        {
+          "id": "adguardhome",
+          "when": {"enable_adguardhome": "1"}
+        },
+        {
+          "id": "htpasswd",
+          "when": {"enable_adguardhome": "1"}
+        }
+      ]
     }
   ]
 }
