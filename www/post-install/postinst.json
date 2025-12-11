@@ -730,6 +730,12 @@
           "name": "luci-app-usteer",
           "hidden": true,
           "description": "Usteer package managed by Wi-Fi setup"
+        },
+        {
+          "id": "adguardhome",
+          "name": "adguardhome",
+          "hidden": true,
+          "description": "AdGuard Home DNS server (managed by Custom Scripts)"
         }
       ]
     }
