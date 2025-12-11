@@ -735,6 +735,7 @@
           "id": "adguardhome",
           "name": "adguardhome",
           "hidden": true,
+          "enableVar": "enable_adguardhome",
           "description": "AdGuard Home DNS server (managed by Custom Scripts)"
         }
       ]
