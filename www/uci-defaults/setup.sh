@@ -372,7 +372,11 @@ fi
 [ -n "${enable_sd_resize}" ] && {
     :
 }
-[ -n "${enable_htpasswd}" ] && {
+[ -n "${enable_adguardhome}" ] && { [ "$MEM" -lt "$AGH_MIN_MEM" ] || [ "$FLASH" -lt "$AGH_MIN_FLASH" ]; } && {
+    /etc/init.d/adguardhome stop 2>/dev/null
+    /etc/init.d/adguardhome disable 2>/dev/null
+}
+[ -n "${enable_htpasswd}" ] && [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ] && {
     [ -z "${apache_keep}" ] && {
         htpasswd_bin="/usr/bin/htpasswd"
         htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
