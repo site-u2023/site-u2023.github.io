@@ -543,7 +543,6 @@
         {
           "type": "section",
           "id": "dslite-section",
-          "title": "DS-Lite",
           "class": "tr-dslite",
           "showWhen": {"connection_type": "dslite"},
           "items": [
@@ -959,7 +958,6 @@
         {
           "type": "section",
           "id": "dnsmasq-disabled-section",
-          "class": "tr-dnsmasq-disabled-settings",
           "showWhen": {"enable_dnsmasq": "disabled"},
           "items": [
             {
