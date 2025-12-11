@@ -233,6 +233,15 @@
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
     
+    "tr-agh-summary-customscripts": "カスタムスクリプト",
+    "tr-agh-customscript-enabled": "有効",
+    "tr-agh-customscript-disabled": "無効",
+    "tr-agh-customscript-adguardhome": "アドガードホーム",
+    "tr-agh-customscript-username": "ユーザーID",
+    "tr-agh-customscript-password": "パスワード（8文字以上）",
+    "tr-agh-customscript-webport": "WEBポート",
+    "tr-agh-customscript-dnsport": "DNSポート",
+    
     "tr-tui-summary-packages": "パッケージ",
     "tr-tui-summary-customfeeds": "カスタムフィードパッケージ",
     "tr-tui-summary-variables": "設定変数",
