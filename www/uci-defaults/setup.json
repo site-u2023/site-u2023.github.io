@@ -977,7 +977,7 @@
     {
       "id": "custom-scripts",
       "title": "Custom Scripts",
-      "class": "tr-custom-scripts",
+      "class": "tr-agh-summary-customscripts",
       "description": "Custom scripts for advanced configuration (GUI only)",
       "guiOnly": true,
       
