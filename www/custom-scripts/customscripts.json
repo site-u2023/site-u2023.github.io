@@ -39,7 +39,12 @@
           "type": "number",
           "label": "tr-tui-customscript-dnsport",
           "default": "53",
-          "envVar": "DNS_PORT"
+          "envVar": "DNS_PORT",
+            "validation": {
+            "type": "port",
+            "min": 1,
+            "max": 65535
+          }
         },
         {
           "id": "lan_addr",
