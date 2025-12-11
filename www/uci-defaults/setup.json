@@ -982,19 +982,23 @@
       "guiOnly": true,
       
       "items": [
-        {
+{
           "type": "radio-group",
-          "id": "adguardhome-mode",
-          "title": "AdGuard Home (Lite)",
-          "class": "tr-adguardhome-lite",
+          "id": "enable_adguardhome",
+          "title": "AdGuard Home",
+          "class": "tr-agh-customscript-adguardhome",
           "variable": "enable_adguardhome",
           "default": "disabled",
+          "requirements": {
+            "minMemoryMB": 20,
+            "minFlashMB": 25
+          },
           "options": [
-            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
-            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+            {"value": "1", "label": "Enabled", "class": "tr-agh-customscript-enabled"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-agh-customscript-disabled"}
           ],
           "exclusiveVars": {
-            "1": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port", "agh_dns_backup_port"],
+            "1": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
             "disabled": []
           },
           "dependencies": {
