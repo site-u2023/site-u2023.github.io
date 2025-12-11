@@ -472,6 +472,7 @@ function renderSetupConfig(config) {
             a.className = 'linked-title';
             if (category.class) {
                 a.classList.add(category.class);
+                a.textContent = category.class;
             } else {
                 a.textContent = category.title || category.id || '';
             }
@@ -479,6 +480,7 @@ function renderSetupConfig(config) {
         } else {
             if (category.class) {
                 h4.classList.add(category.class);
+                h4.textContent = category.class;
             } else {
                 h4.textContent = category.title || category.id || '';
             }
@@ -598,6 +600,7 @@ function buildField(field) {
         a.className = 'linked-title';
         if (field.class) {
             a.classList.add(field.class);
+            a.textContent = field.class;
         } else {
             a.textContent = field.label || field.id || '';
         }
@@ -606,6 +609,7 @@ function buildField(field) {
         const span = document.createElement('span');
         if (field.class) {
             span.classList.add(field.class);
+            span.textContent = field.class;
         } else {
             span.textContent = field.label || field.id || '';
         }
@@ -732,6 +736,7 @@ function buildRadioGroup(item) {
             a.className = 'linked-title';
             if (item.class) {
                 a.classList.add(item.class);
+                a.textContent = item.class;
             } else {
                 a.textContent = item.title;
             }
@@ -740,6 +745,7 @@ function buildRadioGroup(item) {
             const span = document.createElement('span');
             if (item.class) {
                 span.classList.add(item.class);
+                span.textContent = item.class;
             } else {
                 span.textContent = item.title;
             }
@@ -770,6 +776,7 @@ function buildRadioGroup(item) {
         const textSpan = document.createElement('span');
         if (opt.class) {
             textSpan.classList.add(opt.class);
+            textSpan.textContent = opt.class;
         } else {
             textSpan.textContent = opt.label || opt.value;
         }
@@ -805,6 +812,7 @@ function buildSection(section) {
             a.className = 'linked-title';
             if (section.class) {
                 a.classList.add(section.class);
+                a.textContent = section.class;
             } else {
                 a.textContent = section.title;
             }
@@ -813,6 +821,7 @@ function buildSection(section) {
             const span = document.createElement('span');
             if (section.class) {
                 span.classList.add(section.class);
+                span.textContent = section.class;
             } else {
                 span.textContent = section.title;
             }
@@ -2164,27 +2173,42 @@ async function loadCustomTranslations(lang) {
         lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
     }
     
+    const fallback = config.fallback_language || 'en';
+    
+    if (lang !== fallback) {
+        const fallbackFile = config.language_path_template.replace('{lang}', fallback);
+        try {
+            const resp = await fetch(fallbackFile, { cache: 'no-store' });
+            if (resp.ok) {
+                const fallbackMap = JSON.parse(await resp.text());
+                Object.assign(current_language_json, fallbackMap);
+                console.log(`Fallback translations loaded: ${fallback}`);
+            }
+        } catch (err) {
+            console.error(`Error loading fallback translations:`, err);
+        }
+    }
+    
     const customLangFile = config.language_path_template.replace('{lang}', lang);
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
 
         if (!resp.ok) {
-            if (lang !== config.fallback_language) {
-                console.log(`Custom translation not found for ${lang}, falling back to ${config.fallback_language}`);
-                return loadCustomTranslations(config.fallback_language);
+            if (lang !== fallback) {
+                console.log(`Custom translation not found for ${lang}, using fallback only`);
             }
-            console.log(`No custom translations available for ${lang}`);
+            applyCustomTranslations(current_language_json);
             return;
         }
 
-        applyCustomTranslations(JSON.parse(await resp.text()));
+        const langMap = JSON.parse(await resp.text());
+        Object.assign(current_language_json, langMap);
+        applyCustomTranslations(current_language_json);
         
         console.log(`Custom translations loaded for UI language: ${lang}`);
     } catch (err) {
         console.error(`Error loading custom translations for ${lang}:`, err);
-        if (lang !== config.fallback_language) {
-            return loadCustomTranslations(config.fallback_language);
-        }
+        applyCustomTranslations(current_language_json);
     }
 }
 
