@@ -1677,12 +1677,27 @@ function getActualConnectionType() {
     return null;
 }
 
-function collectPackageEnableVars(values) {
+function XXX_collectPackageEnableVars(values) {
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
         const enableVar = cb.getAttribute('data-enable-var');
         if (enableVar) {
             values[enableVar] = '1';
         }
+    });
+}
+
+function collectPackageEnableVars(values) {
+    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
+
+        if (!cb.checked) return;
+
+        if (cb.dataset.auto === "true") return;
+
+        const enableVar = cb.getAttribute('data-enable-var');
+
+        if (!enableVar) return;
+
+        values[enableVar] = '1';
     });
 }
 
