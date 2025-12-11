@@ -991,7 +991,9 @@
           "default": "disabled",
           "requirements": {
             "minMemoryMB": 20,
-            "minFlashMB": 25
+            "minFlashMB": 25,
+            "memoryVar": "agh_min_memory",
+            "flashVar": "agh_min_flash"
           },
           "options": [
             {"value": "1", "label": "Enabled", "class": "tr-agh-customscript-enabled"},
