@@ -1808,7 +1808,7 @@ function displayIspInfo(apiInfo) {
     }
 }
 
-XXX_function updateAutoConnectionInfo(apiInfo) {
+function XXX_updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
     
