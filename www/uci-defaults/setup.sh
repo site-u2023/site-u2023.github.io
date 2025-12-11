@@ -26,6 +26,9 @@ AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
+AGH_MIN_MEM="${agh_min_memory:-20}"
+AGH_MIN_FLASH="${agh_min_flash:-25}"
 mkdir -p /tmp/aios2
 exec > >(tee -a /tmp/aios2/debug.log) 2>&1
 disable_wan() {
@@ -390,7 +393,7 @@ fi
         done
     }
 }
-[ -n "${enable_adguardhome}" ] && {
+[ -n "${enable_adguardhome}" ] && [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ] && {
 local agh_yaml="/etc/adguardhome.yaml"
 local cfg_dhcp="/etc/config/dhcp"
 local cfg_fw="/etc/config/firewall"
