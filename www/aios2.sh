@@ -789,7 +789,11 @@ get_setup_categories() {
         all_cats=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
         _SETUP_CATEGORIES_CACHE=""
         for cat_id in $all_cats; do
-            gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].guiOnly" 2>/dev/null | head -n1)
+            gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*]" 2>/dev/null \
+    | grep -A10 "\"id\": \"$cat_id\"" \
+    | grep '"guiOnly":' \
+    | grep -q 'true'
+
             [ "$gui_only" = "true" ] && continue
             _SETUP_CATEGORIES_CACHE="${_SETUP_CATEGORIES_CACHE}${cat_id}
 "
