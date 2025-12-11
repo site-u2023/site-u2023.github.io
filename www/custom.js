@@ -1,5 +1,5 @@
 // custom.js
-const VERSION = "R7.1211.2020";
+const VERSION = "R7.1211.2037";
 console.log(`custom.js (${VERSION}) loaded`);
 
 // === CONFIGURATION SWITCH ===
@@ -470,12 +470,18 @@ function renderSetupConfig(config) {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.className = 'linked-title';
-            if (category.class) a.classList.add(category.class);
-            a.textContent = category.title || category.id || '';
+            if (category.class) {
+                a.classList.add(category.class);
+            } else {
+                a.textContent = category.title || category.id || '';
+            }
             h4.appendChild(a);
         } else {
-            if (category.class) h4.classList.add(category.class);
-            h4.textContent = category.title || category.id || '';
+            if (category.class) {
+                h4.classList.add(category.class);
+            } else {
+                h4.textContent = category.title || category.id || '';
+            }
         }
         
         if (category.description || category.descriptionUrl) {
@@ -590,13 +596,19 @@ function buildField(field) {
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         a.className = 'linked-title';
-        if (field.class) a.classList.add(field.class);
-        a.textContent = field.label || field.id || '';
+        if (field.class) {
+            a.classList.add(field.class);
+        } else {
+            a.textContent = field.label || field.id || '';
+        }
         label.appendChild(a);
     } else {
         const span = document.createElement('span');
-        if (field.class) span.classList.add(field.class);
-        span.textContent = field.label || field.id || '';
+        if (field.class) {
+            span.classList.add(field.class);
+        } else {
+            span.textContent = field.label || field.id || '';
+        }
         label.appendChild(span);
     }
     
@@ -708,7 +720,7 @@ function buildRadioGroup(item) {
     const group = document.createElement('div');
     group.className = 'form-group';
 
-    if (item.title) {
+    if (item.title || item.class) {
         const legend = document.createElement('div');
         legend.className = 'form-label';
         
@@ -718,13 +730,19 @@ function buildRadioGroup(item) {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.className = 'linked-title';
-            if (item.class) a.classList.add(item.class);
-            a.textContent = item.title;
+            if (item.class) {
+                a.classList.add(item.class);
+            } else {
+                a.textContent = item.title;
+            }
             legend.appendChild(a);
         } else {
             const span = document.createElement('span');
-            if (item.class) span.classList.add(item.class);
-            span.textContent = item.title;
+            if (item.class) {
+                span.classList.add(item.class);
+            } else {
+                span.textContent = item.title;
+            }
             legend.appendChild(span);
         }
         
@@ -750,8 +768,11 @@ function buildRadioGroup(item) {
         }
 
         const textSpan = document.createElement('span');
-        textSpan.textContent = opt.label || opt.value;
-        if (opt.class) textSpan.classList.add(opt.class);
+        if (opt.class) {
+            textSpan.classList.add(opt.class);
+        } else {
+            textSpan.textContent = opt.label || opt.value;
+        }
         
         lbl.appendChild(radio);
         lbl.appendChild(textSpan);
@@ -773,7 +794,7 @@ function buildSection(section) {
         wrapper.style.display = 'none';
     }
 
-    if (section.title) {
+    if (section.title || section.class) {
         const h4 = document.createElement('h4');
         
         if (section.link) {
@@ -782,13 +803,19 @@ function buildSection(section) {
             a.target = '_blank';
             a.rel = 'noopener noreferrer';
             a.className = 'linked-title';
-            if (section.class) a.classList.add(section.class);
-            a.textContent = section.title;
+            if (section.class) {
+                a.classList.add(section.class);
+            } else {
+                a.textContent = section.title;
+            }
             h4.appendChild(a);
         } else {
             const span = document.createElement('span');
-            if (section.class) span.classList.add(section.class);
-            span.textContent = section.title;
+            if (section.class) {
+                span.classList.add(section.class);
+            } else {
+                span.textContent = section.title;
+            }
             h4.appendChild(span);
         }
         
