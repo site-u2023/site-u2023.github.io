@@ -238,7 +238,16 @@
     "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?",
-
+    
+    "tr-agh-summary-customscripts": "Custom Scripts",
+    "tr-agh-customscript-enabled": "Enabled",
+    "tr-agh-customscript-disabled": "Disabled",
+    "tr-agh-customscript-adguardhome": "AdGuard Home",
+    "tr-agh-customscript-username": "User ID",
+    "tr-agh-customscript-password": "Password (min 8 characters)",
+    "tr-agh-customscript-webport": "WEB Port",
+    "tr-agh-customscript-dnsport": "DNS Port",
+    
     "tr-tui-restore-point": "Restore Point",
     "tr-tui-no-restore-points": "No restore points available",
     "tr-tui-restore-confirm": "Restore to this point?",
