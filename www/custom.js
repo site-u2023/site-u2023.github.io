@@ -1,5 +1,5 @@
 // custom.js
-const VERSION = "R7.1211.1057";
+const VERSION = "R7.1211.1104";
 console.log(`custom.js (${VERSION}) loaded`);
 
 // === CONFIGURATION SWITCH ===
@@ -1808,7 +1808,7 @@ function displayIspInfo(apiInfo) {
     }
 }
 
-function updateAutoConnectionInfo(apiInfo) {
+XXX_function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
     
@@ -1884,6 +1884,32 @@ function updateAutoConnectionInfo(apiInfo) {
     
     autoInfo.innerHTML = infoText;
     applyCustomTranslations(current_language_json);
+}
+
+if (connectionType === 'MAP-E') {
+    let gua = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+    if (!gua) {
+        const guaField = document.querySelector('#mape-gua-prefix');
+        if (guaField && guaField.value) gua = guaField.value;
+    }
+    
+    infoText += `<hr>`;
+    infoText += `<p><span class="tr-mape-notice1">Note: Actual values may differ.</span></p>`;
+    infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
+    infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
+    infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
+    infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}<br>`;
+    infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}<br>`;
+    infoText += `option ealen ${apiInfo.mape.eaBitLength}<br>`;
+    infoText += `option psidlen ${apiInfo.mape.psidlen}<br>`;
+    infoText += `option offset ${apiInfo.mape.psIdOffset}<br>`;
+    if (gua) {
+        infoText += `option ip6prefix_gua ${gua}<br>`;
+    }
+    infoText += `<br>`;
+    infoText += `export LEGACY=1<br>`;
+    infoText += `<hr>`;
+    infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
 }
 
 function applyIspAutoConfig(apiInfo) {
