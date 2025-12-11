@@ -1,4 +1,6 @@
-console.log('custom.js (v2.0 - Simplified) loaded');
+// custom.js
+const VERSION = "R7.1211.1057";
+console.log(`custom.js (${VERSION}) loaded`);
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
