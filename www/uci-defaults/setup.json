@@ -1004,7 +1004,7 @@
             "disabled": []
           },
           "dependencies": {
-            ""enabled": {"enable_htpasswd": "enabled"}
+            "enabled": {"enable_htpasswd": "enabled"}
           },
         },
         {
