@@ -1083,6 +1083,7 @@
       "packages": [
         {
           "id": "adguardhome",
+          "enableVar": "enable_adguardhome", 
           "when": {"enable_adguardhome": "enabled"}
         },
         {
