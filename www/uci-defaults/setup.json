@@ -982,7 +982,7 @@
       "guiOnly": true,
       
       "items": [
-{
+        {
           "type": "radio-group",
           "id": "enable_adguardhome",
           "title": "AdGuard Home",
