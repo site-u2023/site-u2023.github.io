@@ -1,5 +1,5 @@
 // custom.js
-const VERSION = "R7.1211.1110";
+const VERSION = "R7.1211.2020";
 console.log(`custom.js (${VERSION}) loaded`);
 
 // === CONFIGURATION SWITCH ===
@@ -1048,6 +1048,8 @@ function handleRadioChange(e) {
     
     evaluateAllShowWhen();
     
+    applyRadioDependencies(name, value);
+    
     updatePackagesForRadioGroup(name, value);
     
     updateAllPackageState(`radio-${name}`);
@@ -1056,6 +1058,30 @@ function handleRadioChange(e) {
         requestAnimationFrame(() => {
             applyCustomTranslations(current_language_json);
         });
+    }
+}
+
+function applyRadioDependencies(radioName, selectedValue) {
+    if (!state.config.setup) return;
+    
+    for (const category of state.config.setup.categories) {
+        for (const item of category.items) {
+            if (item.type === 'radio-group' && item.variable === radioName && item.dependencies) {
+                const deps = item.dependencies[selectedValue];
+                if (deps && typeof deps === 'object') {
+                    for (const [depVar, depValue] of Object.entries(deps)) {
+                        console.log(`Applying dependency: ${depVar} = ${depValue}`);
+                        
+                        const depRadio = document.querySelector(`input[name="${depVar}"][value="${depValue}"]`);
+                        if (depRadio) {
+                            depRadio.checked = true;
+                            console.log(`Dependency radio set: ${depVar} = ${depValue}`);
+                        }
+                    }
+                }
+                return;
+            }
+        }
     }
 }
 
