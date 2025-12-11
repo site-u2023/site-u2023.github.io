@@ -1010,7 +1010,7 @@
         {
           "type": "section",
           "id": "adguardhome-section",
-          "showWhen": {"enable_adguardhome": "1"},
+          "showWhen": {"enable_adguardhome": "enabled"},
           "items": [
             {
               "type": "field",
