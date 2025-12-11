@@ -767,7 +767,7 @@ get_setup_item_property() {
     echo "$result"
 }
 
-get_setup_categories() {
+XXX_get_setup_categories() {
     if [ "$_SETUP_CATEGORIES_LOADED" -eq 0 ]; then
         local all_cats gui_only
         all_cats=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
@@ -779,6 +779,30 @@ get_setup_categories() {
 "
         done
         _SETUP_CATEGORIES_LOADED=1
+    fi
+    echo "$_SETUP_CATEGORIES_CACHE"
+}
+
+get_setup_categories() {
+    if [ "$_SETUP_CATEGORIES_LOADED" -eq 0 ]; then
+        local all_cats gui_only
+        all_cats=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        _SETUP_CATEGORIES_CACHE=""
+        for cat_id in $all_cats; do
+            gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].guiOnly" 2>/dev/null | head -1 | tr -d ' \n\r')
+            echo "[DEBUG] cat_id='$cat_id' gui_only='$gui_only'" >> "$CONFIG_DIR/debug.log"
+            
+            # 明示的にtrueと比較
+            if [ "$gui_only" = "true" ]; then
+                echo "[DEBUG] Skipping $cat_id (guiOnly)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            _SETUP_CATEGORIES_CACHE="${_SETUP_CATEGORIES_CACHE}${cat_id}
+"
+        done
+        _SETUP_CATEGORIES_LOADED=1
+        echo "[DEBUG] Categories cache built: $_SETUP_CATEGORIES_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     echo "$_SETUP_CATEGORIES_CACHE"
 }
