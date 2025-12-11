@@ -373,30 +373,7 @@ fi
     :
 }
 [ -n "${enable_htpasswd}" ] && {
-    [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ] && {
-        [ -z "${apache_keep}" ] && {
-            htpasswd_bin="/usr/bin/htpasswd"
-            htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
-            tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
-            
-            [ -f "$htpasswd_bin" ] && cp "$htpasswd_bin" /tmp/htpasswd
-            for lib in $htpasswd_libs; do
-                [ -f "$lib" ] && cp "$lib" /tmp/
-            done
-            case "$PACKAGE_MANAGER" in
-                opkg) opkg remove apache >/dev/null 2>&1 || true ;;
-                apk) apk del apache >/dev/null 2>&1 || true ;;
-            esac
-            mv /tmp/htpasswd "$htpasswd_bin"
-            chmod +x "$htpasswd_bin"
-            for lib in $tmp_libs; do
-                [ -f "$lib" ] && mv "$lib" /usr/lib/
-            done
-        }
-    }
-}
-[ -n "${enable_htpasswd}" ] && {
-    [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ] && {
+    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
         [ -z "${apache_keep}" ] && {
             htpasswd_bin="/usr/bin/htpasswd"
             htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
@@ -415,16 +392,15 @@ fi
                 [ -f "$lib" ] && mv "$lib" /usr/lib/
             done
         }
-    }
+    fi
 }
 [ -n "${enable_adguardhome}" ] && {
-    [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ] && {
-        local agh_yaml="/etc/adguardhome.yaml"
-        local cfg_dhcp="/etc/config/dhcp"
-        local cfg_fw="/etc/config/firewall"
+    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
+        agh_yaml="/etc/adguardhome.yaml"
+        cfg_dhcp="/etc/config/dhcp"
+        cfg_fw="/etc/config/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
-        local agh_hash
         agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
         [ -z "$agh_hash" ] && { echo "Error: Failed to generate AdGuard Home password hash"; exit 1; }
         cat > "$agh_yaml" << 'AGHEOF'
@@ -556,10 +532,10 @@ AGHEOF
         SET ${agh_rule}.src_dport="${agh_dns_port}"
         SET ${agh_rule}.dest_port="${agh_dns_port}"
         SET ${agh_rule}.target='DNAT'
-    } || {
+    else
         /etc/init.d/adguardhome stop 2>/dev/null
         /etc/init.d/adguardhome disable 2>/dev/null
-    }
+    fi
 }
 # BEGIN_CMDS
 # END_CMDS
