@@ -1687,15 +1687,24 @@ function XXX_collectPackageEnableVars(values) {
 }
 
 function collectPackageEnableVars(values) {
-    document.querySelectorAll('.package-selector-checkbox').forEach(cb => {
-
-        if (!cb.checked) return;
-
-        if (cb.dataset.auto === "true") return;
+    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
 
         const enableVar = cb.getAttribute('data-enable-var');
-
         if (!enableVar) return;
+
+        const uniqueId = cb.getAttribute('data-unique-id');
+        const pkgId    = cb.getAttribute('data-package');
+
+        const effectiveId = uniqueId || pkgId;
+
+        const pkgInfo = findPackageById(pkgId);
+        if (pkgInfo && (pkgInfo.hidden || pkgInfo.virtual)) {
+            return;
+        }
+
+        if (cb.dataset.auto === "true") {
+            return;
+        }
 
         values[enableVar] = '1';
     });
