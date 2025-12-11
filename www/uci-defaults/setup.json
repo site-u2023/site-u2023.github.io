@@ -1005,7 +1005,7 @@
           },
           "dependencies": {
             "enabled": {"enable_htpasswd": "enabled"}
-          },
+          }
         },
         {
           "type": "section",
