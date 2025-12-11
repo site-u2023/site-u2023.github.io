@@ -1488,6 +1488,100 @@ function shouldIncludeVariable(value) {
     return value !== 'disabled' && value !== null && value !== undefined && value !== '';
 }
 
+function collectExclusiveVars(varsToCollect, values, useApiValues) {
+    if (!varsToCollect || !Array.isArray(varsToCollect)) return;
+    
+    for (const varName of varsToCollect) {
+        const fieldConfig = findFieldByVariable(varName);
+        if (!fieldConfig) continue;
+        
+        let value = null;
+        
+        if (useApiValues && state.apiInfo) {
+            if (fieldConfig.computeFrom === 'generateGuaPrefix') {
+                value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+            } else if (fieldConfig.apiSource) {
+                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+            }
+        }
+        
+        if (value === null || value === undefined) {
+            value = getFieldValue(`#${fieldConfig.id}`);
+        }
+        
+        if (shouldIncludeVariable(value)) {
+            values[varName] = value;
+        }
+    }
+}
+
+function collectItemValue(item, values) {
+    if (!item) return;
+    
+    if (item.type === 'radio-group' && item.variable) {
+        const selectedValue = getFieldValue(`input[name="${item.variable}"]:checked`);
+        
+        if (!shouldIncludeVariable(selectedValue)) return;
+        
+        if (!item.ui_variable) {
+            values[item.variable] = selectedValue;
+        }
+        
+        if (selectedValue === 'disabled') return;
+        
+        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
+        
+        if (item.variable === 'connection_type' && selectedValue === 'auto') {
+            const actualType = getActualConnectionType();
+            if (actualType && actualType !== 'dhcp') {
+                const actualVars = item.exclusiveVars?.[actualType] || [];
+                collectExclusiveVars(actualVars, values, true);
+            }
+            return;
+        }
+        
+        collectExclusiveVars(varsToCollect, values, false);
+        return;
+    }
+    
+    if (item.type === 'field' && item.variable) {
+        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+            return;
+        }
+        
+        const value = getFieldValue(`#${item.id}`);
+        
+        if (!shouldIncludeVariable(value)) return;
+        
+        const fallbackLang = config.fallback_language || 'en';
+        if (item.variable === 'language' && value === fallbackLang) {
+            return;
+        }
+        
+        values[item.variable] = value;
+        return;
+    }
+    
+    if (item.type === 'section' && item.items) {
+        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+            return;
+        }
+        
+        for (const subItem of item.items) {
+            collectItemValue(subItem, values);
+        }
+    }
+}
+
+function collectCategoryValues(categoryId, values) {
+    const category = state.config.setup?.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+    
+    for (const item of category.items) {
+        collectItemValue(item, values);
+    }
+}
+
 function collectFormValues() {
     const values = {};
 
@@ -1495,13 +1589,9 @@ function collectFormValues() {
         return values;
     }
 
-    collectBasicConfig(values);
-
-    collectWifiConfig(values);
-
-    collectConnectionConfig(values);
-
-    collectOptimizationConfig(values);
+    for (const category of state.config.setup.categories) {
+        collectCategoryValues(category.id, values);
+    }
 
     collectPackageEnableVars(values);
 
@@ -1512,163 +1602,10 @@ function collectFormValues() {
     return values;
 }
 
-function collectBasicConfig(values) {
-    const basicCategory = state.config.setup.categories.find(cat => cat.id === 'basic-config');
-    if (!basicCategory) return;
-
-    for (const item of basicCategory.items) {
-        if (item.type === 'field' && item.variable) {
-            const value = getFieldValue(`#${item.id}`);
-            
-            if (!shouldIncludeVariable(value)) continue;
-            if (item.variable === 'language' && value === 'en') continue;
-            
-            values[item.variable] = value;
-        }
-    }
-}
-
-function collectWifiConfig(values) {
-    const wifiMode = getFieldValue(`input[name="wifi_mode"]:checked`) || 'standard';
-    
-    if (!shouldIncludeVariable(wifiMode)) return;
-    
-    if (shouldIncludeVariable('wifi_mode', wifiMode)) {
-        values.wifi_mode = wifiMode;
-    }
-    
-    if (wifiMode === 'disabled') return;
-
-    const ssid = getFieldValue('#aios-wifi-ssid');
-    const password = getFieldValue('#aios-wifi-password');
-    
-    if (ssid && shouldIncludeVariable(ssid)) values.wlan_ssid = ssid;
-    if (password && shouldIncludeVariable(password)) values.wlan_password = password;
-
-    if (wifiMode === 'usteer') {
-        const mobility = getFieldValue('#aios-wifi-mobility-domain');
-        const snr = getFieldValue('#aios-wifi-snr');
-        if (mobility && shouldIncludeVariable(mobility)) values.mobility_domain = mobility;
-        if (snr && shouldIncludeVariable(snr)) values.snr = snr;
-    }
-}
-
-function collectConnectionConfig(values) {
-    const connectionType = getFieldValue(`input[name="connection_type"]:checked`) || 'auto';
-    
-    const connectionCategory = state.config.setup?.categories?.find(
-        cat => cat.id === 'internet-connection'
-    );
-    if (!connectionCategory) return;
-
-    if (shouldIncludeVariable(connectionType)) {
-        values.connection_type = connectionType;
-    }
-    
-    if (connectionType === 'disabled') {
-        return;
-    }
-
-    if (connectionType === 'auto') {
-        const actualType = getActualConnectionType();
-        if (actualType) {
-            collectFieldsForConnectionType(actualType, values, true);
-        }
-    } else if (connectionType !== 'dhcp') {
-        collectFieldsForConnectionType(connectionType, values, false);
-    }
-}
-
 function getActualConnectionType() {
     if (state.apiInfo?.mape?.brIpv6Address) return 'mape';
     if (state.apiInfo?.aftr?.aftrIpv6Address) return 'dslite';
     return null;
-}
-
-function collectFieldsForConnectionType(type, values, isAutoMode) {
-    const connectionCategory = state.config.setup.categories.find(
-        cat => cat.id === 'internet-connection'
-    );
-    if (!connectionCategory) return;
-
-    const section = connectionCategory.items.find(item =>
-        item.type === 'section' &&
-        (item.showWhen?.connection_type === type ||
-         (Array.isArray(item.showWhen?.connection_type) && 
-          item.showWhen.connection_type.includes(type)))
-    );
-    
-    if (!section || !section.items) return;
-
-    for (const item of section.items) {
-        if (item.type === 'field' && item.variable) {
-            if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
-                continue;
-            }
-            
-            let value;
-            
-            if (isAutoMode && state.apiInfo) {
-                if (item.computeFrom === 'generateGuaPrefix') {
-                    value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-                } else if (item.apiSource) {
-                    value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
-                }
-            }
-            
-            if ((value === null || value === undefined) && !isAutoMode) {
-                value = getFieldValue(`#${item.id}`);
-            }
-            
-            if (value !== null && value !== undefined && value !== '') {
-                values[item.variable] = value;
-            }
-        } else if (item.type === 'radio-group' && item.variable && !item.ui_variable) {
-            const value = getFieldValue(`input[name="${item.variable}"]:checked`);
-            if (value !== null && value !== undefined && value !== '') {
-                values[item.variable] = value;
-            }
-        }
-    }
-}
-
-function collectOptimizationConfig(values) {
-    const netOpt = getFieldValue(`input[name="net_optimizer"]:checked`) || 'auto';
-    
-    if (shouldIncludeVariable(netOpt)) {
-        values.net_optimizer = netOpt;
-    }
-    
-    if (netOpt === 'disabled') {
-    } else if (netOpt === 'manual') {
-        const fields = {
-            'netopt-rmem': 'netopt_rmem',
-            'netopt-wmem': 'netopt_wmem',
-            'netopt-conntrack': 'netopt_conntrack',
-            'netopt-backlog': 'netopt_backlog',
-            'netopt-somaxconn': 'netopt_somaxconn',
-            'netopt-congestion': 'netopt_congestion'
-        };
-        
-        for (const [fieldId, varName] of Object.entries(fields)) {
-            const value = getFieldValue(`#${fieldId}`);
-            if (shouldIncludeVariable(value)) values[varName] = value;
-        }
-    }
-
-    const dnsmasq = getFieldValue(`input[name="enable_dnsmasq"]:checked`) || 'auto';
-    
-    if (shouldIncludeVariable(dnsmasq)) {
-        values.enable_dnsmasq = dnsmasq;
-    }
-    
-    if (dnsmasq === 'disabled') {
-    } else if (dnsmasq === 'manual') {
-        const cache = getFieldValue('#dnsmasq-cache');
-        const negcache = getFieldValue('#dnsmasq-negcache');
-        if (shouldIncludeVariable(cache)) values.dnsmasq_cache = cache;
-        if (shouldIncludeVariable(negcache)) values.dnsmasq_negcache = negcache;
-    }
 }
 
 function collectPackageEnableVars(values) {
