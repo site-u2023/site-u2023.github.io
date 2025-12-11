@@ -3242,7 +3242,11 @@ function generatePackageSelector() {
     
     state.packages.json.categories.forEach(category => {
         if (category.hidden) {
-            console.log(`Skipping hidden category: ${category.id}`);
+            console.log(`Processing hidden category: ${category.id}`);
+            category.packages.forEach(pkg => {
+                if (!pkg.hidden) pkg.hidden = true;
+                createHiddenPackageCheckbox(pkg);
+            });
             return;
         }
         
