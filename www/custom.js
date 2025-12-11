@@ -1,6 +1,5 @@
 // custom.js
-const VERSION = "R7.1211.2037";
-console.log(`custom.js (${VERSION}) loaded`);
+console.log('custom.js (R7.1211.2212) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -582,9 +581,15 @@ function buildField(field) {
     const row = document.createElement('div');
     row.className = 'form-row';
     
+    if (field.hidden) {
+        row.style.display = 'none';
+    }
+    
     if (field.showWhen) {
         row.setAttribute('data-show-when', JSON.stringify(field.showWhen));
-        row.style.display = 'none';
+        if (!field.hidden) {
+            row.style.display = 'none';
+        }
     }
 
     const group = document.createElement('div');
