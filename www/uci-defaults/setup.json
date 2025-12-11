@@ -1000,7 +1000,7 @@
             {"value": "disabled", "label": "Disabled", "class": "tr-agh-customscript-disabled"}
           ],
           "exclusiveVars": {
-            "1": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
+            "enabled": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
             "disabled": []
           },
           "dependencies": {
