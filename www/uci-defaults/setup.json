@@ -1088,6 +1088,7 @@
         {
           "id": "apache",
           "uniqueId": "htpasswd-from-apache",
+          "enableVar": "enable_htpasswd",
           "when": {"enable_adguardhome": "enabled"}
         }
       ]
