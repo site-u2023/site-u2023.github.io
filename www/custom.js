@@ -1055,10 +1055,10 @@ function evaluateInitialPackages() {
             
             if (shouldEnable) {
                 console.log(`  ✓ Enabling package: ${pkg.id}`);
-                toggleVirtualPackage(pkg.id, true);
+                toggleVirtualPackage(pkg.uniqueId || pkg.id, true);
             } else {
                 console.log(`  ✗ Disabling package: ${pkg.id}`);
-                toggleVirtualPackage(pkg.id, false);
+                toggleVirtualPackage(pkg.uniqueId || pkg.id, false);
             }
         });
     }
@@ -1176,7 +1176,7 @@ function updatePackagesForRadioGroup(radioName, selectedValue) {
                 console.log(`Package disabled by radio: ${pkg.id} for ${radioName}=${effectiveValue}`);
             }
             
-            toggleVirtualPackage(pkg.id, shouldEnable);
+            toggleVirtualPackage(pkg.uniqueId || pkg.id, shouldEnable);
         });
     }
 }
