@@ -1198,7 +1198,6 @@ category_config() {
     
     # internet-connection カテゴリの場合、自動検出を試みる
     if [ "$cat_id" = "internet-connection" ]; then
-        if show_auto_detection_if_available; then
             auto_cleanup_conditional_variables "$cat_id"
             cleanup_orphaned_enablevars "$cat_id"
             rm -f "$temp_vars"
