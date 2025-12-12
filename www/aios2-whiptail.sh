@@ -792,7 +792,7 @@ category_config() {
     tr_main_menu=$(translate "tr-tui-main-menu")
     cat_title=$(get_setup_category_title "$cat_id")
     base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
-
+    
     if [ "$cat_id" = "basic-config" ]; then
         tr_language=$(translate "tr-language")
         lang_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${tr_language}"
@@ -822,6 +822,7 @@ category_config() {
     
     # internet-connection カテゴリの場合、自動検出を試みる
     if [ "$cat_id" = "internet-connection" ]; then
+        if show_auto_detection_if_available; then
             auto_cleanup_conditional_variables "$cat_id"
             cleanup_orphaned_enablevars "$cat_id"
             rm -f "$temp_vars"
@@ -860,7 +861,7 @@ category_config() {
                 ;;
         esac
     done
-
+    
     # 成功: バックアップを削除
     rm -f "$temp_vars"
     
