@@ -68,10 +68,10 @@
     "tr-dslite": "DS-Lite",
     "tr-mape": "MAP-E",
     "tr-ap": "APモード",
-
     "tr-auto-detection": "自動検出",
     "tr-dhcp": "DHCP",
-
+    "tr-internet-optimization-disabled": "インターネット無効",
+    
     "tr-pppoe-credentials": "PPPoE認証情報",
     "tr-pppoe-username": "ユーザー名",
     "tr-pppoe-password": "パスワード",
@@ -232,7 +232,8 @@
     "tr-tui-view-customscripts": "customscripts.sh",
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
-    
+
+    "tr-adguardhome-disabled": "アドガードホーム無効"
     "tr-agh-summary-customscripts": "カスタムスクリプト",
     "tr-agh-customscript-enabled": "有効",
     "tr-agh-customscript-disabled": "無効",
