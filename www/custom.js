@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1212.0126) loaded');
+console.log('custom.js (R7.1212.1204) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -869,7 +869,6 @@ function buildInfoDisplay(item) {
     div.id = item.id;
     div.className = 'info-display';
     if (item.class) div.classList.add(item.class);
-    div.textContent = item.content || '';
     
     if (item.showWhen) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
