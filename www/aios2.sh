@@ -221,26 +221,52 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
-XXX_synchronize_selection_vars() {
+synchronize_selection_vars() {
     local selected_packages_content=""
+    local vars_to_add=""
+    
     # 選択済みパッケージのデータを変数にロード
     [ -f "$SELECTED_PACKAGES" ] && selected_packages_content=$(cat "$SELECTED_PACKAGES")
     
-    # 既存の EnableVar をすべて削除してクリーンアップ
-    sed -i '/_ENABLE=[^=]*$/d' "$SETUP_VARS" 2>/dev/null
-    
-    # 選択されたパッケージを処理
-    # ヒアドキュメント (<<EOF) を使用し、サブシェルでの実行を避ける
+    # 1. 追記すべき _ENABLE 変数群を一時的に構築
+    # サブシェルを避けるため、ヒアドキュメントを使用し、vars_to_addに変数を格納
     while IFS='=' read -r pkg_id name unique_id install_opts enable_var; do
-        # enable_var (5番目のフィールド) が空でなければ処理
+        # enableVar (5番目のフィールド) が空でなければ処理
         [ -z "$enable_var" ] && continue
         
-        # set_var 関数を使って $SETUP_VARS に 'VAR_NAME=true' を書き込む
-        set_var "$enable_var" "true"
-        echo "[SYNC] Set variable: ${enable_var}=true (for pkg: ${pkg_id})" >> "$CONFIG_DIR/debug.log"
+        # 'VAR_NAME='true'' の形式でデータを構築 (\nで改行)
+        vars_to_add="${vars_to_add}${enable_var}='true'\n"
     done <<EOF
 $selected_packages_content
 EOF
+
+    # 2. 既存の $SETUP_VARS から _ENABLE 変数と空行をすべて削除したクリーンな内容を取得
+    # grep -v で _ENABLE= を含む行と空行を排除
+    local setup_vars_clean
+    setup_vars_clean=$(grep -v '^[[:space:]]*$' "$SETUP_VARS" 2>/dev/null | grep -v '_ENABLE=')
+    
+    # 3. $SETUP_VARS ファイルを再構築
+    
+    # ファイル全体を空にする
+    : > "$SETUP_VARS"
+    
+    # クリーンな内容（他の設定変数）を書き戻す
+    if [ -n "$setup_vars_clean" ]; then
+        printf "%b\n" "$setup_vars_clean" >> "$SETUP_VARS"
+    fi
+    
+    # 新しく構築した _ENABLE 変数群を追記する
+    if [ -n "$vars_to_add" ]; then
+        printf "%b" "$vars_to_add" >> "$SETUP_VARS"
+    fi
+    
+    # 4. 強制的に $SETUP_VARS を再読み込み
+    # これが最も重要。ファイルの内容を現在のシェル変数に反映させる。
+    if [ -f "$SETUP_VARS" ]; then
+        . "$SETUP_VARS" # source コマンド (. )
+    fi
+    
+    echo "[SYNC] Variables rebuilt and reloaded." >> "$CONFIG_DIR/debug.log"
 }
 
 # UI Mode Selection
@@ -1034,7 +1060,7 @@ get_package_checked() {
 }
 
 
-get_package_name() {
+XXXXX_get_package_name() {
     local pkg_id="$1"
     local name unique_id
     
@@ -1097,54 +1123,62 @@ $_PACKAGE_NAME_CACHE
 EOF
 }
 
-XXXXX_get_package_name() {
+get_package_name() {
     local pkg_id="$1"
-    local name unique_id match_line # 高速化のため、ローカル変数を追加
-
-    # 初回のみキャッシュ構築 (※ この部分は現状のロジックを維持)
+    local name unique_id match_line
+    
+    # 初回のみキャッシュ構築 (元の関数から全てのフィールドを取得するロジックを維持)
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        # postinst.json と customfeeds.json から id=name=uniqueId の形式でキャッシュ作成
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '
-            {
-                id=""; name=""; uid="";
+            awk -F'"' '{
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
                 for(i=1;i<=NF;i++){
-                    if($i=="id") id=$(i+2);
-                    if($i=="name") name=$(i+2);
-                    if($i=="uniqueId") uid=$(i+2);
+                    if($i=="id")id=$(i+2);
+                    if($i=="name")name=$(i+2);
+                    if($i=="uniqueId")uniqueId=$(i+2);
+                    if($i=="installOptions")installOptions=$(i+2);
+                    if($i=="enableVar")enableVar=$(i+2); # <-- ここが重要
                 }
-                if(id) print id"="name"="uid;
+                if(id&&name){
+                    # id=name=uniqueId=installOptions=enableVar の形式でキャッシュ
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                }
             }')
+        
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '{
+                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id")id=$(i+2);
+                        if($i=="name")name=$(i+2);
+                        if($i=="uniqueId")uniqueId=$(i+2);
+                        if($i=="installOptions")installOptions=$(i+2);
+                        if($i=="enableVar")enableVar=$(i+2); # <-- ここが重要
+                    }
+                    if(id&&name){
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                    }
+                }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
-$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '
-            {
-                id=""; name=""; uid="";
-                for(i=1;i<=NF;i++){
-                    if($i=="id") id=$(i+2);
-                    if($i=="name") name=$(i+2);
-                    if($i=="uniqueId") uid=$(i+2);
-                }
-                if(id) print id"="name"="uid;
-            }')"
+${custom_cache}"
         fi
+        
         _PACKAGE_NAME_LOADED=1
+        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
+        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # uniqueId があれば uniqueId を返す、なければ name を返す
+    # uniqueId があれば uniqueId を返す、なければ name を返す (高速化ロジック)
     
-    # ビフォー (遅い処理):
-    # while read -r line; do ... lineから切出す処理 ... done <<EOF $_PACKAGE_NAME_CACHE EOF
-    
-    # アフター (高速化された処理):
-    
-    # 1. grep で一発検索（^pkg_id= で始まる行を探す）。grepはシェルループより遥かに高速。
+    # 1. grep で一発検索（^pkg_id= で始まる行を探す）
     match_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | head -n 1)
     
     [ -z "$match_line" ] && return
     
     # 2. cut で切り出し
+    # フィールド番号は id(1)=name(2)=uniqueId(3)=installOptions(4)=enableVar(5) に基づく
     name=$(echo "$match_line" | cut -d= -f2)
     unique_id=$(echo "$match_line" | cut -d= -f3)
     
@@ -3374,7 +3408,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
 
-    # synchronize_selection_vars
+    synchronize_selection_vars
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
