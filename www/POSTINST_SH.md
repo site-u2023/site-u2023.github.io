@@ -934,3 +934,16 @@ DNS over TLS
 - setup.jsonで wifi_mode: "usteer" 選択時に自動インストール
 
 </details>
+
+### AdGuard Home DNS広告ブロック
+<details>
+<summary>adguardhome</summary>
+
+- DNS over HTTPS (DoH)対応の広告ブロッカー
+- Webインターフェースで詳細設定
+- ブロックリスト管理、統計表示
+- setup.jsonで enable_adguardhome: "enabled" 選択時に自動インストール
+- 必須: メモリ 20MB / ストレージ 25MB
+- 推奨: メモリ 50MB / ストレージ 100MB
+
+</details>
