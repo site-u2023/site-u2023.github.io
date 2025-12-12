@@ -491,7 +491,7 @@
           "type": "section",
           "id": "auto-section",
           "title": "AUTO Detection",
-          "class": "tr-auto-detection",
+          "class": "tr-auto",
           "showWhen": {"connection_type": "auto"},
           "items": [
             {
@@ -504,7 +504,7 @@
         {
           "type": "section",
           "id": "dhcp-section",
-          "class": "tr-connection-type",
+          "class": "tr-dhcp",
           "showWhen": {"connection_type": "dhcp"},
           "items": [
             {
@@ -518,7 +518,7 @@
         {
           "type": "section",
           "id": "pppoe-section",
-          "class": "tr-connection-type",
+          "class": "tr-pppoe",
           "showWhen": {"connection_type": "pppoe"},
           "items": [
             {
@@ -544,7 +544,7 @@
         {
           "type": "section",
           "id": "dslite-section",
-          "class": "tr-connection-type", 
+          "class": "tr-dslite",
           "showWhen": {"connection_type": "dslite"},
           "items": [
             {
@@ -597,7 +597,7 @@
         {
           "type": "section",
           "id": "mape-section",
-          "class": "tr-connection-type",
+          "class": "tr-mape",
           "showWhen": {"connection_type": "mape"},
           "items": [
             {
@@ -715,7 +715,7 @@
         {
           "type": "section",
           "id": "ap-section",
-          "class": "tr-connection-type",
+          "class": "tr-ap",
           "showWhen": {"connection_type": "ap"},
           "items": [
             {
@@ -743,7 +743,7 @@
         {
           "type": "section",
           "id": "connection-disabled-section",
-          "class": "tr-connection-type",
+          "class": "tr-disabled",
           "showWhen": {"connection_type": "disabled"},
           "items": [
             {
@@ -801,7 +801,7 @@
         {
           "type": "section",
           "id": "netopt-auto-section",
-          "class": "tr-netopt-optimization",
+          "class": "tr-auto",
           "showWhen": {"net_optimizer": "auto"},
           "items": [
             {
@@ -815,6 +815,7 @@
         {
           "type": "section",
           "id": "netopt-manual-section",
+          "class": "tr-manual",
           "showWhen": {"net_optimizer": "manual"},
           "items": [
             {
@@ -890,6 +891,7 @@
         {
           "type": "section",
           "id": "netopt-disabled-section",
+          "class": "tr-disabled",
           "showWhen": {"net_optimizer": "disabled"},
           "items": [
             {
@@ -921,7 +923,7 @@
         {
           "type": "section",
           "id": "dnsmasq-manual-section",
-          "class": "tr-dnsmasq-settings",
+          "class": "tr-dnsmasq-manual",
           "showWhen": {"enable_dnsmasq": "manual"},
           "items": [
             {
@@ -951,7 +953,7 @@
         {
           "type": "section",
           "id": "dnsmasq-auto-section",
-          "class": "tr-dnsmasq-settings",
+          "class": "tr-dnsmasq-auto",
           "showWhen": {"enable_dnsmasq": "auto"},
           "items": [
             {
@@ -965,7 +967,7 @@
         {
           "type": "section",
           "id": "dnsmasq-disabled-section",
-          "class": "tr-dnsmasq-settings",
+          "class": "tr-dnsmasq-disabled",
           "showWhen": {"enable_dnsmasq": "disabled"},
           "items": [
             {
