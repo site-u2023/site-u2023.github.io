@@ -708,9 +708,13 @@ process_items() {
                 raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
             fi
 
+            # auto-info の特別処理
             if [ "$item_id" = "auto-info" ]; then
-                show_network_info
-                return $RETURN_STAY
+                if show_network_info; then
+                    return $RETURN_STAY
+                else
+                    return $RETURN_BACK
+                fi
             fi
             
             content="$raw_content"
