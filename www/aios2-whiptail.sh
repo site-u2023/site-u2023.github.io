@@ -713,9 +713,7 @@ process_items() {
                 if show_network_info; then
                     return $RETURN_STAY
                 else
-                    # 「いいえ」: connection_type をクリアしてカテゴリを再処理
-                    sed -i "/^connection_type=/d" "$SETUP_VARS"
-                    return $RETURN_STAY
+                    return $RETURN_BACK
                 fi
             fi
             
