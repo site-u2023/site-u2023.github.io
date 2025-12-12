@@ -872,6 +872,26 @@ category_config() {
         # 常にパッケージ同期
         update_language_packages
     fi
+
+    if [ "$cat_id" = "internet-connection" ]; then
+        # 検出成功時のみダイアログを出す（条件チェック追加）
+        if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
+            if show_network_info; then
+                echo ""
+                echo "$(translate 'tr-tui-auto-config-applied')"
+                sleep 2
+                
+                # パッケージ追加処理を追加
+                auto_add_conditional_packages "internet-connection"
+                auto_add_conditional_packages "setup-driven-packages"
+                auto_cleanup_conditional_variables "$cat_id"
+                cleanup_orphaned_enablevars "$cat_id"
+                
+                rm -f "$temp_vars"
+                return 0
+            fi
+        fi
+    fi
     
     process_items "$cat_id" "" "$breadcrumb"
     local ret=$?
