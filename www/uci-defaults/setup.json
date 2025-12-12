@@ -999,6 +999,8 @@
           "requirements": {
             "minMemoryMB": 20,
             "minFlashMB": 25,
+            "recommendedMemoryMB": 50,
+            "recommendedFlashMB": 50,
             "memoryVar": "agh_min_memory",
             "flashVar": "agh_min_flash"
           },
