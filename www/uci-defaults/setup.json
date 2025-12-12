@@ -497,7 +497,6 @@
             {
               "type": "info-display",
               "id": "auto-info",
-              "class": "tr-auto-detection",
               "content": "Detecting connection type..."
             }
           ]
