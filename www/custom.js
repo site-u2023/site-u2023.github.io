@@ -531,9 +531,6 @@ function renderSetupConfig(config) {
             if (current_language_json) {
                 applyCustomTranslations(current_language_json);
             }
-            if (state.apiInfo) {
-                updateAutoConnectionInfo(state.apiInfo);
-            }
         });
     });
 }
