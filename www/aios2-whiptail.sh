@@ -1144,7 +1144,7 @@ process_items() {
     return $RETURN_STAY
 }
 
-show_auto_detection_if_available() {
+XXX_show_auto_detection_if_available() {
     if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
         if show_network_info; then
             auto_add_conditional_packages "internet-connection"
