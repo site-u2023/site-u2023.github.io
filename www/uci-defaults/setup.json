@@ -1000,7 +1000,7 @@
             "minMemoryMB": 20,
             "minFlashMB": 25,
             "recommendedMemoryMB": 50,
-            "recommendedFlashMB": 50,
+            "recommendedFlashMB": 100,
             "memoryVar": "agh_min_memory",
             "flashVar": "agh_min_flash"
           },
