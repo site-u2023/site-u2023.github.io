@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1210.1144"
+VERSION="R7.1210.1534"
 TITLE="aios2"
 
 UI_WIDTH="78"
@@ -329,7 +329,7 @@ $(translate 'tr-tui-use-auto-config')"
             
             return 0
         else
-            reset_detected_conn_type
+            DETECTED_CONN_TYPE="rejected"
             return 1
         fi
         
@@ -363,7 +363,7 @@ $(translate 'tr-tui-use-auto-config')"
             
             return 0
         else
-            reset_detected_conn_type
+            DETECTED_CONN_TYPE="rejected"
             return 1
         fi
         
@@ -709,10 +709,13 @@ process_items() {
             fi
 
             # auto-info の特別処理
+            # auto-info の特別処理
             if [ "$item_id" = "auto-info" ]; then
                 if show_network_info; then
                     return $RETURN_STAY
                 else
+                    # 「いいえ」の場合、connection_type をクリアして接続タイプ選択に戻る
+                    sed -i "/^connection_type=/d" "$SETUP_VARS"
                     return $RETURN_BACK
                 fi
             fi
@@ -731,6 +734,10 @@ process_items() {
 }
 
 show_auto_detection_if_available() {
+    if [ "$DETECTED_CONN_TYPE" = "rejected" ]; then
+        return 1
+    fi
+    
     if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
         if show_network_info; then
             auto_add_conditional_packages "internet-connection"
@@ -907,7 +914,15 @@ category_config() {
                     continue
                     ;;
                 $RETURN_BACK)
-                    # キャンセル: 元に戻してループを抜ける
+                    # internet-connection で connection_type がクリアされている場合、ループを継続
+                    if [ "$cat_id" = "internet-connection" ]; then
+                        if ! grep -q "^connection_type=" "$SETUP_VARS" 2>/dev/null; then
+                            # while ループは継続（接続タイプ選択に戻る）
+                            break
+                        fi
+                    fi
+                    
+                    # 通常のキャンセル: 元に戻してループを抜ける
                     cp "$temp_vars" "$SETUP_VARS"
                     rm -f "$temp_vars"
                     break_loop=1
