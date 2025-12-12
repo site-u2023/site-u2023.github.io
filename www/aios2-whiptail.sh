@@ -707,7 +707,12 @@ process_items() {
                 raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
                 raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
             fi
-    
+
+            if [ "$item_id" = "auto-info" ]; then
+                show_network_info
+                return $RETURN_STAY
+            fi
+            
             content="$raw_content"
             if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
                 content=$(translate "$raw_class")
