@@ -2590,15 +2590,15 @@ EOF4
         } > "$CONFIG_DIR/customfeeds-none.sh"
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
-    
+
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
         while read -r script_id; do
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
-            
+        
             script_url="${BASE_URL}/custom-script/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
+        
             if [ -f "$template_path" ]; then
                 {
                     awk '
@@ -2618,19 +2618,24 @@ EOF4
                         }
                         !skip
                     ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
-                    
+                
                     echo ""
                     echo "${script_id}_main -t"
-                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
                 
+                    # 実行後にクリーンアップ
+                    echo ""
+                    echo "# Cleanup after execution"
+                    echo "rm -f \"$CONFIG_DIR/script_vars_${script_id}.txt\""
+                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+            
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
             fi
-        done <<SCRIPTS
+    done <<SCRIPTS
 $(get_customscript_all_scripts)
 SCRIPTS
-        
-        echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
-    fi
+    
+    echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
+fi
 
     clear_selection_cache
 }
