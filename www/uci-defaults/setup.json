@@ -491,6 +491,7 @@
           "type": "section",
           "id": "auto-section",
           "title": "AUTO Detection",
+          "class": "tr-connection-type",
           "class": "tr-auto-detection",
           "showWhen": {"connection_type": "auto"},
           "items": [
@@ -504,6 +505,7 @@
         {
           "type": "section",
           "id": "dhcp-section",
+          "class": "tr-connection-type",
           "showWhen": {"connection_type": "dhcp"},
           "items": [
             {
@@ -517,6 +519,7 @@
         {
           "type": "section",
           "id": "pppoe-section",
+          "class": "tr-connection-type",
           "showWhen": {"connection_type": "pppoe"},
           "items": [
             {
@@ -542,6 +545,7 @@
         {
           "type": "section",
           "id": "dslite-section",
+          "class": "tr-connection-type", 
           "showWhen": {"connection_type": "dslite"},
           "items": [
             {
@@ -594,6 +598,7 @@
         {
           "type": "section",
           "id": "mape-section",
+          "class": "tr-connection-type",
           "showWhen": {"connection_type": "mape"},
           "items": [
             {
@@ -711,6 +716,7 @@
         {
           "type": "section",
           "id": "ap-section",
+          "class": "tr-connection-type",
           "showWhen": {"connection_type": "ap"},
           "items": [
             {
@@ -738,6 +744,7 @@
         {
           "type": "section",
           "id": "connection-disabled-section",
+          "class": "tr-connection-type",
           "showWhen": {"connection_type": "disabled"},
           "items": [
             {
