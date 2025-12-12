@@ -1227,20 +1227,27 @@ custom_script_options() {
     local parent_breadcrumb="$2"
     local script_name breadcrumb
     local options filtered_options
-    local min_mem min_flash msg
+    local min_mem rec_mem min_flash rec_flash msg
     
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb} > ${script_name}"
 
+    # テンプレートを読み込んで変数を取得
     . "$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+    
     if ! check_script_requirements "$script_id"; then
-        min_mem=$(get_customscript_requirement "$script_id" "minMemoryMB")
-        min_flash=$(get_customscript_requirement "$script_id" "minFlashMB")
+        # テンプレートから読み込んだ変数を使用
+        min_mem="${MINIMUM_MEM}"
+        rec_mem="${RECOMMENDED_MEM}"
+        min_flash="${MINIMUM_FLASH}"
+        rec_flash="${RECOMMENDED_FLASH}"
         
         msg="$(translate 'tr-tui-customscript-resource-check')
 
-$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_mem}MB $(translate 'tr-tui-customscript-minimum')
-$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available') / ${min_flash}MB $(translate 'tr-tui-customscript-minimum')
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB
 
 $(translate 'tr-tui-customscript-resource-ng')"
         
