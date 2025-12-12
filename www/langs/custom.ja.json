@@ -233,7 +233,7 @@
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
 
-    "tr-adguardhome-disabled": "アドガードホーム無効"
+    "tr-adguardhome-disabled": "アドガードホーム無効",
     "tr-agh-summary-customscripts": "カスタムスクリプト",
     "tr-agh-customscript-enabled": "有効",
     "tr-agh-customscript-disabled": "無効",
