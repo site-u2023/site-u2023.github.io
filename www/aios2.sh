@@ -972,12 +972,11 @@ get_category_hidden() {
 
 get_category_packages() {
     local cat_id="$1"
-    local pkgs
     
-    pkgs=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    [ -z "$pkgs" ] && pkgs=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null | grep -v '^$')
-    
-    echo "$pkgs" | sort -u
+    {
+        [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
+        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
+    } | grep -v '^$' | sort -u
 }
 
 get_package_checked() {
