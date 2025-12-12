@@ -221,7 +221,7 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
-synchronize_selection_vars() {
+XXX_synchronize_selection_vars() {
     local selected_packages_content=""
     # 選択済みパッケージのデータを変数にロード
     [ -f "$SELECTED_PACKAGES" ] && selected_packages_content=$(cat "$SELECTED_PACKAGES")
@@ -1033,7 +1033,8 @@ get_package_checked() {
     echo "$checked"
 }
 
-XXX_get_package_name() {
+
+XXXXX_get_package_name() {
     local pkg_id="$1"
     local name unique_id
     
@@ -3373,7 +3374,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
 
-    synchronize_selection_vars
+    # synchronize_selection_vars
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
