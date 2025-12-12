@@ -546,14 +546,29 @@ process_items() {
                             return $RETURN_STAY
                         fi
                     elif [ "$selected_opt" = "dhcp" ]; then
-                        local dhcp_content tr_dhcp
-                        dhcp_content="DHCP configuration will be applied automatically.
-No additional settings required."
-                        tr_dhcp=$(translate "tr-dhcp-information")
-                        if [ -n "$tr_dhcp" ] && [ "$tr_dhcp" != "tr-dhcp-information" ]; then
-                            dhcp_content="$tr_dhcp"
-                        fi
-                        show_msgbox "$item_breadcrumb" "$dhcp_content"
+                        # setup.json の dhcp-section 内の info-display を処理
+                        local nested_items item_id item_type
+                        nested_items=$(get_section_nested_items "dhcp-section")
+                        
+                        for item_id in $nested_items; do
+                            item_type=$(get_setup_item_type "$item_id")
+                            
+                            if [ "$item_type" = "info-display" ]; then
+                                local raw_content raw_class content
+                                
+                                raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
+                                raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+                                
+                                content="$raw_content"
+                                if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
+                                    content=$(translate "$raw_class")
+                                fi
+                                
+                                [ -n "$content" ] && show_msgbox "$item_breadcrumb" "$content"
+                                break
+                            fi
+                        done
+                        
                         auto_add_conditional_packages "$cat_id"
                         auto_cleanup_conditional_variables "$cat_id"
                         cleanup_orphaned_enablevars "$cat_id"
