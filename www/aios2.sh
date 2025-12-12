@@ -64,7 +64,7 @@ clear_selection_cache() {
     _SELECTED_CUSTOM_CACHE=""
 }
 
-expand_template() {
+XXX_expand_template() {
     local template="$1"
     shift
     
@@ -78,6 +78,22 @@ expand_template() {
     done
     
     echo "$result"
+}
+
+expand_template() {
+    local template="$1"
+    shift
+    
+    local sed_cmds=""
+    
+    while [ $# -gt 0 ]; do
+        local key="$1"
+        local value="$2"
+        sed_cmds="${sed_cmds}s|{$key}|$value|g;"
+        shift 2
+    done
+    
+    echo "$template" | sed "$sed_cmds"
 }
 
 # adguardhome
