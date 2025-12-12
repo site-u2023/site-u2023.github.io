@@ -68,9 +68,9 @@
     "tr-dslite": "DS-Lite",
     "tr-mape": "MAP-E",
     "tr-ap": "AP Mode",
-
     "tr-auto-detection": "AUTO Detection",
     "tr-dhcp": "DHCP",
+    "tr-internet-optimization-disabled": "Internet Disabled",
 
     "tr-pppoe-credentials": "PPPoE Credentials",
     "tr-pppoe-username": "Username",
@@ -238,7 +238,8 @@
     "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?",
-    
+
+    "tr-adguardhome-disabled": "AdGuard Home Disabled"
     "tr-agh-summary-customscripts": "Custom Scripts",
     "tr-agh-customscript-enabled": "Enabled",
     "tr-agh-customscript-disabled": "Disabled",
