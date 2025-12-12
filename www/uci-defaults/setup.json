@@ -915,6 +915,7 @@
         {
           "type": "section",
           "id": "dnsmasq-manual-section",
+          "class": "tr-dnsmasq-settings",
           "showWhen": {"enable_dnsmasq": "manual"},
           "items": [
             {
@@ -944,6 +945,7 @@
         {
           "type": "section",
           "id": "dnsmasq-auto-section",
+          "class": "tr-dnsmasq-settings",
           "showWhen": {"enable_dnsmasq": "auto"},
           "items": [
             {
@@ -957,6 +959,7 @@
         {
           "type": "section",
           "id": "dnsmasq-disabled-section",
+          "class": "tr-dnsmasq-settings",
           "showWhen": {"enable_dnsmasq": "disabled"},
           "items": [
             {
