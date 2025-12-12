@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1212.1055"
+VERSION="R7.1212.1935"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -228,6 +228,11 @@ select_ui_mode() {
                 echo "Installing whiptail..."
                 if install_package $whiptail_pkg; then
                     echo "Installation successful."
+                    hash -r
+                    if ! command -v whiptail >/dev/null 2>&1; then
+                        echo "Warning: whiptail installed but not found in PATH. Falling back to simple mode."
+                        UI_MODE="simple"
+                    fi
                 else
                     echo "Installation failed. Falling back to simple mode."
                     UI_MODE="simple"
