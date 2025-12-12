@@ -732,7 +732,7 @@ show_auto_detection_if_available() {
     return 1
 }
 
-category_config() {
+XXX_category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title base_breadcrumb
     local tr_language lang_breadcrumb current_lang value
@@ -822,6 +822,110 @@ category_config() {
     auto_cleanup_conditional_variables "$cat_id"     # 2. 不要な変数削除
     cleanup_orphaned_enablevars "$cat_id"            # 3. 孤立したenableVar削除
     track_api_value_changes "$cat_id"                # 4. API値変更追跡
+    
+    return $RETURN_STAY
+}
+
+category_config() {
+    local cat_id="$1"
+    local tr_main_menu cat_title base_breadcrumb
+    local tr_language lang_breadcrumb current_lang value
+    local item_id item_type ret
+    local temp_vars="$CONFIG_DIR/temp_vars_${cat_id}.txt"
+    
+    while true; do
+        # 現在の状態をバックアップ
+        cp "$SETUP_VARS" "$temp_vars"
+        
+        tr_main_menu=$(translate "tr-tui-main-menu")
+        cat_title=$(get_setup_category_title "$cat_id")
+        base_breadcrumb=$(build_breadcrumb "$tr_main_menu" "$cat_title")
+        
+        if [ "$cat_id" = "basic-config" ]; then
+            tr_language=$(translate "tr-language")
+            lang_breadcrumb="${base_breadcrumb}${BREADCRUMB_SEP}${tr_language}"
+            
+            current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            [ -z "$current_lang" ] && current_lang="${AUTO_LANGUAGE}"
+            
+            value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
+            
+            if ! [ $? -eq 0 ]; then
+                # キャンセル: 元に戻してループを抜ける
+                cp "$temp_vars" "$SETUP_VARS"
+                rm -f "$temp_vars"
+                return $RETURN_BACK
+            fi
+            
+            # 空欄なら変数削除
+            if [ -z "$value" ]; then
+                sed -i "/^language=/d" "$SETUP_VARS"
+                echo "[DEBUG] Empty language input, removed variable" >> "$CONFIG_DIR/debug.log"
+            else
+                sed -i "/^language=/d" "$SETUP_VARS"
+                echo "language='${value}'" >> "$SETUP_VARS"
+            fi
+            update_language_packages
+        fi
+        
+        # internet-connection カテゴリの場合、自動検出を試みる
+        if [ "$cat_id" = "internet-connection" ]; then
+            if show_auto_detection_if_available; then
+                auto_cleanup_conditional_variables "$cat_id"
+                cleanup_orphaned_enablevars "$cat_id"
+                rm -f "$temp_vars"
+                # ループを続ける
+                continue
+            fi
+        fi
+        
+        # カテゴリ内の全アイテムを処理
+        local break_loop=0
+        for item_id in $(get_setup_category_items "$cat_id"); do
+            item_type=$(get_setup_item_type "$item_id")
+            
+            # アイテムを表示すべきかチェック
+            if ! should_show_item "$item_id" "$cat_id"; then
+                echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            process_items "$cat_id" "$item_id" "$base_breadcrumb"
+            ret=$?
+            
+            case $ret in
+                $RETURN_STAY)
+                    continue
+                    ;;
+                $RETURN_BACK)
+                    # キャンセル: 元に戻してループを抜ける
+                    cp "$temp_vars" "$SETUP_VARS"
+                    rm -f "$temp_vars"
+                    break_loop=1
+                    break
+                    ;;
+                $RETURN_MAIN)
+                    # メインメニューへ: 元に戻してループを抜ける
+                    cp "$temp_vars" "$SETUP_VARS"
+                    rm -f "$temp_vars"
+                    return $RETURN_MAIN
+                    ;;
+            esac
+        done
+        
+        # BREAKフラグがセットされていたらループを抜ける
+        [ "$break_loop" -eq 1 ] && break
+        
+        # 成功: バックアップを削除
+        rm -f "$temp_vars"
+        
+        auto_add_conditional_packages "$cat_id"
+        auto_cleanup_conditional_variables "$cat_id"
+        cleanup_orphaned_enablevars "$cat_id"
+        track_api_value_changes "$cat_id"
+        
+        # ループを続ける（もう一度カテゴリメニューへ）
+    done
     
     return $RETURN_STAY
 }
