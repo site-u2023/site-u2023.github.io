@@ -812,6 +812,12 @@ process_items() {
                     raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
                     raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
                 fi
+
+                # auto-info の特別処理
+                if [ "$item_id" = "auto-info" ]; then
+                    show_network_info
+                    return $RETURN_STAY
+                fi
                 
                 content="$raw_content"
                 if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
@@ -865,16 +871,6 @@ category_config() {
         fi
         # 常にパッケージ同期
         update_language_packages
-    fi
-    
-    if [ "$cat_id" = "internet-connection" ]; then
-        if show_network_info; then
-            echo ""
-            echo "$(translate 'tr-tui-auto-config-applied')"
-            sleep 2
-            rm -f "$temp_vars"
-            return 0
-        fi
     fi
     
     process_items "$cat_id" "" "$breadcrumb"
