@@ -697,23 +697,15 @@ process_items() {
             ;;
             
         info-display)
-            # ID直接検索でcontent/classを取得（インデックス計算を廃止）
+            # ID直接検索でcontent/classを取得
             local raw_content raw_class
             
-            # トップレベルアイテムを検索
             raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].content" 2>/dev/null | head -1)
             raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].class" 2>/dev/null | head -1)
             
-            # ネストされたアイテム（section内）を検索
             if [ -z "$raw_content" ] && [ -z "$raw_class" ]; then
                 raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
                 raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
-            fi
-
-                # auto-info の場合は show_network_info() を呼ぶ
-            if [ "$item_id" = "auto-info" ]; then
-                show_network_info
-                return $RETURN_STAY
             fi
     
             content="$raw_content"
