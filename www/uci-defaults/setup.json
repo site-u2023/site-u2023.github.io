@@ -510,8 +510,8 @@
             {
               "type": "info-display",
               "id": "dhcp-info",
-              "class": "tr-dhcp",
-              "content": "DHCP"
+              "class": "tr-internet-optimization-disabled",
+              "content": "DHCP client mode"
             }
           ]
         },
@@ -1070,7 +1070,7 @@
         {
           "type": "info-display",
           "id": "adguardhome-disabled-info",
-          "class": "tr-adguardhome-disabled-info",
+          "class": "tr-adguardhome-disabled",
           "content": "AdGuard Home will not be configured",
           "showWhen": {"enable_adguardhome": "disabled"}
         }
