@@ -1196,15 +1196,6 @@ category_config() {
         update_language_packages
     fi
     
-    # internet-connection カテゴリの場合、自動検出を試みる
-    if [ "$cat_id" = "internet-connection" ]; then
-            auto_cleanup_conditional_variables "$cat_id"
-            cleanup_orphaned_enablevars "$cat_id"
-            rm -f "$temp_vars"
-            return $RETURN_STAY
-        fi
-    fi
-    
     # カテゴリ内の全アイテムを処理
     for item_id in $(get_setup_category_items "$cat_id"); do
         item_type=$(get_setup_item_type "$item_id")
