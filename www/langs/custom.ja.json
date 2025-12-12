@@ -71,7 +71,6 @@
 
     "tr-auto-detection": "自動検出",
     "tr-dhcp": "DHCP",
-    "tr-dhcp-information": "DHCP設定は自動的に適用されます。",
 
     "tr-pppoe-credentials": "PPPoE認証情報",
     "tr-pppoe-username": "ユーザー名",
