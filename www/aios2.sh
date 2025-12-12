@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1211.0144"
+VERSION="R7.1212.1029"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -127,7 +127,7 @@ print_banner() {
     if banner_supported; then
         print_banner_unicode
     else
-        printf "\naios2 Vr.%s\n\n" "$VERSION"
+        printf "\all-in-one-scripts 2 Vr.%s\n\n" "$VERSION"
     fi
 }
 
