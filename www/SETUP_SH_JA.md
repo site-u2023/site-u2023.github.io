@@ -868,6 +868,132 @@
 
 </details>
 
+### AdGuard Home設定
+
+<details>
+<summary>enable_adguardhome</summary>
+```sh
+[ -n "${enable_adguardhome}" ] && {
+    # このセクション固有の変数
+    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
+    FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')        # 空きフラッシュ(MB)
+    AGH_MIN_MEM="${agh_min_memory:-20}"                        # 最小メモリ要件
+    AGH_MIN_FLASH="${agh_min_flash:-25}"                       # 最小ストレージ要件
+    
+    # リソースチェック
+    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
+        # UCI操作用ヘルパー関数
+        SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+        DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
+        ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+        
+        agh_yaml="/etc/adguardhome.yaml"
+        cfg_dhcp="/etc/config/dhcp"
+        cfg_fw="/etc/config/firewall"
+        
+        # 設定ファイルのバックアップ
+        cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
+        cp "$cfg_fw" "$cfg_fw.adguard.bak"
+        
+        # htpasswdでパスワードハッシュ生成
+        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
+        [ -z "$agh_hash" ] && { echo "Error: Failed to generate password hash"; exit 1; }
+        
+        # AdGuard Home設定ファイル生成（/etc/adguardhome.yaml）
+        # - Webポート: ${agh_web_port}
+        # - DNSポート: ${agh_dns_port}
+        # - DNSバックアップポート: ${agh_dns_backup_port} (LANドメイン用)
+        # - 上流DNS: DoH/DoT/DoQ対応プロバイダ
+        # - ローカルドメイン(.lan)はdnsmasqに転送
+        
+        # dnsmasqをDNS転送モードに変更
+        local SEC=dhcp
+        SET @dnsmasq[0].noresolv='1'                    # resolv.conf無視
+        SET @dnsmasq[0].cachesize='0'                   # キャッシュ無効化
+        SET @dnsmasq[0].rebind_protection='0'           # リバインド保護無効
+        SET @dnsmasq[0].port="${agh_dns_backup_port}"   # バックアップポート待受
+        SET @dnsmasq[0].domain='lan'                    # LANドメイン設定
+        SET @dnsmasq[0].local='/lan/'                   # ローカルドメイン処理
+        SET @dnsmasq[0].expandhosts='1'                 # ホスト名展開
+        DEL @dnsmasq[0].server                          # 既存DNS削除
+        ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
+        ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
+        
+        # DHCPでLAN IPアドレスをDNSサーバーとして配布
+        DEL lan.dhcp_option
+        [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
+        DEL lan.dhcp_option6
+        
+        # ファイアウォールにDNSリダイレクトルール追加
+        local SEC=firewall
+        agh_rule="adguardhome_dns_${agh_dns_port}"
+        DEL "${agh_rule}" 2>/dev/null || true
+        SET ${agh_rule}=redirect
+        SET ${agh_rule}.name="AdGuard Home DNS Redirect"
+        SET ${agh_rule}.family='any'
+        SET ${agh_rule}.src='lan'
+        SET ${agh_rule}.dest='lan'
+        ADDLIST ${agh_rule}.proto='tcp'
+        ADDLIST ${agh_rule}.proto='udp'
+        SET ${agh_rule}.src_dport="${agh_dns_port}"
+        SET ${agh_rule}.dest_port="${agh_dns_port}"
+        SET ${agh_rule}.target='DNAT'
+    else
+        # リソース不足の場合はサービス停止
+        /etc/init.d/adguardhome stop 2>/dev/null
+        /etc/init.d/adguardhome disable 2>/dev/null
+    fi
+}
+```
+
+</details>
+
+### htpasswd抽出
+
+<details>
+<summary>enable_htpasswd</summary>
+```sh
+[ -n "${enable_htpasswd}" ] && {
+    # このセクション固有の変数
+    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
+    FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
+    AGH_MIN_MEM="${agh_min_memory:-20}"
+    AGH_MIN_FLASH="${agh_min_flash:-25}"
+    PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
+    
+    # AdGuard Home用にリソースが十分な場合のみ実行
+    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
+        # apache_keep変数が設定されていない場合のみhtpasswdを抽出
+        [ -z "${apache_keep}" ] && {
+            htpasswd_bin="/usr/bin/htpasswd"
+            htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
+            tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
+            
+            # htpasswdバイナリと依存ライブラリを一時退避
+            [ -f "$htpasswd_bin" ] && cp "$htpasswd_bin" /tmp/htpasswd
+            for lib in $htpasswd_libs; do
+                [ -f "$lib" ] && cp "$lib" /tmp/
+            done
+            
+            # Apacheパッケージを削除
+            case "$PACKAGE_MANAGER" in
+                opkg) opkg remove apache >/dev/null 2>&1 || true ;;
+                apk) apk del apache >/dev/null 2>&1 || true ;;
+            esac
+            
+            # htpasswdとライブラリを復元
+            mv /tmp/htpasswd "$htpasswd_bin"
+            chmod +x "$htpasswd_bin"
+            for lib in $tmp_libs; do
+                [ -f "$lib" ] && mv "$lib" /usr/lib/
+            done
+        }
+    fi
+}
+```
+
+</details>
+
 ### 最終処理
 
 <details>
