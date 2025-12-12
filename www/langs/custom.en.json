@@ -71,6 +71,7 @@
 
     "tr-auto-detection": "AUTO Detection",
     "tr-dhcp": "DHCP",
+    "tr-dhcp-information": "DHCP configuration will be applied automatically."
 
     "tr-pppoe-credentials": "PPPoE Credentials",
     "tr-pppoe-username": "Username",
