@@ -764,6 +764,31 @@ function buildRadioGroup(item) {
         group.appendChild(legend);
     }
 
+    if (item.requirements) {
+        const reqDiv = document.createElement('div');
+        reqDiv.className = 'resource-requirements';
+        reqDiv.style.fontSize = '0.9em';
+        reqDiv.style.color = 'var(--text-muted)';
+        reqDiv.style.marginTop = '0.5em';
+        reqDiv.style.marginBottom = '0.5em';
+        
+        const minMem = item.requirements.minMemoryMB || 0;
+        const minFlash = item.requirements.minFlashMB || 0;
+        const recMem = item.requirements.recommendedMemoryMB || 0;
+        const recFlash = item.requirements.recommendedFlashMB || 0;
+        
+    reqDiv.innerHTML = `
+        <span class="tr-tui-customscript-minimum"></span>: 
+        <span class="tr-tui-customscript-memory"></span> ${minMem}MB / 
+        <span class="tr-tui-customscript-storage"></span> ${minFlash}MB | 
+        <span class="tr-tui-customscript-recommended"></span>: 
+        <span class="tr-tui-customscript-memory"></span> ${recMem}MB / 
+        <span class="tr-tui-customscript-storage"></span> ${recFlash}MB
+        `;
+        
+        group.appendChild(reqDiv);
+    }
+
     const radioWrap = document.createElement('div');
     radioWrap.className = 'radio-group';
     
