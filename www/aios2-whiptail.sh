@@ -397,8 +397,8 @@ process_items() {
     
     echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id, parent_type=$parent_item_type" >> "$CONFIG_DIR/debug.log"
     
-    if ! should_show_item "$item_id"; then
-        echo "[DEBUG] Item $item_id hidden by showWhen" >> "$CONFIG_DIR/debug.log"
+    if ! should_show_item "$item_id" "$cat_id"; then
+        echo "[DEBUG] Item $item_id hidden by showWhen/guiOnly" >> "$CONFIG_DIR/debug.log"
         return $RETURN_STAY
     fi
     
@@ -721,26 +721,22 @@ No additional settings required."
             ;;
             
         info-display)
-            cat_idx=0
-            item_idx=0
-            for cid in $(get_setup_categories); do
-                citems=$(get_setup_category_items "$cid")
-                idx=0
-                for itm in $citems; do
-                    if [ "$itm" = "$item_id" ]; then
-                        item_idx=$idx
-                        break 2
-                    fi
-                    idx=$((idx+1))
-                done
-                cat_idx=$((cat_idx+1))
-            done
+            # ID直接検索でcontent/classを取得（インデックス計算を廃止）
+            local raw_content raw_class
             
-            content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].content" 2>/dev/null)
-            class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].class" 2>/dev/null)
+            # トップレベルアイテムを検索
+            raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].content" 2>/dev/null | head -1)
+            raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].class" 2>/dev/null | head -1)
             
-            if [ -n "$class" ] && [ "${class#tr-}" != "$class" ]; then
-                content=$(translate "$class")
+            # ネストされたアイテム（section内）を検索
+            if [ -z "$raw_content" ] && [ -z "$raw_class" ]; then
+                raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
+                raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+            fi
+            
+            content="$raw_content"
+            if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
+                content=$(translate "$raw_class")
             fi
             
             [ -n "$content" ] && show_msgbox "$breadcrumb" "$content"
@@ -818,7 +814,7 @@ category_config() {
         item_type=$(get_setup_item_type "$item_id")
         
         # アイテムを表示すべきかチェック
-        if ! should_show_item "$item_id"; then
+        if ! should_show_item "$item_id" "$cat_id"; then
             echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
             continue
         fi
