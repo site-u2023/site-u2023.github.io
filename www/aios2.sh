@@ -1288,6 +1288,12 @@ get_customscript_name() {
     fi
 }
 
+get_customscript_requirement() {
+    local script_id="$1"
+    local key="$2"
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.${key}" 2>/dev/null | head -1
+}
+
 get_customscript_file() {
     local script_id="$1"
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].script" 2>/dev/null | head -1
