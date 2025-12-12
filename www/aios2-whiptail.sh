@@ -4,7 +4,7 @@
 # This file contains whiptail-specific UI functions
 
 VERSION="R7.1210.1144"
-TITLE="aios2"
+TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
