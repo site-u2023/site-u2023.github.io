@@ -398,7 +398,7 @@ fi
 }
 [ -n "${enable_adguardhome}" ] && {
     if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
-        agh_yaml="/etc/adguardhome.yaml"
+        [ "$PACKAGE_MANAGER" = "apk" ] && agh_yaml="/etc/adguardhome/adguardhome.yaml" && mkdir -p /etc/adguardhome || agh_yaml="/etc/adguardhome.yaml"
         cfg_dhcp="/etc/config/dhcp"
         cfg_fw="/etc/config/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
