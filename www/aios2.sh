@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1212.1029"
+VERSION="R7.1212.1055"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1646,10 +1646,56 @@ get_effective_connection_type() {
     fi
 }
 
+# =============================================================================
+# should_show_item() - TUI版で表示すべきアイテムかどうかを判定
+# 
+# 追加機能:
+#   - カテゴリレベルの guiOnly チェック
+#   - アイテムレベルの guiOnly チェック  
+#   - tr-agh- プレフィックスのクラスをTUIから除外
+#
+# 引数:
+#   $1 - item_id (必須)
+#   $2 - cat_id (オプション、カテゴリのguiOnlyチェック用)
+# =============================================================================
 should_show_item() {
     local item_id="$1"
-
-        local is_hidden
+    local cat_id="${2:-}"
+    
+    # 1. カテゴリの guiOnly チェック（cat_id が渡された場合）
+    if [ -n "$cat_id" ]; then
+        local cat_gui_only
+        cat_gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].guiOnly" 2>/dev/null | head -1 | tr -d ' \n\r')
+        if [ "$cat_gui_only" = "true" ]; then
+            echo "[DEBUG] Item $item_id hidden: parent category $cat_id is guiOnly" >> "$CONFIG_DIR/debug.log"
+            return 1
+        fi
+    fi
+    
+    # 2. アイテム自体の guiOnly チェック
+    local item_gui_only
+    item_gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].guiOnly" 2>/dev/null | head -1 | tr -d ' \n\r')
+    if [ -z "$item_gui_only" ]; then
+        item_gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].guiOnly" 2>/dev/null | head -1 | tr -d ' \n\r')
+    fi
+    if [ "$item_gui_only" = "true" ]; then
+        echo "[DEBUG] Item $item_id hidden: item is guiOnly" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    # 3. tr-agh- プレフィックスのクラスを持つアイテムはTUIから除外
+    local item_class
+    item_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    if [ -z "$item_class" ]; then
+        item_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
+    fi
+    if [ -n "$item_class" ] && [ "${item_class#tr-agh-}" != "$item_class" ]; then
+        echo "[DEBUG] Item $item_id hidden: class '$item_class' has tr-agh- prefix (GUI only)" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    # 4. hidden チェック（既存ロジック）
+    local is_hidden
     is_hidden=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].hidden" 2>/dev/null | head -1)
     
     if [ -z "$is_hidden" ]; then
@@ -1658,6 +1704,7 @@ should_show_item() {
     
     [ "$is_hidden" = "true" ] && return 1
     
+    # 5. showWhen チェック（既存ロジック）
     local show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
     if [ -z "$show_when" ]; then
