@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1212.2213"
+VERSION="R7.1213.0047"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -2062,8 +2062,13 @@ cleanup_orphaned_enablevars() {
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
+
+    local setup_vars_content=""
+    if [ -f "$SETUP_VARS" ]; then
+        setup_vars_content=$(cat "$SETUP_VARS")
+    fi
     
-    # SETUP_VARSをスキャン（1回のみ）
+    # SETUP_VARSをスキャン（メモリ上のデータを使用）
     local temp_file="$CONFIG_DIR/temp_enablevars.txt"
     : > "$temp_file"
     
@@ -2092,7 +2097,9 @@ EOF
             # enableVarではない通常変数
             echo "$line" >> "$temp_file"
         fi
-    done < "$SETUP_VARS"
+    done <<EOF
+$setup_vars_content
+EOF
     
     mv "$temp_file" "$SETUP_VARS"
     echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
@@ -2358,12 +2365,10 @@ generate_files() {
 
     : > "$temp_enablevars"
     
-    # SELECTED_PACKAGESファイルを一度だけ読み込み
     local selected_packages_content=""
     if [ -s "$SELECTED_PACKAGES" ]; then
         selected_packages_content=$(cat "$SELECTED_PACKAGES")
         
-        # enableVar処理（メモリ上で実行）
         while read -r cache_line; do
             local pkg_id unique_id enable_var
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
@@ -2386,19 +2391,12 @@ EOF
     
     if [ -f "$TPL_POSTINST" ]; then
         if [ -n "$selected_packages_content" ]; then
-            # パッケージリストを構築（メモリ上で完結）
             local id_opts_list=""
             
-            while read -r cache_line; do
-                local pkg_id install_opts install_opts_value
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                install_opts=$(echo "$cache_line" | cut -d= -f4)
-                
-                # installOptionsキー名を実際のオプション値に変換
+            while IFS='=' read -r pkg_id _name _unique install_opts _enablevar; do
+                local install_opts_value=""
                 if [ -n "$install_opts" ]; then
                     install_opts_value=$(convert_install_option "$install_opts")
-                else
-                    install_opts_value=""
                 fi
                 
                 id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
@@ -2410,16 +2408,11 @@ EOF
             local final_list=""
             local processed_ids=""
             
-            while read -r line; do
-                [ -z "$line" ] && continue
-                
-                local current_id current_opts
-                current_id=$(echo "$line" | cut -d'|' -f1)
-                current_opts=$(echo "$line" | cut -d'|' -f2)
-                
-                if echo "$processed_ids" | grep -q "^${current_id}\$"; then
-                    continue
-                fi
+            echo "$id_opts_list" | awk -F'|' 'NF==2 {print $1 "|" $2}' | \
+            while IFS='|' read -r current_id current_opts; do
+                case "$processed_ids" in
+                    *"${current_id}"*) continue ;;
+                esac
                 
                 local same_id_lines
                 same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
@@ -2434,12 +2427,11 @@ EOF
                         final_list="${final_list}${current_id}
 "
                     else
-                        local has_opts_line
+                        local has_opts_line opts_value
                         has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
                         
                         if [ -n "$has_opts_line" ]; then
-                            local opts_value
-                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
+                            opts_value="${has_opts_line#*|}"
                             final_list="${final_list}${opts_value} ${current_id}
 "
                         else
@@ -2459,11 +2451,8 @@ EOF
                 
                 processed_ids="${processed_ids}${current_id}
 "
-            done <<EOF
-$id_opts_list
-EOF
+            done
             
-            # PKG_INSTALL_CMD_TEMPLATEを使用してインストールコマンドを生成
             local install_cmd=""
             pkgs=$(echo "$final_list" | xargs)
             install_cmd=$(echo "$PKG_INSTALL_CMD_TEMPLATE" | sed "s|{package}|$pkgs|g" | sed "s|{allowUntrusted}||g" | sed 's/  */ /g')
@@ -2517,7 +2506,6 @@ EOF
         local categories_list
         categories_list=$(get_customfeed_categories)
         
-        # カテゴリごとのパッケージリストを事前構築（メモリ上）
         local category_packages=""
         while read -r cat_id; do
             local packages_for_cat
@@ -2533,20 +2521,21 @@ EOF
 $packages_for_cat
 EOF2
             
-            # カテゴリIDとパッケージリストをペアで保存
             category_packages="${category_packages}${cat_id}|${selected_patterns}
 "
         done <<EOF3
 $categories_list
 EOF3
         
-        # 並列処理でスクリプト生成
+        local failed_pids=""
         while read -r cat_entry; do
             [ -z "$cat_entry" ] && continue
             
             (
-                cat_id=$(echo "$cat_entry" | cut -d'|' -f1)
-                selected_pkgs=$(echo "$cat_entry" | cut -d'|' -f2 | sed 's/ $//')
+                IFS='|' read -r cat_id selected_pkgs <<CATEOF
+$cat_entry
+CATEOF
+                selected_pkgs=$(echo "$selected_pkgs" | sed 's/ $//')
 
                 if [ -z "$selected_pkgs" ]; then
                     echo "[DEBUG] No packages selected for $cat_id, skipping script generation" >> "$CONFIG_DIR/debug.log"
@@ -2599,9 +2588,16 @@ EOF3
 $category_packages
 EOF4
         
+        # エラーハンドリング
         for pid in $pids; do
-            wait $pid
+            if ! wait $pid; then
+                failed_pids="$failed_pids $pid"
+            fi
         done
+        
+        if [ -n "$failed_pids" ]; then
+            echo "[WARNING] Some customfeeds scripts failed to generate (PIDs:$failed_pids)" >> "$CONFIG_DIR/debug.log"
+        fi
         
         echo "[DEBUG] customfeeds generation completed in parallel" >> "$CONFIG_DIR/debug.log"
     else
@@ -2652,12 +2648,12 @@ EOF4
             
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
             fi
-    done <<SCRIPTS
+        done <<SCRIPTS
 $(get_customscript_all_scripts)
 SCRIPTS
     
-    echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
-fi
+        echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
+    fi
 
     clear_selection_cache
 }
