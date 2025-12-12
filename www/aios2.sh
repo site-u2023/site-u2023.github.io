@@ -127,7 +127,7 @@ print_banner() {
     if banner_supported; then
         print_banner_unicode
     else
-        printf "\all-in-one-scripts 2 Vr.%s\n\n" "$VERSION"
+        printf "\aios2 Vr.%s\n\n" "$VERSION"
     fi
 }
 
