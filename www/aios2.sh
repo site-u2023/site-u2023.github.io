@@ -223,16 +223,24 @@ set_var() {
 
 synchronize_selection_vars() {
     local selected_packages_content=""
+    # 選択済みパッケージのデータを変数にロード
     [ -f "$SELECTED_PACKAGES" ] && selected_packages_content=$(cat "$SELECTED_PACKAGES")
     
+    # 既存の EnableVar をすべて削除してクリーンアップ
     sed -i '/_ENABLE=[^=]*$/d' "$SETUP_VARS" 2>/dev/null
     
-    echo "$selected_packages_content" | while IFS='=' read -r pkg_id name unique_id install_opts enable_var; do
+    # 選択されたパッケージを処理
+    # ヒアドキュメント (<<EOF) を使用し、サブシェルでの実行を避ける
+    while IFS='=' read -r pkg_id name unique_id install_opts enable_var; do
+        # enable_var (5番目のフィールド) が空でなければ処理
         [ -z "$enable_var" ] && continue
         
+        # set_var 関数を使って $SETUP_VARS に 'VAR_NAME=true' を書き込む
         set_var "$enable_var" "true"
         echo "[SYNC] Set variable: ${enable_var}=true (for pkg: ${pkg_id})" >> "$CONFIG_DIR/debug.log"
-    done
+    done <<EOF
+$selected_packages_content
+EOF
 }
 
 # UI Mode Selection
