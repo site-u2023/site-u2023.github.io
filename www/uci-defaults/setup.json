@@ -795,6 +795,7 @@
         {
           "type": "section",
           "id": "netopt-auto-section",
+          "class": "tr-netopt-optimization",
           "showWhen": {"net_optimizer": "auto"},
           "items": [
             {
