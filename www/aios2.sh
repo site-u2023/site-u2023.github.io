@@ -221,7 +221,7 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
-synchronize_selection_vars()
+synchronize_selection_vars() {
     local selected_packages_content=""
     [ -f "$SELECTED_PACKAGES" ] && selected_packages_content=$(cat "$SELECTED_PACKAGES")
     
