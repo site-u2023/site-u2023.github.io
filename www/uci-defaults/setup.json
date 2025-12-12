@@ -370,7 +370,6 @@
           "title": "Wi-Fi Mode",
           "class": "tr-wi-fi-mode",
           "variable": "wifi_mode",
-          "ui_variable": "ui_wifi_mode",
           "default": "standard",
           "options": [
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
@@ -466,7 +465,6 @@
           "title": "Connection type",
           "class": "tr-connection-type",
           "variable": "connection_type",
-          "ui_variable": "ui_connection_type",
           "default": "auto",
           "options": [
             {"value": "auto", "label": "AUTO", "class": "tr-auto"},
@@ -785,7 +783,6 @@
           "title": "Dynamic Network Optimizer",
           "class": "tr-netopt-optimization",
           "variable": "net_optimizer",
-          "ui_variable": "ui_net_optimizer",
           "default": "auto",
           "options": [
             {"value": "auto", "label": "AUTO", "class": "tr-auto"},
