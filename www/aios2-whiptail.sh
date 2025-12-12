@@ -4,7 +4,7 @@
 # This file contains whiptail-specific UI functions
 
 VERSION="R7.1210.1144"
-TITLE="all in one scripts 2"
+TITLE="aios2"
 
 UI_WIDTH="78"
 UI_HEIGHT="0"
@@ -821,16 +821,13 @@ category_config() {
     fi
     
     # internet-connection カテゴリの場合、自動検出を試みる
-    show_auto_detection_if_available() {
-        if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
-            if show_network_info; then
-                auto_add_conditional_packages "internet-connection"
-                auto_add_conditional_packages "setup-driven-packages"
-                return 0
-            fi
+    if [ "$cat_id" = "internet-connection" ]; then
+            auto_cleanup_conditional_variables "$cat_id"
+            cleanup_orphaned_enablevars "$cat_id"
+            rm -f "$temp_vars"
+            return $RETURN_STAY
         fi
-        return 1
-    }
+    fi
     
     # カテゴリ内の全アイテムを処理
     for item_id in $(get_setup_category_items "$cat_id"); do
