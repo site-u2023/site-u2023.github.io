@@ -744,7 +744,7 @@
             {
               "type": "info-display",
               "id": "connection-disabled-info",
-              "class": "tr-connection-disabled",
+              "class": "tr-internet-optimization-disabled",
               "content": "Internet connection will be disabled"   
             }
           ]
