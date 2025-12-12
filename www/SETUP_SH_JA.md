@@ -872,6 +872,7 @@
 
 <details>
 <summary>enable_adguardhome</summary>
+    
 ```sh
 [ -n "${enable_adguardhome}" ] && {
     # このセクション固有の変数
@@ -952,6 +953,7 @@
 
 <details>
 <summary>enable_htpasswd</summary>
+
 ```sh
 [ -n "${enable_htpasswd}" ] && {
     # このセクション固有の変数
