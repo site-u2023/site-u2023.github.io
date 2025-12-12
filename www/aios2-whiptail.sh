@@ -875,7 +875,7 @@ category_config() {
                 cleanup_orphaned_enablevars "$cat_id"
                 rm -f "$temp_vars"
                 # ループを続ける
-                continue
+                break
             fi
         fi
         
