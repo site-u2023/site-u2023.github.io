@@ -869,6 +869,7 @@ function buildInfoDisplay(item) {
     div.id = item.id;
     div.className = 'info-display';
     if (item.class) div.classList.add(item.class);
+    div.textContent = item.content || '';
     
     if (item.showWhen) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
