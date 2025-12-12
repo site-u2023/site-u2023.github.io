@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1212.1440) loaded');
+console.log('custom.js (R7.1212.1507) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -523,6 +523,7 @@ function renderSetupConfig(config) {
         if (state.apiInfo) {
             applyIspAutoConfig(state.apiInfo);
             displayIspInfo(state.apiInfo);
+            updateAutoConnectionInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
         }
         
