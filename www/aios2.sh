@@ -64,7 +64,7 @@ clear_selection_cache() {
     _SELECTED_CUSTOM_CACHE=""
 }
 
-XXX_expand_template() {
+XXXXX_expand_template() {
     local template="$1"
     shift
     
@@ -1034,7 +1034,7 @@ get_package_checked() {
 }
 
 
-XXXXX_get_package_name() {
+get_package_name() {
     local pkg_id="$1"
     local name unique_id
     
@@ -1097,7 +1097,7 @@ $_PACKAGE_NAME_CACHE
 EOF
 }
 
-get_package_name() {
+XXXXX_get_package_name() {
     local pkg_id="$1"
     local name unique_id match_line # 高速化のため、ローカル変数を追加
 
