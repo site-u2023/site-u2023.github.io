@@ -510,7 +510,7 @@
             {
               "type": "info-display",
               "id": "dhcp-info",
-              "class": "tr-internet-optimization-disabled",
+              "class": "tr-dhcp",
               "content": "DHCP client mode"
             }
           ]
