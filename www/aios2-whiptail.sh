@@ -1396,7 +1396,25 @@ EOF
                 sh "$script"
             fi
         done
-        
+    
+        # スクリプト実行後のクリーンアップ
+        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
+    
+        # ファイルベースのキャッシュ削除
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        rm -f "$CONFIG_DIR"/customscripts-*.sh
+        rm -f "$CONFIG_DIR"/temp_*.txt
+        rm -f "$CONFIG_DIR"/*_snapshot*.txt
+    
+        # メモリキャッシュをクリア
+        clear_selection_cache
+
+        # カスタムスクリプト関連のキャッシュクリア
+        unset _CUSTOMSCRIPT_CACHE
+        unset _CUSTOMSCRIPT_LOADED
+    
+        echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
+ 
         local needs_reboot
         needs_reboot=$(needs_reboot_check)
         
