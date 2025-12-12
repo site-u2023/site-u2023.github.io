@@ -536,45 +536,6 @@ process_items() {
                 auto_add_conditional_packages "$cat_id"
                 auto_cleanup_conditional_variables "$cat_id"
                 cleanup_orphaned_enablevars "$cat_id"
-                
-                if [ "$item_id" = "connection-type" ] && [ "$cat_id" = "internet-connection" ]; then
-                    if [ "$selected_opt" = "auto" ]; then
-                        if show_network_info "$item_breadcrumb"; then
-                            auto_add_conditional_packages "$cat_id"
-                            auto_cleanup_conditional_variables "$cat_id"
-                            cleanup_orphaned_enablevars "$cat_id"
-                            return $RETURN_STAY
-                        fi
-                    elif [ "$selected_opt" = "dhcp" ]; then
-                        # setup.json の dhcp-section 内の info-display を処理
-                        local nested_items item_id item_type
-                        nested_items=$(get_section_nested_items "dhcp-section")
-                        
-                        for item_id in $nested_items; do
-                            item_type=$(get_setup_item_type "$item_id")
-                            
-                            if [ "$item_type" = "info-display" ]; then
-                                local raw_content raw_class content
-                                
-                                raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
-                                raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
-                                
-                                content="$raw_content"
-                                if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
-                                    content=$(translate "$raw_class")
-                                fi
-                                
-                                [ -n "$content" ] && show_msgbox "$item_breadcrumb" "$content"
-                                break
-                            fi
-                        done
-                        
-                        auto_add_conditional_packages "$cat_id"
-                        auto_cleanup_conditional_variables "$cat_id"
-                        cleanup_orphaned_enablevars "$cat_id"
-                        return $RETURN_STAY
-                    fi
-                fi
             fi
             return $RETURN_STAY
             ;;
