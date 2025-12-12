@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1212.1942"
+VERSION="R7.1212.2119"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -226,6 +226,13 @@ select_ui_mode() {
             UI_MODE="whiptail"
             if ! command -v whiptail >/dev/null 2>&1; then
                 echo "Installing whiptail..."
+                
+                # パッケージリストを更新
+                echo "Updating package lists..."
+                eval "$PKG_UPDATE_CMD" || {
+                    echo "Warning: Failed to update package lists"
+                }
+                
                 if install_package $whiptail_pkg; then
                     echo "Installation successful."
                 else
@@ -3129,6 +3136,7 @@ aios2_main() {
     
     get_language_code
     
+    # 1. config.js を優先ダウンロード
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
@@ -3138,7 +3146,31 @@ aios2_main() {
     
     init
     
-    # 全てのダウンロードをバックグラウンドで開始
+    # 2. package-manager.json を優先ダウンロード・設定読み込み
+    echo "[DEBUG] Downloading package-manager.json..." >> "$CONFIG_DIR/debug.log"
+    download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON" || {
+        echo "Error: Failed to download package-manager.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
+    load_package_manager_config || {
+        echo "Failed to load package manager config"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    
+    # 3. これで install_package が使えるようになるので UI 選択
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 4. その他のファイルを並列ダウンロード
     (download_api_with_retry) &
     API_PID=$!
     
@@ -3160,11 +3192,7 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
-    # package-manager.jsonのダウンロード追加
-    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
-    PKG_MGR_CONFIG_PID=$!
-    
-    # 母国語ファイルのダウンロード（LuCIから取得した言語コードを使用）
+    # 母国語ファイルのダウンロード
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
@@ -3182,15 +3210,8 @@ aios2_main() {
         wait $NATIVE_LANG_PID
     fi
     
-    # UI表示前の時点で時間を記録
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
-    # UI選択を即座に表示
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
     AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
     
@@ -3200,7 +3221,6 @@ aios2_main() {
     SETUP_STATUS=$?
     wait $POSTINST_PID
     POSTINST_STATUS=$?
-    wait $PKG_MGR_CONFIG_PID
     wait $UI_DL_PID
     
     if [ $SETUP_STATUS -ne 0 ]; then
@@ -3217,18 +3237,7 @@ aios2_main() {
         return 1
     fi
     
-    # パッケージマネージャー設定読み込み（検出含む）
-    echo "[DEBUG] Before load_package_manager_config" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] PACKAGE_MANAGER_JSON=$PACKAGE_MANAGER_JSON" >> "$CONFIG_DIR/debug.log"
-    ls -la "$PACKAGE_MANAGER_JSON" >> "$CONFIG_DIR/debug.log" 2>&1
-    load_package_manager_config || {
-        echo "Failed to load package manager config"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-
-    echo "[DEBUG] After load_package_manager_config: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    # ※ load_package_manager_config() の呼び出しを削除（既に実行済み）
     
     # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
