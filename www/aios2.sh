@@ -221,6 +221,20 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
+synchronize_selection_vars()
+    local selected_packages_content=""
+    [ -f "$SELECTED_PACKAGES" ] && selected_packages_content=$(cat "$SELECTED_PACKAGES")
+    
+    sed -i '/_ENABLE=[^=]*$/d' "$SETUP_VARS" 2>/dev/null
+    
+    echo "$selected_packages_content" | while IFS='=' read -r pkg_id name unique_id install_opts enable_var; do
+        [ -z "$enable_var" ] && continue
+        
+        set_var "$enable_var" "true"
+        echo "[SYNC] Set variable: ${enable_var}=true (for pkg: ${pkg_id})" >> "$CONFIG_DIR/debug.log"
+    done
+}
+
 # UI Mode Selection
 
 select_ui_mode() {
@@ -3350,6 +3364,8 @@ aios2_main() {
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
+
+    synchronize_selection_vars
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
