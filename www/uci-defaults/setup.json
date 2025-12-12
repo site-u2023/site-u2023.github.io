@@ -511,7 +511,7 @@
               "type": "info-display",
               "id": "dhcp-info",
               "class": "tr-dhcp",
-              "content": "DHCP configuration will be applied automatically. No additional settings required."
+              "content": "DHCP"
             }
           ]
         },
