@@ -1137,7 +1137,7 @@ get_package_name() {
                     if($i=="name")name=$(i+2);
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
-                    if($i=="enableVar")enableVar=$(i+2); # <-- ここが重要
+                    if($i=="enableVar")enableVar=$(i+2);
                 }
                 if(id&&name){
                     # id=name=uniqueId=installOptions=enableVar の形式でキャッシュ
@@ -1155,7 +1155,7 @@ get_package_name() {
                         if($i=="name")name=$(i+2);
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
-                        if($i=="enableVar")enableVar=$(i+2); # <-- ここが重要
+                        if($i=="enableVar")enableVar=$(i+2); #
                     }
                     if(id&&name){
                         print id "=" name "=" uniqueId "=" installOptions "=" enableVar
