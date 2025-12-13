@@ -396,7 +396,6 @@ init() {
     : > "$SETUP_VARS"
     : > "$CONFIG_DIR/debug.log"
 
-    unset _PACKAGE_ENABLEVAR_CACHE
     unset _PACKAGE_NAME_CACHE
     unset _CUSTOMFEED_CATEGORIES_CACHE
     unset _CATEGORIES_CACHE
