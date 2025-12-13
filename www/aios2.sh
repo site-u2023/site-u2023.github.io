@@ -1111,7 +1111,7 @@ get_package_checked() {
     echo "$checked"
 }
 
-get_package_name() {
+XXX_get_package_name() {
     local pkg_id="$1"
     
     # 初回のみキャッシュ構築（変更なし）
@@ -1161,6 +1161,59 @@ ${custom_cache}"
         $1 == pkg {
             if ($3 != "") print $3
             else print $2
+        }
+    '
+}
+
+get_package_name() {
+    local pkg_id="$1"
+    
+    # 初回のみキャッシュ構築
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '{
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id")id=$(i+2);
+                    if($i=="name")name=$(i+2);
+                    if($i=="uniqueId")uniqueId=$(i+2);
+                    if($i=="installOptions")installOptions=$(i+2);
+                    if($i=="enableVar")enableVar=$(i+2);
+                }
+                if(id&&name){
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                }
+            }')
+        
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '{
+                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id")id=$(i+2);
+                        if($i=="name")name=$(i+2);
+                        if($i=="uniqueId")uniqueId=$(i+2);
+                        if($i=="installOptions")installOptions=$(i+2);
+                        if($i=="enableVar")enableVar=$(i+2);
+                    }
+                    if(id&&name){
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                    }
+                }')
+            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${custom_cache}"
+        fi
+        
+        _PACKAGE_NAME_LOADED=1
+        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
+        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # ★ 修正：常に $2 (name) を返す
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+        $1 == pkg {
+            print $2
         }
     '
 }
