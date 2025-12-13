@@ -1067,29 +1067,36 @@ EOF
             is_dependent=1
         fi
         
-        # hidden チェック（独立パッケージのみ）
-        if [ "$is_dependent" -eq 0 ]; then
-            local is_hidden_entry
-            
-            if [ -n "$uid" ]; then
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                fi
+        # hidden チェック（すべてのパッケージに適用）
+        local is_hidden_entry=""
+        
+        if [ -n "$uid" ]; then
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             else
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                fi
+                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             fi
-            
-            [ "$is_hidden_entry" = "true" ] && continue
+        else
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            else
+                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            fi
+        fi
+        
+        [ "$is_hidden_entry" = "true" ] && continue
+        
+        # 依存パッケージ判定（hiddenチェックの後）
+        local is_dependent=0
+        
+        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+            is_dependent=1
+        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
+            is_dependent=1
         fi
         
         local display_name="$pkg_name"
