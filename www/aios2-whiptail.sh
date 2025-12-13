@@ -1127,6 +1127,15 @@ package_selection() {
     # 依存関係付きパッケージリストを構築
     package_list=$(build_package_list_with_deps "$cat_id")
     
+    # 現在の選択状態を保存
+    local prev_selections=""
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    prev_selections=$(cat "$target_file" 2>/dev/null || true)
+    
     checklist_items=""
     idx=1
     
@@ -1150,8 +1159,8 @@ package_selection() {
             display_name="$pkg_name"
         fi
         
-        # マップに保存 (index|pkg_id|indent|parent)
-        display_map="${display_map}${idx}|${pkg_id}|${indent_level}|${parent_pkg}
+        # マップに保存 (index|pkg_id|indent|parent|pkg_name)
+        display_map="${display_map}${idx}|${pkg_id}|${indent_level}|${parent_pkg}|${pkg_name}
 "
         
         if is_package_selected "$pkg_name" "$caller"; then
@@ -1172,21 +1181,13 @@ EOF
         return 0
     fi
     
-    if [ "$caller" = "custom_feeds" ]; then
-        target_file="$SELECTED_CUSTOM_PACKAGES"
-    else
-        target_file="$SELECTED_PACKAGES"
-    fi
-    
     # このカテゴリの既存エントリをすべて削除（enableVar も削除）
-    while IFS='|' read -r pkg_id indent_level parent_pkg; do
+    while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
         [ -z "$pkg_id" ] && continue
         
-        # このpkg_idに紐付くすべてのエントリを取得
         local all_entries
         all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
         
-        # 各エントリのenableVarを削除
         while read -r entry; do
             [ -z "$entry" ] && continue
             
@@ -1201,44 +1202,26 @@ EOF
 $all_entries
 ENTRIES
         
-        # パッケージエントリを削除
         sed -i "/^${pkg_id}=/d" "$target_file"
     done <<EOF
-$package_list
+$display_map
 EOF
     
-    # 選択されたものだけを保存
+    # 選択されたものを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local map_line pkg_id indent_level parent_pkg
+        local map_line pkg_id indent_level parent_pkg pkg_name
         map_line=$(echo "$display_map" | grep "^${idx_clean}|")
         
         if [ -n "$map_line" ]; then
             pkg_id=$(echo "$map_line" | cut -d'|' -f2)
             indent_level=$(echo "$map_line" | cut -d'|' -f3)
             parent_pkg=$(echo "$map_line" | cut -d'|' -f4)
-            
-            # 依存パッケージの場合、親が選択されているかチェック
-            if [ "$indent_level" = "1" ]; then
-                local parent_selected=0
-                for parent_idx in $selected; do
-                    parent_idx=$(echo "$parent_idx" | tr -d '"')
-                    local parent_line
-                    parent_line=$(echo "$display_map" | grep "^${parent_idx}|${parent_pkg}|0|")
-                    if [ -n "$parent_line" ]; then
-                        parent_selected=1
-                        break
-                    fi
-                done
-                
-                # 親が選択されていなければスキップ
-                [ "$parent_selected" -eq 0 ] && continue
-            fi
+            pkg_name=$(echo "$map_line" | cut -d'|' -f5)
             
             # パッケージを追加
-            local cache_line pkg_name
-            pkg_name=$(get_package_name "$pkg_id")
+            local cache_line
             cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
             
             if [ -n "$cache_line" ]; then
@@ -1253,46 +1236,52 @@ EOF
                     echo "${enable_var}='1'" >> "$SETUP_VARS"
                 fi
                 
-                # 親パッケージの場合、依存パッケージも自動追加
+                # 親パッケージで、かつ前回未選択だった場合のみ依存パッケージも自動追加
                 if [ "$indent_level" = "0" ]; then
-                    local deps
-                    deps=$(get_package_dependencies "$pkg_id")
+                    local was_selected
+                    was_selected=$(echo "$prev_selections" | grep "^${pkg_id}=")
                     
-                    while read -r dep_id; do
-                        [ -z "$dep_id" ] && continue
+                    if [ -z "$was_selected" ]; then
+                        # 新規選択なので依存パッケージも追加
+                        local deps
+                        deps=$(get_package_dependencies "$pkg_id")
                         
-                        # 依存パッケージが選択リストにあるかチェック
-                        local dep_in_list=0
-                        for check_idx in $selected; do
-                            check_idx=$(echo "$check_idx" | tr -d '"')
-                            local check_line
-                            check_line=$(echo "$display_map" | grep "^${check_idx}|${dep_id}|")
-                            if [ -n "$check_line" ]; then
-                                dep_in_list=1
-                                break
-                            fi
-                        done
-                        
-                        # リストにあれば既に処理済み、なければ自動追加
-                        if [ "$dep_in_list" -eq 0 ]; then
-                            local dep_cache_line
-                            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
+                        while read -r dep_id; do
+                            [ -z "$dep_id" ] && continue
                             
-                            if [ -n "$dep_cache_line" ]; then
-                                echo "$dep_cache_line" >> "$target_file"
+                            # 依存パッケージが既に選択リストにあればスキップ
+                            local dep_already_selected=0
+                            for check_idx in $selected; do
+                                check_idx=$(echo "$check_idx" | tr -d '"')
+                                local check_line
+                                check_line=$(echo "$display_map" | grep "^${check_idx}|${dep_id}|")
+                                if [ -n "$check_line" ]; then
+                                    dep_already_selected=1
+                                    break
+                                fi
+                            done
+                            
+                            # 選択リストになければ自動追加
+                            if [ "$dep_already_selected" -eq 0 ]; then
+                                local dep_cache_line
+                                dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
                                 
-                                local dep_unique_id dep_enable_var
-                                dep_unique_id=$(echo "$dep_cache_line" | cut -d= -f3)
-                                dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_unique_id")
-                                
-                                if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                                    echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+                                if [ -n "$dep_cache_line" ]; then
+                                    echo "$dep_cache_line" >> "$target_file"
+                                    
+                                    local dep_unique_id dep_enable_var
+                                    dep_unique_id=$(echo "$dep_cache_line" | cut -d= -f3)
+                                    dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_unique_id")
+                                    
+                                    if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                                        echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+                                    fi
                                 fi
                             fi
-                        fi
-                    done <<DEPS
+                        done <<DEPS
 $deps
 DEPS
+                    fi
                 fi
             fi
         fi
