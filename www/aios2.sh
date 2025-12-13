@@ -792,46 +792,31 @@ build_package_list_with_deps() {
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # 隠しパッケージで、かつ依存関係にない独立パッケージはスキップ
-        if is_package_hidden "$pkg_id"; then
-            # 他のパッケージの依存関係に含まれていなければスキップ
-            local is_dependency=0
-            while read -r check_pkg; do
-                [ -z "$check_pkg" ] && continue
-                local deps
-                deps=$(get_package_dependencies "$check_pkg")
-                if echo "$deps" | grep -q "^${pkg_id}\$"; then
-                    is_dependency=1
-                    break
-                fi
-            done <<CHECKEOF
-$packages
-CHECKEOF
-            [ "$is_dependency" -eq 0 ] && continue
-        fi
+        # トップレベルの隠しパッケージはスキップ
+        is_package_hidden "$pkg_id" && continue
         
-        # パッケージ互換性チェック（custom_feeds の場合のみ）
+        # パッケージ互換性チェック（custom_feeds の場合）
         if [ "$caller" = "custom_feeds" ]; then
             package_compatible "$pkg_id" || continue
         fi
         
-        # メインパッケージを追加
+        # 親パッケージを追加
         result="${result}${pkg_id}|0|
 "
         
-        # 依存関係を追加（インデント付き）
+        # 依存パッケージを追加
         local deps
         deps=$(get_package_dependencies "$pkg_id")
         
         while read -r dep_id; do
             [ -z "$dep_id" ] && continue
             
-            # 依存パッケージも互換性チェック（custom_feeds の場合のみ）
+            # 依存パッケージの互換性チェック
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$dep_id" || continue
             fi
             
-            # 依存パッケージは hidden でも表示（自動選択を明示）
+            # 依存パッケージは hidden でも表示
             result="${result}${dep_id}|1|${pkg_id}
 "
         done <<EOF
