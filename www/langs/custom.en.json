@@ -162,6 +162,7 @@
     "tr-tui-ok": "OK",
     "tr-tui-decide": "Decide",
     "tr-tui-cancel": "Cancel",
+    "tr-tui-refresh": "Update",
     
     "tr-tui-view-device-info": "View Device Information",
     "tr-tui-view-package-list": "View Configured Packages",
