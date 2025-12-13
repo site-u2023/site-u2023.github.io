@@ -971,7 +971,7 @@ package_categories() {
     done
 }
 
-package_selection() {
+XXX_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -1061,6 +1061,167 @@ DISPLAY
             local selected_name pkg_id enable_var
             selected_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            
+            if is_package_selected "$selected_name" "$caller"; then
+                sed -i "/^${pkg_id}=/d" "$target_file"
+                
+                enable_var=$(get_package_enablevar "$pkg_id")
+                if [ -n "$enable_var" ]; then
+                    sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                    echo "[DEBUG] Removed enableVar: ${enable_var} for deselected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
+                fi
+            else
+                local cache_line
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+                if [ -n "$cache_line" ]; then
+                    echo "$cache_line" >> "$target_file"
+                    
+                    enable_var=$(get_package_enablevar "$pkg_id")
+                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${enable_var}='1'" >> "$SETUP_VARS"
+                        echo "[DEBUG] Added enableVar: ${enable_var} for selected package: ${pkg_id}" >> "$CONFIG_DIR/debug.log"
+                    fi
+                fi
+            fi
+            
+            # 選択が変更されたのでキャッシュをクリア
+            clear_selection_cache    
+        fi
+        
+        package_selection "$cat_id" "$caller" "$parent_breadcrumb"
+    fi
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
+    local cat_name breadcrumb target_file packages
+    
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    packages=$(get_category_packages "$cat_id")
+    
+    # --- 新規追加: 依存パッケージキャッシュ ---
+    local dependent_ids=" "
+    
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
+        
+        local deps
+        if [ "$caller" = "custom_feeds" ]; then
+            deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        else
+            deps=$(jsonfilter -i "$PACKAGES_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        fi
+        
+        dependent_ids="${dependent_ids}$(echo "$deps" | tr '\n' ' ')"
+    done <<EOF
+$packages
+EOF
+    
+    dependent_ids="${dependent_ids} "
+    # --- キャッシュ処理ここまで ---
+    
+    show_menu_header "$breadcrumb"
+    
+    local cat_desc
+    cat_desc=$(get_category_desc "$cat_id")
+    echo "$cat_desc"
+    echo ""
+    
+    local display_list=""
+    
+    while read -r pkg_id; do
+        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
+            continue
+        fi
+        
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
+            local is_selected indent=""
+            
+            # --- インデント処理 ---
+            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+                indent="   "  # 3スペース
+            fi
+            # --- インデント処理ここまで ---
+            
+            if is_package_selected "$pkg_name" "$caller"; then
+                is_selected="true"
+            else
+                is_selected="false"
+            fi
+            
+            show_checkbox "$is_selected" "${indent}${pkg_name}"
+            display_list="${display_list}${pkg_name}|${pkg_id}
+"
+        done <<NAMES
+$names
+NAMES
+    done <<EOF
+$packages
+EOF
+    
+    echo ""
+    echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
+    
+    local i=1
+    while read -r line; do
+        [ -z "$line" ] && continue
+        local display_name indent=""
+        display_name=$(echo "$line" | cut -d'|' -f1)
+        
+        # インデント処理
+        local pkg_id_check
+        pkg_id_check=$(echo "$line" | cut -d'|' -f2)
+        if echo "$dependent_ids" | grep -q " ${pkg_id_check} "; then
+            indent="   "
+        fi
+        
+        show_numbered_item "$i" "${indent}${display_name}"
+        i=$((i+1))
+    done <<DISPLAY
+$display_list
+DISPLAY
+    
+    echo ""
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    read -r choice
+    
+    if [ "$choice" = "$CHOICE_BACK" ]; then
+        return $RETURN_STAY
+    fi
+    
+    if [ -n "$choice" ]; then
+        local selected_line
+        selected_line=$(echo "$display_list" | sed -n "${choice}p")
+        
+        if [ -n "$selected_line" ]; then
+            local selected_name pkg_id enable_var
+            selected_name=$(echo "$selected_line" | cut -d'|' -f1)
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            
+            # インデント除去
+            selected_name=$(echo "$selected_name" | sed 's/^[[:space:]]*//')
             
             if is_package_selected "$selected_name" "$caller"; then
                 sed -i "/^${pkg_id}=/d" "$target_file"
