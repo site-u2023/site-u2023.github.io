@@ -875,7 +875,7 @@ EOF
 }
 
 # パッケージ選択解除時に依存関係も解除（オプション）
-deselect_package_with_dependencies() {
+XXXXX_deselect_package_with_dependencies() {
     local pkg_id="$1"
     local unique_id="$2"
     
