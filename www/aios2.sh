@@ -65,8 +65,6 @@ OPENWRT_VERSION=""
 
 BREADCRUMB_SEP=" > "
 
-_PACKAGE_ENABLEVAR_CACHE=""
-_PACKAGE_ENABLEVAR_LOADED=0
 _PACKAGE_NAME_CACHE=""
 _PACKAGE_NAME_LOADED=0
 _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -405,7 +403,6 @@ init() {
     unset _SETUP_CATEGORIES_CACHE
     unset _PACKAGE_AVAILABILITY_CACHE
     
-    _PACKAGE_ENABLEVAR_LOADED=0
     _PACKAGE_NAME_LOADED=0
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
@@ -1212,49 +1209,17 @@ get_package_enablevar() {
     local unique_id="$2"
     local enable_var
     
-    if [ "$_PACKAGE_ENABLEVAR_LOADED" -eq 0 ]; then
-        # postinst.json から id=uniqueId=enableVar の形式でキャッシュ作成
-        _PACKAGE_ENABLEVAR_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '
-            {
-                id=""; uid=""; ev="";
-                for(i=1;i<=NF;i++){
-                    if($i=="id") id=$(i+2);
-                    if($i=="uniqueId") uid=$(i+2);
-                    if($i=="enableVar") ev=$(i+2);
-                }
-                if(id && ev) print id"="uid"="ev;
-            }')
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '
-                {
-                    id=""; uid=""; ev="";
-                    for(i=1;i<=NF;i++){
-                        if($i=="id") id=$(i+2);
-                        if($i=="uniqueId") uid=$(i+2);
-                        if($i=="enableVar") ev=$(i+2);
-                    }
-                    if(id && ev) print id"="uid"="ev;
-                }')
-            _PACKAGE_ENABLEVAR_CACHE="${_PACKAGE_ENABLEVAR_CACHE}
-${custom_cache}"
-        fi
-        
-        _PACKAGE_ENABLEVAR_LOADED=1
-    fi
-    
-    # キャッシュから検索
+    # _PACKAGE_NAME_CACHE から検索（フォーマット: id=name=uniqueId=installOptions=enableVar）
     if [ -n "$unique_id" ]; then
-        # uniqueId がある場合: "id=uniqueId=enableVar" の行を探す
-        enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}=${unique_id}=" | cut -d= -f3)
-    fi
-    
-    # 見つからない場合は id だけで検索（uniqueId が空の行）
-    if [ -z "$enable_var" ]; then
-        enable_var=$(echo "$_PACKAGE_ENABLEVAR_CACHE" | grep "^${pkg_id}==" | cut -d= -f3)
+        # uniqueId がある場合: id と uniqueId が一致する行のフィールド5（enableVar）を取得
+        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" -v uid="$unique_id" '
+            $1 == pkg && $3 == uid { print $5; exit }
+        ')
+    else
+        # uniqueId がない場合: id が一致し、フィールド3が空の行のフィールド5を取得
+        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+            $1 == pkg && $3 == "" { print $5; exit }
+        ')
     fi
     
     echo "$enable_var"
