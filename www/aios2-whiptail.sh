@@ -1222,19 +1222,24 @@ package_selection() {
                 -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
         fi
         
-        # dependenciesには id または uniqueId が含まれる可能性がある
+        # dependenciesには id または uniqueId が含まれる
         while read -r dep; do
             [ -z "$dep" ] && continue
             
-            # まずidとして検索
-            if echo "$_PACKAGE_NAME_CACHE" | grep -q "^${dep}="; then
-                dependent_ids="${dependent_ids}${dep} "
+            # uniqueId として検索（3番目のフィールド）
+            local matched_line matched_id
+            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
+            
+            if [ -n "$matched_line" ]; then
+                # uniqueId で見つかった - id を取得
+                matched_id=$(echo "$matched_line" | cut -d= -f1)
+                dependent_ids="${dependent_ids}${matched_id} ${dep} "
+                echo "[DEBUG] Dependency by uniqueId: $dep -> id=$matched_id" >> "$CONFIG_DIR/debug.log"
             else
-                # uniqueIdとして検索（形式: id=name=uniqueId=...）
-                local matched_id
-                matched_id=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${dep}=" | cut -d= -f1 | head -1)
-                if [ -n "$matched_id" ]; then
-                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
+                # id として検索
+                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
+                    dependent_ids="${dependent_ids}${dep} "
+                    echo "[DEBUG] Dependency by id: $dep" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
         done <<DEPS
@@ -1245,8 +1250,6 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    
-    echo "[DEBUG] dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
     
     checklist_items=""
     idx=1
@@ -1262,18 +1265,14 @@ EOF
             fi
         fi
         
-        # パッケージ存在確認（id で確認）
         if ! check_package_available "$pkg_id" "$caller"; then
-            echo "[DEBUG] Package not available: $pkg_id" >> "$CONFIG_DIR/debug.log"
             continue
         fi
         
-        # 依存パッケージかどうかをチェック（id と uniqueId の両方で判定）
+        # 依存パッケージ判定
         local is_dependent=0
-        
-        # キャッシュからこの pkg_id の全エントリを取得
         local cache_entries
-        cache_entries=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+        cache_entries=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id')
         
         while read -r entry; do
             [ -z "$entry" ] && continue
@@ -1281,17 +1280,15 @@ EOF
             local uid
             uid=$(echo "$entry" | cut -d= -f3)
             
-            # 1. id でマッチ（スペース区切りで正確に）
+            # id でマッチ
             if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
                 is_dependent=1
-                echo "[DEBUG] Matched as dependent by id: $pkg_id" >> "$CONFIG_DIR/debug.log"
                 break
             fi
             
-            # 2. uniqueId でマッチ
+            # uniqueId でマッチ
             if [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
                 is_dependent=1
-                echo "[DEBUG] Matched as dependent by uniqueId: $uid (id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
                 break
             fi
         done <<ENTRIES
@@ -1318,24 +1315,20 @@ ENTRIES
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            # 表示名を作成（依存パッケージにインデント付与）
             local display_name="$pkg_name"
             if [ "$is_dependent" -eq 1 ]; then
                 display_name="   ${pkg_name}"
             fi
             
-            # display_namesに保存（インデント付き）
             display_names="${display_names}${display_name}|${pkg_id}
 "
             
-            # 選択状態チェック（元のpkg_nameで検索）
             if is_package_selected "$pkg_name" "$caller"; then
                 status="ON"
             else
                 status="OFF"
             fi
             
-            # checklist_itemsに追加（インデント付き）
             checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
             idx=$((idx+1))
         done <<NAMES
@@ -1357,23 +1350,22 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # このカテゴリの既存エントリをすべて削除（enableVar も削除）
+    # カテゴリの既存エントリ削除
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
         local all_entries
-        all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
+        all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
         
         while read -r entry; do
             [ -z "$entry" ] && continue
             
             local unique_id enable_var
             unique_id=$(echo "$entry" | cut -d= -f3)
-            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+            enable_var=$(echo "$entry" | cut -d= -f5)
             
             if [ -n "$enable_var" ]; then
                 sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
-                echo "[DEBUG] Removed enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
             fi
         done <<ENTRIES
 $all_entries
@@ -1384,7 +1376,7 @@ ENTRIES
 $packages
 EOF
     
-    # 選択されたものだけを保存（enableVar も追加）
+    # 選択されたものを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
@@ -1395,25 +1387,19 @@ EOF
             display_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
-            # インデント除去してキャッシュ検索
             ui_label=$(echo "$display_name" | sed 's/^[[:space:]]*//')
             
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
-            
-            if [ -z "$cache_line" ]; then
-                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=${ui_label}==.*")
-            fi
+            # キャッシュから完全一致で検索（name フィールド = 2番目）
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" -v name="$ui_label" '$1 == id && $2 == name {print; exit}')
             
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
                 
-                local unique_id enable_var
-                unique_id=$(echo "$cache_line" | cut -d= -f3)
-                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+                local enable_var
+                enable_var=$(echo "$cache_line" | cut -d= -f5)
                 
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                     echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Added enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
                 fi
             fi
         fi
