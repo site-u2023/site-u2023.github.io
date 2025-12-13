@@ -4,6 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
+# postinst.json要件
 # - **id**: `apache` ← インストールする実際のパッケージ
 # - **name**: `htpasswd` ← **UIに表示する名前**
 # - **uniqueId**: `htpasswd-from-apache` ← 識別子（内部使用：同じidの複数エントリを区別）
