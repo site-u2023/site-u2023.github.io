@@ -3183,7 +3183,6 @@ show_log() {
 }
 
 aios2_main() {
-    
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
@@ -3195,7 +3194,6 @@ aios2_main() {
     print_banner
     
     mkdir -p "$CONFIG_DIR"
-    
     get_language_code
     
     # 1. config.js を優先ダウンロード
@@ -3208,31 +3206,17 @@ aios2_main() {
     
     init
     
-    # 2. package-manager.json を優先ダウンロード・設定読み込み
-    echo "[DEBUG] Downloading package-manager.json..." >> "$CONFIG_DIR/debug.log"
-    download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON" || {
-        echo "Error: Failed to download package-manager.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
+    # 2. 最優先: package-manager.json をバックグラウンドでDL
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
+    PKG_MGR_DL_PID=$!
     
-    echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
-    load_package_manager_config || {
-        echo "Failed to load package manager config"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    # 3. whiptail の有無をチェック
+    WHIPTAIL_AVAILABLE=0
+    if command -v whiptail >/dev/null 2>&1; then
+        WHIPTAIL_AVAILABLE=1
+    fi
     
-    # 3. これで install_package が使えるようになるので UI 選択
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # 4. その他のファイルを並列ダウンロード
+    # 4. その他のファイルを並列DL開始
     (download_api_with_retry) &
     API_PID=$!
     
@@ -3254,7 +3238,6 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
-    # 母国語ファイルのダウンロード
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
@@ -3267,7 +3250,41 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # 母国語ファイルのダウンロード完了を待機
+    # 5. UI選択画面を即座に表示
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 6. whiptailモード選択 + whiptail無し → package-manager.json完了を待つ
+    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Waiting for package manager configuration..."
+        wait $PKG_MGR_DL_PID
+        
+        echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
+        load_package_manager_config || {
+            echo "Failed to load package manager config"
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
+        }
+        echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
+        
+        echo "Installing whiptail..."
+        echo "Updating package lists..."
+        eval "$PKG_UPDATE_CMD" || {
+            echo "Warning: Failed to update package lists"
+        }
+        
+        if install_package whiptail; then
+            echo "Installation successful."
+        else
+            echo "Installation failed. Falling back to simple mode."
+            UI_MODE="simple"
+        fi
+    fi
+    
+    # 7. 母国語ファイルのダウンロード完了を待機
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
     fi
@@ -3277,7 +3294,7 @@ aios2_main() {
     
     AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
     
-    # 必須ファイルの完了を待機
+    # 8. 必須ファイルの完了を待機
     wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -3299,12 +3316,22 @@ aios2_main() {
         return 1
     fi
     
-    # ※ load_package_manager_config() の呼び出しを削除（既に実行済み）
+    # 9. package-manager.json がまだ完了していなければ待機してロード
+    wait $PKG_MGR_DL_PID
     
-    # デバイス情報取得（API情報で上書き・補完）
+    if [ "$UI_MODE" = "simple" ] || [ "$WHIPTAIL_AVAILABLE" -eq 1 ]; then
+        load_package_manager_config || {
+            echo "Failed to load package manager config"
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
+        }
+    fi
+    
+    # 10. デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
 
-    # APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
             download_language_json "${AUTO_LANGUAGE}"
