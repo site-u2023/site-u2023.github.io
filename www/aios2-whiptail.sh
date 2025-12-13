@@ -976,7 +976,7 @@ EOF
     done
 }
 
-package_selection() {
+XXX_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -1106,6 +1106,87 @@ EOF
     done
     # 選択が変更されたのでキャッシュをクリア
     clear_selection_cache
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="$2"
+    local tr_select tr_back tr_title tr_prompt
+
+    tr_select=$(translate "$DEFAULT_BTN_SELECT")
+    tr_back=$(translate "$DEFAULT_BTN_BACK")
+    # tr-tui-package-promptは説明文に使う翻訳キーと仮定
+    tr_prompt=$(translate "tr-tui-package-prompt") 
+
+    # 1. カテゴリ名を取得してタイトルに利用 (aios2.shの関数と仮定)
+    local cat_name
+    cat_name=$(get_category_name "$cat_id")
+    tr_title=$(translate "$cat_name")
+    
+    # --- 新規追加: 依存パッケージIDのキャッシュ処理 (ループ外で一度だけ実行) ---
+    # JSONキャッシュ（postinst.json）から、このカテゴリの子パッケージIDをすべて抽出
+    local category_packages_json
+    local dependent_ids=" " # スペース区切りでIDを格納。grep検索のために両端にスペースを入れる。
+    
+    # $PACKAGES_JSONはaios2.shで定義されているpostinst.jsonのパスと仮定
+    category_packages_json=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages" 2>/dev/null)
+    
+    # 依存関係（dependencies）にリストされている全てのパッケージIDを収集
+    dependent_ids="${dependent_ids}$(echo "$category_packages_json" | jsonfilter -e "@.[*].dependencies[*]" 2>/dev/null | tr '\n' ' ')"
+    dependent_ids="${dependent_ids} "
+    # --- キャッシュ処理ここまで ---
+
+    while true; do
+        local packages
+        local checklist_items=""
+        local result
+        local packages_to_save=""
+        
+        # 2. パッケージリストの取得（aios2.shの関数を呼び出し、ID|NAME|DESC|STATUS の形式で取得を想定）
+        packages=$(get_category_packages_for_tui "$cat_id" "$caller") 
+
+        echo "$packages" | while read -r line; do
+            local pkg_id pkg_name pkg_desc status translated_desc indent=""
+            
+            pkg_id=$(echo "$line" | awk -F'|' '{print $1}')
+            pkg_name=$(echo "$line" | awk -F'|' '{print $2}')
+            pkg_desc=$(echo "$line" | awk -F'|' '{print $3}')
+            status=$(echo "$line" | awk -F'|' '{print $4}')
+
+            # --- 3. インデント処理 (依存フラグの判定) ---
+            # キャッシュされた dependent_ids を参照し、現在のpkg_idが子パッケージ（依存対象）かをチェック
+            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+                indent="   " # 3スペースのインデントを適用
+            fi
+
+            pkg_name="${indent}${pkg_name}"
+            # --- インデント処理ここまで ---
+            
+            translated_desc=$(translate "$pkg_desc")
+            
+            # whiptailのchecklistアイテム形式に変換
+            checklist_items="$checklist_items \\\"$pkg_name\\\" \\\"$translated_desc\\\" \\\"$status\\\""
+        done
+
+        # 4. whiptailメニューの表示
+        result=$(eval "show_checklist \"$TITLE $BREADCRUMB_SEP $tr_title\" \"$tr_prompt\" \"$tr_select\" \"$tr_back\" $checklist_items")
+        local ret_code=$?
+        
+        # 5. 選択結果の処理と画面遷移
+        if [ "$ret_code" -eq 0 ]; then
+            # 選択（OK）の場合: 選択結果を保存
+            packages_to_save="$result"
+            
+            # save_package_selection "$cat_id" "$packages_to_save" # aios2.shの保存関数と仮定
+            
+            # 親カテゴリ画面に戻る
+            return $RETURN_BACK
+        elif [ "$ret_code" -eq 1 ] || [ "$ret_code" -eq 255 ]; then
+            # 戻る（Cancel/Escape）の場合: 変更を破棄して戻る
+            return $RETURN_BACK
+        fi
+        
+    done
 }
 
 view_customfeeds() {
