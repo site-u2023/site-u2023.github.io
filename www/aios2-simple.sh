@@ -1150,6 +1150,12 @@ EOF
             continue
         fi
         
+        # ★★★ パッケージ存在確認（id で確認）★★★
+        if ! check_package_available "$pkg_id" "$caller"; then
+            echo "[DEBUG] Package not available: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
         # 依存パッケージかどうかをチェック
         local is_dependent=0
         if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
@@ -1173,12 +1179,6 @@ EOF
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
-            
-            # ★★★ パッケージ存在確認 ★★★
-            if ! check_package_available "$pkg_name"; then
-                echo "[DEBUG] Package not available: $pkg_name (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
             
             local is_selected indent=""
             
@@ -1216,7 +1216,6 @@ EOF
         
         display_name=$(echo "$line" | cut -d'|' -f1)
         
-        # 番号付きリスト表示（インデントはdisplay_nameに既に含まれている）
         show_numbered_item "$i" "$display_name"
         i=$((i+1))
     done <<DISPLAY
