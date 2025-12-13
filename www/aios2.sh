@@ -56,6 +56,8 @@ _CATEGORIES_CACHE=""
 _CATEGORIES_LOADED=0
 _SETUP_CATEGORIES_CACHE=""
 _SETUP_CATEGORIES_LOADED=0
+_PACKAGE_AVAILABILITY_CACHE=""
+_PACKAGE_AVAILABILITY_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -328,7 +330,7 @@ convert_install_option() {
     jsonfilter -i "$PACKAGE_MANAGER_JSON" -e "@.${PKG_MGR}.options.${opt_key}" 2>/dev/null
 }
 
-init() {
+XXX_init() {
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
     
     mkdir -p "$CONFIG_DIR"
@@ -382,6 +384,64 @@ init() {
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
+    
+    echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
+}
+
+init() {
+    local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
+    
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$BACKUP_DIR"
+    
+    if [ -f "$LOCK_FILE" ]; then
+        local old_pid
+        old_pid=$(cat "$LOCK_FILE" 2>/dev/null)
+        
+        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+            echo "Another instance (PID: $old_pid) is running."
+            echo "Multiple instances can run simultaneously, but may overwrite each other's configuration."
+            printf "Continue anyway? (y/n): "
+            read -r answer
+            if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+                exit 1
+            fi
+        else
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+    
+    echo "$$" > "$LOCK_FILE"
+    trap "rm -f '$LOCK_FILE'" EXIT INT TERM
+    
+    rm -f "$CONFIG_DIR"/*.json "$CONFIG_DIR"/*.sh "$CONFIG_DIR"/*.txt "$CONFIG_DIR"/debug.log 2>/dev/null
+    
+    load_config_from_js || {
+        echo "Fatal: Cannot load configuration"
+        return 1
+    }
+
+    unset _TRANSLATIONS_LOADED
+    unset _TRANSLATIONS_DATA
+    
+    : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
+    : > "$SETUP_VARS"
+    : > "$CONFIG_DIR/debug.log"
+
+    unset _PACKAGE_ENABLEVAR_CACHE
+    unset _PACKAGE_NAME_CACHE
+    unset _CUSTOMFEED_CATEGORIES_CACHE
+    unset _CATEGORIES_CACHE
+    unset _SETUP_CATEGORIES_CACHE
+    unset _PACKAGE_AVAILABILITY_CACHE
+    
+    _PACKAGE_ENABLEVAR_LOADED=0
+    _PACKAGE_NAME_LOADED=0
+    _CUSTOMFEED_CATEGORIES_LOADED=0
+    _CATEGORIES_LOADED=0
+    _SETUP_CATEGORIES_LOADED=0
+    _PACKAGE_AVAILABILITY_LOADED=0
     
     echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
 }
@@ -722,6 +782,62 @@ build_deviceinfo_display() {
 }
 
 # Package Management
+
+# =============================================================================
+# Package Availability Check
+# =============================================================================
+# Checks if a package is available in the package manager's repository
+# Uses cache to avoid repeated checks
+# Args:
+#   $1 - package name
+# Returns:
+#   0 if package is available, 1 otherwise
+# =============================================================================
+check_package_available() {
+    local pkg_name="$1"
+    
+    # virtual パッケージは常に利用可能とみなす
+    local is_virtual
+    if [ -f "$PACKAGES_JSON" ]; then
+        is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_name'].virtual" 2>/dev/null | head -1)
+        [ -z "$is_virtual" ] && is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.name='$pkg_name'].virtual" 2>/dev/null | head -1)
+    fi
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ] && [ -z "$is_virtual" ]; then
+        is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_name'].virtual" 2>/dev/null | head -1)
+        [ -z "$is_virtual" ] && is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.name='$pkg_name'].virtual" 2>/dev/null | head -1)
+    fi
+    
+    if [ "$is_virtual" = "true" ]; then
+        echo "[DEBUG] Package $pkg_name is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # キャッシュチェック
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_name}:"; then
+        local status
+        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_name}:" | cut -d: -f2)
+        [ "$status" = "1" ] && return 0 || return 1
+    fi
+    
+    # 実際の存在確認
+    local available=0
+    if [ "$PKG_MGR" = "opkg" ]; then
+        if opkg list "$pkg_name" 2>/dev/null | grep -q "^${pkg_name} "; then
+            available=1
+        fi
+    elif [ "$PKG_MGR" = "apk" ]; then
+        if apk search -e "$pkg_name" 2>/dev/null | grep -q "^${pkg_name}-"; then
+            available=1
+        fi
+    fi
+    
+    # キャッシュに保存
+    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_name}:${available}
+"
+    
+    [ "$available" -eq 1 ] && return 0 || return 1
+}
 
 package_compatible() {
     local pkg_id="$1"
