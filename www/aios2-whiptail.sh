@@ -1169,30 +1169,36 @@ package_selection() {
             while read -r dep_id; do
                 [ -z "$dep_id" ] && continue
                 
-                if [ "$caller" = "custom_feeds" ]; then
-                    package_compatible "$dep_id" || continue
+                # dep_id が uniqueId の可能性があるので、キャッシュから pkg_id と name を取得
+                local cache_line actual_pkg_id dep_display_name
+                
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v did="$dep_id" '
+                    $1 == did { print; exit }
+                    $3 == did { print; exit }
+                ')
+                
+                if [ -z "$cache_line" ]; then
+                    continue
                 fi
                 
-                local dep_names
-                dep_names=$(get_package_name "$dep_id")
+                actual_pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                dep_display_name=$(echo "$cache_line" | cut -d= -f2)
                 
-                while read -r dep_name; do
-                    [ -z "$dep_name" ] && continue
-                    
-                    display_map="${display_map}${idx}|${dep_id}|${dep_name}
+                if [ "$caller" = "custom_feeds" ]; then
+                    package_compatible "$actual_pkg_id" || continue
+                fi
+                
+                display_map="${display_map}${idx}|${actual_pkg_id}|${dep_display_name}
 "
-                    
-                    if is_package_selected "$dep_name" "$caller"; then
-                        status="ON"
-                    else
-                        status="OFF"
-                    fi
-                    
-                    checklist_items="$checklist_items \"$idx\" \"  ├─ ${dep_name}\" $status"
-                    idx=$((idx+1))
-                done <<DEPNAMES
-$dep_names
-DEPNAMES
+                
+                if is_package_selected "$dep_display_name" "$caller"; then
+                    status="ON"
+                else
+                    status="OFF"
+                fi
+                
+                checklist_items="$checklist_items \"$idx\" \"  ├─ ${dep_display_name}\" $status"
+                idx=$((idx+1))
             done <<DEPS
 $deps
 DEPS
