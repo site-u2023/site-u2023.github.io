@@ -1049,6 +1049,7 @@ EOF
         pkg_name=$(echo "$entry" | cut -d= -f2)
         uid=$(echo "$entry" | cut -d= -f3)
         
+        # このカテゴリのパッケージでなければスキップ
         echo "$packages" | grep -qx "$pkg_id" || continue
         
         if [ "$caller" = "custom_feeds" ]; then
@@ -1057,32 +1058,7 @@ EOF
         
         check_package_available "$pkg_id" "$caller" || continue
         
-        # hidden チェック（全パッケージに適用）
-        local is_hidden_entry
-        
-        if [ -n "$uid" ]; then
-            # uniqueIdで検索（全カテゴリから一意に特定）
-            if [ "$caller" = "custom_feeds" ]; then
-                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-            else
-                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-            fi
-        else
-            # uniqueIdがない場合はカテゴリ+idで検索
-            if [ "$caller" = "custom_feeds" ]; then
-                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-            else
-                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-            fi
-        fi
-        
-        [ "$is_hidden_entry" = "true" ] && continue
-        
-        # 依存パッケージ判定
+        # 依存パッケージ判定（hiddenチェックより先）
         local is_dependent=0
         
         if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
