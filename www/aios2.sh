@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.1406"
+VERSION="R7.1213.1426"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -792,27 +792,15 @@ build_package_list_with_deps() {
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # 同じpkg_idの全エントリを取得（uniqueId違いを含む）
+        # 同じpkg_idの全エントリを取得（uniqueIdとname）
         local names
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            # hidden チェック
-            local is_hidden=false
-            
-            # uniqueIdがある場合とない場合で検索
-            if echo "$_PACKAGE_NAME_CACHE" | grep -q "^${pkg_id}=.*=${pkg_name}="; then
-                # uniqueIdとして保存されている
-                is_hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.uniqueId='$pkg_name'].hidden" 2>/dev/null | head -1)
-            else
-                # nameとして保存されている
-                is_hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'][@.name='$pkg_name'][!@.uniqueId].hidden" 2>/dev/null | head -1)
-            fi
-            
             # トップレベルの隠しパッケージはスキップ
-            [ "$is_hidden" = "true" ] && continue
+            is_package_hidden "$pkg_id" && continue
             
             # パッケージ互換性チェック
             if [ "$caller" = "custom_feeds" ]; then
