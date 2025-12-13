@@ -162,6 +162,7 @@
     "tr-tui-ok": "OK",
     "tr-tui-decide": "決定",
     "tr-tui-cancel": "キャンセル",
+    "tr-tui-refresh": "更新",
     
     "tr-tui-view-device-info": "デバイス情報",
     "tr-tui-view-package-list": "設定パッケージ",
