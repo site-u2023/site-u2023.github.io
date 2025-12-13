@@ -1243,6 +1243,12 @@ EOF
             fi
         fi
         
+        # ★★★ パッケージ存在確認（id で確認、names ループの前）★★★
+        if ! check_package_available "$pkg_id" "$caller"; then
+            echo "[DEBUG] Package not available: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
         # 依存パッケージかどうかをチェック
         local is_dependent=0
         if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
@@ -1266,12 +1272,6 @@ EOF
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
-            
-            # ★★★ パッケージ存在確認 ★★★
-            if ! check_package_available "$pkg_name"; then
-                echo "[DEBUG] Package not available: $pkg_name (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
             
             # 表示名を作成（依存パッケージにインデント付与）
             local display_name="$pkg_name"
