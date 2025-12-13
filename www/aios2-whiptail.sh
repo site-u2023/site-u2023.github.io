@@ -1108,7 +1108,7 @@ EOF
     clear_selection_cache
 }
 
-package_selection() {
+XXXXX_package_selection() {
     local cat_id="$1"
     local caller="$2"
     local tr_select tr_back tr_title tr_prompt
@@ -1187,6 +1187,176 @@ package_selection() {
         fi
         
     done
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+    
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
+    local cat_name breadcrumb checklist_items
+    local pkg_id pkg_name status idx selected target_file idx_str idx_clean
+    local packages
+    
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    packages=$(get_category_packages "$cat_id")
+    
+    # --- 新規追加: 依存パッケージIDのキャッシュ処理 (ループ外で一度だけ実行) ---
+    local dependent_ids=" "  # スペース区切りでIDを格納。grep検索のために両端にスペースを入れる。
+    
+    # このカテゴリの全パッケージの依存関係を収集
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
+        
+        local deps
+        if [ "$caller" = "custom_feeds" ]; then
+            deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        else
+            deps=$(jsonfilter -i "$PACKAGES_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        fi
+        
+        # 依存関係をスペース区切りで追加
+        dependent_ids="${dependent_ids}$(echo "$deps" | tr '\n' ' ')"
+    done <<EOF
+$packages
+EOF
+    
+    dependent_ids="${dependent_ids} "  # 末尾にもスペース
+    # --- キャッシュ処理ここまで ---
+    
+    checklist_items=""
+    idx=1
+    
+    local display_names=""
+    
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        if [ "$caller" = "custom_feeds" ]; then
+            if ! package_compatible "$pkg_id"; then
+                continue
+            fi
+        fi
+        
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            
+            # --- 新規追加: インデント処理 (依存フラグの判定) ---
+            # キャッシュされた dependent_ids を参照し、現在のpkg_idが子パッケージ（依存対象）かをチェック
+            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+                pkg_name="   ${pkg_name}"  # 3スペースのインデントを適用
+            fi
+            # --- インデント処理ここまで ---
+            
+            display_names="${display_names}${pkg_name}|${pkg_id}
+"
+            
+            if is_package_selected "$pkg_name" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+            idx=$((idx+1))
+        done <<NAMES
+$names
+NAMES
+    done <<EOF
+$packages
+EOF
+    
+    selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+    
+    if [ $? -ne 0 ]; then
+        return 0
+    fi
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # このカテゴリの既存エントリをすべて削除（enableVar も削除）
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        # このpkg_idに紐付くすべてのエントリを取得
+        local all_entries
+        all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
+        
+        # 各エントリのenableVarを削除
+        while read -r entry; do
+            [ -z "$entry" ] && continue
+            
+            local unique_id enable_var
+            unique_id=$(echo "$entry" | cut -d= -f3)
+            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+            
+            if [ -n "$enable_var" ]; then
+                sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
+                echo "[DEBUG] Removed enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
+            fi
+        done <<ENTRIES
+$all_entries
+ENTRIES
+        
+        # パッケージエントリを削除
+        sed -i "/^${pkg_id}=/d" "$target_file"
+    done <<EOF
+$packages
+EOF
+    
+    # 選択されたものだけを保存（enableVar も追加）
+    for idx_str in $selected; do
+        idx_clean=$(echo "$idx_str" | tr -d '"')
+        
+        local selected_line pkg_id ui_label cache_line
+        selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+        
+        if [ -n "$selected_line" ]; then
+            ui_label=$(echo "$selected_line" | cut -d'|' -f1)
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            
+            # インデント除去してキャッシュ検索
+            ui_label=$(echo "$ui_label" | sed 's/^[[:space:]]*//')
+            
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
+            
+            if [ -z "$cache_line" ]; then
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=${ui_label}==.*")
+            fi
+            
+            if [ -n "$cache_line" ]; then
+                echo "$cache_line" >> "$target_file"
+                
+                # enableVarを追加
+                local unique_id enable_var
+                unique_id=$(echo "$cache_line" | cut -d= -f3)
+                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+                
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Added enableVar: ${enable_var} for package: ${pkg_id}${unique_id:+:$unique_id}" >> "$CONFIG_DIR/debug.log" 2>/dev/null
+                fi
+            fi
+        fi
+    done
+    
+    # 選択が変更されたのでキャッシュをクリア
+    clear_selection_cache
 }
 
 view_customfeeds() {
