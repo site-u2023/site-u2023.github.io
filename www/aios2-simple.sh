@@ -1132,7 +1132,6 @@ package_selection() {
         while read -r dep; do
             [ -z "$dep" ] && continue
             
-            # uniqueId として検索
             local matched_line matched_id
             matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
             
@@ -1162,77 +1161,72 @@ EOF
     
     local display_list=""
     
-    while read -r pkg_id; do
-        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
-            continue
+    while read -r entry; do
+        [ -z "$entry" ] && continue
+        
+        local pkg_id pkg_name uid
+        pkg_id=$(echo "$entry" | cut -d= -f1)
+        pkg_name=$(echo "$entry" | cut -d= -f2)
+        uid=$(echo "$entry" | cut -d= -f3)
+        
+        echo "$packages" | grep -qx "$pkg_id" || continue
+        
+        if [ "$caller" = "custom_feeds" ]; then
+            package_compatible "$pkg_id" || continue
         fi
         
-        if ! check_package_available "$pkg_id" "$caller"; then
-            continue
-        fi
+        check_package_available "$pkg_id" "$caller" || continue
         
-        # 依存パッケージ判定
         local is_dependent=0
-        local cache_entries
-        cache_entries=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id')
         
-        while read -r entry; do
-            [ -z "$entry" ] && continue
-            
-            local uid
-            uid=$(echo "$entry" | cut -d= -f3)
-            
-            if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-                is_dependent=1
-                break
-            fi
-            
-            if [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
-                is_dependent=1
-                break
-            fi
-        done <<ENTRIES
-$cache_entries
-ENTRIES
+        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+            is_dependent=1
+        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
+            is_dependent=1
+        fi
         
         if [ "$is_dependent" -eq 0 ]; then
-            local is_hidden
-            if [ "$caller" = "custom_feeds" ]; then
-                is_hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            local is_hidden_entry
+            
+            if [ -n "$uid" ]; then
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                fi
             else
-                is_hidden=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                fi
             fi
             
-            [ "$is_hidden" = "true" ] && continue
+            [ "$is_hidden_entry" = "true" ] && continue
         fi
         
-        local names
-        names=$(get_package_name "$pkg_id")
+        local is_selected indent=""
         
-        while read -r pkg_name; do
-            local is_selected indent=""
-            
-            if [ "$is_dependent" -eq 1 ]; then
-                indent="   "
-            fi
-            
-            if is_package_selected "$pkg_name" "$caller"; then
-                is_selected="true"
-            else
-                is_selected="false"
-            fi
-            
-            show_checkbox "$is_selected" "${indent}${pkg_name}"
-            
-            display_list="${display_list}${indent}${pkg_name}|${pkg_id}
+        if [ "$is_dependent" -eq 1 ]; then
+            indent="   "
+        fi
+        
+        if is_package_selected "$pkg_name" "$caller"; then
+            is_selected="true"
+        else
+            is_selected="false"
+        fi
+        
+        show_checkbox "$is_selected" "${indent}${pkg_name}"
+        
+        display_list="${display_list}${indent}${pkg_name}|${pkg_id}
 "
-        done <<NAMES
-$names
-NAMES
     done <<EOF
-$packages
+$_PACKAGE_NAME_CACHE
 EOF
     
     echo ""
@@ -1273,7 +1267,6 @@ DISPLAY
             selected_name=$(echo "$selected_name" | sed 's/^[[:space:]]*//')
             
             if is_package_selected "$selected_name" "$caller"; then
-                # 選択解除
                 local all_entries
                 all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
                 
@@ -1292,7 +1285,6 @@ ENTRIES
                 
                 sed -i "/^${pkg_id}=/d" "$target_file"
             else
-                # 選択
                 local cache_line
                 cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" -v name="$selected_name" '$1 == id && $2 == name {print; exit}')
                 
