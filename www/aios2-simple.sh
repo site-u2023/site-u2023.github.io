@@ -1185,8 +1185,11 @@ EOF
                 is_selected="false"
             fi
             
+            # 表示用（チェックボックス）
             show_checkbox "$is_selected" "${indent}${pkg_name}"
-            display_list="${display_list}${pkg_name}|${pkg_id}
+            
+            # リストに保存（インデント付き）
+            display_list="${display_list}${indent}${pkg_name}|${pkg_id}
 "
         done <<NAMES
 $names
@@ -1201,17 +1204,12 @@ EOF
     local i=1
     while read -r line; do
         [ -z "$line" ] && continue
-        local display_name pkg_id_check indent=""
+        local display_name
         
         display_name=$(echo "$line" | cut -d'|' -f1)
-        pkg_id_check=$(echo "$line" | cut -d'|' -f2)
         
-        # 依存パッケージにインデント付与
-        if echo "$dependent_ids" | grep -q " ${pkg_id_check} "; then
-            indent="   "
-        fi
-        
-        show_numbered_item "$i" "${indent}${display_name}"
+        # 番号付きリスト表示（インデントはdisplay_nameに既に含まれている）
+        show_numbered_item "$i" "$display_name"
         i=$((i+1))
     done <<DISPLAY
 $display_list
@@ -1236,7 +1234,7 @@ DISPLAY
             selected_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
-            # インデント除去
+            # インデント除去してキャッシュ検索
             selected_name=$(echo "$selected_name" | sed 's/^[[:space:]]*//')
             
             if is_package_selected "$selected_name" "$caller"; then
