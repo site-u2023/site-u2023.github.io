@@ -1003,7 +1003,6 @@ EOF
             local is_hidden_entry
             
             if [ -n "$uid" ]; then
-                # uniqueIdで検索
                 if [ "$caller" = "custom_feeds" ]; then
                     is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
                         -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
@@ -1012,7 +1011,6 @@ EOF
                         -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
                 fi
             else
-                # uniqueIdがない場合
                 if [ "$caller" = "custom_feeds" ]; then
                     is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
                         -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
