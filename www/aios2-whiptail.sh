@@ -964,18 +964,20 @@ EOF
         
         check_package_available "$pkg_id" "$caller" || continue
         
-        # hidden チェック（全パッケージに適用）
+       # hidden チェック（全パッケージに適用）
         local is_hidden_entry
         
         if [ -n "$uid" ]; then
+            # uniqueIdで検索（全カテゴリから一意に特定）
             if [ "$caller" = "custom_feeds" ]; then
                 is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             else
                 is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             fi
         else
+            # uniqueIdがない場合はカテゴリ+idで検索
             if [ "$caller" = "custom_feeds" ]; then
                 is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
                     -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
