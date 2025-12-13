@@ -1058,13 +1058,19 @@ EOF
         
         check_package_available "$pkg_id" "$caller" || continue
         
-        # 依存パッケージ判定（hiddenチェックより先）
+        # 依存パッケージ判定（uniqueIdを優先）
         local is_dependent=0
         
-        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
-            is_dependent=1
+        if [ -n "$uid" ]; then
+            # uniqueIdがある場合は、uniqueIdで判定
+            if echo " ${dependent_ids} " | grep -q " ${uid} "; then
+                is_dependent=1
+            fi
+        else
+            # uniqueIdがない場合は、idで判定
+            if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+                is_dependent=1
+            fi
         fi
         
         # hidden チェック（独立パッケージのみ）
