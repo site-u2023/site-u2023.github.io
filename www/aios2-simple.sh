@@ -970,7 +970,7 @@ package_categories() {
         fi
     done
 }
-package_selection() {
+XXX_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -1103,6 +1103,157 @@ EOF
                         if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                             echo "${enable_var}='1'" >> "$SETUP_VARS"
                         fi
+                    fi
+                fi
+            fi
+            
+            clear_selection_cache
+        fi
+        
+        package_selection "$cat_id" "$caller" "$parent_breadcrumb"
+    fi
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" > /dev/null 2>&1
+    fi
+    
+    local cat_name breadcrumb target_file
+    local package_list display_list
+    
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # 依存関係付きパッケージリストを構築
+    package_list=$(build_package_list_with_deps "$cat_id")
+    
+    show_menu_header "$breadcrumb"
+    
+    local cat_desc
+    cat_desc=$(get_category_desc "$cat_id")
+    echo "$cat_desc"
+    echo ""
+    
+    display_list=""
+    local display_index=1
+    
+    while IFS='|' read -r pkg_id indent_level parent_pkg; do
+        [ -z "$pkg_id" ] && continue
+        
+        if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
+            continue
+        fi
+        
+        local pkg_name is_selected display_name
+        pkg_name=$(get_package_name "$pkg_id")
+        
+        # インデント表示
+        if [ "$indent_level" = "1" ]; then
+            display_name="  ├─ ${pkg_name}"
+        else
+            display_name="$pkg_name"
+        fi
+        
+        if is_package_selected "$pkg_name" "$caller"; then
+            is_selected="true"
+        else
+            is_selected="false"
+        fi
+        
+        show_checkbox "$is_selected" "$display_name"
+        display_list="${display_list}${display_index}|${pkg_id}|${indent_level}|${parent_pkg}
+"
+        display_index=$((display_index + 1))
+    done <<EOF
+$package_list
+EOF
+    
+    echo ""
+    echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
+    echo ""
+    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
+    echo ""
+    printf "%s: " "$(translate 'tr-tui-ui-choice')"
+    read -r choice
+    
+    if [ "$choice" = "$CHOICE_BACK" ]; then
+        return $RETURN_STAY
+    fi
+    
+    if [ -n "$choice" ]; then
+        local selected_line pkg_id indent_level parent_pkg
+        selected_line=$(echo "$display_list" | sed -n "${choice}p")
+        
+        if [ -n "$selected_line" ]; then
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            indent_level=$(echo "$selected_line" | cut -d'|' -f3)
+            parent_pkg=$(echo "$selected_line" | cut -d'|' -f4)
+            
+            local pkg_name
+            pkg_name=$(get_package_name "$pkg_id")
+            
+            if is_package_selected "$pkg_name" "$caller"; then
+                # 選択解除（親でも子でも個別に削除）
+                sed -i "/^${pkg_id}=/d" "$target_file"
+                
+                local enable_var
+                enable_var=$(get_package_enablevar "$pkg_id" "$pkg_name")
+                if [ -n "$enable_var" ]; then
+                    sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                fi
+            else
+                # 選択
+                local cache_line
+                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+                if [ -n "$cache_line" ]; then
+                    echo "$cache_line" >> "$target_file"
+                    
+                    local enable_var
+                    enable_var=$(get_package_enablevar "$pkg_id" "$pkg_name")
+                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    fi
+                    
+                    # 親パッケージの場合のみ、依存パッケージも自動選択
+                    if [ "$indent_level" = "0" ]; then
+                        local deps
+                        deps=$(get_package_dependencies "$pkg_id")
+                        
+                        while read -r dep_id; do
+                            [ -z "$dep_id" ] && continue
+                            
+                            # 既に選択されていなければ追加
+                            local dep_name
+                            dep_name=$(get_package_name "$dep_id")
+                            
+                            if ! is_package_selected "$dep_name" "$caller"; then
+                                local dep_cache_line
+                                dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
+                                
+                                if [ -n "$dep_cache_line" ]; then
+                                    echo "$dep_cache_line" >> "$target_file"
+                                    
+                                    local dep_enable_var
+                                    dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_name")
+                                    if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                                        echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+                                    fi
+                                fi
+                            fi
+                        done <<DEPS
+$deps
+DEPS
                     fi
                 fi
             fi
