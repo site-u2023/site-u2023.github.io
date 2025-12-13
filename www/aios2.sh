@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.1252"
+VERSION="R7.1213.1316"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -3206,17 +3206,10 @@ aios2_main() {
     
     init
     
-    # 2. 最優先: package-manager.json をバックグラウンドでDL
+    # 2. 全ファイルを並列DL開始（package-manager.json も含む）
     (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
     PKG_MGR_DL_PID=$!
     
-    # 3. whiptail の有無をチェック
-    WHIPTAIL_AVAILABLE=0
-    if command -v whiptail >/dev/null 2>&1; then
-        WHIPTAIL_AVAILABLE=1
-    fi
-    
-    # 4. その他のファイルを並列DL開始
     (download_api_with_retry) &
     API_PID=$!
     
@@ -3250,13 +3243,19 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # 5. UI選択画面を即座に表示
+    # 3. whiptail の有無をチェック
+    WHIPTAIL_AVAILABLE=0
+    if command -v whiptail >/dev/null 2>&1; then
+        WHIPTAIL_AVAILABLE=1
+    fi
+    
+    # 4. 即座にUI選択画面を表示（並列DL進行中）
     UI_START=$(cut -d' ' -f1 /proc/uptime)
     select_ui_mode
     UI_END=$(cut -d' ' -f1 /proc/uptime)
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
-    # 6. whiptailモード選択 + whiptail無し → package-manager.json完了を待つ
+    # 5. whiptailモード選択 + whiptail無し → package-manager.json完了を待つ
     if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
         echo "Waiting for package manager configuration..."
         wait $PKG_MGR_DL_PID
@@ -3284,7 +3283,7 @@ aios2_main() {
         fi
     fi
     
-    # 7. 母国語ファイルのダウンロード完了を待機
+    # 6. 母国語ファイルのダウンロード完了を待機
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
     fi
@@ -3292,9 +3291,7 @@ aios2_main() {
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
-    
-    # 8. 必須ファイルの完了を待機
+    # 7. 必須ファイルの完了を待機
     wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -3316,7 +3313,7 @@ aios2_main() {
         return 1
     fi
     
-    # 9. package-manager.json がまだ完了していなければ待機してロード
+    # 8. package-manager.json をロード（whiptail有り or simple選択の場合）
     wait $PKG_MGR_DL_PID
     
     if [ "$UI_MODE" = "simple" ] || [ "$WHIPTAIL_AVAILABLE" -eq 1 ]; then
@@ -3328,10 +3325,10 @@ aios2_main() {
         }
     fi
     
-    # 10. デバイス情報取得（API情報で上書き・補完）
+    # 9. デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
 
-    # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    # 10. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
             download_language_json "${AUTO_LANGUAGE}"
