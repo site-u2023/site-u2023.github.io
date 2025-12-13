@@ -795,7 +795,7 @@ build_package_list_with_deps() {
         # トップレベルの隠しパッケージはスキップ
         is_package_hidden "$pkg_id" && continue
         
-        # パッケージ互換性チェック（custom_feeds の場合）
+        # パッケージ互換性チェック
         if [ "$caller" = "custom_feeds" ]; then
             package_compatible "$pkg_id" || continue
         fi
@@ -804,7 +804,7 @@ build_package_list_with_deps() {
         result="${result}${pkg_id}|0|
 "
         
-        # 依存パッケージを追加
+        # 依存パッケージを追加（表示のみ、自動選択なし）
         local deps
         deps=$(get_package_dependencies "$pkg_id")
         
@@ -816,7 +816,7 @@ build_package_list_with_deps() {
                 package_compatible "$dep_id" || continue
             fi
             
-            # 依存パッケージは hidden でも表示
+            # 依存パッケージも表示（hidden でも）
             result="${result}${dep_id}|1|${pkg_id}
 "
         done <<EOF
