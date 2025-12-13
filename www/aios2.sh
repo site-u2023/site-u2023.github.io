@@ -961,13 +961,22 @@ get_category_hidden() {
     echo "$hidden"
 }
 
-get_category_packages() {
+XXX_get_category_packages() {
     local cat_id="$1"
     
     {
         [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
         jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
     } | grep -v '^$' | sort -u
+}
+
+get_category_packages() {
+    local cat_id="$1"
+    
+    {
+        [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
+        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
+    } | grep -v '^$' | awk '!seen[$0]++'
 }
 
 get_package_checked() {
