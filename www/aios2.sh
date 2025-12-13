@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.1316"
+VERSION="R7.1213.1329"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -756,6 +756,182 @@ package_compatible() {
     echo "$pkg_managers" | grep -q "${PKG_MGR}" && return 0
     
     return 1
+}
+
+# Package Dependencies Management
+
+get_package_dependencies() {
+    local pkg_id="$1"
+    local deps
+    
+    deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
+    [ -z "$deps" ] && deps=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
+    
+    echo "$deps" | grep -v '^$'
+}
+
+is_package_hidden() {
+    local pkg_id="$1"
+    local hidden
+    
+    hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+    [ -z "$hidden" ] && hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+    
+    [ "$hidden" = "true" ] && return 0
+    return 1
+}
+
+# パッケージリストを依存関係付きで構築
+build_package_list_with_deps() {
+    local cat_id="$1"
+    local packages result
+    
+    packages=$(get_category_packages "$cat_id")
+    result=""
+    
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        # 隠しパッケージはスキップ
+        is_package_hidden "$pkg_id" && continue
+        
+        # パッケージ互換性チェック
+        package_compatible "$pkg_id" || continue
+        
+        # メインパッケージを追加
+        result="${result}${pkg_id}|0
+"
+        
+        # 依存関係を追加（インデント付き）
+        local deps
+        deps=$(get_package_dependencies "$pkg_id")
+        
+        while read -r dep_id; do
+            [ -z "$dep_id" ] && continue
+            
+            # 依存パッケージが隠しでなければ表示
+            if ! is_package_hidden "$dep_id"; then
+                result="${result}${dep_id}|1|${pkg_id}
+"
+            fi
+        done <<EOF
+$deps
+EOF
+    done <<EOF
+$packages
+EOF
+    
+    echo "$result"
+}
+
+# パッケージ選択時に依存関係を自動選択
+select_package_with_dependencies() {
+    local pkg_id="$1"
+    local unique_id="$2"
+    local install_opts="$3"
+    local enable_var
+    
+    # メインパッケージを選択
+    if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+       ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+        
+        echo "${pkg_id}=${unique_id}=${install_opts}==" >> "$SELECTED_PACKAGES"
+        
+        # enableVarがあれば追加
+        enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+        if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+            echo "${enable_var}='1'" >> "$SETUP_VARS"
+        fi
+    fi
+    
+    # 依存パッケージを再帰的に選択
+    local deps
+    deps=$(get_package_dependencies "$pkg_id")
+    
+    while read -r dep_id; do
+        [ -z "$dep_id" ] && continue
+        
+        if ! grep -q "^${dep_id}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+           ! grep -q "^${dep_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+            
+            local dep_unique_id
+            dep_unique_id=$(get_package_name "$dep_id")
+            
+            echo "${dep_id}=${dep_unique_id}===" >> "$SELECTED_PACKAGES"
+            
+            # 依存パッケージのenableVarも追加
+            local dep_enable_var
+            dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_unique_id")
+            if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+            fi
+            
+            # さらに依存関係がある場合は再帰的に処理
+            select_package_with_dependencies "$dep_id" "$dep_unique_id" ""
+        fi
+    done <<EOF
+$deps
+EOF
+}
+
+# パッケージ選択解除時に依存関係も解除（オプション）
+deselect_package_with_dependencies() {
+    local pkg_id="$1"
+    local unique_id="$2"
+    
+    # メインパッケージを削除
+    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES" 2>/dev/null
+    sed -i "/^${pkg_id}=/d" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+    
+    # enableVarを削除
+    local enable_var
+    enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+    if [ -n "$enable_var" ]; then
+        sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
+    fi
+    
+    # 依存パッケージも削除（他のパッケージが依存していない場合のみ）
+    local deps
+    deps=$(get_package_dependencies "$pkg_id")
+    
+    while read -r dep_id; do
+        [ -z "$dep_id" ] && continue
+        
+        # 他のパッケージがこの依存パッケージを必要としているかチェック
+        local is_needed=0
+        local all_selected
+        all_selected=$(cat "$SELECTED_PACKAGES" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null | cut -d= -f1)
+        
+        while read -r selected_pkg; do
+            [ -z "$selected_pkg" ] && continue
+            [ "$selected_pkg" = "$pkg_id" ] && continue
+            
+            local other_deps
+            other_deps=$(get_package_dependencies "$selected_pkg")
+            
+            if echo "$other_deps" | grep -q "^${dep_id}\$"; then
+                is_needed=1
+                break
+            fi
+        done <<EOF
+$all_selected
+EOF
+        
+        # 他から必要とされていなければ削除
+        if [ "$is_needed" -eq 0 ]; then
+            sed -i "/^${dep_id}=/d" "$SELECTED_PACKAGES" 2>/dev/null
+            sed -i "/^${dep_id}=/d" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null
+            
+            local dep_enable_var dep_unique_id
+            dep_unique_id=$(get_package_name "$dep_id")
+            dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_unique_id")
+            if [ -n "$dep_enable_var" ]; then
+                sed -i "/^${dep_enable_var}=/d" "$SETUP_VARS" 2>/dev/null
+            fi
+        fi
+    done <<EOF
+$deps
+EOF
 }
 
 # Setup JSON Accessors
