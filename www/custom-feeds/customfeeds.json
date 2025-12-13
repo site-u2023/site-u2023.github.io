@@ -62,7 +62,19 @@
           "minOpenWrtVersion": "21.02",
           "description": "Disk information display",
           "packageManager": ["opkg"],
-          "dependencies": ["fdisk", "smartmontools", "smartmontools-drivedb"]
+          "dependencies": []
+        },
+        {
+          "id": "internet-detector",
+          "pattern": "internet-detector_",
+          "exclude": "",
+          "name": "internet-detector",
+          "requiresUpdate": true,
+          "minOpenWrtVersion": "21.02",
+          "description": "Internet connection monitoring daemon",
+          "enable_service": "internet-detector",
+          "packageManager": ["opkg"],
+          "dependencies": ["luci-app-internet-detector","internet-detector-mod-modem","internet-detector-mod-email"]
         },
         {
           "id": "luci-app-internet-detector",
@@ -76,19 +88,6 @@
           "dependencies": []
         },
         {
-          "id": "internet-detector",
-          "pattern": "internet-detector_",
-          "exclude": "",
-          "name": "internet-detector",
-          "requiresUpdate": true,
-          "minOpenWrtVersion": "21.02",
-          "description": "Internet connection monitoring daemon",
-          "enable_service": "internet-detector",
-          "hidden": true,
-          "packageManager": ["opkg"],
-          "dependencies": ["luci-app-internet-detector"]
-        },
-        {
           "id": "internet-detector-mod-modem",
           "pattern": "internet-detector-mod-modem",
           "exclude": "",
@@ -98,7 +97,7 @@
           "description": "Modem restart module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
-          "dependencies": ["luci-app-internet-detector"]
+          "dependencies": []
         },
         {
           "id": "internet-detector-mod-email",
@@ -110,7 +109,7 @@
           "description": "Email notification module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
-          "dependencies": ["luci-app-internet-detector"]
+          "dependencies": []
         }
       ]
     },
@@ -132,7 +131,7 @@
           "minOpenWrtVersion": "18.06",
           "description": "A brand new Argon theme for LuCI",
           "packageManager": ["opkg", "apk"],
-          "dependencies": ["luci-compat", "luci-lib-ipkg"]
+          "dependencies": []
         }
       ]
     }
