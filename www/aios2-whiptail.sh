@@ -1125,7 +1125,7 @@ package_selection() {
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     # 依存関係付きパッケージリストを構築
-    package_list=$(build_package_list_with_deps "$cat_id")
+    package_list=$(build_package_list_with_deps "$cat_id" "$caller")
     
     # 現在の選択状態を保存
     local prev_selections=""
@@ -1143,12 +1143,6 @@ package_selection() {
     
     while IFS='|' read -r pkg_id indent_level parent_pkg; do
         [ -z "$pkg_id" ] && continue
-        
-        if [ "$caller" = "custom_feeds" ]; then
-            if ! package_compatible "$pkg_id"; then
-                continue
-            fi
-        fi
         
         pkg_name=$(get_package_name "$pkg_id")
         
