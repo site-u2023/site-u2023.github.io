@@ -1103,17 +1103,8 @@ EOF
             display_name="   ${pkg_name}"
         fi
         
-        display_names="${display_names}${display_name}|${pkg_id}
+        display_list="${display_list}${display_name}|${pkg_id}
 "
-        
-        if is_package_selected "$pkg_name" "$caller"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-        idx=$((idx+1))
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
@@ -1156,40 +1147,14 @@ DISPLAY
             selected_name=$(echo "$selected_name" | sed 's/^[[:space:]]*//')
             
             if is_package_selected "$selected_name" "$caller"; then
-                local all_entries
-                all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
-                
-                while read -r entry; do
-                    [ -z "$entry" ] && continue
-                    
-                    local enable_var
-                    enable_var=$(echo "$entry" | cut -d= -f5)
-                    
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                    fi
-                done <<ENTRIES
-$all_entries
-ENTRIES
-                
-                sed -i "/^${pkg_id}=/d" "$target_file"
+                # 削除処理
+                remove_package_with_dependencies "$pkg_id" "$caller"
             else
-                local cache_line
-                cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" -v name="$selected_name" '$1 == id && $2 == name {print; exit}')
-                
-                if [ -n "$cache_line" ]; then
-                    echo "$cache_line" >> "$target_file"
-                    
-                    local enable_var
-                    enable_var=$(echo "$cache_line" | cut -d= -f5)
-                    
-                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                        echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    fi
-                fi
+                # 追加処理
+                add_package_with_dependencies "$pkg_id" "$caller"
             fi
             
-            clear_selection_cache    
+            clear_selection_cache
         fi
         
         package_selection "$cat_id" "$caller" "$parent_breadcrumb"
