@@ -993,43 +993,45 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 依存パッケージIDのキャッシュ処理
-    local dependent_ids=" "
+    # 依存パッケージIDのキャッシュ処理（修正版）
+    local parent_ids=" "
     
-    while read -r parent_id; do
-        [ -z "$parent_id" ] && continue
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
         
         local deps
         if [ "$caller" = "custom_feeds" ]; then
             deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
         else
             deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
         fi
         
-        while read -r dep; do
-            [ -z "$dep" ] && continue
-            
-            local matched_line matched_id
-            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-            
-            if [ -n "$matched_line" ]; then
-                matched_id=$(echo "$matched_line" | cut -d= -f1)
-                dependent_ids="${dependent_ids}${matched_id} ${dep} "
-            else
-                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                    dependent_ids="${dependent_ids}${dep} "
+        # 依存関係があり、その依存先が同じカテゴリに存在する場合、このパッケージを子としてマーク
+        if [ -n "$deps" ]; then
+            local has_parent_in_category=0
+            while read -r dep; do
+                [ -z "$dep" ] && continue
+                # 依存先が同じカテゴリに存在するかチェック
+                if echo "$packages" | grep -qx "$dep"; then
+                    has_parent_in_category=1
+                    break
                 fi
-            fi
-        done <<DEPS
+            done <<DEPS
 $deps
 DEPS
+            
+            # 親がカテゴリ内に存在する場合、このパッケージを子としてマーク
+            if [ "$has_parent_in_category" -eq 1 ]; then
+                parent_ids="${parent_ids}${pkg_id} "
+            fi
+        fi
     done <<EOF
 $packages
 EOF
     
-    dependent_ids="${dependent_ids} "
+    parent_ids="${parent_ids} "
     
     show_menu_header "$breadcrumb"
     
@@ -1058,9 +1060,7 @@ EOF
         
         local is_dependent=0
         
-        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
+        if echo " ${parent_ids} " | grep -q " ${pkg_id} "; then
             is_dependent=1
         fi
         
