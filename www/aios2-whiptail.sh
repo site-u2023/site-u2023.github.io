@@ -86,15 +86,9 @@ show_checklist() {
     local prompt="$2"
     local ok_btn="${3:-$(translate "$DEFAULT_BTN_SELECT")}"
     local cancel_btn="${4:-$(translate "$DEFAULT_BTN_BACK")}"
-    local refresh_btn="$(translate "tr-tui-refresh")"
     shift 4
     
-    # 空文字列の引数をスキップ
-    while [ $# -gt 0 ] && [ -z "$1" ]; do
-        shift
-    done
-    
-    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --extra-button \"$refresh_btn\" --checklist \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
+    eval "whiptail --title \"$breadcrumb\" --ok-button \"$ok_btn\" --cancel-button \"$cancel_btn\" --checklist \"$prompt\" \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \"\$@\" 3>&1 1>&2 2>&3"
 }
 
 show_textbox() {
@@ -1024,7 +1018,13 @@ EOF
 $_PACKAGE_NAME_CACHE
 EOF
         
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+        selected=$(eval "whiptail --title \"\$breadcrumb\" \
+            --ok-button \"$(translate "$DEFAULT_BTN_SELECT")\" \
+            --cancel-button \"$(translate "$DEFAULT_BTN_BACK")\" \
+            --extra-button \"$(translate "tr-tui-refresh")\" \
+            --checklist \"($(translate 'tr-tui-space-toggle'))\" \
+            \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \
+            $checklist_items 3>&1 1>&2 2>&3")
         
         local exit_code=$?
         
