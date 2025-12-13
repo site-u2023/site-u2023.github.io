@@ -993,7 +993,6 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # ★ メインループ追加
     while true; do
         # 依存パッケージIDのキャッシュ処理
         local dependent_ids=" "
@@ -1010,7 +1009,6 @@ package_selection() {
                     -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
             fi
             
-            # 依存先をインデント対象に追加（通常・カスタムフィード共通）
             while read -r dep; do
                 [ -z "$dep" ] && continue
                 
@@ -1034,11 +1032,10 @@ EOF
         
         dependent_ids="${dependent_ids} "
         
-        local checklist_items=""
-        local idx=1
+        local menu_items=""
         local display_names=""
+        local idx=1
         
-        # キャッシュを1回だけ走査
         while read -r entry; do
             [ -z "$entry" ] && continue
             
@@ -1047,7 +1044,6 @@ EOF
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             
-            # このカテゴリのパッケージでなければスキップ
             echo "$packages" | grep -qx "$pkg_id" || continue
             
             if [ "$caller" = "custom_feeds" ]; then
@@ -1060,12 +1056,10 @@ EOF
             local is_dependent=0
             
             if [ -n "$uid" ]; then
-                # uniqueIdがある場合は、uniqueIdで判定
                 if echo " ${dependent_ids} " | grep -q " ${uid} "; then
                     is_dependent=1
                 fi
             else
-                # uniqueIdがない場合は、idで判定
                 if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
                     is_dependent=1
                 fi
@@ -1101,76 +1095,48 @@ EOF
                 display_name="   ${pkg_name}"
             fi
             
+            # 選択状態を表示名に含める
+            local status_mark=""
+            if is_package_selected "$pkg_name" "$caller"; then
+                status_mark="[✓] "
+            else
+                status_mark="[ ] "
+            fi
+            
             display_names="${display_names}${display_name}|${pkg_id}
 "
             
-            local status
-            if is_package_selected "$pkg_name" "$caller"; then
-                status="ON"
-            else
-                status="OFF"
-            fi
-            
-            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            menu_items="$menu_items $idx \"${status_mark}${display_name}\""
             idx=$((idx+1))
         done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
         
-        local selected
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+        local choice
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
         
-        # ★ キャンセル時はループを抜ける
         if [ $? -ne 0 ]; then
             return 0
         fi
         
-        # カテゴリの既存エントリを取得（現在の状態）
-        local old_selection=""
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
-                old_selection="${old_selection}${pkg_id}
-"
-            fi
-        done <<EOF
-$packages
-EOF
+        # 選択されたパッケージを取得
+        local selected_line pkg_id
+        selected_line=$(echo "$display_names" | sed -n "${choice}p")
         
-        # 新しい選択状態を取得
-        local new_selection=""
-        for idx_str in $selected; do
-            local idx_clean
-            idx_clean=$(echo "$idx_str" | tr -d '"')
-            local selected_line pkg_id
-            selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+        if [ -n "$selected_line" ]; then
+            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+            local pkg_name
+            pkg_name=$(echo "$selected_line" | cut -d'|' -f1 | sed 's/^[[:space:]]*//')
             
-            if [ -n "$selected_line" ]; then
-                pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-                new_selection="${new_selection}${pkg_id}
-"
-            fi
-        done
-        
-        # 変更検出と処理
-        # 1. 新規追加されたパッケージ
-        echo "$new_selection" | while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            if ! echo "$old_selection" | grep -qx "$pkg_id"; then
+            # トグル処理
+            if is_package_selected "$pkg_name" "$caller"; then
+                remove_package_with_dependencies "$pkg_id" "$caller"
+            else
                 add_package_with_dependencies "$pkg_id" "$caller"
             fi
-        done
-        
-        # 2. 削除されたパッケージ
-        echo "$old_selection" | while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            if ! echo "$new_selection" | grep -qx "$pkg_id"; then
-                remove_package_with_dependencies "$pkg_id" "$caller"
-            fi
-        done
-        
-        # ★ キャッシュクリアしてループ継続（画面を再表示）
-        clear_selection_cache
+            
+            clear_selection_cache
+        fi
     done
 }
 
