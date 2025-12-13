@@ -1097,9 +1097,11 @@ get_package_name() {
     local pkg_id="$1"
     local name unique_id match_line
     
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then）
+    # 初回のみキャッシュ構築
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{
+            awk -F'"' '
+            {
                 id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
