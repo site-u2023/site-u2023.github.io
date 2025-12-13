@@ -1243,18 +1243,42 @@ EOF
             fi
         fi
         
-        # ★★★ パッケージ存在確認（id で確認、names ループの前）★★★
+        # パッケージ存在確認（id で確認）
         if ! check_package_available "$pkg_id" "$caller"; then
             echo "[DEBUG] Package not available: $pkg_id" >> "$CONFIG_DIR/debug.log"
             continue
         fi
         
-        # 依存パッケージかどうかをチェック
+        # 依存パッケージかどうかをチェック（id と uniqueId の両方で判定）
         local is_dependent=0
-        if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        else
-            # 独立パッケージで hidden なら非表示
+        
+        # キャッシュからこの pkg_id の全エントリを取得
+        local cache_entries
+        cache_entries=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+        
+        while read -r entry; do
+            [ -z "$entry" ] && continue
+            
+            local uid
+            uid=$(echo "$entry" | cut -d= -f3)
+            
+            # 1. id でマッチ
+            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+                is_dependent=1
+                break
+            fi
+            
+            # 2. uniqueId でマッチ
+            if [ -n "$uid" ] && echo "$dependent_ids" | grep -q " ${uid} "; then
+                is_dependent=1
+                break
+            fi
+        done <<ENTRIES
+$cache_entries
+ENTRIES
+        
+        # 独立パッケージで hidden なら非表示
+        if [ "$is_dependent" -eq 0 ]; then
             local is_hidden
             if [ "$caller" = "custom_feeds" ]; then
                 is_hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
