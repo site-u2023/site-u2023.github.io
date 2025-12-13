@@ -789,51 +789,49 @@ build_deviceinfo_display() {
 # Checks if a package is available in the package manager's repository
 # Uses cache to avoid repeated checks
 # Args:
-#   $1 - package name
+#   $1 - package id (not name!)
+#   $2 - caller ("normal" or "custom_feeds")
 # Returns:
 #   0 if package is available, 1 otherwise
 # =============================================================================
 check_package_available() {
-    local pkg_name="$1"
+    local pkg_id="$1"
+    local caller="${2:-normal}"
     
     # virtual パッケージは常に利用可能とみなす
     local is_virtual
-    if [ -f "$PACKAGES_JSON" ]; then
-        is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_name'].virtual" 2>/dev/null | head -1)
-        [ -z "$is_virtual" ] && is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.name='$pkg_name'].virtual" 2>/dev/null | head -1)
-    fi
-    
-    if [ -f "$CUSTOMFEEDS_JSON" ] && [ -z "$is_virtual" ]; then
-        is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_name'].virtual" 2>/dev/null | head -1)
-        [ -z "$is_virtual" ] && is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.name='$pkg_name'].virtual" 2>/dev/null | head -1)
+    if [ "$caller" = "custom_feeds" ]; then
+        is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
+    else
+        is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     fi
     
     if [ "$is_virtual" = "true" ]; then
-        echo "[DEBUG] Package $pkg_name is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
     # キャッシュチェック
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_name}:"; then
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_id}:"; then
         local status
-        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_name}:" | cut -d: -f2)
+        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_id}:" | cut -d: -f2)
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
-    # 実際の存在確認
+    # 実際の存在確認（id で確認）
     local available=0
     if [ "$PKG_MGR" = "opkg" ]; then
-        if opkg list "$pkg_name" 2>/dev/null | grep -q "^${pkg_name} "; then
+        if opkg list "$pkg_id" 2>/dev/null | grep -q "^${pkg_id} "; then
             available=1
         fi
     elif [ "$PKG_MGR" = "apk" ]; then
-        if apk search -e "$pkg_name" 2>/dev/null | grep -q "^${pkg_name}-"; then
+        if apk search -e "$pkg_id" 2>/dev/null | grep -q "^${pkg_id}-"; then
             available=1
         fi
     fi
     
     # キャッシュに保存
-    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_name}:${available}
+    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_id}:${available}
 "
     
     [ "$available" -eq 1 ] && return 0 || return 1
