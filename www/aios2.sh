@@ -789,42 +789,65 @@ build_package_list_with_deps() {
     packages=$(get_category_packages "$cat_id")
     result=""
     
+    echo "[DEBUG] build_package_list_with_deps: cat_id=$cat_id, caller=$caller" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] packages=$packages" >> "$CONFIG_DIR/debug.log"
+    
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
+        echo "[DEBUG] Processing pkg_id=$pkg_id" >> "$CONFIG_DIR/debug.log"
+        
         # トップレベルの隠しパッケージはスキップ
-        is_package_hidden "$pkg_id" && continue
+        if is_package_hidden "$pkg_id"; then
+            echo "[DEBUG] Skipping hidden package: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
         
         # パッケージ互換性チェック
         if [ "$caller" = "custom_feeds" ]; then
-            package_compatible "$pkg_id" || continue
+            if ! package_compatible "$pkg_id"; then
+                echo "[DEBUG] Skipping incompatible package: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
         fi
         
         # 親パッケージを追加
         result="${result}${pkg_id}|0|
 "
+        echo "[DEBUG] Added parent: $pkg_id" >> "$CONFIG_DIR/debug.log"
         
         # 依存パッケージを追加（表示のみ、自動選択なし）
         local deps
         deps=$(get_package_dependencies "$pkg_id")
+        
+        if [ -n "$deps" ]; then
+            echo "[DEBUG] Dependencies for $pkg_id: $deps" >> "$CONFIG_DIR/debug.log"
+        fi
         
         while read -r dep_id; do
             [ -z "$dep_id" ] && continue
             
             # 依存パッケージの互換性チェック
             if [ "$caller" = "custom_feeds" ]; then
-                package_compatible "$dep_id" || continue
+                if ! package_compatible "$dep_id"; then
+                    echo "[DEBUG] Skipping incompatible dependency: $dep_id" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             fi
             
             # 依存パッケージも表示（hidden でも）
             result="${result}${dep_id}|1|${pkg_id}
 "
+            echo "[DEBUG] Added dependency: $dep_id (parent: $pkg_id)" >> "$CONFIG_DIR/debug.log"
         done <<EOF
 $deps
 EOF
     done <<EOF
 $packages
 EOF
+    
+    echo "[DEBUG] Final result:" >> "$CONFIG_DIR/debug.log"
+    echo "$result" >> "$CONFIG_DIR/debug.log"
     
     echo "$result"
 }
