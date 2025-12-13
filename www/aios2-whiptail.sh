@@ -1207,7 +1207,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 依存パッケージIDのキャッシュ処理（ループ外で一度だけ実行）
+    # 依存パッケージIDのキャッシュ処理
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -1266,6 +1266,12 @@ EOF
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
+            
+            # ★★★ パッケージ存在確認 ★★★
+            if ! check_package_available "$pkg_name"; then
+                echo "[DEBUG] Package not available: $pkg_name (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
             
             # 表示名を作成（依存パッケージにインデント付与）
             local display_name="$pkg_name"
