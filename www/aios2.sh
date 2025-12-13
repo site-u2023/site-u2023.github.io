@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.0147"
+VERSION="R7.1213.1236"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1027,7 +1027,7 @@ get_package_checked() {
     echo "$checked"
 }
 
-get_package_name() {
+XXX_get_package_name() {
     local pkg_id="$1"
     local name unique_id match_line
     
@@ -1091,6 +1091,65 @@ ${custom_cache}"
     else
         printf '%s\n' "$name"
     fi
+}
+
+get_package_name() {
+    local pkg_id="$1"
+    local name unique_id match_line
+    
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then）
+        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '{
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id")id=$(i+2);
+                    if($i=="name")name=$(i+2);
+                    if($i=="uniqueId")uniqueId=$(i+2);
+                    if($i=="installOptions")installOptions=$(i+2);
+                    if($i=="enableVar")enableVar=$(i+2);
+                }
+                if(id&&name){
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                }
+            }')
+        
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+                awk -F'"' '{
+                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id")id=$(i+2);
+                        if($i=="name")name=$(i+2);
+                        if($i=="uniqueId")uniqueId=$(i+2);
+                        if($i=="installOptions")installOptions=$(i+2);
+                        if($i=="enableVar")enableVar=$(i+2);
+                    }
+                    if(id&&name){
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                    }
+                }')
+            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${custom_cache}"
+        fi
+        
+        _PACKAGE_NAME_LOADED=1
+        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
+        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | while read -r match_line; do
+        [ -z "$match_line" ] && continue
+        
+        name=$(echo "$match_line" | cut -d= -f2)
+        unique_id=$(echo "$match_line" | cut -d= -f3)
+        
+        if [ -n "$unique_id" ]; then
+            printf '%s\n' "$unique_id"
+        else
+            printf '%s\n' "$name"
+        fi
+    done
 }
 
 get_package_enablevar() {
