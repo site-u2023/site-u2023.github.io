@@ -975,7 +975,7 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-
+    
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" > /dev/null 2>&1
     fi
@@ -1005,15 +1005,14 @@ package_selection() {
     display_list=""
     local display_index=1
     
-    while IFS='|' read -r pkg_id indent_level parent_pkg; do
+    while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
         [ -z "$pkg_id" ] && continue
         
         if [ "$caller" = "custom_feeds" ] && ! package_compatible "$pkg_id"; then
             continue
         fi
         
-        local pkg_name is_selected display_name
-        pkg_name=$(get_package_name "$pkg_id")
+        local is_selected display_name
         
         # インデント表示
         if [ "$indent_level" = "1" ]; then
@@ -1061,7 +1060,7 @@ EOF
             pkg_name=$(get_package_name "$pkg_id")
             
             if is_package_selected "$pkg_name" "$caller"; then
-                # 選択解除（親でも子でも個別に削除）
+                # 選択解除
                 sed -i "/^${pkg_id}=/d" "$target_file"
                 
                 local enable_var
