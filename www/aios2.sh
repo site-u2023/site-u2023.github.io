@@ -1112,7 +1112,7 @@ ${custom_cache}"
 }
 
 get_package_name() {
-    local pkg_id="$1"
+    local identifier="$1"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
@@ -1155,11 +1155,10 @@ ${custom_cache}"
         echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
-        $1 == pkg {
-            if ($3 != "") print $3
-            else print $2
-        }
+    # pkg_id ($1) または uniqueId ($3) で検索して name ($2) を返す
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$identifier" '
+        $1 == id { print $2; exit }
+        $3 == id { print $2; exit }
     '
 }
 
