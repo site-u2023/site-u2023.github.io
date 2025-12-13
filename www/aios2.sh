@@ -13,7 +13,7 @@
 # id=name=uniqueId=installOptions=enableVar
 # apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
 
-VERSION="R7.1213.1856"
+VERSION="R7.1213.1942"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -745,7 +745,7 @@ build_deviceinfo_display() {
 # Returns:
 #   0 if package is available, 1 otherwise
 # =============================================================================
-check_package_available() {
+XXX_check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     
@@ -756,6 +756,62 @@ check_package_available() {
     else
         is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     fi
+    
+    if [ "$is_virtual" = "true" ]; then
+        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # キャッシュチェック
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_id}:"; then
+        local status
+        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_id}:" | cut -d: -f2)
+        [ "$status" = "1" ] && return 0 || return 1
+    fi
+    
+    # 実際の存在確認（id で確認）
+    local available=0
+    if [ "$PKG_MGR" = "opkg" ]; then
+        if opkg list "$pkg_id" 2>/dev/null | grep -q "^${pkg_id} "; then
+            available=1
+        fi
+    elif [ "$PKG_MGR" = "apk" ]; then
+        if apk search -e "$pkg_id" 2>/dev/null | grep -q "^${pkg_id}-"; then
+            available=1
+        fi
+    fi
+    
+    # キャッシュに保存
+    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_id}:${available}
+"
+    
+    [ "$available" -eq 1 ] && return 0 || return 1
+}
+
+# =============================================================================
+# Package Availability Check
+# =============================================================================
+# Checks if a package is available in the package manager's repository
+# Uses cache to avoid repeated checks
+# Args:
+#   $1 - package id (not name!)
+#   $2 - caller ("normal" or "custom_feeds")
+# Returns:
+#   0 if package is available, 1 otherwise
+# =============================================================================
+check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    
+    # カスタムフィードのパッケージは存在確認をスキップ（外部リポジトリから取得するため）
+    if [ "$caller" = "custom_feeds" ]; then
+        echo "[DEBUG] Package $pkg_id is from custom feed, skipping availability check" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # virtual パッケージは常に利用可能とみなす
+    local is_virtual
+    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     
     if [ "$is_virtual" = "true" ]; then
         echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
