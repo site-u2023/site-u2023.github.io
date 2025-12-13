@@ -1129,12 +1129,31 @@ package_selection() {
                 -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
         fi
         
-        dependent_ids="${dependent_ids}$(echo "$deps" | tr '\n' ' ')"
+        # dependenciesには id または uniqueId が含まれる可能性がある
+        while read -r dep; do
+            [ -z "$dep" ] && continue
+            
+            # まずidとして検索
+            if echo "$_PACKAGE_NAME_CACHE" | grep -q "^${dep}="; then
+                dependent_ids="${dependent_ids}${dep} "
+            else
+                # uniqueIdとして検索（形式: id=name=uniqueId=...）
+                local matched_id
+                matched_id=$(echo "$_PACKAGE_NAME_CACHE" | grep "=${dep}=" | cut -d= -f1 | head -1)
+                if [ -n "$matched_id" ]; then
+                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
+                fi
+            fi
+        done <<DEPS
+$deps
+DEPS
     done <<EOF
 $packages
 EOF
     
     dependent_ids="${dependent_ids} "
+    
+    echo "[DEBUG] dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
     
     show_menu_header "$breadcrumb"
     
@@ -1169,15 +1188,17 @@ EOF
             local uid
             uid=$(echo "$entry" | cut -d= -f3)
             
-            # 1. id でマッチ
-            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+            # 1. id でマッチ（スペース区切りで正確に）
+            if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
                 is_dependent=1
+                echo "[DEBUG] Matched as dependent by id: $pkg_id" >> "$CONFIG_DIR/debug.log"
                 break
             fi
             
             # 2. uniqueId でマッチ
-            if [ -n "$uid" ] && echo "$dependent_ids" | grep -q " ${uid} "; then
+            if [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
                 is_dependent=1
+                echo "[DEBUG] Matched as dependent by uniqueId: $uid (id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
                 break
             fi
         done <<ENTRIES
@@ -1202,8 +1223,6 @@ ENTRIES
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
-            [ -z "$pkg_name" ] && continue
-            
             local is_selected indent=""
             
             # 依存パッケージにインデント付与
