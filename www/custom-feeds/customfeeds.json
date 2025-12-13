@@ -73,6 +73,7 @@
           "minOpenWrtVersion": "21.02",
           "description": "Internet connection monitoring daemon",
           "enable_service": "internet-detector",
+          "hidden": true,
           "packageManager": ["opkg"],
           "dependencies": ["lua", "luaposix", "libuci-lua"]
         },
