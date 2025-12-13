@@ -1114,7 +1114,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # --- 新規追加: 依存パッケージキャッシュ ---
+    # 依存パッケージIDのキャッシュ処理
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -1135,7 +1135,6 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    # --- キャッシュ処理ここまで ---
     
     show_menu_header "$breadcrumb"
     
@@ -1151,17 +1150,34 @@ EOF
             continue
         fi
         
+        # 依存パッケージかどうかをチェック
+        local is_dependent=0
+        if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+            is_dependent=1
+        else
+            # 独立パッケージで hidden なら非表示
+            local is_hidden
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            else
+                is_hidden=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            fi
+            
+            [ "$is_hidden" = "true" ] && continue
+        fi
+        
         local names
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
             local is_selected indent=""
             
-            # --- インデント処理 ---
-            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
-                indent="   "  # 3スペース
+            # 依存パッケージにインデント付与
+            if [ "$is_dependent" -eq 1 ]; then
+                indent="   "
             fi
-            # --- インデント処理ここまで ---
             
             if is_package_selected "$pkg_name" "$caller"; then
                 is_selected="true"
@@ -1185,12 +1201,12 @@ EOF
     local i=1
     while read -r line; do
         [ -z "$line" ] && continue
-        local display_name indent=""
-        display_name=$(echo "$line" | cut -d'|' -f1)
+        local display_name pkg_id_check indent=""
         
-        # インデント処理
-        local pkg_id_check
+        display_name=$(echo "$line" | cut -d'|' -f1)
         pkg_id_check=$(echo "$line" | cut -d'|' -f2)
+        
+        # 依存パッケージにインデント付与
         if echo "$dependent_ids" | grep -q " ${pkg_id_check} "; then
             indent="   "
         fi
@@ -1245,7 +1261,6 @@ DISPLAY
                 fi
             fi
             
-            # 選択が変更されたのでキャッシュをクリア
             clear_selection_cache    
         fi
         
