@@ -1118,8 +1118,8 @@ package_selection() {
     fi
     
     local cat_name breadcrumb checklist_items
-    local pkg_id pkg_name status idx selected target_file idx_str idx_clean
-    local package_list indent_level parent_pkg display_name
+    local pkg_id pkg_name status idx selected target_file
+    local packages
     
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
@@ -1130,49 +1130,85 @@ package_selection() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # 依存関係付きパッケージリストを構築
-    package_list=$(build_package_list_with_deps "$cat_id" "$caller")
-    
+    packages=$(get_category_packages "$cat_id")
     checklist_items=""
     idx=1
     
     local display_map=""
     
-    # チェックリスト構築
-while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
-    [ -z "$pkg_id" ] && continue
-    
-    # インデント表示
-    if [ "$indent_level" = "1" ]; then
-        display_name="  ├─ ${pkg_name}"
-    else
-        display_name="$pkg_name"
-    fi
-    
-    # マップに保存
-    display_map="${display_map}${idx}|${pkg_id}|${pkg_name}
+    # 親パッケージ
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        if [ "$caller" = "custom_feeds" ]; then
+            package_compatible "$pkg_id" || continue
+        fi
+        
+        local names
+        names=$(get_package_name "$pkg_id")
+        
+        while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            
+            display_map="${display_map}${idx}|${pkg_id}|${pkg_name}
 "
-    
-    # 選択状態
-    if is_package_selected "$pkg_name" "$caller"; then
-        status="ON"
-    else
-        status="OFF"
-    fi
-    
-    checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-    idx=$((idx+1))
-done <<EOF
-$package_list
+            
+            if is_package_selected "$pkg_name" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+            idx=$((idx+1))
+            
+            # 依存パッケージ
+            local deps
+            deps=$(get_package_dependencies "$pkg_id")
+            
+            while read -r dep_id; do
+                [ -z "$dep_id" ] && continue
+                
+                if [ "$caller" = "custom_feeds" ]; then
+                    package_compatible "$dep_id" || continue
+                fi
+                
+                local dep_names
+                dep_names=$(get_package_name "$dep_id")
+                
+                while read -r dep_name; do
+                    [ -z "$dep_name" ] && continue
+                    
+                    display_map="${display_map}${idx}|${dep_id}|${dep_name}
+"
+                    
+                    if is_package_selected "$dep_name" "$caller"; then
+                        status="ON"
+                    else
+                        status="OFF"
+                    fi
+                    
+                    checklist_items="$checklist_items \"$idx\" \"  ├─ ${dep_name}\" $status"
+                    idx=$((idx+1))
+                done <<DEPNAMES
+$dep_names
+DEPNAMES
+            done <<DEPS
+$deps
+DEPS
+        done <<NAMES
+$names
+NAMES
+    done <<EOF
+$packages
 EOF
     
-    # チェックリスト表示
     selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
     
     [ $? -ne 0 ] && return 0
     
     # 既存エントリをすべて削除
-    while IFS='|' read -r pkg_id pkg_name; do
+    while IFS='|' read -r _ pkg_id pkg_name; do
         [ -z "$pkg_id" ] && continue
         
         local all_entries
