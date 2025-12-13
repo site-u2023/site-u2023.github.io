@@ -1124,64 +1124,164 @@ package_selection() {
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
-    # 依存関係付きパッケージリストを構築
-    package_list=$(build_package_list_with_deps "$cat_id" "$caller")
-    
-    # 現在の選択状態を保存
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
     else
         target_file="$SELECTED_PACKAGES"
     fi
     
-    local prev_selections=""
-    [ -f "$target_file" ] && prev_selections=$(cat "$target_file")
-    
-    checklist_items=""
-    idx=1
-    
-    local display_map=""
-    
-    # チェックリスト構築
-    while IFS='|' read -r pkg_id indent_level parent_pkg; do
-        [ -z "$pkg_id" ] && continue
+    while true; do
+        # 依存関係付きパッケージリストを構築
+        package_list=$(build_package_list_with_deps "$cat_id" "$caller")
         
-        pkg_name=$(get_package_name "$pkg_id")
+        checklist_items=""
+        idx=1
         
-        # インデント表示
-        if [ "$indent_level" = "1" ]; then
-            display_name="  ├─ ${pkg_name}"
-        else
-            display_name="$pkg_name"
-        fi
+        local display_map=""
         
-        # マップに保存
-        display_map="${display_map}${idx}|${pkg_id}|${indent_level}|${parent_pkg}|${pkg_name}
+        # チェックリスト構築
+        while IFS='|' read -r pkg_id indent_level parent_pkg; do
+            [ -z "$pkg_id" ] && continue
+            
+            pkg_name=$(get_package_name "$pkg_id")
+            
+            # インデント表示
+            if [ "$indent_level" = "1" ]; then
+                display_name="  ├─ ${pkg_name}"
+            else
+                display_name="$pkg_name"
+            fi
+            
+            # マップに保存
+            display_map="${display_map}${idx}|${pkg_id}|${indent_level}|${parent_pkg}|${pkg_name}
 "
-        
-        # 選択状態
-        if is_package_selected "$pkg_name" "$caller"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-        idx=$((idx+1))
-    done <<EOF
+            
+            # 選択状態
+            if is_package_selected "$pkg_name" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            idx=$((idx+1))
+        done <<EOF
 $package_list
 EOF
-    
-    # チェックリスト表示
-    selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
-    
-    [ $? -ne 0 ] && return 0
+        
+        # チェックリスト表示
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
+        
+        if [ $? -ne 0 ]; then
+            return 0
+        fi
+        
+        # === 親子関係を強制 ===
+        
+        # 1. 選択された親パッケージのIDリストを作成
+        local selected_parents=""
+        for idx_str in $selected; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            local map_line
+            map_line=$(echo "$display_map" | grep "^${idx_clean}|")
+            
+            if [ -n "$map_line" ]; then
+                local check_pkg_id check_indent
+                check_pkg_id=$(echo "$map_line" | cut -d'|' -f2)
+                check_indent=$(echo "$map_line" | cut -d'|' -f3)
+                
+                if [ "$check_indent" = "0" ]; then
+                    selected_parents="${selected_parents}${check_pkg_id}
+"
+                fi
+            fi
+        done
+        
+        # 2. 親が選択されている場合、その依存パッケージも強制的に選択に追加
+        local adjusted_selection="$selected"
+        
+        while read -r parent_id; do
+            [ -z "$parent_id" ] && continue
+            
+            local deps
+            deps=$(get_package_dependencies "$parent_id")
+            
+            while read -r dep_id; do
+                [ -z "$dep_id" ] && continue
+                
+                # 依存パッケージのインデックスを取得
+                local dep_idx
+                dep_idx=$(echo "$display_map" | grep "|${dep_id}|1|${parent_id}|" | cut -d'|' -f1)
+                
+                if [ -n "$dep_idx" ]; then
+                    # 既に選択リストにあるかチェック
+                    if ! echo "$adjusted_selection" | grep -q "\"${dep_idx}\""; then
+                        adjusted_selection="${adjusted_selection} \"${dep_idx}\""
+                    fi
+                fi
+            done <<DEPS
+$deps
+DEPS
+        done <<PARENTS
+$selected_parents
+PARENTS
+        
+        # 3. 親が未選択の依存パッケージを選択から除外
+        local final_selection=""
+        
+        for idx_str in $adjusted_selection; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            local map_line
+            map_line=$(echo "$display_map" | grep "^${idx_clean}|")
+            
+            if [ -n "$map_line" ]; then
+                local check_pkg_id check_indent check_parent
+                check_pkg_id=$(echo "$map_line" | cut -d'|' -f2)
+                check_indent=$(echo "$map_line" | cut -d'|' -f3)
+                check_parent=$(echo "$map_line" | cut -d'|' -f4)
+                
+                # 親パッケージなら常に追加
+                if [ "$check_indent" = "0" ]; then
+                    final_selection="${final_selection} \"${idx_clean}\""
+                else
+                    # 依存パッケージの場合、親が選択されているか確認
+                    if echo "$selected_parents" | grep -q "^${check_parent}\$"; then
+                        final_selection="${final_selection} \"${idx_clean}\""
+                    fi
+                fi
+            fi
+        done
+        
+        # 4. 変更があったか確認
+        local before_count after_count
+        before_count=$(echo "$selected" | wc -w)
+        after_count=$(echo "$final_selection" | wc -w)
+        
+        # 変更があれば再表示、なければ確定
+        if [ "$before_count" -ne "$after_count" ]; then
+            # 調整後の選択を反映して保存→再表示
+            apply_selection "$final_selection" "$display_map" "$target_file"
+            clear_selection_cache
+            continue
+        else
+            # 変更なし→確定
+            apply_selection "$final_selection" "$display_map" "$target_file"
+            clear_selection_cache
+            return 0
+        fi
+    done
+}
+
+# 選択結果を保存する補助関数
+apply_selection() {
+    local selection="$1"
+    local display_map="$2"
+    local target_file="$3"
     
     # 既存エントリをすべて削除
     while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
         [ -z "$pkg_id" ] && continue
         
-        # enableVar も削除
         local all_entries
         all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
         
@@ -1203,84 +1303,30 @@ $display_map
 EOF
     
     # 選択されたパッケージを保存
-    for idx_str in $selected; do
+    for idx_str in $selection; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local map_line pkg_id indent_level parent_pkg pkg_name
+        local map_line pkg_id
         map_line=$(echo "$display_map" | grep "^${idx_clean}|")
         
         [ -z "$map_line" ] && continue
         
         pkg_id=$(echo "$map_line" | cut -d'|' -f2)
-        indent_level=$(echo "$map_line" | cut -d'|' -f3)
-        pkg_name=$(echo "$map_line" | cut -d'|' -f5)
         
-        # パッケージを追加
         local cache_line
         cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
         
         if [ -n "$cache_line" ]; then
             echo "$cache_line" >> "$target_file"
             
-            # enableVar を追加
             local enable_var
             enable_var=$(get_package_enablevar "$pkg_id" "")
             
             if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                 echo "${enable_var}='1'" >> "$SETUP_VARS"
             fi
-            
-            # 親パッケージで、かつ前回未選択の場合のみ依存パッケージを自動追加
-            if [ "$indent_level" = "0" ]; then
-                local was_selected
-                was_selected=$(echo "$prev_selections" | grep "^${pkg_id}=")
-                
-                # 新規選択の場合、依存パッケージも追加
-                if [ -z "$was_selected" ]; then
-                    local deps
-                    deps=$(get_package_dependencies "$pkg_id")
-                    
-                    while read -r dep_id; do
-                        [ -z "$dep_id" ] && continue
-                        
-                        # ユーザーが依存パッケージを明示的に選択していればスキップ
-                        local dep_in_selected=0
-                        for check_idx in $selected; do
-                            check_idx=$(echo "$check_idx" | tr -d '"')
-                            local check_line
-                            check_line=$(echo "$display_map" | grep "^${check_idx}|${dep_id}|")
-                            if [ -n "$check_line" ]; then
-                                dep_in_selected=1
-                                break
-                            fi
-                        done
-                        
-                        # ユーザー選択になければ自動追加
-                        if [ "$dep_in_selected" -eq 0 ]; then
-                            local dep_cache_line
-                            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
-                            
-                            if [ -n "$dep_cache_line" ]; then
-                                echo "$dep_cache_line" >> "$target_file"
-                                
-                                # enableVar も追加
-                                local dep_enable_var
-                                dep_enable_var=$(get_package_enablevar "$dep_id" "")
-                                
-                                if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                                    echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
-                                fi
-                            fi
-                        fi
-                    done <<DEPS
-$deps
-DEPS
-                fi
-            fi
         fi
     done
-    
-    clear_selection_cache
 }
 
 view_customfeeds() {
