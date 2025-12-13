@@ -792,7 +792,7 @@ build_package_list_with_deps() {
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # 同じpkg_idの全エントリを取得（uniqueIdとname）
+        # 同じpkg_idの全エントリを取得（uniqueId/name）
         local names
         names=$(get_package_name "$pkg_id")
         
@@ -808,7 +808,7 @@ build_package_list_with_deps() {
             fi
             
             # 親パッケージを追加
-            result="${result}${pkg_id}|0|
+            result="${result}${pkg_id}|0||${pkg_name}
 "
             
             # 依存パッケージを追加
@@ -822,7 +822,10 @@ build_package_list_with_deps() {
                     package_compatible "$dep_id" || continue
                 fi
                 
-                result="${result}${dep_id}|1|${pkg_id}
+                local dep_name
+                dep_name=$(get_package_name "$dep_id" | head -1)
+                
+                result="${result}${dep_id}|1|${pkg_id}|${dep_name}
 "
             done <<EOF
 $deps
@@ -833,22 +836,6 @@ NAMES
     done <<EOF
 $packages
 EOF
-    
-    echo "$result"
-}
-
-# Setup JSON Accessors
-
-get_setup_item_property() {
-    local item_id="$1"
-    local property="$2"
-    local result
-    
-    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
-    
-    if [ -z "$result" ]; then
-        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
-    fi
     
     echo "$result"
 }
