@@ -450,7 +450,8 @@
         {
           "id": "whiptail",
           "name": "whiptail",
-          "dependencies": ["libnewt"]
+          "dependencies": ["libnewt"],
+          "checked": true
         },
         {
           "id": "libnewt",
