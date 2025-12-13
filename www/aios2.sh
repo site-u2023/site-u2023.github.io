@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.1525"
+VERSION="R7.1213.0147"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -758,82 +758,18 @@ package_compatible() {
     return 1
 }
 
-# Package Dependencies Management
+# Setup JSON Accessors
 
-get_package_dependencies() {
-    local pkg_id="$1"
-    local deps
+get_setup_item_property() {
+    local item_id="$1"
+    local property="$2"
+    local result
     
-    deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
-    [ -z "$deps" ] && deps=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
+    result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
     
-    echo "$deps" | grep -v '^$'
-}
-
-is_package_hidden() {
-    local pkg_id="$1"
-    local hidden
-    
-    hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-    [ -z "$hidden" ] && hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-    
-    [ "$hidden" = "true" ] && return 0
-    return 1
-}
-
-build_package_list_with_deps() {
-    local cat_id="$1"
-    local caller="${2:-normal}"
-    local packages result
-    
-    packages=$(get_category_packages "$cat_id")
-    result=""
-    
-    while read -r pkg_id; do
-        [ -z "$pkg_id" ] && continue
-        
-        # hidden なパッケージは親として表示しない
-        is_package_hidden "$pkg_id" && continue
-        
-        local names
-        names=$(get_package_name "$pkg_id")
-        
-        while read -r pkg_name; do
-            [ -z "$pkg_name" ] && continue
-            
-            if [ "$caller" = "custom_feeds" ]; then
-                package_compatible "$pkg_id" || continue
-            fi
-            
-            # 親パッケージを追加
-            result="${result}${pkg_id}|0||${pkg_name}
-"
-            
-            # 依存パッケージを追加
-            local deps
-            deps=$(get_package_dependencies "$pkg_id")
-            
-            while read -r dep_id; do
-                [ -z "$dep_id" ] && continue
-                
-                if [ "$caller" = "custom_feeds" ]; then
-                    package_compatible "$dep_id" || continue
-                fi
-                
-                local dep_name
-                dep_name=$(get_package_name "$dep_id")
-                
-                result="${result}${dep_id}|1|${pkg_id}|${dep_name}
-"
-            done <<EOF
-$deps
-EOF
-        done <<NAMES
-$names
-NAMES
-    done <<EOF
-$packages
-EOF
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].${property}" 2>/dev/null | head -1)
+    fi
     
     echo "$result"
 }
@@ -1043,75 +979,10 @@ get_package_checked() {
     echo "$checked"
 }
 
-XXX_get_package_name() {
-    local pkg_id="$1"
-    local name unique_id match_line
-    
-    # 初回のみキャッシュ構築 (元の関数から全てのフィールドを取得するロジックを維持)
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{
-                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
-                for(i=1;i<=NF;i++){
-                    if($i=="id")id=$(i+2);
-                    if($i=="name")name=$(i+2);
-                    if($i=="uniqueId")uniqueId=$(i+2);
-                    if($i=="installOptions")installOptions=$(i+2);
-                    if($i=="enableVar")enableVar=$(i+2);
-                }
-                if(id&&name){
-                    # id=name=uniqueId=installOptions=enableVar の形式でキャッシュ
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
-                }
-            }')
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{
-                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
-                    for(i=1;i<=NF;i++){
-                        if($i=="id")id=$(i+2);
-                        if($i=="name")name=$(i+2);
-                        if($i=="uniqueId")uniqueId=$(i+2);
-                        if($i=="installOptions")installOptions=$(i+2);
-                        if($i=="enableVar")enableVar=$(i+2); #
-                    }
-                    if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
-                    }
-                }')
-            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
-${custom_cache}"
-        fi
-        
-        _PACKAGE_NAME_LOADED=1
-        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
-        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    # uniqueId があれば uniqueId を返す、なければ name を返す (高速化ロジック)
-    
-    # 1. grep で一発検索（^pkg_id= で始まる行を探す）
-    match_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=" | head -n 1)
-    
-    [ -z "$match_line" ] && return
-    
-    # 2. cut で切り出し
-    # フィールド番号は id(1)=name(2)=uniqueId(3)=installOptions(4)=enableVar(5) に基づく
-    name=$(echo "$match_line" | cut -d= -f2)
-    unique_id=$(echo "$match_line" | cut -d= -f3)
-    
-    if [ -n "$unique_id" ]; then
-        printf '%s\n' "$unique_id"
-    else
-        printf '%s\n' "$name"
-    fi
-}
-
 get_package_name() {
-    local identifier="$1"
+    local pkg_id="$1"
     
+    # 初回のみキャッシュ構築（変更なし）
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '{
@@ -1153,10 +1024,12 @@ ${custom_cache}"
         echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # pkg_id ($1) または uniqueId ($3) で検索して name ($2) を返す
-    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$identifier" '
-        $1 == id { print $2 }
-        $3 == id { print $2 }
+    # ★ awk で1回の処理（高速）
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+        $1 == pkg {
+            if ($3 != "") print $3
+            else print $2
+        }
     '
 }
 
@@ -3246,6 +3119,7 @@ show_log() {
 }
 
 aios2_main() {
+    
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
@@ -3257,6 +3131,7 @@ aios2_main() {
     print_banner
     
     mkdir -p "$CONFIG_DIR"
+    
     get_language_code
     
     # 1. config.js を優先ダウンロード
@@ -3269,10 +3144,31 @@ aios2_main() {
     
     init
     
-    # 2. 全ファイルを並列DL開始（package-manager.json も含む）
-    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
-    PKG_MGR_DL_PID=$!
+    # 2. package-manager.json を優先ダウンロード・設定読み込み
+    echo "[DEBUG] Downloading package-manager.json..." >> "$CONFIG_DIR/debug.log"
+    download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON" || {
+        echo "Error: Failed to download package-manager.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
     
+    echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
+    load_package_manager_config || {
+        echo "Failed to load package manager config"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    
+    # 3. これで install_package が使えるようになるので UI 選択
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 4. その他のファイルを並列ダウンロード
     (download_api_with_retry) &
     API_PID=$!
     
@@ -3294,6 +3190,7 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
+    # 母国語ファイルのダウンロード
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
@@ -3306,47 +3203,7 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # 3. whiptail の有無をチェック
-    WHIPTAIL_AVAILABLE=0
-    if command -v whiptail >/dev/null 2>&1; then
-        WHIPTAIL_AVAILABLE=1
-    fi
-    
-    # 4. 即座にUI選択画面を表示（並列DL進行中）
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    # 5. whiptailモード選択 + whiptail無し → package-manager.json完了を待つ
-    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
-        echo "Waiting for package manager configuration..."
-        wait $PKG_MGR_DL_PID
-        
-        echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
-        load_package_manager_config || {
-            echo "Failed to load package manager config"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-        echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
-        
-        echo "Installing whiptail..."
-        echo "Updating package lists..."
-        eval "$PKG_UPDATE_CMD" || {
-            echo "Warning: Failed to update package lists"
-        }
-        
-        if install_package whiptail; then
-            echo "Installation successful."
-        else
-            echo "Installation failed. Falling back to simple mode."
-            UI_MODE="simple"
-        fi
-    fi
-    
-    # 6. 母国語ファイルのダウンロード完了を待機
+    # 母国語ファイルのダウンロード完了を待機
     if [ -n "$NATIVE_LANG_PID" ]; then
         wait $NATIVE_LANG_PID
     fi
@@ -3354,7 +3211,9 @@ aios2_main() {
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    # 7. 必須ファイルの完了を待機
+    AFTER_UI_SELECT=$(cut -d' ' -f1 /proc/uptime)
+    
+    # 必須ファイルの完了を待機
     wait $API_PID
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -3376,22 +3235,12 @@ aios2_main() {
         return 1
     fi
     
-    # 8. package-manager.json をロード（whiptail有り or simple選択の場合）
-    wait $PKG_MGR_DL_PID
+    # ※ load_package_manager_config() の呼び出しを削除（既に実行済み）
     
-    if [ "$UI_MODE" = "simple" ] || [ "$WHIPTAIL_AVAILABLE" -eq 1 ]; then
-        load_package_manager_config || {
-            echo "Failed to load package manager config"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
-    # 9. デバイス情報取得（API情報で上書き・補完）
+    # デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
 
-    # 10. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    # APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
             download_language_json "${AUTO_LANGUAGE}"
