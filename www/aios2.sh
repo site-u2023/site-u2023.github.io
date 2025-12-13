@@ -4,6 +4,24 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
+# パッケージ表示要件
+# 【uniqueId の扱い】
+#   - uniqueId がある場合、判定には必ず uniqueId を使用（id は使わない）
+#   - uniqueId がない場合のみ id で判定
+#   - 例: id="collectd", uniqueId="collectd-htop" の場合
+#     → 依存判定は uniqueId="collectd-htop" でのみ行う
+#
+# 【依存パッケージ判定の順序】
+#   1. uniqueId があるか確認
+#   2. uniqueId がある → uniqueId で dependent_ids を検索
+#   3. uniqueId がない → id で dependent_ids を検索
+#   4. 依存パッケージ (is_dependent=1) → インデント表示
+#   5. 独立パッケージ (is_dependent=0) → hidden チェック実行
+#
+# 【hidden 属性】
+#   - hidden: true のパッケージは独立パッケージとして非表示
+#   - 依存パッケージとしては表示される（インデント付き）
+#
 # postinst.json要件
 # - **id**: `apache` ← インストールする実際のパッケージ
 # - **name**: `htpasswd` ← **UIに表示する名前**
