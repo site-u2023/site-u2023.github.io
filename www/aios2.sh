@@ -4,6 +4,14 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
+# - **id**: `apache` ← インストールする実際のパッケージ
+# - **name**: `htpasswd` ← **UIに表示する名前**
+# - **uniqueId**: `htpasswd-from-apache` ← 識別子（内部使用：同じidの複数エントリを区別）
+#
+# キャッシュ形式
+# id=name=uniqueId=installOptions=enableVar
+# apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
+
 VERSION="R7.1213.1840"
 
 SCRIPT_NAME=$(basename "$0")
