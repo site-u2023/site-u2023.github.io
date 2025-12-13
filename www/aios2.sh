@@ -782,8 +782,10 @@ is_package_hidden() {
 }
 
 # パッケージリストを依存関係付きで構築
+# caller パラメータを追加
 build_package_list_with_deps() {
     local cat_id="$1"
+    local caller="${2:-normal}"  # 追加
     local packages result
     
     packages=$(get_category_packages "$cat_id")
@@ -795,11 +797,13 @@ build_package_list_with_deps() {
         # 隠しパッケージはスキップ
         is_package_hidden "$pkg_id" && continue
         
-        # パッケージ互換性チェック
-        package_compatible "$pkg_id" || continue
+        # パッケージ互換性チェック（custom_feeds の場合のみ）
+        if [ "$caller" = "custom_feeds" ]; then
+            package_compatible "$pkg_id" || continue
+        fi
         
         # メインパッケージを追加
-        result="${result}${pkg_id}|0
+        result="${result}${pkg_id}|0|
 "
         
         # 依存関係を追加（インデント付き）
@@ -808,6 +812,11 @@ build_package_list_with_deps() {
         
         while read -r dep_id; do
             [ -z "$dep_id" ] && continue
+            
+            # 依存パッケージも互換性チェック（custom_feeds の場合のみ）
+            if [ "$caller" = "custom_feeds" ]; then
+                package_compatible "$dep_id" || continue
+            fi
             
             # 依存パッケージが隠しでなければ表示
             if ! is_package_hidden "$dep_id"; then
