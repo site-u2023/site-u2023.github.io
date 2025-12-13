@@ -973,36 +973,29 @@ EOF
             is_dependent=1
         fi
         
-        # hidden チェック（全パッケージに対して最優先で実行）
-        local is_hidden_entry=""
-        
-        if [ -n "$uid" ]; then
-            if [ "$caller" = "custom_feeds" ]; then
-                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+        # hidden チェック（独立パッケージのみ）
+        if [ "$is_dependent" -eq 0 ]; then
+            local is_hidden_entry
+            
+            if [ -n "$uid" ]; then
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                fi
             else
-                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                fi
             fi
-        else
-            if [ "$caller" = "custom_feeds" ]; then
-                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-            else
-                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-            fi
-        fi
-        
-        [ "$is_hidden_entry" = "true" ] && continue
-        
-        # 依存パッケージ判定（hiddenチェックの後に実行）
-        local is_dependent=0
-        
-        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
-            is_dependent=1
+            
+            [ "$is_hidden_entry" = "true" ] && continue
         fi
         
         local display_name="$pkg_name"
