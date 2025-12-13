@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1213.1236"
+VERSION="R7.1213.1252"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -205,7 +205,7 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
-synchronize_selection_vars() {
+XXX_synchronize_selection_vars() {
     local selected_packages_content=""
     local vars_to_add=""
     
@@ -3364,7 +3364,7 @@ aios2_main() {
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
 
-    synchronize_selection_vars
+    # synchronize_selection_vars
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
