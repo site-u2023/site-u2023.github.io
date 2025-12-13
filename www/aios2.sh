@@ -792,17 +792,15 @@ build_package_list_with_deps() {
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # 同じpkg_idの全エントリを取得（uniqueId/name）
+        # hidden なパッケージは親として表示しない
+        is_package_hidden "$pkg_id" && continue
+        
         local names
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            # トップレベルの隠しパッケージはスキップ
-            is_package_hidden "$pkg_id" && continue
-            
-            # パッケージ互換性チェック
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
             fi
@@ -823,7 +821,7 @@ build_package_list_with_deps() {
                 fi
                 
                 local dep_name
-                dep_name=$(get_package_name "$dep_id" | head -1)
+                dep_name=$(get_package_name "$dep_id")
                 
                 result="${result}${dep_id}|1|${pkg_id}|${dep_name}
 "
