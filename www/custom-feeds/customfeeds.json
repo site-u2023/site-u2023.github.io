@@ -128,7 +128,7 @@
           "exclude": "",
           "name": "luci-theme-argon",
           "requiresUpdate": true,
-          "minOpenWrtVersion": "18.06",
+          "minOpenWrtVersion": "21.02",
           "description": "A brand new Argon theme for LuCI",
           "packageManager": ["opkg", "apk"],
           "dependencies": []
