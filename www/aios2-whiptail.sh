@@ -1128,19 +1128,21 @@ package_selection() {
     package_list=$(build_package_list_with_deps "$cat_id" "$caller")
     
     # 現在の選択状態を保存
-    local prev_selections=""
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
     else
         target_file="$SELECTED_PACKAGES"
     fi
-    prev_selections=$(cat "$target_file" 2>/dev/null || true)
+    
+    local prev_selections=""
+    [ -f "$target_file" ] && prev_selections=$(cat "$target_file")
     
     checklist_items=""
     idx=1
     
     local display_map=""
     
+    # チェックリスト構築
     while IFS='|' read -r pkg_id indent_level parent_pkg; do
         [ -z "$pkg_id" ] && continue
         
@@ -1153,10 +1155,11 @@ package_selection() {
             display_name="$pkg_name"
         fi
         
-        # マップに保存 (index|pkg_id|indent|parent|pkg_name)
+        # マップに保存
         display_map="${display_map}${idx}|${pkg_id}|${indent_level}|${parent_pkg}|${pkg_name}
 "
         
+        # 選択状態
         if is_package_selected "$pkg_name" "$caller"; then
             status="ON"
         else
@@ -1169,16 +1172,16 @@ package_selection() {
 $package_list
 EOF
     
+    # チェックリスト表示
     selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
     
-    if [ $? -ne 0 ]; then
-        return 0
-    fi
+    [ $? -ne 0 ] && return 0
     
-    # このカテゴリの既存エントリをすべて削除（enableVar も削除）
+    # 既存エントリをすべて削除
     while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
         [ -z "$pkg_id" ] && continue
         
+        # enableVar も削除
         local all_entries
         all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
         
@@ -1189,9 +1192,7 @@ EOF
             unique_id=$(echo "$entry" | cut -d= -f3)
             enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
             
-            if [ -n "$enable_var" ]; then
-                sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
-            fi
+            [ -n "$enable_var" ] && sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
         done <<ENTRIES
 $all_entries
 ENTRIES
@@ -1201,81 +1202,79 @@ ENTRIES
 $display_map
 EOF
     
-    # 選択されたものを保存
+    # 選択されたパッケージを保存
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
         local map_line pkg_id indent_level parent_pkg pkg_name
         map_line=$(echo "$display_map" | grep "^${idx_clean}|")
         
-        if [ -n "$map_line" ]; then
-            pkg_id=$(echo "$map_line" | cut -d'|' -f2)
-            indent_level=$(echo "$map_line" | cut -d'|' -f3)
-            parent_pkg=$(echo "$map_line" | cut -d'|' -f4)
-            pkg_name=$(echo "$map_line" | cut -d'|' -f5)
+        [ -z "$map_line" ] && continue
+        
+        pkg_id=$(echo "$map_line" | cut -d'|' -f2)
+        indent_level=$(echo "$map_line" | cut -d'|' -f3)
+        pkg_name=$(echo "$map_line" | cut -d'|' -f5)
+        
+        # パッケージを追加
+        local cache_line
+        cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+        
+        if [ -n "$cache_line" ]; then
+            echo "$cache_line" >> "$target_file"
             
-            # パッケージを追加
-            local cache_line
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=")
+            # enableVar を追加
+            local enable_var
+            enable_var=$(get_package_enablevar "$pkg_id" "")
             
-            if [ -n "$cache_line" ]; then
-                echo "$cache_line" >> "$target_file"
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${enable_var}='1'" >> "$SETUP_VARS"
+            fi
+            
+            # 親パッケージで、かつ前回未選択の場合のみ依存パッケージを自動追加
+            if [ "$indent_level" = "0" ]; then
+                local was_selected
+                was_selected=$(echo "$prev_selections" | grep "^${pkg_id}=")
                 
-                # enableVarを追加
-                local unique_id enable_var
-                unique_id=$(echo "$cache_line" | cut -d= -f3)
-                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
-                
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                fi
-                
-                # 親パッケージで、かつ前回未選択だった場合のみ依存パッケージも自動追加
-                if [ "$indent_level" = "0" ]; then
-                    local was_selected
-                    was_selected=$(echo "$prev_selections" | grep "^${pkg_id}=")
+                # 新規選択の場合、依存パッケージも追加
+                if [ -z "$was_selected" ]; then
+                    local deps
+                    deps=$(get_package_dependencies "$pkg_id")
                     
-                    if [ -z "$was_selected" ]; then
-                        # 新規選択なので依存パッケージも追加
-                        local deps
-                        deps=$(get_package_dependencies "$pkg_id")
+                    while read -r dep_id; do
+                        [ -z "$dep_id" ] && continue
                         
-                        while read -r dep_id; do
-                            [ -z "$dep_id" ] && continue
+                        # ユーザーが依存パッケージを明示的に選択していればスキップ
+                        local dep_in_selected=0
+                        for check_idx in $selected; do
+                            check_idx=$(echo "$check_idx" | tr -d '"')
+                            local check_line
+                            check_line=$(echo "$display_map" | grep "^${check_idx}|${dep_id}|")
+                            if [ -n "$check_line" ]; then
+                                dep_in_selected=1
+                                break
+                            fi
+                        done
+                        
+                        # ユーザー選択になければ自動追加
+                        if [ "$dep_in_selected" -eq 0 ]; then
+                            local dep_cache_line
+                            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
                             
-                            # 依存パッケージが既に選択リストにあればスキップ
-                            local dep_already_selected=0
-                            for check_idx in $selected; do
-                                check_idx=$(echo "$check_idx" | tr -d '"')
-                                local check_line
-                                check_line=$(echo "$display_map" | grep "^${check_idx}|${dep_id}|")
-                                if [ -n "$check_line" ]; then
-                                    dep_already_selected=1
-                                    break
-                                fi
-                            done
-                            
-                            # 選択リストになければ自動追加
-                            if [ "$dep_already_selected" -eq 0 ]; then
-                                local dep_cache_line
-                                dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${dep_id}=")
+                            if [ -n "$dep_cache_line" ]; then
+                                echo "$dep_cache_line" >> "$target_file"
                                 
-                                if [ -n "$dep_cache_line" ]; then
-                                    echo "$dep_cache_line" >> "$target_file"
-                                    
-                                    local dep_unique_id dep_enable_var
-                                    dep_unique_id=$(echo "$dep_cache_line" | cut -d= -f3)
-                                    dep_enable_var=$(get_package_enablevar "$dep_id" "$dep_unique_id")
-                                    
-                                    if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                                        echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
-                                    fi
+                                # enableVar も追加
+                                local dep_enable_var
+                                dep_enable_var=$(get_package_enablevar "$dep_id" "")
+                                
+                                if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                                    echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
                                 fi
                             fi
-                        done <<DEPS
+                        fi
+                    done <<DEPS
 $deps
 DEPS
-                    fi
                 fi
             fi
         fi
