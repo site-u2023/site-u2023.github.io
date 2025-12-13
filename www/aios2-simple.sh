@@ -1172,6 +1172,14 @@ EOF
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
+            [ -z "$pkg_name" ] && continue
+            
+            # ★★★ パッケージ存在確認 ★★★
+            if ! check_package_available "$pkg_name"; then
+                echo "[DEBUG] Package not available: $pkg_name (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
             local is_selected indent=""
             
             # 依存パッケージにインデント付与
