@@ -1207,10 +1207,9 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # --- 新規追加: 依存パッケージIDのキャッシュ処理 (ループ外で一度だけ実行) ---
-    local dependent_ids=" "  # スペース区切りでIDを格納。grep検索のために両端にスペースを入れる。
+    # 依存パッケージIDのキャッシュ処理（ループ外で一度だけ実行）
+    local dependent_ids=" "
     
-    # このカテゴリの全パッケージの依存関係を収集
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
@@ -1223,14 +1222,12 @@ package_selection() {
                 -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
         fi
         
-        # 依存関係をスペース区切りで追加
         dependent_ids="${dependent_ids}$(echo "$deps" | tr '\n' ' ')"
     done <<EOF
 $packages
 EOF
     
-    dependent_ids="${dependent_ids} "  # 末尾にもスペース
-    # --- キャッシュ処理ここまで ---
+    dependent_ids="${dependent_ids} "
     
     checklist_items=""
     idx=1
@@ -1246,18 +1243,34 @@ EOF
             fi
         fi
         
+        # 依存パッケージかどうかをチェック
+        local is_dependent=0
+        if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
+            is_dependent=1
+        else
+            # 独立パッケージで hidden なら非表示
+            local is_hidden
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            else
+                is_hidden=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            fi
+            
+            [ "$is_hidden" = "true" ] && continue
+        fi
+        
         local names
         names=$(get_package_name "$pkg_id")
         
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            # --- 新規追加: インデント処理 (依存フラグの判定) ---
-            # キャッシュされた dependent_ids を参照し、現在のpkg_idが子パッケージ（依存対象）かをチェック
-            if echo "$dependent_ids" | grep -q " ${pkg_id} "; then
-                pkg_name="   ${pkg_name}"  # 3スペースのインデントを適用
+            # 依存パッケージにインデント付与
+            if [ "$is_dependent" -eq 1 ]; then
+                pkg_name="   ${pkg_name}"
             fi
-            # --- インデント処理ここまで ---
             
             display_names="${display_names}${pkg_name}|${pkg_id}
 "
@@ -1293,11 +1306,9 @@ EOF
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # このpkg_idに紐付くすべてのエントリを取得
         local all_entries
         all_entries=$(grep "^${pkg_id}=" "$target_file" 2>/dev/null)
         
-        # 各エントリのenableVarを削除
         while read -r entry; do
             [ -z "$entry" ] && continue
             
@@ -1313,7 +1324,6 @@ EOF
 $all_entries
 ENTRIES
         
-        # パッケージエントリを削除
         sed -i "/^${pkg_id}=/d" "$target_file"
     done <<EOF
 $packages
@@ -1342,7 +1352,6 @@ EOF
             if [ -n "$cache_line" ]; then
                 echo "$cache_line" >> "$target_file"
                 
-                # enableVarを追加
                 local unique_id enable_var
                 unique_id=$(echo "$cache_line" | cut -d= -f3)
                 enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
@@ -1355,7 +1364,6 @@ EOF
         fi
     done
     
-    # 選択が変更されたのでキャッシュをクリア
     clear_selection_cache
 }
 
