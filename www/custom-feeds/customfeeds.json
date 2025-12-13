@@ -65,6 +65,17 @@
           "dependencies": ["fdisk", "smartmontools", "smartmontools-drivedb"]
         },
         {
+          "id": "luci-app-internet-detector",
+          "pattern": "luci-app-internet-detector",
+          "exclude": "",
+          "name": "luci-app-internet-detector",
+          "requiresUpdate": false,
+          "minOpenWrtVersion": "21.02",
+          "description": "LuCI interface for Internet Detector",
+          "packageManager": ["opkg"],
+          "dependencies": []
+        },
+        {
           "id": "internet-detector",
           "pattern": "internet-detector_",
           "exclude": "",
@@ -76,17 +87,6 @@
           "hidden": true,
           "packageManager": ["opkg"],
           "dependencies": ["luci-app-internet-detector"]
-        },
-        {
-          "id": "luci-app-internet-detector",
-          "pattern": "luci-app-internet-detector",
-          "exclude": "",
-          "name": "luci-app-internet-detector",
-          "requiresUpdate": false,
-          "minOpenWrtVersion": "21.02",
-          "description": "LuCI interface for Internet Detector",
-          "packageManager": ["opkg"],
-          "dependencies": []
         },
         {
           "id": "internet-detector-mod-modem",
