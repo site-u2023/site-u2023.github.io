@@ -993,50 +993,28 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 依存パッケージIDのキャッシュ処理（修正版）
+    # 依存パッケージIDのキャッシュ処理（統一版）
     local dependent_ids=" "
     
-    while read -r parent_id; do
-        [ -z "$parent_id" ] && continue
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
         
         local deps
         if [ "$caller" = "custom_feeds" ]; then
             deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
         else
             deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null)
         fi
         
-        # カスタムフィードと通常パッケージで処理を分岐
-        if [ "$caller" = "custom_feeds" ]; then
-            # カスタムフィード：依存先が同じカテゴリに存在する場合、依存元（parent_id）をインデント対象にする
-            if [ -n "$deps" ]; then
-                while read -r dep; do
-                    [ -z "$dep" ] && continue
-                    if echo "$packages" | grep -qx "$dep"; then
-                        dependent_ids="${dependent_ids}${parent_id} "
-                        break
-                    fi
-                done <<DEPS
-$deps
-DEPS
-            fi
-        else
-            # 通常パッケージ：元のロジックを維持（依存される側をインデント）
+        # 依存先が同じカテゴリに存在する場合、依存元（pkg_id）をインデント対象にする
+        if [ -n "$deps" ]; then
             while read -r dep; do
                 [ -z "$dep" ] && continue
-                
-                local matched_line matched_id
-                matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-                
-                if [ -n "$matched_line" ]; then
-                    matched_id=$(echo "$matched_line" | cut -d= -f1)
-                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
-                else
-                    if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                        dependent_ids="${dependent_ids}${dep} "
-                    fi
+                if echo "$packages" | grep -qx "$dep"; then
+                    dependent_ids="${dependent_ids}${pkg_id} "
+                    break
                 fi
             done <<DEPS
 $deps
@@ -1076,8 +1054,6 @@ EOF
         local is_dependent=0
         
         if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
             is_dependent=1
         fi
         
