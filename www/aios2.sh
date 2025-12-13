@@ -784,36 +784,16 @@ is_package_hidden() {
 build_package_list_with_deps() {
     local cat_id="$1"
     local caller="${2:-normal}"
-    local packages result all_deps
+    local packages result
     
     packages=$(get_category_packages "$cat_id")
     result=""
-    all_deps=""
     
-    # まず全ての依存パッケージをリストアップ
-    while read -r pkg_id; do
-        [ -z "$pkg_id" ] && continue
-        is_package_hidden "$pkg_id" && continue
-        
-        local deps
-        deps=$(get_package_dependencies "$pkg_id")
-        all_deps="${all_deps}${deps}
-"
-    done <<EOF
-$packages
-EOF
-    
-    # 親パッケージと依存パッケージを構築
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
         # hidden なパッケージは親として表示しない
         is_package_hidden "$pkg_id" && continue
-        
-        # 他のパッケージの依存関係に含まれている場合は親として表示しない
-        if echo "$all_deps" | grep -q "^${pkg_id}$"; then
-            continue
-        fi
         
         local names
         names=$(get_package_name "$pkg_id")
