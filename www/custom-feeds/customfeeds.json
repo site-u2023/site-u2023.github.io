@@ -18,7 +18,7 @@
           "minOpenWrtVersion": "22.03",
           "description": "System log viewer for LuCI",
           "packageManager": ["opkg"],
-          "dependencies": ["ucode", "ucode-mod-fs"]
+          "dependencies": []
         },
         {
           "id": "luci-app-cpu-status",
@@ -40,7 +40,7 @@
           "minOpenWrtVersion": "22.03",
           "description": "CPU performance monitor",
           "packageManager": ["opkg"],
-          "dependencies": ["ucode", "ucode-mod-fs"]
+          "dependencies": []
         },
         {
           "id": "luci-app-temp-status",
@@ -51,7 +51,7 @@
           "minOpenWrtVersion": "22.03",
           "description": "System temperature monitor",
           "packageManager": ["opkg"],
-          "dependencies": ["ucode", "ucode-mod-fs"]
+          "dependencies": []
         },
         {
           "id": "luci-app-disks-info",
@@ -75,7 +75,7 @@
           "enable_service": "internet-detector",
           "hidden": true,
           "packageManager": ["opkg"],
-          "dependencies": ["lua", "luaposix", "libuci-lua"]
+          "dependencies": ["luci-app-internet-detector"]
         },
         {
           "id": "luci-app-internet-detector",
@@ -86,7 +86,7 @@
           "minOpenWrtVersion": "21.02",
           "description": "LuCI interface for Internet Detector",
           "packageManager": ["opkg"],
-          "dependencies": ["internet-detector"]
+          "dependencies": []
         },
         {
           "id": "internet-detector-mod-modem",
@@ -98,7 +98,7 @@
           "description": "Modem restart module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
-          "dependencies": ["internet-detector", "modemmanager"]
+          "dependencies": ["luci-app-internet-detector"]
         },
         {
           "id": "internet-detector-mod-email",
@@ -110,7 +110,7 @@
           "description": "Email notification module",
           "restart_service": "internet-detector",
           "packageManager": ["opkg"],
-          "dependencies": ["internet-detector", "mailsend"]
+          "dependencies": ["luci-app-internet-detector"]
         }
       ]
     },
