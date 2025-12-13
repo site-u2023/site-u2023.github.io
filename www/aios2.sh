@@ -1157,8 +1157,8 @@ ${custom_cache}"
     
     # pkg_id ($1) または uniqueId ($3) で検索して name ($2) を返す
     echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$identifier" '
-        $1 == id { print $2; exit }
-        $3 == id { print $2; exit }
+        $1 == id { print; exit }
+        $3 == id { print; exit }
     '
 }
 
