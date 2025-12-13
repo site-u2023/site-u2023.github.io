@@ -975,7 +975,7 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
-
+    
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" > /dev/null 2>&1
     fi
@@ -993,172 +993,185 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 依存パッケージIDのキャッシュ処理
-    local dependent_ids=" "
-    
-    while read -r parent_id; do
-        [ -z "$parent_id" ] && continue
+    # ★ メインループ追加
+    while true; do
+        # 依存パッケージIDのキャッシュ処理
+        local dependent_ids=" "
         
-        local deps
-        if [ "$caller" = "custom_feeds" ]; then
-            deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-        else
-            deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-        fi
-        
-        # 依存先をインデント対象に追加（通常・カスタムフィード共通）
-        while read -r dep; do
-            [ -z "$dep" ] && continue
+        while read -r parent_id; do
+            [ -z "$parent_id" ] && continue
             
-            local matched_line matched_id
-            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-            
-            if [ -n "$matched_line" ]; then
-                matched_id=$(echo "$matched_line" | cut -d= -f1)
-                dependent_ids="${dependent_ids}${matched_id} ${dep} "
+            local deps
+            if [ "$caller" = "custom_feeds" ]; then
+                deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
             else
-                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                    dependent_ids="${dependent_ids}${dep} "
-                fi
+                deps=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
             fi
-        done <<DEPS
+            
+            # 依存先をインデント対象に追加（通常・カスタムフィード共通）
+            while read -r dep; do
+                [ -z "$dep" ] && continue
+                
+                local matched_line matched_id
+                matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
+                
+                if [ -n "$matched_line" ]; then
+                    matched_id=$(echo "$matched_line" | cut -d= -f1)
+                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
+                else
+                    if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
+                        dependent_ids="${dependent_ids}${dep} "
+                    fi
+                fi
+            done <<DEPS
 $deps
 DEPS
-    done <<EOF
+        done <<EOF
 $packages
 EOF
-    
-    dependent_ids="${dependent_ids} "
-    
-    show_menu_header "$breadcrumb"
-    
-    local cat_desc
-    cat_desc=$(get_category_desc "$cat_id")
-    echo "$cat_desc"
-    echo ""
-    
-    local display_list=""
-    
-    while read -r entry; do
-        [ -z "$entry" ] && continue
         
-        local pkg_id pkg_name uid
-        pkg_id=$(echo "$entry" | cut -d= -f1)
-        pkg_name=$(echo "$entry" | cut -d= -f2)
-        uid=$(echo "$entry" | cut -d= -f3)
+        dependent_ids="${dependent_ids} "
         
-        # このカテゴリのパッケージでなければスキップ
-        echo "$packages" | grep -qx "$pkg_id" || continue
+        local checklist_items=""
+        local idx=1
+        local display_names=""
         
-        if [ "$caller" = "custom_feeds" ]; then
-            package_compatible "$pkg_id" || continue
-        fi
-        
-        check_package_available "$pkg_id" "$caller" || continue
-        
-        # 依存パッケージ判定（uniqueIdを優先）
-        local is_dependent=0
-        
-        if [ -n "$uid" ]; then
-            # uniqueIdがある場合は、uniqueIdで判定
-            if echo " ${dependent_ids} " | grep -q " ${uid} "; then
-                is_dependent=1
+        # キャッシュを1回だけ走査
+        while read -r entry; do
+            [ -z "$entry" ] && continue
+            
+            local pkg_id pkg_name uid
+            pkg_id=$(echo "$entry" | cut -d= -f1)
+            pkg_name=$(echo "$entry" | cut -d= -f2)
+            uid=$(echo "$entry" | cut -d= -f3)
+            
+            # このカテゴリのパッケージでなければスキップ
+            echo "$packages" | grep -qx "$pkg_id" || continue
+            
+            if [ "$caller" = "custom_feeds" ]; then
+                package_compatible "$pkg_id" || continue
             fi
-        else
-            # uniqueIdがない場合は、idで判定
-            if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-                is_dependent=1
-            fi
-        fi
-        
-        # hidden チェック（独立パッケージのみ）
-        if [ "$is_dependent" -eq 0 ]; then
-            local is_hidden_entry
+            
+            check_package_available "$pkg_id" "$caller" || continue
+            
+            # 依存パッケージ判定（uniqueIdを優先）
+            local is_dependent=0
             
             if [ -n "$uid" ]; then
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                # uniqueIdがある場合は、uniqueIdで判定
+                if echo " ${dependent_ids} " | grep -q " ${uid} "; then
+                    is_dependent=1
                 fi
             else
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                # uniqueIdがない場合は、idで判定
+                if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+                    is_dependent=1
                 fi
             fi
             
-            [ "$is_hidden_entry" = "true" ] && continue
-        fi
-        
-        local display_name="$pkg_name"
-        if [ "$is_dependent" -eq 1 ]; then
-            display_name="   ${pkg_name}"
-        fi
-        
-        display_list="${display_list}${display_name}|${pkg_id}
+            # hidden チェック（独立パッケージのみ）
+            if [ "$is_dependent" -eq 0 ]; then
+                local is_hidden_entry
+                
+                if [ -n "$uid" ]; then
+                    if [ "$caller" = "custom_feeds" ]; then
+                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    else
+                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    fi
+                else
+                    if [ "$caller" = "custom_feeds" ]; then
+                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                    else
+                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                    fi
+                fi
+                
+                [ "$is_hidden_entry" = "true" ] && continue
+            fi
+            
+            local display_name="$pkg_name"
+            if [ "$is_dependent" -eq 1 ]; then
+                display_name="   ${pkg_name}"
+            fi
+            
+            display_names="${display_names}${display_name}|${pkg_id}
 "
-    done <<EOF
+            
+            local status
+            if is_package_selected "$pkg_name" "$caller"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            idx=$((idx+1))
+        done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
-    
-    echo ""
-    echo "Enter package number to toggle (or '$CHOICE_BACK' to go back):"
-    
-    local i=1
-    while read -r line; do
-        [ -z "$line" ] && continue
-        local display_name
         
-        display_name=$(echo "$line" | cut -d'|' -f1)
+        local selected
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
         
-        show_numbered_item "$i" "$display_name"
-        i=$((i+1))
-    done <<DISPLAY
-$display_list
-DISPLAY
-    
-    echo ""
-    echo "$CHOICE_BACK) $(translate "$DEFAULT_BTN_BACK")"
-    echo ""
-    printf "%s: " "$(translate 'tr-tui-ui-choice')"
-    read -r choice
-    
-    if [ "$choice" = "$CHOICE_BACK" ]; then
-        return $RETURN_STAY
-    fi
-    
-    if [ -n "$choice" ]; then
-        local selected_line
-        selected_line=$(echo "$display_list" | sed -n "${choice}p")
-        
-        if [ -n "$selected_line" ]; then
-            local selected_name pkg_id
-            selected_name=$(echo "$selected_line" | cut -d'|' -f1)
-            pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-            
-            selected_name=$(echo "$selected_name" | sed 's/^[[:space:]]*//')
-            
-            if is_package_selected "$selected_name" "$caller"; then
-                # 削除処理
-                remove_package_with_dependencies "$pkg_id" "$caller"
-            else
-                # 追加処理
-                add_package_with_dependencies "$pkg_id" "$caller"
-            fi
-            
-            clear_selection_cache
+        # ★ キャンセル時はループを抜ける
+        if [ $? -ne 0 ]; then
+            return 0
         fi
         
-        package_selection "$cat_id" "$caller" "$parent_breadcrumb"
-    fi
+        # カテゴリの既存エントリを取得（現在の状態）
+        local old_selection=""
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+                old_selection="${old_selection}${pkg_id}
+"
+            fi
+        done <<EOF
+$packages
+EOF
+        
+        # 新しい選択状態を取得
+        local new_selection=""
+        for idx_str in $selected; do
+            local idx_clean
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            local selected_line pkg_id
+            selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+            
+            if [ -n "$selected_line" ]; then
+                pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+                new_selection="${new_selection}${pkg_id}
+"
+            fi
+        done
+        
+        # 変更検出と処理
+        # 1. 新規追加されたパッケージ
+        echo "$new_selection" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$old_selection" | grep -qx "$pkg_id"; then
+                add_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done
+        
+        # 2. 削除されたパッケージ
+        echo "$old_selection" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$new_selection" | grep -qx "$pkg_id"; then
+                remove_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done
+        
+        # ★ キャッシュクリアしてループ継続（画面を再表示）
+        clear_selection_cache
+    done
 }
 
 view_customfeeds() {
