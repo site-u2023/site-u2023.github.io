@@ -939,7 +939,8 @@ EOF
         
         dependent_ids="${dependent_ids} "
         
-        checklist_items=""
+        # ★ 最初に「更新」項目を追加
+        checklist_items="\"0\" \"🔄 $(translate 'tr-tui-refresh')\" OFF "
         idx=1
         local display_names=""
         
@@ -1018,15 +1019,11 @@ EOF
 $_PACKAGE_NAME_CACHE
 EOF
         
-        selected=$(eval "whiptail --title \"\$breadcrumb\" \
-            --ok-button \"$(translate "$DEFAULT_BTN_SELECT")\" \
-            --cancel-button \"$(translate "$DEFAULT_BTN_BACK")\" \
-            --extra-button \"$(translate "tr-tui-refresh")\" \
-            --checklist \"($(translate 'tr-tui-space-toggle'))\" \
-            \"$UI_HEIGHT\" \"$UI_WIDTH\" 0 \
-            $checklist_items 3>&1 1>&2 2>&3")
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"\" \"\" $checklist_items")
         
-        local exit_code=$?
+        if [ $? -ne 0 ]; then
+            return 0
+        fi
         
         if [ "$caller" = "custom_feeds" ]; then
             target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -1034,92 +1031,85 @@ EOF
             target_file="$SELECTED_PACKAGES"
         fi
         
-        case $exit_code in
-            0)  # 選択（OK）→ 確定して終了
-                # カテゴリの既存エントリを取得（現在の状態）
-                local old_selection=""
-                while read -r pkg_id; do
-                    [ -z "$pkg_id" ] && continue
-                    if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
-                        old_selection="${old_selection}${pkg_id}
+        # ★「0」（更新）が選択されたかチェック
+        if echo "$selected" | grep -q '"0"'; then
+            # 「0」以外の選択を処理
+            local temp_selection=""
+            for idx_str in $selected; do
+                idx_clean=$(echo "$idx_str" | tr -d '"')
+                [ "$idx_clean" = "0" ] && continue
+                
+                local selected_line pkg_id
+                selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+                
+                if [ -n "$selected_line" ]; then
+                    pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+                    temp_selection="${temp_selection}${pkg_id}
 "
-                    fi
-                done <<EOF
+                fi
+            done
+            
+            # カテゴリの既存エントリをクリア
+            while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                sed -i "/^${pkg_id}=/d" "$target_file"
+            done <<EOF
 $packages
 EOF
-                
-                # 新しい選択状態を取得
-                local new_selection=""
-                for idx_str in $selected; do
-                    idx_clean=$(echo "$idx_str" | tr -d '"')
-                    local selected_line pkg_id
-                    selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
-                    
-                    if [ -n "$selected_line" ]; then
-                        pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-                        new_selection="${new_selection}${pkg_id}
-"
-                    fi
-                done
-                
-                # 変更検出と処理
-                # 1. 新規追加されたパッケージ
-                echo "$new_selection" | while read -r pkg_id; do
-                    [ -z "$pkg_id" ] && continue
-                    if ! echo "$old_selection" | grep -qx "$pkg_id"; then
-                        add_package_with_dependencies "$pkg_id" "$caller"
-                    fi
-                done
-                
-                # 2. 削除されたパッケージ
-                echo "$old_selection" | while read -r pkg_id; do
-                    [ -z "$pkg_id" ] && continue
-                    if ! echo "$new_selection" | grep -qx "$pkg_id"; then
-                        remove_package_with_dependencies "$pkg_id" "$caller"
-                    fi
-                done
-                
-                clear_selection_cache
-                return 0
-                ;;
             
-            1)  # 戻る（Cancel）→ 変更せず終了
-                return 0
-                ;;
+            # 依存関係を追加
+            echo "$temp_selection" | while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                add_package_with_dependencies "$pkg_id" "$caller"
+            done
             
-            3)  # 更新（Extra）→ 依存関係を反映して再表示
-                # 現在の選択状態を一時保存
-                local temp_selection=""
-                for idx_str in $selected; do
-                    idx_clean=$(echo "$idx_str" | tr -d '"')
-                    local selected_line pkg_id
-                    selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
-                    
-                    if [ -n "$selected_line" ]; then
-                        pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-                        temp_selection="${temp_selection}${pkg_id}
+            clear_selection_cache
+            continue  # 再表示
+        fi
+        
+        # 通常の確定処理
+        local old_selection=""
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+                old_selection="${old_selection}${pkg_id}
 "
-                    fi
-                done
-                
-                # カテゴリの既存エントリをクリア
-                while read -r pkg_id; do
-                    [ -z "$pkg_id" ] && continue
-                    sed -i "/^${pkg_id}=/d" "$target_file"
-                done <<EOF
+            fi
+        done <<EOF
 $packages
 EOF
-                
-                # 選択されたパッケージと依存関係を追加
-                echo "$temp_selection" | while read -r pkg_id; do
-                    [ -z "$pkg_id" ] && continue
-                    add_package_with_dependencies "$pkg_id" "$caller"
-                done
-                
-                clear_selection_cache
-                continue  # ループの先頭に戻る（再表示）
-                ;;
-        esac
+        
+        local new_selection=""
+        for idx_str in $selected; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            [ "$idx_clean" = "0" ] && continue  # 0をスキップ
+            
+            local selected_line pkg_id
+            selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+            
+            if [ -n "$selected_line" ]; then
+                pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+                new_selection="${new_selection}${pkg_id}
+"
+            fi
+        done
+        
+        echo "$new_selection" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$old_selection" | grep -qx "$pkg_id"; then
+                add_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done
+        
+        echo "$old_selection" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$new_selection" | grep -qx "$pkg_id"; then
+                remove_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done
+        
+        clear_selection_cache
+        return 0
     done
 }
 
