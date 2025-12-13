@@ -988,29 +988,29 @@ EOF
             is_dependent=1
         fi
         
-        # hidden チェック（独立パッケージのみ）
         if [ "$is_dependent" -eq 0 ]; then
-            local is_hidden_entry
-            
-            if [ -n "$uid" ]; then
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                fi
+        # hidden チェック（全パッケージに適用）
+        local is_hidden_entry
+        
+        if [ -n "$uid" ]; then
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             else
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                fi
+                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'][@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
             fi
-            
-            [ "$is_hidden_entry" = "true" ] && continue
+        else
+            if [ "$caller" = "custom_feeds" ]; then
+                is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            else
+                is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                    -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+            fi
+        fi
+        
+        [ "$is_hidden_entry" = "true" ] && continue
         fi
         
         local display_name="$pkg_name"
