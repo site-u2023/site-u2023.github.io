@@ -13,7 +13,7 @@
 # id=name=uniqueId=installOptions=enableVar
 # apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
 
-VERSION="R7.1213.1840"
+VERSION="R7.1213.1856"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
