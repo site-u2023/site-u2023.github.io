@@ -781,11 +781,9 @@ is_package_hidden() {
     return 1
 }
 
-# パッケージリストを依存関係付きで構築
-# caller パラメータを追加
 build_package_list_with_deps() {
     local cat_id="$1"
-    local caller="${2:-normal}"  # 追加
+    local caller="${2:-normal}"
     local packages result
     
     packages=$(get_category_packages "$cat_id")
@@ -794,8 +792,23 @@ build_package_list_with_deps() {
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
         
-        # 隠しパッケージはスキップ
-        is_package_hidden "$pkg_id" && continue
+        # 隠しパッケージで、かつ依存関係にない独立パッケージはスキップ
+        if is_package_hidden "$pkg_id"; then
+            # 他のパッケージの依存関係に含まれていなければスキップ
+            local is_dependency=0
+            while read -r check_pkg; do
+                [ -z "$check_pkg" ] && continue
+                local deps
+                deps=$(get_package_dependencies "$check_pkg")
+                if echo "$deps" | grep -q "^${pkg_id}\$"; then
+                    is_dependency=1
+                    break
+                fi
+            done <<CHECKEOF
+$packages
+CHECKEOF
+            [ "$is_dependency" -eq 0 ] && continue
+        fi
         
         # パッケージ互換性チェック（custom_feeds の場合のみ）
         if [ "$caller" = "custom_feeds" ]; then
@@ -818,11 +831,9 @@ build_package_list_with_deps() {
                 package_compatible "$dep_id" || continue
             fi
             
-            # 依存パッケージが隠しでなければ表示
-            if ! is_package_hidden "$dep_id"; then
-                result="${result}${dep_id}|1|${pkg_id}
+            # 依存パッケージは hidden でも表示（自動選択を明示）
+            result="${result}${dep_id}|1|${pkg_id}
 "
-            fi
         done <<EOF
 $deps
 EOF
