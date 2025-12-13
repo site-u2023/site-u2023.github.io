@@ -900,7 +900,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-# 依存パッケージIDのキャッシュ処理
+    # 依存パッケージIDのキャッシュ処理
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -964,16 +964,6 @@ EOF
         
         check_package_available "$pkg_id" "$caller" || continue
         
-        # 依存パッケージ判定
-        local is_dependent=0
-        
-        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-            is_dependent=1
-        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
-            is_dependent=1
-        fi
-        
-        if [ "$is_dependent" -eq 0 ]; then
         # hidden チェック（全パッケージに適用）
         local is_hidden_entry
         
@@ -996,6 +986,14 @@ EOF
         fi
         
         [ "$is_hidden_entry" = "true" ] && continue
+        
+        # 依存パッケージ判定
+        local is_dependent=0
+        
+        if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+            is_dependent=1
+        elif [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} "; then
+            is_dependent=1
         fi
         
         local display_name="$pkg_name"
