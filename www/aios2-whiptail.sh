@@ -1139,32 +1139,30 @@ package_selection() {
     local display_map=""
     
     # チェックリスト構築
-    while IFS='|' read -r pkg_id indent_level parent_pkg; do
-        [ -z "$pkg_id" ] && continue
-        
-        pkg_name=$(get_package_name "$pkg_id")
-        
-        # インデント表示（ツリー表示のみ）
-        if [ "$indent_level" = "1" ]; then
-            display_name="  ├─ ${pkg_name}"
-        else
-            display_name="$pkg_name"
-        fi
-        
-        # マップに保存
-        display_map="${display_map}${idx}|${pkg_id}|${pkg_name}
+while IFS='|' read -r pkg_id indent_level parent_pkg pkg_name; do
+    [ -z "$pkg_id" ] && continue
+    
+    # インデント表示
+    if [ "$indent_level" = "1" ]; then
+        display_name="  ├─ ${pkg_name}"
+    else
+        display_name="$pkg_name"
+    fi
+    
+    # マップに保存
+    display_map="${display_map}${idx}|${pkg_id}|${pkg_name}
 "
-        
-        # 選択状態
-        if is_package_selected "$pkg_name" "$caller"; then
-            status="ON"
-        else
-            status="OFF"
-        fi
-        
-        checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-        idx=$((idx+1))
-    done <<EOF
+    
+    # 選択状態
+    if is_package_selected "$pkg_name" "$caller"; then
+        status="ON"
+    else
+        status="OFF"
+    fi
+    
+    checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+    idx=$((idx+1))
+done <<EOF
 $package_list
 EOF
     
