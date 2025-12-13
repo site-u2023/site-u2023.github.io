@@ -1036,56 +1036,46 @@ EOF
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # カテゴリの既存エントリ削除
+    # カテゴリの既存エントリを取得（現在の状態）
+    local old_selection=""
     while read -r pkg_id; do
         [ -z "$pkg_id" ] && continue
-        
-        local all_entries
-        all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
-        
-        while read -r entry; do
-            [ -z "$entry" ] && continue
-            
-            local enable_var
-            enable_var=$(echo "$entry" | cut -d= -f5)
-            
-            if [ -n "$enable_var" ]; then
-                sed -i "/^${enable_var}=/d" "$SETUP_VARS" 2>/dev/null
-            fi
-        done <<ENTRIES
-$all_entries
-ENTRIES
-        
-        sed -i "/^${pkg_id}=/d" "$target_file"
+        if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+            old_selection="${old_selection}${pkg_id}
+"
+        fi
     done <<EOF
 $packages
 EOF
     
-    # 選択されたものを保存
+    # 新しい選択状態を取得
+    local new_selection=""
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
-        
-        local selected_line pkg_id display_name ui_label cache_line
+        local selected_line pkg_id
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
-            display_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-            
-            ui_label=$(echo "$display_name" | sed 's/^[[:space:]]*//')
-            
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" -v name="$ui_label" '$1 == id && $2 == name {print; exit}')
-            
-            if [ -n "$cache_line" ]; then
-                echo "$cache_line" >> "$target_file"
-                
-                local enable_var
-                enable_var=$(echo "$cache_line" | cut -d= -f5)
-                
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                fi
-            fi
+            new_selection="${new_selection}${pkg_id}
+"
+        fi
+    done
+    
+    # 変更検出と処理
+    # 1. 新規追加されたパッケージ
+    echo "$new_selection" | while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        if ! echo "$old_selection" | grep -qx "$pkg_id"; then
+            add_package_with_dependencies "$pkg_id" "$caller"
+        fi
+    done
+    
+    # 2. 削除されたパッケージ
+    echo "$old_selection" | while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        if ! echo "$new_selection" | grep -qx "$pkg_id"; then
+            remove_package_with_dependencies "$pkg_id" "$caller"
         fi
     done
     
