@@ -31,7 +31,7 @@
 # id=name=uniqueId=installOptions=enableVar
 # apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
 
-VERSION="R7.1213.2238"
+VERSION="R7.1214.0045"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1244,6 +1244,201 @@ is_package_selected() {
         echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}=" || \
         echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}\$"
     fi
+}
+
+# =============================================================================
+# Dependency Management Functions
+# =============================================================================
+
+# Get dependencies for a package
+get_package_dependencies() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null
+    else
+        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null
+    fi
+}
+
+# Check if a dependency is required by other selected packages
+is_dependency_required_by_others() {
+    local dep_id="$1"
+    local excluding_pkg_id="$2"
+    local caller="${3:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Get all selected packages except the one we're checking
+    while read -r cache_line; do
+        [ -z "$cache_line" ] && continue
+        
+        local current_pkg_id
+        current_pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        
+        # Skip the package we're excluding
+        [ "$current_pkg_id" = "$excluding_pkg_id" ] && continue
+        
+        # Check if current package is selected
+        if grep -q "^${current_pkg_id}=" "$target_file" 2>/dev/null; then
+            # Get its dependencies
+            local deps
+            deps=$(get_package_dependencies "$current_pkg_id" "$caller")
+            
+            # Check if our dependency is in this package's dependencies
+            echo "$deps" | grep -qx "$dep_id" && return 0
+        fi
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
+    
+    return 1
+}
+
+# Add package and its dependencies
+add_package_with_dependencies() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Add main package
+    local cache_line
+    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
+    
+    if [ -n "$cache_line" ]; then
+        # Check if not already added
+        if ! grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+            echo "$cache_line" >> "$target_file"
+            
+            # Handle enableVar
+            local enable_var
+            enable_var=$(echo "$cache_line" | cut -d= -f5)
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${enable_var}='1'" >> "$SETUP_VARS"
+            fi
+        fi
+        
+        # Add dependencies
+        local deps
+        deps=$(get_package_dependencies "$pkg_id" "$caller")
+        
+        while read -r dep_id; do
+            [ -z "$dep_id" ] && continue
+            
+            # Find dependency in cache (by id or uniqueId)
+            local dep_cache_line
+            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+            
+            if [ -n "$dep_cache_line" ]; then
+                local dep_real_id
+                dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
+                
+                # Add dependency if not already added
+                if ! grep -q "^${dep_real_id}=" "$target_file" 2>/dev/null; then
+                    echo "$dep_cache_line" >> "$target_file"
+                    
+                    # Handle enableVar for dependency
+                    local dep_enable_var
+                    dep_enable_var=$(echo "$dep_cache_line" | cut -d= -f5)
+                    if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+                    fi
+                    
+                    echo "[DEP] Auto-added dependency: $dep_real_id (required by $pkg_id)" >> "$CONFIG_DIR/debug.log"
+                fi
+            fi
+        done <<DEPS
+$deps
+DEPS
+    fi
+}
+
+# Remove package and orphaned dependencies
+remove_package_with_dependencies() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Get dependencies before removing
+    local deps
+    deps=$(get_package_dependencies "$pkg_id" "$caller")
+    
+    # Remove main package
+    local all_entries
+    all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
+    
+    while read -r entry; do
+        [ -z "$entry" ] && continue
+        
+        local enable_var
+        enable_var=$(echo "$entry" | cut -d= -f5)
+        
+        if [ -n "$enable_var" ]; then
+            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+        fi
+    done <<ENTRIES
+$all_entries
+ENTRIES
+    
+    sed -i "/^${pkg_id}=/d" "$target_file"
+    
+    # Check and remove orphaned dependencies
+    while read -r dep_id; do
+        [ -z "$dep_id" ] && continue
+        
+        # Find dependency real id
+        local dep_cache_line dep_real_id
+        dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+        
+        if [ -n "$dep_cache_line" ]; then
+            dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
+            
+            # Check if this dependency is required by other selected packages
+            if ! is_dependency_required_by_others "$dep_id" "$pkg_id" "$caller"; then
+                # No other parent needs this dependency, safe to remove
+                local dep_entries
+                dep_entries=$(awk -F= -v id="$dep_real_id" '$1 == id' "$target_file" 2>/dev/null)
+                
+                while read -r dep_entry; do
+                    [ -z "$dep_entry" ] && continue
+                    
+                    local dep_enable_var
+                    dep_enable_var=$(echo "$dep_entry" | cut -d= -f5)
+                    
+                    if [ -n "$dep_enable_var" ]; then
+                        sed -i "/^${dep_enable_var}=/d" "$SETUP_VARS"
+                    fi
+                done <<DEP_ENTRIES
+$dep_entries
+DEP_ENTRIES
+                
+                sed -i "/^${dep_real_id}=/d" "$target_file"
+                echo "[DEP] Auto-removed orphaned dependency: $dep_real_id (no longer required)" >> "$CONFIG_DIR/debug.log"
+            else
+                echo "[DEP] Kept dependency: $dep_real_id (still required by other packages)" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+    done <<DEPS
+$deps
+DEPS
 }
 
 # Custom Feeds Management
