@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1212.1728"
+VERSION="R7.1214.0222"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -899,48 +899,49 @@ package_selection() {
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
-    # ★変更点1: ループ開始 - 更新ボタンでここに戻る
-    while true; do
+    packages=$(get_category_packages "$cat_id")
+    
+    # 【変更点】依存パッケージIDのキャッシュ処理をループの外に移動 (負荷軽減)
+    local dependent_ids=" "
+    
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
         
-        packages=$(get_category_packages "$cat_id")
+        local deps
+        if [ "$caller" = "custom_feeds" ]; then
+            deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        else
+            deps=$(jsonfilter -i "$PACKAGES_JSON" \
+                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+        fi
         
-        # 依存パッケージIDのキャッシュ処理（再生成）
-        local dependent_ids=" "
-        
-        while read -r parent_id; do
-            [ -z "$parent_id" ] && continue
+        while read -r dep; do
+            [ -z "$dep" ] && continue
             
-            local deps
-            if [ "$caller" = "custom_feeds" ]; then
-                deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
+            local matched_line matched_id
+            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
+            
+            if [ -n "$matched_line" ]; then
+                matched_id=$(echo "$matched_line" | cut -d= -f1)
+                dependent_ids="${dependent_ids}${matched_id} ${dep} "
             else
-                deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-            fi
-            
-            while read -r dep; do
-                [ -z "$dep" ] && continue
-                
-                local matched_line matched_id
-                matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-                
-                if [ -n "$matched_line" ]; then
-                    matched_id=$(echo "$matched_line" | cut -d= -f1)
-                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
-                else
-                    if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                        dependent_ids="${dependent_ids}${dep} "
-                    fi
+                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
+                    dependent_ids="${dependent_ids}${dep} "
                 fi
-            done <<DEPS
+            fi
+        done <<DEPS
 $deps
 DEPS
-        done <<EOF
+    done <<EOF
 $packages
 EOF
-        
-        dependent_ids="${dependent_ids} "
+    
+    dependent_ids="${dependent_ids} "
+    # 【変更点終了】依存パッケージIDのキャッシュ処理はここまで
+    
+    # ループ開始 - 更新ボタンでここに戻る (依存IDの再計算はしない)
+    while true; do
         
         checklist_items=""
         idx=1
@@ -1037,12 +1038,12 @@ EOF
         [ -z "$btn_refresh" ] && btn_refresh="Update"
         [ -z "$btn_back" ] && btn_back="Back"
 
-        # ★変更点2: show_checklistのボタンを更新/戻るに明示的に変更
+        # show_checklistのボタンを更新/戻るに明示的に変更
         selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items")
         
         local exit_status=$?
 
-        # ★変更点3: 終了ステータスによる分岐
+        # 終了ステータスによる分岐
         if [ $exit_status -ne 0 ]; then
             # --- [戻る]ボタン (Exit 1) が押された場合 ---
             # ループを抜けて前の画面に戻る
