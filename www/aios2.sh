@@ -13,7 +13,7 @@
 # id=name=uniqueId=installOptions=enableVar
 # apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
 
-VERSION="R7.1213.1942"
+VERSION="R7.1213.2238"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -802,14 +802,15 @@ XXX_check_package_available() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/package_availability.cache"
     
-    # カスタムフィードのパッケージは存在確認をスキップ（外部リポジトリから取得するため）
+    # カスタムフィードのパッケージは存在確認をスキップ
     if [ "$caller" = "custom_feeds" ]; then
         echo "[DEBUG] Package $pkg_id is from custom feed, skipping availability check" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
-    # virtual パッケージは常に利用可能とみなす
+    # virtual パッケージは常に利用可能
     local is_virtual
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     
@@ -818,14 +819,19 @@ check_package_available() {
         return 0
     fi
     
-    # キャッシュチェック
+    # ファイルキャッシュがあれば優先使用（高速）
+    if [ -f "$cache_file" ]; then
+        grep -qx "$pkg_id" "$cache_file" && return 0 || return 1
+    fi
+    
+    # メモリキャッシュチェック（従来の方式）
     if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_id}:"; then
         local status
         status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_id}:" | cut -d: -f2)
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
-    # 実際の存在確認（id で確認）
+    # 実際の存在確認
     local available=0
     if [ "$PKG_MGR" = "opkg" ]; then
         if opkg list "$pkg_id" 2>/dev/null | grep -q "^${pkg_id} "; then
@@ -837,11 +843,41 @@ check_package_available() {
         fi
     fi
     
-    # キャッシュに保存
+    # メモリキャッシュに保存
     _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_id}:${available}
 "
     
     [ "$available" -eq 1 ] && return 0 || return 1
+}
+
+cache_package_availability() {
+    local cache_file="$CONFIG_DIR/package_availability.cache"
+    
+    # 既にキャッシュがあれば再利用（60分以内）
+    [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin -60 2>/dev/null | wc -l) -gt 0 ] && return 0
+    
+    # システムの全利用可能パッケージを取得
+    local available_list
+    if command -v opkg >/dev/null 2>&1; then
+        available_list=$(opkg list 2>/dev/null | cut -d' ' -f1)
+    elif command -v apk >/dev/null 2>&1; then
+        available_list=$(apk list 2>/dev/null | cut -d' ' -f1)
+    else
+        return 1
+    fi
+    
+    # 全JSONからパッケージIDを抽出して存在チェック
+    {
+        [ -f "$PACKAGES_JSON" ] && jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
+        while read -r pkg_id; do
+            echo "$available_list" | grep -qx "$pkg_id" && echo "$pkg_id"
+        done
+        
+        [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
+        while read -r pkg_id; do
+            echo "$available_list" | grep -qx "$pkg_id" && echo "$pkg_id"
+        done
+    } | sort -u > "$cache_file"
 }
 
 package_compatible() {
@@ -3384,7 +3420,11 @@ aios2_main() {
     # 9. デバイス情報取得（API情報で上書き・補完）
     get_extended_device_info
 
-    # 10. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
+    # 10. パッケージ存在確認をバックグラウンドで開始
+    cache_package_availability &
+    CACHE_PKG_PID=$!
+    
+    # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
             download_language_json "${AUTO_LANGUAGE}"
