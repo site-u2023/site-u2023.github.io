@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1212.1722"
+VERSION="R7.1212.1728"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1267,21 +1267,25 @@ EOF
         while read -r pkg_name; do
             [ -z "$pkg_name" ] && continue
             
-            # 依存パッケージにインデント付与
+            # 表示名を作成（依存パッケージにインデント付与）
+            local display_name="$pkg_name"
             if [ "$is_dependent" -eq 1 ]; then
-                pkg_name="   ${pkg_name}"
+                display_name="   ${pkg_name}"
             fi
             
-            display_names="${display_names}${pkg_name}|${pkg_id}
+            # display_namesに保存（インデント付き）
+            display_names="${display_names}${display_name}|${pkg_id}
 "
             
+            # 選択状態チェック（元のpkg_nameで検索）
             if is_package_selected "$pkg_name" "$caller"; then
                 status="ON"
             else
                 status="OFF"
             fi
             
-            checklist_items="$checklist_items \"$idx\" \"$pkg_name\" $status"
+            # checklist_itemsに追加（インデント付き）
+            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
             idx=$((idx+1))
         done <<NAMES
 $names
@@ -1333,15 +1337,15 @@ EOF
     for idx_str in $selected; do
         idx_clean=$(echo "$idx_str" | tr -d '"')
         
-        local selected_line pkg_id ui_label cache_line
+        local selected_line pkg_id display_name ui_label cache_line
         selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
         
         if [ -n "$selected_line" ]; then
-            ui_label=$(echo "$selected_line" | cut -d'|' -f1)
+            display_name=$(echo "$selected_line" | cut -d'|' -f1)
             pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
             
             # インデント除去してキャッシュ検索
-            ui_label=$(echo "$ui_label" | sed 's/^[[:space:]]*//')
+            ui_label=$(echo "$display_name" | sed 's/^[[:space:]]*//')
             
             cache_line=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${pkg_id}=.*=${ui_label}=")
             
