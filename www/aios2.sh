@@ -828,7 +828,7 @@ cache_package_availability() {
     echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
     
     # ASU APIから全パッケージリストを取得
-    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
+    local api_url="${ASU_URL}/api/v1/packages/${OPENWRT_VERSION}/${DEVICE_TARGET}"
     local response
     
     response=$(wget -qO- "$api_url" 2>/dev/null)
