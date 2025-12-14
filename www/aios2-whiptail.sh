@@ -1213,17 +1213,11 @@ EOF
             
             echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
             
-            # hidden チェック（キャッシュから取得）
-            if [ "$hidden_flag" = "true" ]; then
-                echo "[DEBUG] Package $pkg_id is hidden (from cache), skipped" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-            
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
             fi
 
-            # 依存パッケージ判定
+            # ★★★ 依存パッケージ判定を先に実行 ★★★
             local is_dependent=0
             
             if [ -n "$uid" ]; then
@@ -1240,6 +1234,16 @@ EOF
                     is_dependent=1
                     echo "[DEBUG] $pkg_id is dependent (matched by id=$real_id)" >> "$CONFIG_DIR/debug.log"
                 fi
+            fi
+
+            # ★★★ hidden チェック（独立パッケージのみ）★★★
+            if [ "$is_dependent" -eq 0 ]; then
+                if [ "$hidden_flag" = "true" ]; then
+                    echo "[DEBUG] Package $pkg_id is hidden (independent package), skipped" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
+            else
+                echo "[DEBUG] Package $pkg_id is dependent, ignoring hidden flag" >> "$CONFIG_DIR/debug.log"
             fi
 
             # availability check 用 caller を決定
