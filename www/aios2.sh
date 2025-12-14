@@ -911,12 +911,7 @@ cache_package_availability() {
     if command -v opkg >/dev/null 2>&1; then
         opkg list 2>/dev/null | cut -d' ' -f1 > "$temp_available"
     elif command -v apk >/dev/null 2>&1; then
-        # APK: 最初の空白までがパッケージ名+バージョン
-        apk list 2>/dev/null | awk '{print $1}' | awk -F'-' '{
-            # 最後の2つのフィールド（バージョン-リビジョン）を除去
-            NF-=2
-            print
-        }' OFS='-' > "$temp_available"
+        apk list 2>/dev/null | sed -E 's/^([a-z0-9_+-]+)-[0-9].*/\1/' > "$temp_available"
     else
         echo "[DEBUG] No package manager found" >> "$CONFIG_DIR/debug.log"
         return 1
