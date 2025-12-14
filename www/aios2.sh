@@ -860,19 +860,18 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
-    # インストール状態キャッシュが無い場合でも不可にしない
+    # 存在キャッシュが無い場合は拒否しない
     if [ ! -f "$cache_file" ]; then
-        echo "[DEBUG] Cache file not found (skip install check): $cache_file" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 
-    # :0 / :1 どちらでも「存在はしている」と扱う
-    if grep -q "^${real_id}:" "$cache_file" 2>/dev/null; then
+    # repo に存在するパッケージだけ通す
+    if grep -qx "$real_id" "$cache_file" 2>/dev/null; then
         return 0
     fi
 
-    # キャッシュに無くても UI 上は表示可
-    return 0
+    return 1
 }
 
 get_kmods_directory() {
@@ -996,7 +995,7 @@ XXX_cache_package_availability() {
     return 0
 }
 
-cache_package_availability() {
+XXXXX_cache_package_availability() {
     echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
     
     local version="$OPENWRT_VERSION"
@@ -1084,6 +1083,95 @@ cache_package_availability() {
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
     
+    return 0
+}
+
+cache_package_availability() {
+    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
+
+    local version="$OPENWRT_VERSION"
+    local arch="$DEVICE_ARCH"
+
+    if [ -z "$version" ] || [ -z "$arch" ]; then
+        echo "[DEBUG] Missing version ($version) or arch ($arch)" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+    : > "$cache_file"
+
+    local feeds="base packages luci"
+    local is_snapshot=0
+    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+
+    local kernel_version=$(uname -r)
+    local kmod_dir
+    kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
+
+    if [ -n "$kmod_dir" ]; then
+        feeds="$feeds kmods"
+        echo "[DEBUG] Found kmods directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
+    fi
+
+    local pids=""
+    for feed in $feeds; do
+        (
+            local url temp_file
+            temp_file="$CONFIG_DIR/cache_${feed}.txt"
+
+            if [ "$feed" = "kmods" ]; then
+                url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
+            elif [ $is_snapshot -eq 1 ]; then
+                url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+            else
+                url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+            fi
+
+            echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
+
+            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
+            if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
+                echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
+                rm -f "$temp_response"
+                exit 1
+            fi
+
+            if [ ! -s "$temp_response" ]; then
+                echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
+                rm -f "$temp_response"
+                exit 1
+            fi
+
+            if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
+                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null \
+                    | awk 'NF {print $0}' > "$temp_file"
+            else
+                awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
+            fi
+
+            rm -f "$temp_response"
+
+            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
+            echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
+        ) &
+        pids="$pids $!"
+    done
+
+    wait $pids
+
+    for feed in $feeds; do
+        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+        if [ -f "$temp_file" ]; then
+            cat "$temp_file" >> "$cache_file"
+            rm -f "$temp_file"
+        fi
+    done
+
+    sort -u "$cache_file" -o "$cache_file"
+
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
+    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
+
     return 0
 }
 
