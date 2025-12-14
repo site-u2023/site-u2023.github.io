@@ -168,13 +168,12 @@ load_config_from_js() {
     local CONFIG_JS="$CONFIG_DIR/config.js"
     local CONFIG_CONTENT
     
-    # ファイルを1回だけ読み込み
     CONFIG_CONTENT=$(cat "$CONFIG_JS")
     
-    # 内容に対して grep（ファイルI/O が1回で済む）
     BASE_URL_PART=$(echo "$CONFIG_CONTENT" | grep "base_url:" | sed 's/.*"\([^"]*\)".*/\1/')
     BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep "base_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     [ -z "$AUTO_CONFIG_API_URL" ] && AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep "auto_config_api_url:" | sed 's/.*"\([^"]*\)".*/\1/')
+    ASU_URL=$(echo "$CONFIG_CONTENT" | grep "asu_url:" | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "packages_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep "postinst_template_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep "setup_db_path:" | sed 's/.*"\([^"]*\)".*/\1/')
@@ -187,10 +186,8 @@ load_config_from_js() {
     WHIPTAIL_FALLBACK_PATH=$(echo "$CONFIG_CONTENT" | grep "whiptail_fallback_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGE_MANAGER_CONFIG_PATH=$(echo "$CONFIG_CONTENT" | grep "package_manager_config_path:" | sed 's/.*"\([^"]*\)".*/\1/')
     
-    # BASE_URL を構築
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
     
-    # URL変数を構築
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
@@ -207,6 +204,7 @@ load_config_from_js() {
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
+        echo "[DEBUG] ASU_URL=$ASU_URL"
     } >> "$CONFIG_DIR/debug.log"
     
     return 0
@@ -823,14 +821,6 @@ XXX_check_package_available() {
 # =============================================================================
 # Package Availability Check
 # =============================================================================
-# Checks if a package is available in the package manager's repository
-# Uses cache to avoid repeated checks
-# Args:
-#   $1 - package id (not name!)
-#   $2 - caller ("normal" or "custom_feeds")
-# Returns:
-#   0 if package is available, 1 otherwise
-# =============================================================================
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
@@ -863,19 +853,18 @@ check_package_available() {
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
-    # リアルタイムで存在確認
+    # ASU APIで存在確認
     local available=0
-    if [ "$PKG_MGR" = "opkg" ]; then
-        if opkg list "$real_id" 2>/dev/null | grep -q "^${real_id} "; then
-            available=1
-        fi
-    elif [ "$PKG_MGR" = "apk" ]; then
-        if apk search -e "$real_id" 2>/dev/null | grep -q "^${real_id}-"; then
-            available=1
-        fi
+    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
+    local response
+    
+    response=$(wget -qO- "${api_url}?package=${real_id}" 2>/dev/null)
+    
+    if echo "$response" | grep -q "\"${real_id}\""; then
+        available=1
     fi
     
-    # メモリキャッシュに保存（次回以降は高速化）
+    # メモリキャッシュに保存
     _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
 "
     
