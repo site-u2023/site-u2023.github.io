@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0141"
+VERSION="R7.1215.0145"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -843,10 +843,11 @@ cache_package_availability() {
         return 1
     fi
     
-    # フィードリスト
-    local feeds="base packages luci"
+    # ★ 一時ファイル（.txt）を使用
+    local temp_cache="$CONFIG_DIR/pkg_availability_cache.txt"
+    : > "$temp_cache"
     
-    # SNAPSHOT判定
+    local feeds="base packages luci"
     local is_snapshot=0
     echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
     
@@ -860,46 +861,47 @@ cache_package_availability() {
         
         echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
         
-        local response
-        response=$(wget -qO- --timeout=10 "$url" 2>/dev/null)
-        
-        if [ -z "$response" ]; then
+        # ★ 一時レスポンスファイル
+        local temp_response="$CONFIG_DIR/feed_response.txt"
+        if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
             echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
+            rm -f "$temp_response"
             continue
         fi
         
-        if [ $is_snapshot -eq 1 ]; then
-            # JSON解析 (here-document使用)
-            local packages
-            packages=$(echo "$response" | jsonfilter -e '@.packages[*].name' 2>/dev/null)
-            
-            while read -r pkg; do
-                [ -z "$pkg" ] && continue
-                _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
-"
-            done <<EOF
-$packages
-EOF
-        else
-            # Packages形式解析 (here-document使用)
-            local pkglist
-            pkglist=$(echo "$response" | awk '/^Package: / {print $2}')
-            
-            while read -r pkg; do
-                [ -z "$pkg" ] && continue
-                _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
-"
-            done <<EOF
-$pkglist
-EOF
+        if [ ! -s "$temp_response" ]; then
+            echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
+            rm -f "$temp_response"
+            continue
         fi
         
-        echo "[DEBUG] Fetched $(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":") packages so far" >> "$CONFIG_DIR/debug.log"
+        # ★ パッケージ名を抽出して temp_cache に追記（フォーマット: pkg:1）
+        if [ $is_snapshot -eq 1 ]; then
+            jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
+                awk 'NF {print $0":1"}' >> "$temp_cache"
+        else
+            awk '/^Package: / {print $2":1"}' "$temp_response" >> "$temp_cache"
+        fi
+        
+        rm -f "$temp_response"
+        
+        local count=$(wc -l < "$temp_cache" 2>/dev/null || echo 0)
+        echo "[DEBUG] Fetched $count packages so far" >> "$CONFIG_DIR/debug.log"
     done
     
-    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":")
+    # ★ ファイルから変数に一括読み込み
+    if [ -s "$temp_cache" ]; then
+        _PACKAGE_AVAILABILITY_CACHE=$(cat "$temp_cache")
+    else
+        _PACKAGE_AVAILABILITY_CACHE=""
+    fi
+    
+    rm -f "$temp_cache"
+    
+    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":" 2>/dev/null || echo 0)
     echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
     
+    _PACKAGE_AVAILABILITY_LOADED=1
     return 0
 }
 
@@ -3757,7 +3759,12 @@ aios2_main() {
     # ========================================
     # Phase 10: パッケージキャッシュ完了を待機
     # ========================================
+    echo "Building package cache..."
     wait $CACHE_PKG_PID
+    CACHE_STATUS=$?
+    if [ $CACHE_STATUS -ne 0 ]; then
+        echo "[WARNING] Package cache build failed, some packages may not be available" >> "$CONFIG_DIR/debug.log"
+    fi
     echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
