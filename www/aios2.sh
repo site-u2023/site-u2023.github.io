@@ -1185,9 +1185,29 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     
+    # ★ 修正：uniqueId がある場合は uniqueId を、ない場合は id を返す
     {
-        [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
-        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*].id" 2>/dev/null
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+            awk -F'"' '{
+                id=""; uid="";
+                for(i=1;i<=NF;i++){
+                    if($i=="id") id=$(i+2);
+                    if($i=="uniqueId") uid=$(i+2);
+                }
+                if(uid) print uid; else if(id) print id;
+            }'
+        fi
+        
+        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '{
+            id=""; uid="";
+            for(i=1;i<=NF;i++){
+                if($i=="id") id=$(i+2);
+                if($i=="uniqueId") uid=$(i+2);
+            }
+            if(uid) print uid; else if(id) print id;
+        }'
     } | grep -v '^$' | awk '!seen[$0]++'
 }
 
