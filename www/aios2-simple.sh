@@ -993,40 +993,37 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    while true; do
-        # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
-        local dependent_ids=" "
+    # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
+    local dependent_ids=" "
+    
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
         
-        while read -r parent_id; do
-            [ -z "$parent_id" ] && continue
+        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
+        
+        while read -r dep; do
+            [ -z "$dep" ] && continue
             
-            # ★ キャッシュから依存関係を取得（フィールド6）
-            local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
+            local matched_line matched_id
+            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
             
-            # ★ サブシェル回避: ヒアドキュメントで処理
-            while read -r dep; do
-                [ -z "$dep" ] && continue
-                
-                local matched_line matched_id
-                matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-                
-                if [ -n "$matched_line" ]; then
-                    matched_id=$(echo "$matched_line" | cut -d= -f1)
-                    dependent_ids="${dependent_ids}${matched_id} ${dep} "
-                else
-                    if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                        dependent_ids="${dependent_ids}${dep} "
-                    fi
+            if [ -n "$matched_line" ]; then
+                matched_id=$(echo "$matched_line" | cut -d= -f1)
+                dependent_ids="${dependent_ids}${matched_id} ${dep} "
+            else
+                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
+                    dependent_ids="${dependent_ids}${dep} "
                 fi
-            done <<DEPS_INNER
+            fi
+        done <<DEPS_INNER
 $(echo "$deps" | tr ',' '\n')
 DEPS_INNER
-        done <<EOF
+    done <<EOF
 $packages
 EOF
-        
-        dependent_ids="${dependent_ids} "
-        # 【修正版終了】
+    
+    dependent_ids="${dependent_ids} "
+    # 【修正版終了】（依存IDの再計算はしない）
         
         local menu_items=""
         local display_names=""
