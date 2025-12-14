@@ -901,16 +901,14 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
+    # 【修正版】依存パッケージIDをキャッシュから取得（while true の外に移動）
     local dependent_ids=" "
     
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
-        # ★ キャッシュから依存関係を取得（フィールド6）
         local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
         
-        # ★ サブシェル回避: ヒアドキュメントで処理
         while read -r dep; do
             [ -z "$dep" ] && continue
             
