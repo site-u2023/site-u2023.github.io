@@ -834,31 +834,45 @@ XXXXX_check_package_available() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
 
-    [ "$caller" = "custom_feeds" ] && return 0
-
-    local is_virtual
-    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
-        -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    [ "$is_virtual" = "true" ] && return 0
-
-    # 判定キー正規化（uniqueId 優先）
-    local check_id="$pkg_id"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local real
-        real=$(echo "$_PACKAGE_NAME_CACHE" \
-            | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-        [ -n "$real" ] && check_id="$real"
-    fi
-
-    # 実在パッケージキャッシュで存在確認
-    if echo "$_PKG_AVAILABLE_CACHE" | grep -qx "$check_id"; then
+    # custom feeds は常に許可
+    if [ "$caller" = "custom_feeds" ]; then
         return 0
     fi
 
-    return 1
+    # virtual パッケージは常に許可
+    local is_virtual
+    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
+        -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
+    if [ "$is_virtual" = "true" ]; then
+        return 0
+    fi
+
+    # 判定ID正規化（uniqueId → real id）
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" \
+            | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+
+    # インストール状態キャッシュが無い場合でも不可にしない
+    if [ ! -f "$cache_file" ]; then
+        echo "[DEBUG] Cache file not found (skip install check): $cache_file" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+
+    # :0 / :1 どちらでも「存在はしている」と扱う
+    if grep -q "^${real_id}:" "$cache_file" 2>/dev/null; then
+        return 0
+    fi
+
+    # キャッシュに無くても UI 上は表示可
+    return 0
 }
 
 get_kmods_directory() {
