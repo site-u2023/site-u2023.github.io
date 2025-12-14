@@ -1204,15 +1204,41 @@ EOF
                 continue
             }
             
-            local pkg_name uid
+            local pkg_name uid real_id
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
+            real_id=$(echo "$entry" | cut -d= -f1)
+            
+            # ★ hidden チェック（依存/独立問わず最初に実行）
+            local is_hidden_entry
+            if [ -n "$uid" ]; then
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                fi
+            else
+                if [ "$caller" = "custom_feeds" ]; then
+                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                        -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
+                else
+                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                        -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
+                fi
+            fi
+            
+            if [ "$is_hidden_entry" = "true" ]; then
+                echo "[DEBUG] Package $pkg_id is hidden, skipped" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
             
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
             fi
 
-            # 依存パッケージ判定（uniqueIdとidの両方をチェック）
+            # 依存パッケージ判定
             local is_dependent=0
             
             if [ -n "$uid" ]; then
@@ -1225,7 +1251,6 @@ EOF
             
             # uniqueIdでマッチしなかった場合、idでも検索
             if [ "$is_dependent" -eq 0 ]; then
-                local real_id=$(echo "$entry" | cut -d= -f1)
                 if echo " ${dependent_ids} " | grep -q " ${real_id} "; then
                     is_dependent=1
                     echo "[DEBUG] $pkg_id is dependent (matched by id=$real_id)" >> "$CONFIG_DIR/debug.log"
@@ -1244,36 +1269,6 @@ EOF
             fi
     
             echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
-            
-            # hidden チェック（独立パッケージのみ）
-            if [ "$is_dependent" -eq 0 ]; then
-                local is_hidden_entry
-                local real_id=$(echo "$entry" | cut -d= -f1)
-                
-                # カテゴリ指定なしでグローバル検索
-                if [ -n "$uid" ]; then
-                    if [ "$caller" = "custom_feeds" ]; then
-                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                    else
-                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                    fi
-                else
-                    if [ "$caller" = "custom_feeds" ]; then
-                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
-                    else
-                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
-                    fi
-                fi
-                
-                if [ "$is_hidden_entry" = "true" ]; then
-                    echo "[DEBUG] Package $pkg_id is hidden, skipped" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-            fi
             
             local display_name="$pkg_name"
             if [ "$is_dependent" -eq 1 ]; then
