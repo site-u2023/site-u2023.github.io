@@ -1187,7 +1187,7 @@ EOF
         checklist_items=""
         idx=1
         local display_names=""
-        
+
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
 
@@ -1204,11 +1204,14 @@ EOF
                 continue
             }
             
+            # フィールド解析（拡張キャッシュ対応）
             local pkg_name uid real_id hidden_flag
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
             hidden_flag=$(echo "$entry" | cut -d= -f7)
+            
+            echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
             
             # hidden チェック（キャッシュから取得）
             if [ "$hidden_flag" = "true" ]; then
