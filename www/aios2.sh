@@ -838,17 +838,14 @@ check_package_available() {
 
     wait_for_package_cache
 
-    # 依存パッケージは常に許可（チェックしない）
     if [ "$caller" = "dependent" ]; then
         return 0
     fi
 
-    # custom feeds は常に許可
     if [ "$caller" = "custom_feeds" ]; then
         return 0
     fi
 
-    # virtual パッケージは常に許可
     local is_virtual
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
         -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
@@ -856,7 +853,6 @@ check_package_available() {
         return 0
     fi
 
-    # 判定ID正規化（uniqueId → real id）
     local real_id="$pkg_id"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
         local cached_real_id
@@ -865,12 +861,10 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
-    # 存在キャッシュが無い場合は許可
     if [ ! -f "$cache_file" ]; then
         return 0
     fi
 
-    # repo に存在するパッケージだけ通す
     if grep -qx "$real_id" "$cache_file" 2>/dev/null; then
         return 0
     fi
@@ -1090,13 +1084,10 @@ XXXXX_cache_package_availability() {
 
 cache_package_availability() {
     {
-        echo "[DEBUG] Building package availability cache..."
-        
         local version="$OPENWRT_VERSION"
         local arch="$DEVICE_ARCH"
         
         if [ -z "$version" ] || [ -z "$arch" ]; then
-            echo "[DEBUG] Missing version ($version) or arch ($arch)"
             return 1
         fi
         
@@ -1111,10 +1102,7 @@ cache_package_availability() {
         local kmod_dir
         kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
         
-        if [ -n "$kmod_dir" ]; then
-            feeds="$feeds kmods"
-            echo "[DEBUG] Found kmods directory: $kmod_dir"
-        fi
+        [ -n "$kmod_dir" ] && feeds="$feeds kmods"
         
         local pids=""
         for feed in $feeds; do
@@ -1130,33 +1118,19 @@ cache_package_availability() {
                     url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
                 fi
                 
-                echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
-                
                 local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-                if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
-                    echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
-                    rm -f "$temp_response"
-                    exit 1
-                fi
+                wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null || exit 1
                 
-                if [ ! -s "$temp_response" ]; then
-                    echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
-                    rm -f "$temp_response"
-                    exit 1
-                fi
+                [ ! -s "$temp_response" ] && exit 1
                 
                 if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
-                    jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null \
-                        | awk 'NF {print $0}' > "$temp_file"
+                    jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | awk 'NF {print $0}' > "$temp_file"
                 else
                     awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
                 fi
                 
                 rm -f "$temp_response"
-                
-                local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-                echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
-            ) >/dev/null 2>&1 &  # ← 標準出力・標準エラーを抑制
+            ) >/dev/null 2>&1 &
             pids="$pids $!"
         done
         
@@ -1164,18 +1138,12 @@ cache_package_availability() {
         
         for feed in $feeds; do
             local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            if [ -f "$temp_file" ]; then
-                cat "$temp_file" >> "$cache_file"
-                rm -f "$temp_file"
-            fi
+            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
+            rm -f "$temp_file"
         done
         
         sort -u "$cache_file" -o "$cache_file"
-        
-        local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-        echo "[DEBUG] Cache built: $count packages total"
-        
-    } >> "$CONFIG_DIR/debug.log" 2>&1  # ← 関数全体の出力をdebug.logへ
+    } >/dev/null 2>&1
     
     return 0
 }
@@ -1431,7 +1399,6 @@ get_category_packages() {
                     if($i=="uniqueId") uid=$(i+2);
                     if($i=="hidden") hidden=$(i+2);
                 }
-                # hiddenがtrueの場合はスキップ
                 if(hidden == "true") next;
                 if(uid) print uid; else if(id) print id;
             }'
@@ -1445,7 +1412,6 @@ get_category_packages() {
                 if($i=="uniqueId") uid=$(i+2);
                 if($i=="hidden") hidden=$(i+2);
             }
-            # hiddenがtrueの場合はスキップ
             if(hidden == "true") next;
             if(uid) print uid; else if(id) print id;
         }'
