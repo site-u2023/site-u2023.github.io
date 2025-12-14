@@ -1414,7 +1414,7 @@ add_package_with_dependencies() {
     
     # Add main package
     local cache_line
-    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
+    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
     
     if [ -n "$cache_line" ]; then
         # ★ メモリ内で重複チェック
@@ -1486,7 +1486,7 @@ remove_package_with_dependencies() {
     
     # Remove main package
     local all_entries
-    all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
+    all_entries=$(awk -F= -v id="$pkg_id" '$1 == id || $3 == id' "$target_file" 2>/dev/null)
     
     while read -r entry; do
         [ -z "$entry" ] && continue
