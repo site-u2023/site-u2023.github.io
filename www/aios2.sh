@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0255"
+VERSION="R7.1215.0433"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -838,6 +838,11 @@ check_package_available() {
 
     wait_for_package_cache
 
+    # 依存パッケージは常に許可（チェックしない）
+    if [ "$caller" = "dependent" ]; then
+        return 0
+    fi
+
     # custom feeds は常に許可
     if [ "$caller" = "custom_feeds" ]; then
         return 0
@@ -860,7 +865,7 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
-    # 存在キャッシュが無い場合は拒否しない
+    # 存在キャッシュが無い場合は許可
     if [ ! -f "$cache_file" ]; then
         echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
         return 0
