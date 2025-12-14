@@ -883,7 +883,7 @@ EOF
     done
 }
 
-package_selection() {
+XXXXX_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -993,6 +993,242 @@ EOF
                     is_dependent=1
                 fi
             fi
+            
+            # hidden チェック（独立パッケージのみ）
+            if [ "$is_dependent" -eq 0 ]; then
+                local is_hidden_entry
+                
+                if [ -n "$uid" ]; then
+                    if [ "$caller" = "custom_feeds" ]; then
+                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    else
+                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                    fi
+                else
+                    if [ "$caller" = "custom_feeds" ]; then
+                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                    else
+                        is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                    fi
+                fi
+                
+                [ "$is_hidden_entry" = "true" ] && continue
+            fi
+            
+            local display_name="$pkg_name"
+            if [ "$is_dependent" -eq 1 ]; then
+                display_name="   ${pkg_name}"
+            fi
+            
+            display_names="${display_names}${display_name}|${pkg_id}
+"
+            
+            local status
+            if is_package_selected "$pkg_id" "$caller"; then 
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            idx=$((idx+1))
+        done <<EOF
+$packages
+EOF
+        
+        # ボタン名の設定
+        local tr_space_toggle
+        tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
+        local btn_refresh=$(translate "tr-tui-refresh")
+        local btn_back=$(translate "tr-tui-back")
+        
+        [ -z "$btn_refresh" ] && btn_refresh="Update"
+        [ -z "$btn_back" ] && btn_back="Back"
+
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items")
+        
+        local exit_status=$?
+
+        if [ $exit_status -ne 0 ]; then
+            return 0
+        fi
+        
+        if [ "$caller" = "custom_feeds" ]; then
+            target_file="$SELECTED_CUSTOM_PACKAGES"
+        else
+            target_file="$SELECTED_PACKAGES"
+        fi
+        
+        # カテゴリの既存エントリを取得
+        local old_selection=""
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            
+            # pkg_id は uniqueId（ある場合）または id
+            # フィールド1（id）またはフィールド3（uniqueId）で完全一致チェック
+            if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
+                old_selection="${old_selection}${pkg_id}
+"
+            fi
+        done <<EOF
+$packages
+EOF
+        
+        # 新しい選択状態を取得
+        local new_selection=""
+        for idx_str in $selected; do
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            local selected_line pkg_id
+            selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
+            
+            if [ -n "$selected_line" ]; then
+                pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
+                new_selection="${new_selection}${pkg_id}
+"
+            fi
+        done
+        
+        # 変更検出と処理
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$old_selection" | grep -qx "$pkg_id"; then
+                add_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done <<NEW_SEL
+$new_selection
+NEW_SEL
+        
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            if ! echo "$new_selection" | grep -qx "$pkg_id"; then
+                remove_package_with_dependencies "$pkg_id" "$caller"
+            fi
+        done <<OLD_SEL
+$old_selection
+OLD_SEL
+        
+        clear_selection_cache
+    done
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+
+    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
+        get_package_name "dummy" > /dev/null 2>&1
+        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    local cat_name breadcrumb checklist_items
+    local pkg_name status idx selected target_file idx_str idx_clean
+    local packages
+    
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
+    packages=$(get_category_packages "$cat_id")
+
+    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
+    echo "$packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    
+    # 依存パッケージIDをキャッシュから取得（while true の外に移動）
+    local dependent_ids=" "
+    
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
+        
+        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
+        
+        while read -r dep; do
+            [ -z "$dep" ] && continue
+            
+            local matched_line matched_id
+            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
+            
+            if [ -n "$matched_line" ]; then
+                matched_id=$(echo "$matched_line" | cut -d= -f1)
+                dependent_ids="${dependent_ids}${matched_id} ${dep} "
+            else
+                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
+                    dependent_ids="${dependent_ids}${dep} "
+                fi
+            fi
+        done <<DEPS_INNER
+$(echo "$deps" | tr ',' '\n')
+DEPS_INNER
+    done <<EOF
+$packages
+EOF
+    
+    dependent_ids="${dependent_ids} "
+    
+    # ループ開始 - 更新ボタンでここに戻る
+    while true; do
+        
+        checklist_items=""
+        idx=1
+        local display_names=""
+        
+        # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+
+            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            
+            # キャッシュから該当行を抽出
+            local entry
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
+
+            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
+
+            [ -z "$entry" ] && {
+                echo "[DEBUG] No cache entry found for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            }
+            
+            local pkg_name uid
+            pkg_name=$(echo "$entry" | cut -d= -f2)
+            uid=$(echo "$entry" | cut -d= -f3)
+            
+            if [ "$caller" = "custom_feeds" ]; then
+                package_compatible "$pkg_id" || continue
+            fi
+
+            # 依存パッケージ判定（uniqueIdを優先）
+            local is_dependent=0
+            
+            if [ -n "$uid" ]; then
+                if echo " ${dependent_ids} " | grep -q " ${uid} "; then
+                    is_dependent=1
+                fi
+            else
+                if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+                    is_dependent=1
+                fi
+            fi
+
+            # availability check 用 caller を決定
+            local avail_caller="$caller"
+            [ "$is_dependent" -eq 1 ] && avail_caller="dependent"
+
+            echo "[DEBUG] Checking availability for $pkg_id (caller=$caller)" >> "$CONFIG_DIR/debug.log"
+            
+	    if ! check_package_available "$pkg_id" "$avail_caller"; then
+                echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+    
+            echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
             
             # hidden チェック（独立パッケージのみ）
             if [ "$is_dependent" -eq 0 ]; then
