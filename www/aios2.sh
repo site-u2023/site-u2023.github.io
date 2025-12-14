@@ -1332,26 +1332,35 @@ add_package_with_dependencies() {
         target_file="$SELECTED_PACKAGES"
     fi
     
+    # ★ ファイル内容を1回だけ読み込む
+    local existing_packages
+    existing_packages=$(cat "$target_file" 2>/dev/null || true)
+    
+    local existing_vars
+    existing_vars=$(cat "$SETUP_VARS" 2>/dev/null || true)
+    
     # Add main package
     local cache_line
     cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
     
     if [ -n "$cache_line" ]; then
-        # Check if not already added
-        if ! grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+        # ★ メモリ内で重複チェック
+        if ! echo "$existing_packages" | grep -q "^${pkg_id}="; then
             echo "$cache_line" >> "$target_file"
             
             # Handle enableVar
             local enable_var
             enable_var=$(echo "$cache_line" | cut -d= -f5)
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+            
+            # ★ メモリ内で重複チェック
+            if [ -n "$enable_var" ] && ! echo "$existing_vars" | grep -q "^${enable_var}="; then
                 echo "${enable_var}='1'" >> "$SETUP_VARS"
             fi
         fi
         
         # Add dependencies
         local deps
-        deps=$(get_package_dependencies "$pkg_id" "$caller")
+        deps=$(echo "$cache_line" | cut -d= -f6)
         
         while read -r dep_id; do
             [ -z "$dep_id" ] && continue
@@ -1364,14 +1373,16 @@ add_package_with_dependencies() {
                 local dep_real_id
                 dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
                 
-                # Add dependency if not already added
-                if ! grep -q "^${dep_real_id}=" "$target_file" 2>/dev/null; then
+                # ★ メモリ内で重複チェック
+                if ! echo "$existing_packages" | grep -q "^${dep_real_id}="; then
                     echo "$dep_cache_line" >> "$target_file"
                     
                     # Handle enableVar for dependency
                     local dep_enable_var
                     dep_enable_var=$(echo "$dep_cache_line" | cut -d= -f5)
-                    if [ -n "$dep_enable_var" ] && ! grep -q "^${dep_enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    
+                    # ★ メモリ内で重複チェック
+                    if [ -n "$dep_enable_var" ] && ! echo "$existing_vars" | grep -q "^${dep_enable_var}="; then
                         echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
                     fi
                     
@@ -1379,7 +1390,7 @@ add_package_with_dependencies() {
                 fi
             fi
         done <<DEPS
-$deps
+$(echo "$deps" | tr ',' '\n')
 DEPS
     fi
 }
