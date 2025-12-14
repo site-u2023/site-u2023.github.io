@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0554"
+VERSION="R7.1215.0602"
 
 # =============================================================================
 # Package Management Architecture
@@ -1426,36 +1426,22 @@ get_category_packages() {
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
             awk -F'"' '{
-                id=""; uid=""; hidden="";
+                id=""; uid="";
                 for(i=1;i<=NF;i++){
                     if($i=="id") id=$(i+2);
                     if($i=="uniqueId") uid=$(i+2);
-                    if($i=="hidden") {
-                        # ★シンプル：値を取得して比較
-                        val=$(i+2);
-                        # 引用符を除去
-                        gsub(/^"|"$/, "", val);
-                        if(val == "true") hidden="true";
-                    }
                 }
-                if(hidden == "true") next;
                 if(uid) print uid; else if(id) print id;
             }'
         fi
         
         jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
         awk -F'"' '{
-            id=""; uid=""; hidden="";
+            id=""; uid="";
             for(i=1;i<=NF;i++){
                 if($i=="id") id=$(i+2);
                 if($i=="uniqueId") uid=$(i+2);
-                if($i=="hidden") {
-                    val=$(i+2);
-                    gsub(/^"|"$/, "", val);
-                    if(val == "true") hidden="true";
-                }
             }
-            if(hidden == "true") next;
             if(uid) print uid; else if(id) print id;
         }'
     } | grep -v '^$' | awk '!seen[$0]++'
