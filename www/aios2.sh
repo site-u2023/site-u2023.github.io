@@ -1419,8 +1419,25 @@ add_package_with_dependencies() {
     [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
     
     if [ -n "$cache_line" ]; then
-        # ★ メモリ内で重複チェック
-        if ! echo "$existing_packages" | grep -q "^${pkg_id}="; then
+        local cached_id cached_uid
+        cached_id=$(echo "$cache_line" | cut -d= -f1)
+        cached_uid=$(echo "$cache_line" | cut -d= -f3)
+        
+        # ★ 修正：uniqueId を考慮した正確な重複チェック ★
+        local already_exists=0
+        if [ -n "$cached_uid" ]; then
+            # uniqueId がある場合：フィールド3 で完全一致
+            if echo "$existing_packages" | awk -F= -v uid="$cached_uid" '$3 == uid' | grep -q .; then
+                already_exists=1
+            fi
+        else
+            # uniqueId がない場合：フィールド1 が一致 & フィールド3 が空
+            if echo "$existing_packages" | awk -F= -v id="$cached_id" '$1 == id && $3 == ""' | grep -q .; then
+                already_exists=1
+            fi
+        fi
+        
+        if [ "$already_exists" -eq 0 ]; then
             echo "$cache_line" >> "$target_file"
             
             # Handle enableVar
@@ -1445,11 +1462,23 @@ add_package_with_dependencies() {
             dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
             
             if [ -n "$dep_cache_line" ]; then
-                local dep_real_id
+                local dep_real_id dep_uid
                 dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
+                dep_uid=$(echo "$dep_cache_line" | cut -d= -f3)
                 
-                # ★ メモリ内で重複チェック
-                if ! echo "$existing_packages" | grep -q "^${dep_real_id}="; then
+                # 依存パッケージの重複チェック
+                local dep_already_exists=0
+                if [ -n "$dep_uid" ]; then
+                    if echo "$existing_packages" | awk -F= -v uid="$dep_uid" '$3 == uid' | grep -q .; then
+                        dep_already_exists=1
+                    fi
+                else
+                    if echo "$existing_packages" | awk -F= -v id="$dep_real_id" '$1 == id && $3 == ""' | grep -q .; then
+                        dep_already_exists=1
+                    fi
+                fi
+                
+                if [ "$dep_already_exists" -eq 0 ]; then
                     echo "$dep_cache_line" >> "$target_file"
                     
                     # Handle enableVar for dependency
