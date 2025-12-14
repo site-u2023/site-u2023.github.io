@@ -955,7 +955,7 @@ EOF
             
             # キャッシュから該当行を抽出
             local entry
-            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
 
             echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
 
