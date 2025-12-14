@@ -909,28 +909,25 @@ package_selection() {
     echo "$packages" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
     
-    # 依存パッケージIDをキャッシュから取得（while true の外に移動）
-    local dependent_ids=" "
+    # 依存パッケージIDを収集（親パッケージを除外）
+    local dependent_ids=""
     
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
-        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
+        # キャッシュから依存関係を取得（フィールド6）
+        local deps
+        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '
+            ($1 == id && $3 == "") || $3 == id {print $6; exit}
+        ')
         
+        [ -z "$deps" ] && continue
+        
+        # カンマ区切りを改行に変換して追加
         while read -r dep; do
             [ -z "$dep" ] && continue
-            
-            local matched_line matched_id
-            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
-            
-            if [ -n "$matched_line" ]; then
-                matched_id=$(echo "$matched_line" | cut -d= -f1)
-                dependent_ids="${dependent_ids}${matched_id} ${dep} "
-            else
-                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                    dependent_ids="${dependent_ids}${dep} "
-                fi
-            fi
+            dependent_ids="${dependent_ids}${dep}
+"
         done <<DEPS_INNER
 $(echo "$deps" | tr ',' '\n')
 DEPS_INNER
@@ -938,7 +935,11 @@ DEPS_INNER
 $packages
 EOF
     
-    dependent_ids="${dependent_ids} "
+    # 重複削除
+    dependent_ids=$(echo "$dependent_ids" | sort -u)
+    
+    echo "[DEBUG] Dependent package IDs:" >> "$CONFIG_DIR/debug.log"
+    echo "$dependent_ids" >> "$CONFIG_DIR/debug.log"
     
     # ループ開始 - 更新ボタンでここに戻る
     while true; do
@@ -947,15 +948,17 @@ EOF
         idx=1
         local display_names=""
         
-        # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
+        # カテゴリのパッケージリストでループ
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
 
             echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
             
-            # キャッシュから該当行を抽出
+            # キャッシュから該当行を抽出（uniqueId優先、なければid）
             local entry
-            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '
+                ($1 == id && $3 == "") || $3 == id {print; exit}
+            ')
 
             echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
 
@@ -964,7 +967,8 @@ EOF
                 continue
             }
             
-            local pkg_name uid
+            local pkg_name uid real_id
+            real_id=$(echo "$entry" | cut -d= -f1)
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             
@@ -974,23 +978,27 @@ EOF
 
             echo "[DEBUG] Checking availability for $pkg_id (caller=$caller)" >> "$CONFIG_DIR/debug.log"
             
-            if ! check_package_available "$pkg_id" "$caller"; then
+            if ! check_package_available "$real_id" "$caller"; then
                 echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
     
             echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
             
-            # 依存パッケージ判定（uniqueIdを優先）
+            # 依存パッケージ判定（real_idとuidの両方で確認）
             local is_dependent=0
             
-            if [ -n "$uid" ]; then
-                if echo " ${dependent_ids} " | grep -q " ${uid} "; then
+            # まずreal_idで検索
+            if echo "$dependent_ids" | grep -qx "$real_id"; then
+                is_dependent=1
+                echo "[DEBUG] $pkg_id is dependent (matched by real_id: $real_id)" >> "$CONFIG_DIR/debug.log"
+            fi
+            
+            # uniqueIdがあれば、それでも検索
+            if [ "$is_dependent" -eq 0 ] && [ -n "$uid" ]; then
+                if echo "$dependent_ids" | grep -qx "$uid"; then
                     is_dependent=1
-                fi
-            else
-                if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
-                    is_dependent=1
+                    echo "[DEBUG] $pkg_id is dependent (matched by uid: $uid)" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
             
@@ -1009,19 +1017,25 @@ EOF
                 else
                     if [ "$caller" = "custom_feeds" ]; then
                         is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
                     else
                         is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                            -e "@.categories[@.id='$cat_id'].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
                     fi
                 fi
                 
-                [ "$is_hidden_entry" = "true" ] && continue
+                if [ "$is_hidden_entry" = "true" ]; then
+                    echo "[DEBUG] $pkg_id is hidden (independent package), skipped" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             fi
             
             local display_name="$pkg_name"
             if [ "$is_dependent" -eq 1 ]; then
                 display_name="   ${pkg_name}"
+                echo "[DEBUG] $pkg_id will be displayed as dependent (indented)" >> "$CONFIG_DIR/debug.log"
+            else
+                echo "[DEBUG] $pkg_id will be displayed as independent" >> "$CONFIG_DIR/debug.log"
             fi
             
             display_names="${display_names}${display_name}|${pkg_id}
@@ -1068,8 +1082,6 @@ EOF
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             
-            # pkg_id は uniqueId（ある場合）または id
-            # フィールド1（id）またはフィールド3（uniqueId）で完全一致チェック
             if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
                 old_selection="${old_selection}${pkg_id}
 "
@@ -1112,121 +1124,6 @@ $old_selection
 OLD_SEL
         
         clear_selection_cache
-    done
-}
-
-view_customfeeds() {
-    local tr_main_menu tr_review tr_customfeeds breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb script_file
-    local categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_customfeeds=$(translate "tr-tui-view-customfeeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    categories=$(get_customfeed_categories)
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
-$categories
-EOF
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            cat_name=$(get_category_name "$selected_cat")
-            cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-            
-            script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-            
-            if [ -f "$script_file" ]; then
-                cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
-                show_textbox "$cat_breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
-            else
-                show_msgbox "$cat_breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
-            fi
-        fi
-    done
-}
-
-view_customscripts() {
-    local tr_main_menu tr_review tr_customscripts breadcrumb
-    local menu_items i script_id script_name choice selected_script script_breadcrumb script_file
-    local all_scripts
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_customscripts=$(translate "tr-tui-view-customscripts")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customscripts")
-    
-    if [ ! -f "$CUSTOMSCRIPTS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts configured"
-        return 0
-    fi
-    
-    # 全スクリプトを直接取得
-    all_scripts=$(get_customscript_all_scripts)
-    
-    if [ -z "$all_scripts" ]; then
-        show_msgbox "$breadcrumb" "No custom scripts available"
-        return 0
-    fi
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r script_id; do
-            script_name=$(get_customscript_name "$script_id")
-            menu_items="$menu_items $i \"$script_name\""
-            i=$((i+1))
-        done <<EOF
-$all_scripts
-EOF
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
-            script_name=$(get_customscript_name "$selected_script")
-            script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
-            
-            script_file="$CONFIG_DIR/customscripts-${selected_script}.sh"
-            
-            if [ -f "$script_file" ]; then
-                cat "$script_file" > "$CONFIG_DIR/customscripts_view.txt"
-                show_textbox "$script_breadcrumb" "$CONFIG_DIR/customscripts_view.txt"
-            else
-                show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
-            fi
-        fi
     done
 }
 
