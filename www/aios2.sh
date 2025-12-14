@@ -821,6 +821,14 @@ XXX_check_package_available() {
 # =============================================================================
 # Package Availability Check
 # =============================================================================
+# Checks if a package is available in the package manager's repository
+# Uses cache to avoid repeated checks
+# Args:
+#   $1 - package id (not name!)
+#   $2 - caller ("normal" or "custom_feeds")
+# Returns:
+#   0 if package is available, 1 otherwise
+# =============================================================================
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
@@ -3738,8 +3746,8 @@ aios2_main() {
     get_extended_device_info
 
     # 10. パッケージ存在確認をバックグラウンドで開始
-    # cache_package_availability &
-    # CACHE_PKG_PID=$!
+    cache_package_availability &
+    CACHE_PKG_PID=$!
     
     # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -3764,8 +3772,8 @@ aios2_main() {
     fi
 
     # UIモジュールの起動前に待機
-    # wait $CACHE_PKG_PID
-    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    wait $CACHE_PKG_PID
+    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
 
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
