@@ -1093,7 +1093,7 @@ EOF
             
             # 選択状態を表示名に含める
             local status_mark=""
-            if is_package_selected "$pkg_name" "$caller"; then
+            if is_package_selected "$pkg_id" "$caller"; then
                 status_mark="[✓] "
             else
                 status_mark="[ ] "
