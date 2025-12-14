@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0137"
+VERSION="R7.1215.0141"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -853,17 +853,15 @@ cache_package_availability() {
     for feed in $feeds; do
         local url
         if [ $is_snapshot -eq 1 ]; then
-            # SNAPSHOT: index.json
             url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
         else
-            # リリース: Packages
             url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
         fi
         
         echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
         
         local response
-        response=$(wget -qO- "$url" 2>/dev/null)
+        response=$(wget -qO- --timeout=10 "$url" 2>/dev/null)
         
         if [ -z "$response" ]; then
             echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
@@ -871,7 +869,7 @@ cache_package_availability() {
         fi
         
         if [ $is_snapshot -eq 1 ]; then
-            # JSON解析
+            # JSON解析 (here-document使用)
             local packages
             packages=$(echo "$response" | jsonfilter -e '@.packages[*].name' 2>/dev/null)
             
@@ -883,17 +881,24 @@ cache_package_availability() {
 $packages
 EOF
         else
-            # Packages形式解析
-            echo "$response" | awk '/^Package: / {print $2}' | while read -r pkg; do
+            # Packages形式解析 (here-document使用)
+            local pkglist
+            pkglist=$(echo "$response" | awk '/^Package: / {print $2}')
+            
+            while read -r pkg; do
                 [ -z "$pkg" ] && continue
                 _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
 "
-            done
+            done <<EOF
+$pkglist
+EOF
         fi
+        
+        echo "[DEBUG] Fetched $(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":") packages so far" >> "$CONFIG_DIR/debug.log"
     done
     
     local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":")
-    echo "[DEBUG] Cache built: $count packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
     
     return 0
 }
