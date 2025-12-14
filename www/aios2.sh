@@ -32,18 +32,18 @@ VERSION="R7.1215.0510"
 # 5. Independent package (is_dependent=0) → execute hidden check
 #
 # 【hidden Attribute】
-# - hidden: true packages are hidden as independent packages
-# - But displayed as dependent packages (with indent)
+# - hidden: true packages are ALWAYS hidden (both independent and dependent)
+# - NOT displayed even as dependent packages
 #
 # 【Package Availability Check】
 # check_package_available() verifies package existence in repository:
-# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, kmods
+# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, community, kmods
 # - Cache file: $CONFIG_DIR/pkg_availability_cache.txt (one package per line)
 # - Returns 0 (available) or 1 (not available)
 # - Exceptions:
 #   * virtual=true packages: always return 0 (skip check)
 #   * custom_feeds caller: always return 0 (skip check)
-#   * dependent packages: MUST pass availability check (no exception)
+#   * ALL other packages (including dependents): MUST pass availability check
 #
 # 【Package Installation Requirements】
 # postinst.json structure:
@@ -852,10 +852,12 @@ check_package_available() {
 
     wait_for_package_cache
 
+    # custom_feeds のみスキップ
     if [ "$caller" = "custom_feeds" ]; then
         return 0
     fi
 
+    # virtual パッケージはスキップ
     local is_virtual
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
         -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
@@ -1104,8 +1106,8 @@ cache_package_availability() {
         local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
         : > "$cache_file"
         
-        # ★ 全フィードをカバー
-        local feeds="base packages luci routing telephony"
+        # ★ 全フィード（telephony, community 追加）
+        local feeds="base packages luci routing telephony community"
         local is_snapshot=0
         echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
         
