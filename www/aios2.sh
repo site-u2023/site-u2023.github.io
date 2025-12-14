@@ -1162,33 +1162,49 @@ get_package_name() {
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '{
-                id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
                     if($i=="name")name=$(i+2);
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
                     if($i=="enableVar")enableVar=$(i+2);
+                    if($i=="dependencies") {
+                        # dependencies配列を収集（カンマ区切り）
+                        for(j=i+2;j<=NF;j++){
+                            if($j ~ /^[a-z0-9_-]+$/) deps=deps$j",";
+                            if($j=="]") break;
+                        }
+                        sub(/,$/, "", deps);  # 末尾のカンマ削除
+                    }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps
                 }
             }')
         
+        # customfeeds.json も同様に処理
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '{
-                    id=""; name=""; uniqueId=""; installOptions=""; enableVar="";
+                    id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
                         if($i=="name")name=$(i+2);
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
                         if($i=="enableVar")enableVar=$(i+2);
+                        if($i=="dependencies") {
+                            for(j=i+2;j<=NF;j++){
+                                if($j ~ /^[a-z0-9_-]+$/) deps=deps$j",";
+                                if($j=="]") break;
+                            }
+                            sub(/,$/, "", deps);
+                        }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -1200,7 +1216,7 @@ ${custom_cache}"
         echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # ★ 修正：常に $2 (name) を返す
+    # name を返す（既存ロジック）
     echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg {
             print $2
@@ -1252,19 +1268,22 @@ is_package_selected() {
 }
 
 # =============================================================================
-# Dependency Management Functions
+# Get dependencies for a package (from cache)
 # =============================================================================
-
-# Get dependencies for a package
 get_package_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     
-    if [ "$caller" = "custom_feeds" ]; then
-        jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null
-    else
-        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].dependencies[*]" 2>/dev/null
+    # キャッシュがロードされていなければロード
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" >/dev/null 2>&1
     fi
+    
+    # キャッシュから依存関係を取得（フィールド6）
+    local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '$1 == pkg {print $6; exit}')
+    
+    # カンマ区切りを改行に変換
+    echo "$deps" | tr ',' '\n' | grep -v '^$'
 }
 
 # Check if a dependency is required by other selected packages
