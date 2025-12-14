@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1214.1048"
+VERSION="R7.1215.0040"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -48,7 +48,6 @@ MAX_BACKUPS="10"
 BOOTSTRAP_URL="https://site-u.pages.dev/www"
 AUTO_CONFIG_API_URL="https://auto-config.site-u.workers.dev/"
 BASE_URL=""
-AUTO_CONFIG_API_URL=""
 PACKAGES_URL=""
 SETUP_JSON_URL=""
 SETUP_TEMPLATE_URL=""
@@ -87,8 +86,6 @@ _CATEGORIES_CACHE=""
 _CATEGORIES_LOADED=0
 _SETUP_CATEGORIES_CACHE=""
 _SETUP_CATEGORIES_LOADED=0
-_PACKAGE_AVAILABILITY_CACHE=""
-_PACKAGE_AVAILABILITY_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -401,7 +398,6 @@ init() {
     unset _CUSTOMFEED_CATEGORIES_CACHE
     unset _CATEGORIES_CACHE
     unset _SETUP_CATEGORIES_CACHE
-    unset _PACKAGE_AVAILABILITY_CACHE
     unset _TRANSLATIONS_LOADED
     unset _TRANSLATIONS_DATA
     unset _TRANSLATIONS_EN_LOADED
@@ -417,7 +413,6 @@ init() {
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
-    _PACKAGE_AVAILABILITY_LOADED=0
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
@@ -763,184 +758,6 @@ build_deviceinfo_display() {
 }
 
 # Package Management
-
-# =============================================================================
-# Package Availability Check
-# =============================================================================
-# Checks if a package is available in the package manager's repository
-# Uses cache to avoid repeated checks
-# Args:
-#   $1 - package id (not name!)
-#   $2 - caller ("normal" or "custom_feeds")
-# Returns:
-#   0 if package is available, 1 otherwise
-# =============================================================================
-XXX_check_package_available() {
-    local pkg_id="$1"
-    local caller="${2:-normal}"
-    
-    # virtual パッケージは常に利用可能とみなす
-    local is_virtual
-    if [ "$caller" = "custom_feeds" ]; then
-        is_virtual=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    else
-        is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    fi
-    
-    if [ "$is_virtual" = "true" ]; then
-        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    # キャッシュチェック
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_id}:"; then
-        local status
-        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_id}:" | cut -d: -f2)
-        [ "$status" = "1" ] && return 0 || return 1
-    fi
-    
-    # 実際の存在確認（id で確認）
-    local available=0
-    if [ "$PKG_MGR" = "opkg" ]; then
-        if opkg list "$pkg_id" 2>/dev/null | grep -q "^${pkg_id} "; then
-            available=1
-        fi
-    elif [ "$PKG_MGR" = "apk" ]; then
-        if apk search -e "$pkg_id" 2>/dev/null | grep -q "^${pkg_id}-"; then
-            available=1
-        fi
-    fi
-    
-    # キャッシュに保存
-    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_id}:${available}
-"
-    
-    [ "$available" -eq 1 ] && return 0 || return 1
-}
-
-# =============================================================================
-# Package Availability Check
-# =============================================================================
-# Checks if a package is available in the package manager's repository
-# Uses cache to avoid repeated checks
-# Args:
-#   $1 - package id (not name!)
-#   $2 - caller ("normal" or "custom_feeds")
-# Returns:
-#   0 if package is available, 1 otherwise
-# =============================================================================
-XXX_check_package_available() {
-    local pkg_id="$1"
-    local caller="${2:-normal}"
-    
-    # カスタムフィードのパッケージは存在確認をスキップ
-    if [ "$caller" = "custom_feeds" ]; then
-        return 0
-    fi
-    
-    # virtual パッケージは常に利用可能
-    local is_virtual
-    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    
-    if [ "$is_virtual" = "true" ]; then
-        return 0
-    fi
-    
-    # uniqueIdの場合はidに変換
-    local real_id="$pkg_id"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local cached_real_id
-        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
-    fi
-    
-    # メモリキャッシュチェック
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
-        local status
-        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
-        [ "$status" = "1" ] && return 0 || return 1
-    fi
-    
-    # ASU APIで存在確認
-    local available=0
-    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
-    local response
-    
-    response=$(wget -qO- "${api_url}?package=${real_id}" 2>/dev/null)
-    
-    if echo "$response" | grep -q "\"${real_id}\""; then
-        available=1
-    fi
-    
-    # メモリキャッシュに保存
-    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
-"
-    
-    [ "$available" -eq 1 ] && return 0 || return 1
-}
-
-XXX_cache_package_availability() {
-    local cache_file="$CONFIG_DIR/package_availability.cache"
-    
-    # システムの全利用可能パッケージを取得
-    local available_list
-    if command -v opkg >/dev/null 2>&1; then
-        available_list=$(opkg list 2>/dev/null | cut -d' ' -f1)
-    elif command -v apk >/dev/null 2>&1; then
-        # APKの場合、バージョン番号を除去してパッケージ名のみを抽出
-        available_list=$(apk list 2>/dev/null | awk '{print $1}' | sed 's/-[0-9].*//')
-    else
-        return 1
-    fi
-    
-    # 全JSONからパッケージIDを抽出して存在チェック
-    {
-        [ -f "$PACKAGES_JSON" ] && jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
-        while read -r pkg_id; do
-            echo "$available_list" | grep -qx "$pkg_id" && echo "$pkg_id"
-        done
-        
-        [ -f "$CUSTOMFEEDS_JSON" ] && jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
-        while read -r pkg_id; do
-            echo "$available_list" | grep -qx "$pkg_id" && echo "$pkg_id"
-        done
-    } | sort -u > "$cache_file"
-    
-    echo "[DEBUG] Package availability cache created: $(wc -l < "$cache_file") packages" >> "$CONFIG_DIR/debug.log"
-}
-
-cache_package_availability() {
-    echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
-    
-    # ASU APIから全パッケージリストを取得
-    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
-    local response
-    
-    response=$(wget -qO- "$api_url" 2>/dev/null)
-    
-    if [ -z "$response" ]; then
-        echo "[DEBUG] Failed to fetch package list from ASU API" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    # JSONから全パッケージ名を抽出してメモリキャッシュに格納
-    local available_packages
-    available_packages=$(echo "$response" | jsonfilter -e '@.packages[*]' 2>/dev/null | sort -u)
-    
-    # メモリキャッシュに保存（pkg_id:1 形式）
-    while read -r pkg; do
-        [ -z "$pkg" ] && continue
-        _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
-"
-    done <<EOF
-$available_packages
-EOF
-    
-    local cached_count=$(echo "$available_packages" | wc -l)
-    echo "[DEBUG] Package availability cache created: $cached_count packages from ASU" >> "$CONFIG_DIR/debug.log"
-    
-    return 0
-}
 
 package_compatible() {
     local pkg_id="$1"
