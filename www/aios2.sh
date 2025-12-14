@@ -870,7 +870,7 @@ check_package_available() {
     [ "$available" -eq 1 ] && return 0 || return 1
 }
 
-cache_package_availability() {
+XXX_cache_package_availability() {
     local cache_file="$CONFIG_DIR/package_availability.cache"
     
     # 既にキャッシュがあれば再利用（60分以内）
@@ -901,6 +901,53 @@ cache_package_availability() {
     } | sort -u > "$cache_file"
     
     echo "[DEBUG] Package availability cache created: $(wc -l < "$cache_file") packages" >> "$CONFIG_DIR/debug.log"
+}
+
+cache_package_availability() {
+    local cache_file="$CONFIG_DIR/package_availability.cache"
+    
+    # 既にキャッシュがあれば再利用（60分以内）
+    [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin -60 2>/dev/null | wc -l) -gt 0 ] && return 0
+    
+    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
+    
+    # 一時ファイルにパッケージリストを保存
+    local temp_available="$CONFIG_DIR/temp_available.txt"
+    
+    if command -v opkg >/dev/null 2>&1; then
+        opkg list 2>/dev/null | cut -d' ' -f1 > "$temp_available"
+    elif command -v apk >/dev/null 2>&1; then
+        apk list 2>/dev/null | sed -E 's/^([a-z0-9_+-]+)-[0-9].*/\1/' > "$temp_available"
+    else
+        echo "[DEBUG] No package manager found" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    echo "[DEBUG] Available packages: $(wc -l < "$temp_available")" >> "$CONFIG_DIR/debug.log"
+    
+    # 全JSONからパッケージIDを抽出して存在チェック
+    {
+        if [ -f "$PACKAGES_JSON" ]; then
+            jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
+            while read -r pkg_id; do
+                grep -qx "$pkg_id" "$temp_available" && echo "$pkg_id"
+            done
+        fi
+        
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
+            while read -r pkg_id; do
+                grep -qx "$pkg_id" "$temp_available" && echo "$pkg_id"
+            done
+        fi
+    } | sort -u > "$cache_file"
+    
+    rm -f "$temp_available"
+    
+    local cached_count=$(wc -l < "$cache_file")
+    echo "[DEBUG] Package availability cache created: $cached_count packages" >> "$CONFIG_DIR/debug.log"
+    
+    return 0
 }
 
 package_compatible() {
