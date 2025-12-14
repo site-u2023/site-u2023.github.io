@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0040"
+VERSION="R7.1215.0113"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -391,7 +391,7 @@ init() {
         return 1
     }
 
-    # ★★★ キャッシュ変数の完全初期化 ★★★
+    # キャッシュ変数の完全初期化
     unset _PACKAGE_NAME_CACHE
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
@@ -407,7 +407,7 @@ init() {
     unset _TRANSLATIONS_EN_DATA
     unset _CURRENT_LANG
     
-    # ★★★ フラグを明示的に0に設定 ★★★
+    # フラグを明示的に0に設定
     _PACKAGE_NAME_LOADED=0
     _SELECTED_PACKAGES_CACHE_LOADED=0
     _SELECTED_CUSTOM_CACHE_LOADED=0
@@ -3506,18 +3506,21 @@ show_log() {
 aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
+    # ヘルパー: 経過時間計測
     elapsed_time() {
         local current=$(cut -d' ' -f1 /proc/uptime)
         awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
     }
     
+    # バナー表示と言語コード取得
     clear
     print_banner
-    
     mkdir -p "$CONFIG_DIR"
     get_language_code
     
-    # 1. config.js を優先ダウンロード
+    # ========================================
+    # Phase 1: 初期化とconfig.js取得
+    # ========================================
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
@@ -3525,9 +3528,11 @@ aios2_main() {
         return 1
     }
     
-    init
+    init  # キャッシュクリア、ロックファイル作成、config.js読込（ASU_URL設定）
     
-    # 2. 全ファイルを並列DL開始（package-manager.json も含む）
+    # ========================================
+    # Phase 2: 必須ファイルを並列ダウンロード
+    # ========================================
     (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
     PKG_MGR_DL_PID=$!
     
@@ -3552,89 +3557,92 @@ aios2_main() {
     (download_language_json "en" >/dev/null 2>&1) &
     LANG_EN_PID=$!
     
+    # 母国語ファイル（enでない場合のみ）
     NATIVE_LANG_PID=""
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         (download_language_json "${AUTO_LANGUAGE}") &
         NATIVE_LANG_PID=$!
     fi
     
+    # UIモジュールファイル
     (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
     
-    # 3. whiptail の有無をチェック
+    # ========================================
+    # Phase 3: whiptail有無チェック
+    # ========================================
     WHIPTAIL_AVAILABLE=0
-    if command -v whiptail >/dev/null 2>&1; then
-        WHIPTAIL_AVAILABLE=1
-    fi
+    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
     
-    # 4. 即座にUI選択画面を表示（並列DL進行中）
+    # ========================================
+    # Phase 4: UI選択（ユーザー入力）
+    # ========================================
     UI_START=$(cut -d' ' -f1 /proc/uptime)
     select_ui_mode
     UI_END=$(cut -d' ' -f1 /proc/uptime)
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
-    # 5. whiptailモード選択 + whiptail無し → package-manager.json完了を待つ
+    # whiptail選択 かつ 未インストールの場合 → package-manager.json完了を待ってインストール
     if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
         echo "Waiting for package manager configuration..."
         wait $PKG_MGR_DL_PID
         
-        echo "[DEBUG] Loading package manager config..." >> "$CONFIG_DIR/debug.log"
         load_package_manager_config || {
             echo "Failed to load package manager config"
             printf "Press [Enter] to exit. "
             read -r _
             return 1
         }
-        echo "[DEBUG] Package manager configured: PKG_MGR=$PKG_MGR" >> "$CONFIG_DIR/debug.log"
         
         echo "Installing whiptail..."
         echo "Updating package lists..."
-        eval "$PKG_UPDATE_CMD" || {
-            echo "Warning: Failed to update package lists"
-        }
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
         
-        if install_package whiptail; then
-            echo "Installation successful."
-        else
+        if ! install_package whiptail; then
             echo "Installation failed. Falling back to simple mode."
             UI_MODE="simple"
+        else
+            echo "Installation successful."
         fi
     fi
     
-    # 6. 母国語ファイルのダウンロード完了を待機
-    if [ -n "$NATIVE_LANG_PID" ]; then
-        wait $NATIVE_LANG_PID
-    fi
+    # 母国語ファイル完了を待機
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    # 7. 必須ファイルの完了を待機
+    # ========================================
+    # Phase 5: 必須JSON完了を待機
+    # ========================================
     wait $API_PID
+    
     wait $SETUP_PID
     SETUP_STATUS=$?
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    wait $UI_DL_PID
-    
-    if [ $SETUP_STATUS -ne 0 ]; then
+    [ $SETUP_STATUS -ne 0 ] && {
         echo "Cannot continue without setup.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
-    fi
+    }
     
-    if [ $POSTINST_STATUS -ne 0 ]; then
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
         echo "Cannot continue without postinst.json"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
-    fi
+    }
     
-    # 8. package-manager.json をロード（whiptail有り or simple選択の場合）
+    wait $UI_DL_PID
+    
+    # ========================================
+    # Phase 6: package-manager.jsonロード
+    # ========================================
     wait $PKG_MGR_DL_PID
     
     if [ "$UI_MODE" = "simple" ] || [ "$WHIPTAIL_AVAILABLE" -eq 1 ]; then
@@ -3646,45 +3654,58 @@ aios2_main() {
         }
     fi
     
-    # 9. デバイス情報取得（API情報で上書き・補完）
+    # ========================================
+    # Phase 7: デバイス情報取得（API情報で上書き・補完）
+    # DEVICE_TARGET, OPENWRT_VERSIONをここで設定
+    # ========================================
     get_extended_device_info
-
-    # 10. パッケージ存在確認をバックグラウンドで開始
+    
+    # ========================================
+    # Phase 8: パッケージ存在確認キャッシュ構築
+    # 変数が揃った後に実行
+    # ========================================
     cache_package_availability &
     CACHE_PKG_PID=$!
     
-    # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
-            download_language_json "${AUTO_LANGUAGE}"
-        fi
-    fi
-    
+    # ========================================
+    # Phase 9: 残りのバックグラウンド処理完了を待機
+    # ========================================
     wait $CUSTOMFEEDS_PID
     wait $CUSTOMSCRIPTS_PID
     wait $TEMPLATES_PID
     wait $LANG_EN_PID
     
+    # APIから言語コードが取得できた場合、母国語ファイルを再取得
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
+    fi
+    
+    # 処理時間計測
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    echo "[TIME] Total auto-processing: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
     
-    echo "[TIME] Total: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
-
+    # simple UIの場合、Yes/No表記を簡略化
     if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
-
-    # UIモジュールの起動前に待機
+    
+    # ========================================
+    # Phase 10: パッケージキャッシュ完了を待機
+    # ========================================
     wait $CACHE_PKG_PID
     echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
-
+    
+    # ========================================
+    # Phase 11: UIモジュール起動
+    # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
     else
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
-        exit 1
+        return 1
     fi
     
     echo ""
