@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1214.0222"
+VERSION="R7.1214.1120"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -901,7 +901,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 【修正版】依存パッケージIDをキャッシュから取得（while true の外に移動）
+    # 依存パッケージIDをキャッシュから取得（while true の外に移動）
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -931,26 +931,26 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    # 【修正版終了】
     
-    # ループ開始 - 更新ボタンでここに戻る (依存IDの再計算はしない)
+    # ループ開始 - 更新ボタンでここに戻る
     while true; do
         
         checklist_items=""
         idx=1
         local display_names=""
         
-        # キャッシュを1回だけ走査
-        while read -r entry; do
+        # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            
+            # キャッシュから該当行を抽出
+            local entry
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
             [ -z "$entry" ] && continue
             
-            local pkg_id pkg_name uid
-            pkg_id=$(echo "$entry" | cut -d= -f1)
+            local pkg_name uid
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
-            
-            # このカテゴリのパッケージでなければスキップ
-            echo "$packages" | grep -qx "$pkg_id" || continue
             
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
@@ -962,12 +962,10 @@ EOF
             local is_dependent=0
             
             if [ -n "$uid" ]; then
-                # uniqueIdがある場合は、uniqueIdで判定
                 if echo " ${dependent_ids} " | grep -q " ${uid} "; then
                     is_dependent=1
                 fi
             else
-                # uniqueIdがない場合は、idで判定
                 if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
                     is_dependent=1
                 fi
@@ -1016,7 +1014,7 @@ EOF
             checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
             idx=$((idx+1))
         done <<EOF
-$_PACKAGE_NAME_CACHE
+$packages
 EOF
         
         # ボタン名の設定
