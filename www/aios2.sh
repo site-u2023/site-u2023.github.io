@@ -3132,22 +3132,16 @@ generate_config_summary() {
                 count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
                 
                 if [ "$count" -gt 1 ]; then
-                    # 同じIDが複数ある場合、オプションなしを優先
-                    local no_opts_line
-                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
+                    # 同じIDが複数ある場合、オプション付きを優先
+                    local has_opts_line opts_value
+                    has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
                     
-                    if [ -n "$no_opts_line" ]; then
-                        echo "$current_id"
+                    if [ -n "$has_opts_line" ]; then
+                        opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
+                        echo "${opts_value} ${current_id}"
                     else
-                        local has_opts_line opts_value
-                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
-                        
-                        if [ -n "$has_opts_line" ]; then
-                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
-                            echo "${opts_value} ${current_id}"
-                        else
-                            echo "$current_id"
-                        fi
+                        # オプションなしのみの場合
+                        echo "$current_id"
                     fi
                 else
                     if [ -n "$current_opts" ]; then
