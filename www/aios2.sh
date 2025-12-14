@@ -12,11 +12,24 @@ VERSION="R7.1215.0510"
 #
 # 【Package Cache Structure】
 # _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies
+#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked
+#
+# Field details:
+#   1. id              - Package name for installation
+#   2. name            - Display name in UI
+#   3. uniqueId        - Unique identifier (for multiple entries with same id)
+#   4. installOptions  - Installation option key (e.g. "ignoreDeps")
+#   5. enableVar       - Variable name to set in setup.sh when selected
+#   6. dependencies    - Comma-separated list of dependency package ids
+#   7. hidden          - "true" if hidden, "false" otherwise
+#   8. virtual         - "true" to skip availability check, "false" otherwise
+#   9. reboot          - "true" if reboot required, "false" otherwise
+#  10. checked         - "true" if selected by default, "false" otherwise
 #
 # Example:
-#   apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil
-#   luci-app-ttyd=luci-app-ttyd====
+#   apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil=false=false=false=false
+#   luci-app-ttyd=luci-app-ttyd====enable_ttyd==false=false=false=true
+#   docker=docker======true=false=false=false
 #
 # 【uniqueId Handling】
 # - If uniqueId exists: ALL checks use uniqueId (NOT id)
@@ -852,24 +865,24 @@ check_package_available() {
 
     wait_for_package_cache
 
-    # custom_feeds のみスキップ
     if [ "$caller" = "custom_feeds" ]; then
         return 0
     fi
 
-    # virtual パッケージはスキップ
-    local is_virtual
-    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
-        -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    if [ "$is_virtual" = "true" ]; then
+    # ★ キャッシュから virtual フラグを取得
+    local virtual_flag
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
+    fi
+    
+    if [ "$virtual_flag" = "true" ]; then
         return 0
     fi
 
     local real_id="$pkg_id"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
         local cached_real_id
-        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" \
-            | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
@@ -1449,12 +1462,18 @@ get_package_name() {
             BEGIN { in_deps=0 }
             {
                 id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
+                hidden="false"; virtual="false"; reboot="false"; checked="false";
+                
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
                     if($i=="name")name=$(i+2);
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
                     if($i=="enableVar")enableVar=$(i+2);
+                    if($i=="hidden" && $(i+2)=="true")hidden="true";
+                    if($i=="virtual" && $(i+2)=="true")virtual="true";
+                    if($i=="reboot" && $(i+2)=="true")reboot="true";
+                    if($i=="checked" && $(i+2)=="true")checked="true";
                     if($i=="dependencies") {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
@@ -1466,7 +1485,7 @@ get_package_name() {
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked
                 }
             }')
         
@@ -1477,12 +1496,18 @@ get_package_name() {
                 BEGIN { in_deps=0 }
                 {
                     id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
+                    hidden="false"; virtual="false"; reboot="false"; checked="false";
+                    
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
                         if($i=="name")name=$(i+2);
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
                         if($i=="enableVar")enableVar=$(i+2);
+                        if($i=="hidden" && $(i+2)=="true")hidden="true";
+                        if($i=="virtual" && $(i+2)=="true")virtual="true";
+                        if($i=="reboot" && $(i+2)=="true")reboot="true";
+                        if($i=="checked" && $(i+2)=="true")checked="true";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
@@ -1494,7 +1519,7 @@ get_package_name() {
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
