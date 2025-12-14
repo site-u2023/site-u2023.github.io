@@ -901,22 +901,17 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 【変更点】依存パッケージIDのキャッシュ処理をループの外に移動 (負荷軽減)
+    # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
     local dependent_ids=" "
     
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
-        local deps
-        if [ "$caller" = "custom_feeds" ]; then
-            deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-        else
-            deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-        fi
+        # ★ キャッシュから依存関係を取得（フィールド6）
+        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
         
-        while read -r dep; do
+        # カンマ区切りを改行に変換して処理
+        echo "$deps" | tr ',' '\n' | while read -r dep; do
             [ -z "$dep" ] && continue
             
             local matched_line matched_id
@@ -930,15 +925,13 @@ package_selection() {
                     dependent_ids="${dependent_ids}${dep} "
                 fi
             fi
-        done <<DEPS
-$deps
-DEPS
+        done
     done <<EOF
 $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    # 【変更点終了】依存パッケージIDのキャッシュ処理はここまで
+    # 【修正版終了】
     
     # ループ開始 - 更新ボタンでここに戻る (依存IDの再計算はしない)
     while true; do
@@ -948,9 +941,6 @@ EOF
         local display_names=""
         
         # キャッシュを1回だけ走査
-        local pkg_list_pattern
-        pkg_list_pattern=$(echo "$packages" | tr '\n' '|' | sed 's/|$//')
-        
         while read -r entry; do
             [ -z "$entry" ] && continue
             
@@ -1032,25 +1022,19 @@ EOF
         # ボタン名の設定
         local tr_space_toggle
         tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
-        local btn_refresh=$(translate "tr-tui-refresh") # "更新"
-        local btn_back=$(translate "tr-tui-back")       # "戻る"
+        local btn_refresh=$(translate "tr-tui-refresh")
+        local btn_back=$(translate "tr-tui-back")
         
         [ -z "$btn_refresh" ] && btn_refresh="Update"
         [ -z "$btn_back" ] && btn_back="Back"
 
-        # show_checklistのボタンを更新/戻るに明示的に変更
         selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items")
         
         local exit_status=$?
 
-        # 終了ステータスによる分岐
         if [ $exit_status -ne 0 ]; then
-            # --- [戻る]ボタン (Exit 1) が押された場合 ---
-            # ループを抜けて前の画面に戻る
             return 0
         fi
-        
-        # --- [更新]ボタン (Exit 0) が押された場合 ---
         
         if [ "$caller" = "custom_feeds" ]; then
             target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -1058,7 +1042,7 @@ EOF
             target_file="$SELECTED_PACKAGES"
         fi
         
-        # カテゴリの既存エントリを取得（現在の状態）
+        # カテゴリの既存エントリを取得
         local old_selection=""
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
@@ -1085,7 +1069,6 @@ EOF
         done
         
         # 変更検出と処理
-        # 1. 新規追加されたパッケージ
         echo "$new_selection" | while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             if ! echo "$old_selection" | grep -qx "$pkg_id"; then
@@ -1093,7 +1076,6 @@ EOF
             fi
         done
         
-        # 2. 削除されたパッケージ
         echo "$old_selection" | while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             if ! echo "$new_selection" | grep -qx "$pkg_id"; then
@@ -1102,9 +1084,7 @@ EOF
         done
         
         clear_selection_cache
-        
-        # ループ継続 (continue) により、while true の先頭に戻り画面を再描画する（リロード）
-    done # while true の終了
+    done
 }
 
 view_customfeeds() {
