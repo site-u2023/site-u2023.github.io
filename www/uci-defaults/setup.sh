@@ -476,14 +476,46 @@ filters:
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
     id: 2
+    - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_10_Chinese/filter.txt
+    name: AdGuard Chinese filter
+    id: 10
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt
+    name: AdGuard Dutch filter
+    id: 8
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt
+    name: AdGuard French filter
+    id: 5
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt
+    name: AdGuard German filter
+    id: 4
   - enabled: false
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
     name: AdGuard Japanese filter
-    id: 1764215105
+    id: 7
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt
+    name: AdGuard Russian filter
+    id: 3
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt
+    name: AdGuard Spanish/Portuguese filter
+    id: 6
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt
+    name: AdGuard Turkish filter
+    id: 9
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt
+    name: AdGuard Ukrainian filter
+    id: 13
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: 豆腐フィルタ
-    id: 1764215106
+    id: 99
 user_rules:
   - '# 日本の主要サービス'
   - '@@||amazon.co.jp^$important'
