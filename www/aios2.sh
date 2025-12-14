@@ -881,7 +881,8 @@ cache_package_availability() {
     if command -v opkg >/dev/null 2>&1; then
         available_list=$(opkg list 2>/dev/null | cut -d' ' -f1)
     elif command -v apk >/dev/null 2>&1; then
-        available_list=$(apk list 2>/dev/null | cut -d' ' -f1)
+        # APKの場合、バージョン番号を除去してパッケージ名のみを抽出
+        available_list=$(apk list 2>/dev/null | awk '{print $1}' | sed 's/-[0-9].*//')
     else
         return 1
     fi
@@ -898,6 +899,8 @@ cache_package_availability() {
             echo "$available_list" | grep -qx "$pkg_id" && echo "$pkg_id"
         done
     } | sort -u > "$cache_file"
+    
+    echo "[DEBUG] Package availability cache created: $(wc -l < "$cache_file") packages" >> "$CONFIG_DIR/debug.log"
 }
 
 package_compatible() {
@@ -3653,7 +3656,11 @@ aios2_main() {
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
-    
+
+    # UIモジュールの起動前に待機
+    wait $CACHE_PKG_PID
+    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
