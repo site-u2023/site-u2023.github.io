@@ -909,7 +909,7 @@ XXX_cache_package_availability() {
     echo "[DEBUG] Package availability cache created: $(wc -l < "$cache_file") packages" >> "$CONFIG_DIR/debug.log"
 }
 
-cache_package_availability() {
+XXX_cache_package_availability() {
     local cache_file="$CONFIG_DIR/package_availability.cache"
     
     echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
@@ -3746,8 +3746,8 @@ aios2_main() {
     get_extended_device_info
 
     # 10. パッケージ存在確認をバックグラウンドで開始
-    cache_package_availability &
-    CACHE_PKG_PID=$!
+    # cache_package_availability &
+    # CACHE_PKG_PID=$!
     
     # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -3772,8 +3772,8 @@ aios2_main() {
     fi
 
     # UIモジュールの起動前に待機
-    wait $CACHE_PKG_PID
-    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    # wait $CACHE_PKG_PID
+    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
 
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
