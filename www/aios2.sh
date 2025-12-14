@@ -839,32 +839,40 @@ check_package_available() {
         return 0
     fi
     
+    # uniqueIdの場合はidに変換
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+    
     # ファイルキャッシュがあれば優先使用（高速）
     if [ -f "$cache_file" ]; then
-        grep -qx "$pkg_id" "$cache_file" && return 0 || return 1
+        grep -qx "$real_id" "$cache_file" && return 0 || return 1
     fi
     
     # メモリキャッシュチェック（従来の方式）
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${pkg_id}:"; then
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
         local status
-        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${pkg_id}:" | cut -d: -f2)
+        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
     # 実際の存在確認
     local available=0
     if [ "$PKG_MGR" = "opkg" ]; then
-        if opkg list "$pkg_id" 2>/dev/null | grep -q "^${pkg_id} "; then
+        if opkg list "$real_id" 2>/dev/null | grep -q "^${real_id} "; then
             available=1
         fi
     elif [ "$PKG_MGR" = "apk" ]; then
-        if apk search -e "$pkg_id" 2>/dev/null | grep -q "^${pkg_id}-"; then
+        if apk search -e "$real_id" 2>/dev/null | grep -q "^${real_id}-"; then
             available=1
         fi
     fi
     
     # メモリキャッシュに保存
-    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg_id}:${available}
+    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
 "
     
     [ "$available" -eq 1 ] && return 0 || return 1
