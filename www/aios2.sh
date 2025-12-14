@@ -785,13 +785,12 @@ build_deviceinfo_display() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     
-    # カスタムフィードのパッケージは存在確認をスキップ
     if [ "$caller" = "custom_feeds" ]; then
         return 0
     fi
     
-    # virtual パッケージは常に利用可能
     local is_virtual
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     
@@ -799,7 +798,6 @@ check_package_available() {
         return 0
     fi
     
-    # uniqueIdの場合はidに変換
     local real_id="$pkg_id"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
         local cached_real_id
@@ -807,24 +805,15 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
     
-    # ★ デバッグ：キャッシュの状態を確認
-    if [ -z "$_PACKAGE_AVAILABILITY_CACHE" ]; then
-        echo "[DEBUG] _PACKAGE_AVAILABILITY_CACHE is EMPTY for $pkg_id" >> "$CONFIG_DIR/debug.log"
+    # ★ ファイルから直接検索
+    if [ ! -f "$cache_file" ]; then
+        echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     
-    # メモリキャッシュチェック
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
-        local status
-        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
-        echo "[DEBUG] Cache hit: $real_id status=$status" >> "$CONFIG_DIR/debug.log"
-        [ "$status" = "1" ] && return 0 || return 1
+    if grep -q "^${real_id}:1$" "$cache_file" 2>/dev/null; then
+        return 0
     fi
-    
-    # ★ キャッシュになければログ出力（最初の10件のみ）
-    local cache_sample
-    cache_sample=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | head -5)
-    echo "[DEBUG] Cache miss for $real_id. Cache sample: $cache_sample" >> "$CONFIG_DIR/debug.log"
     
     return 1
 }
@@ -840,9 +829,9 @@ cache_package_availability() {
         return 1
     fi
     
-    # ★ 一時ファイル（.txt）を使用
-    local temp_cache="$CONFIG_DIR/pkg_availability_cache.txt"
-    : > "$temp_cache"
+    # ★ ファイルに直接書き込み（変数は使わない）
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+    : > "$cache_file"
     
     local feeds="base packages luci"
     local is_snapshot=0
@@ -858,7 +847,6 @@ cache_package_availability() {
         
         echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
         
-        # ★ 一時レスポンスファイル
         local temp_response="$CONFIG_DIR/feed_response.txt"
         if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
             echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
@@ -872,33 +860,22 @@ cache_package_availability() {
             continue
         fi
         
-        # ★ パッケージ名を抽出して temp_cache に追記（フォーマット: pkg:1）
         if [ $is_snapshot -eq 1 ]; then
             jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
-                awk 'NF {print $0":1"}' >> "$temp_cache"
+                awk 'NF {print $0":1"}' >> "$cache_file"
         else
-            awk '/^Package: / {print $2":1"}' "$temp_response" >> "$temp_cache"
+            awk '/^Package: / {print $2":1"}' "$temp_response" >> "$cache_file"
         fi
         
         rm -f "$temp_response"
         
-        local count=$(wc -l < "$temp_cache" 2>/dev/null || echo 0)
+        local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
         echo "[DEBUG] Fetched $count packages so far" >> "$CONFIG_DIR/debug.log"
     done
     
-    # ★ ファイルから変数に一括読み込み
-    if [ -s "$temp_cache" ]; then
-        _PACKAGE_AVAILABILITY_CACHE=$(cat "$temp_cache")
-    else
-        _PACKAGE_AVAILABILITY_CACHE=""
-    fi
-    
-    rm -f "$temp_cache"
-    
-    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":" 2>/dev/null || echo 0)
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
     
-    _PACKAGE_AVAILABILITY_LOADED=1
     return 0
 }
 
