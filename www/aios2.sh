@@ -28,8 +28,13 @@
 # - **uniqueId**: `htpasswd-from-apache` ← 識別子（内部使用：同じidの複数エントリを区別）
 #
 # キャッシュ形式
-# id=name=uniqueId=installOptions=enableVar
-# apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd
+# id=name=uniqueId=installOptions=enableVar=dependencies
+# dependencies がある場合
+# apache#apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil
+# dependencies がない場合
+# luci-app-ttyd#luci-app-ttyd=luci-app-ttyd=
+# uniqueId がない場合
+# htop#htop=htop===enable_htop=collectd-htop,collectd-mod-th
 
 VERSION="R7.1214.0045"
 
