@@ -887,9 +887,13 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
+
+    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
         get_package_name "dummy" > /dev/null 2>&1
+        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
     fi
     
     local cat_name breadcrumb checklist_items
@@ -900,6 +904,10 @@ package_selection() {
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     packages=$(get_category_packages "$cat_id")
+
+    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
+    echo "$packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
     
     # 依存パッケージIDをキャッシュから取得（while true の外に移動）
     local dependent_ids=" "
@@ -942,11 +950,19 @@ EOF
         # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
+
+            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
             
             # キャッシュから該当行を抽出
             local entry
             entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
-            [ -z "$entry" ] && continue
+
+            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
+
+            [ -z "$entry" ] && {
+                echo "[DEBUG] No cache entry found for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            }
             
             local pkg_name uid
             pkg_name=$(echo "$entry" | cut -d= -f2)
