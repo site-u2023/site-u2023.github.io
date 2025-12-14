@@ -4,6 +4,8 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
+VERSION="R7.1214.1048"
+
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
 # 【uniqueId の扱い】
@@ -36,8 +38,6 @@
 # luci-app-ttyd#luci-app-ttyd=luci-app-ttyd=
 # uniqueId がない場合
 # htop#htop=htop===enable_htop=collectd-htop,collectd-mod-th
-
-VERSION="R7.1214.1033"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1414,7 +1414,9 @@ add_package_with_dependencies() {
     
     # Add main package
     local cache_line
-    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
+    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
+    # 見つからなければidで検索
+    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
     
     if [ -n "$cache_line" ]; then
         # ★ メモリ内で重複チェック
@@ -1486,7 +1488,10 @@ remove_package_with_dependencies() {
     
     # Remove main package
     local all_entries
-    all_entries=$(awk -F= -v id="$pkg_id" '$1 == id || $3 == id' "$target_file" 2>/dev/null)
+    # まずuniqueIdで完全一致検索
+    all_entries=$(awk -F= -v id="$pkg_id" '$3 == id' "$target_file" 2>/dev/null)
+    # 見つからなければidで検索
+    [ -z "$all_entries" ] && all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
     
     while read -r entry; do
         [ -z "$entry" ] && continue
