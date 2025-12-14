@@ -993,7 +993,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
+    # 【修正版】依存パッケージIDをキャッシュから取得（while true の外に移動）
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -1023,8 +1023,9 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    # 【修正版終了】（依存IDの再計算はしない）
-        
+    # 【修正版終了】
+    
+    while true; do
         local menu_items=""
         local display_names=""
         local idx=1
