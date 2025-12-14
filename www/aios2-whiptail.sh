@@ -1093,19 +1093,23 @@ EOF
         done
         
         # 変更検出と処理
-        echo "$new_selection" | while read -r pkg_id; do
+        while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             if ! echo "$old_selection" | grep -qx "$pkg_id"; then
                 add_package_with_dependencies "$pkg_id" "$caller"
             fi
-        done
+        done <<NEW_SEL
+$new_selection
+NEW_SEL
         
-        echo "$old_selection" | while read -r pkg_id; do
+        while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             if ! echo "$new_selection" | grep -qx "$pkg_id"; then
                 remove_package_with_dependencies "$pkg_id" "$caller"
             fi
-        done
+        done <<OLD_SEL
+$old_selection
+OLD_SEL
         
         clear_selection_cache
     done
