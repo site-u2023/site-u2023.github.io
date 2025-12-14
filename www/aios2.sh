@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0152"
+VERSION="R7.1215.0209"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
