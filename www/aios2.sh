@@ -867,7 +867,6 @@ check_package_available() {
 
     # 存在キャッシュが無い場合は許可
     if [ ! -f "$cache_file" ]; then
-        echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 
@@ -1422,27 +1421,32 @@ get_category_hidden() {
 get_category_packages() {
     local cat_id="$1"
     
-    # ★ 修正：uniqueId がある場合は uniqueId を、ない場合は id を返す
     {
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
             awk -F'"' '{
-                id=""; uid="";
+                id=""; uid=""; hidden="";
                 for(i=1;i<=NF;i++){
                     if($i=="id") id=$(i+2);
                     if($i=="uniqueId") uid=$(i+2);
+                    if($i=="hidden") hidden=$(i+2);
                 }
+                # hiddenがtrueの場合はスキップ
+                if(hidden == "true") next;
                 if(uid) print uid; else if(id) print id;
             }'
         fi
         
         jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
         awk -F'"' '{
-            id=""; uid="";
+            id=""; uid=""; hidden="";
             for(i=1;i<=NF;i++){
                 if($i=="id") id=$(i+2);
                 if($i=="uniqueId") uid=$(i+2);
+                if($i=="hidden") hidden=$(i+2);
             }
+            # hiddenがtrueの場合はスキップ
+            if(hidden == "true") next;
             if(uid) print uid; else if(id) print id;
         }'
     } | grep -v '^$' | awk '!seen[$0]++'
