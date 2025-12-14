@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0145"
+VERSION="R7.1215.0149"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -807,29 +807,26 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
     
+    # ★ デバッグ：キャッシュの状態を確認
+    if [ -z "$_PACKAGE_AVAILABILITY_CACHE" ]; then
+        echo "[DEBUG] _PACKAGE_AVAILABILITY_CACHE is EMPTY for $pkg_id" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
     # メモリキャッシュチェック
     if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
         local status
         status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
+        echo "[DEBUG] Cache hit: $real_id status=$status" >> "$CONFIG_DIR/debug.log"
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
-    # ASU APIで存在確認
-    local available=0
-    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
-    local response
+    # ★ キャッシュになければログ出力（最初の10件のみ）
+    local cache_sample
+    cache_sample=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | head -5)
+    echo "[DEBUG] Cache miss for $real_id. Cache sample: $cache_sample" >> "$CONFIG_DIR/debug.log"
     
-    response=$(wget -qO- "${api_url}?package=${real_id}" 2>/dev/null)
-    
-    if echo "$response" | grep -q "\"${real_id}\""; then
-        available=1
-    fi
-    
-    # メモリキャッシュに保存
-    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
-"
-    
-    [ "$available" -eq 1 ] && return 0 || return 1
+    return 1
 }
 
 cache_package_availability() {
