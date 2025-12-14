@@ -873,9 +873,6 @@ check_package_available() {
 XXX_cache_package_availability() {
     local cache_file="$CONFIG_DIR/package_availability.cache"
     
-    # 既にキャッシュがあれば再利用（60分以内）
-    [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin -60 2>/dev/null | wc -l) -gt 0 ] && return 0
-    
     # システムの全利用可能パッケージを取得
     local available_list
     if command -v opkg >/dev/null 2>&1; then
@@ -905,9 +902,6 @@ XXX_cache_package_availability() {
 
 cache_package_availability() {
     local cache_file="$CONFIG_DIR/package_availability.cache"
-    
-    # 既にキャッシュがあれば再利用（60分以内）
-    [ -f "$cache_file" ] && [ $(find "$cache_file" -mmin -60 2>/dev/null | wc -l) -gt 0 ] && return 0
     
     echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
     
