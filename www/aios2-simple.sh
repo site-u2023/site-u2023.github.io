@@ -1003,8 +1003,8 @@ package_selection() {
             # ★ キャッシュから依存関係を取得（フィールド6）
             local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
             
-            # カンマ区切りを改行に変換して処理
-            echo "$deps" | tr ',' '\n' | while read -r dep; do
+            # ★ サブシェル回避: ヒアドキュメントで処理
+            while read -r dep; do
                 [ -z "$dep" ] && continue
                 
                 local matched_line matched_id
@@ -1018,7 +1018,9 @@ package_selection() {
                         dependent_ids="${dependent_ids}${dep} "
                     fi
                 fi
-            done
+            done <<DEPS_INNER
+$(echo "$deps" | tr ',' '\n')
+DEPS_INNER
         done <<EOF
 $packages
 EOF
