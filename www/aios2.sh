@@ -1475,25 +1475,10 @@ get_package_name() {
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
                     if($i=="enableVar")enableVar=$(i+2);
-                    
-                    # ★修正：文字列とブール両方に対応
-                    if($i=="hidden") {
-                        val=$(i+2);
-                        if(val=="true" || val=="\"true\"") hidden="true";
-                    }
-                    if($i=="virtual") {
-                        val=$(i+2);
-                        if(val=="true" || val=="\"true\"") virtual="true";
-                    }
-                    if($i=="reboot") {
-                        val=$(i+2);
-                        if(val=="true" || val=="\"true\"") reboot="true";
-                    }
-                    if($i=="checked") {
-                        val=$(i+2);
-                        if(val=="true" || val=="\"true\"") checked="true";
-                    }
-                    
+                    if($i=="hidden" && $(i+4)=="true")hidden="true";
+                    if($i=="virtual" && $(i+4)=="true")virtual="true";
+                    if($i=="reboot" && $(i+4)=="true")reboot="true";
+                    if($i=="checked" && $(i+4)=="true")checked="true";
                     if($i=="dependencies") {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
@@ -1524,25 +1509,10 @@ get_package_name() {
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
                         if($i=="enableVar")enableVar=$(i+2);
-                        
-                        # ★修正：文字列とブール両方に対応
-                        if($i=="hidden") {
-                            val=$(i+2);
-                            if(val=="true" || val=="\"true\"") hidden="true";
-                        }
-                        if($i=="virtual") {
-                            val=$(i+2);
-                            if(val=="true" || val=="\"true\"") virtual="true";
-                        }
-                        if($i=="reboot") {
-                            val=$(i+2);
-                            if(val=="true" || val=="\"true\"") reboot="true";
-                        }
-                        if($i=="checked") {
-                            val=$(i+2);
-                            if(val=="true" || val=="\"true\"") checked="true";
-                        }
-                        
+                        if($i=="hidden" && $(i+4)=="true")hidden="true";
+                        if($i=="virtual" && $(i+4)=="true")virtual="true";
+                        if($i=="reboot" && $(i+4)=="true")reboot="true";
+                        if($i=="checked" && $(i+4)=="true")checked="true";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
