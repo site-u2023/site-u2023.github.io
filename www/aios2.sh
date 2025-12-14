@@ -829,7 +829,7 @@ XXX_check_package_available() {
 # Returns:
 #   0 if package is available, 1 otherwise
 # =============================================================================
-check_package_available() {
+XXX_check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     
@@ -909,46 +909,35 @@ XXX_cache_package_availability() {
     echo "[DEBUG] Package availability cache created: $(wc -l < "$cache_file") packages" >> "$CONFIG_DIR/debug.log"
 }
 
-XXX_cache_package_availability() {
-    local cache_file="$CONFIG_DIR/package_availability.cache"
+cache_package_availability() {
+    echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
     
-    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
+    # ASU APIから全パッケージリストを取得
+    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
+    local response
     
-    # 一時ファイルにパッケージリストを保存
-    local temp_available="$CONFIG_DIR/temp_available.txt"
+    response=$(wget -qO- "$api_url" 2>/dev/null)
     
-    if command -v opkg >/dev/null 2>&1; then
-        opkg list 2>/dev/null | cut -d' ' -f1 > "$temp_available"
-    elif command -v apk >/dev/null 2>&1; then
-        apk list 2>/dev/null | sed -E 's/^([a-z0-9_+-]+)-[0-9].*/\1/' > "$temp_available"
-    else
-        echo "[DEBUG] No package manager found" >> "$CONFIG_DIR/debug.log"
+    if [ -z "$response" ]; then
+        echo "[DEBUG] Failed to fetch package list from ASU API" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     
-    echo "[DEBUG] Available packages: $(wc -l < "$temp_available")" >> "$CONFIG_DIR/debug.log"
+    # JSONから全パッケージ名を抽出してメモリキャッシュに格納
+    local available_packages
+    available_packages=$(echo "$response" | jsonfilter -e '@.packages[*]' 2>/dev/null | sort -u)
     
-    # 全JSONからパッケージIDを抽出して存在チェック
-    {
-        if [ -f "$PACKAGES_JSON" ]; then
-            jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
-            while read -r pkg_id; do
-                grep -qx "$pkg_id" "$temp_available" && echo "$pkg_id"
-            done
-        fi
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*].id' 2>/dev/null | \
-            while read -r pkg_id; do
-                grep -qx "$pkg_id" "$temp_available" && echo "$pkg_id"
-            done
-        fi
-    } | sort -u > "$cache_file"
+    # メモリキャッシュに保存（pkg_id:1 形式）
+    while read -r pkg; do
+        [ -z "$pkg" ] && continue
+        _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
+"
+    done <<EOF
+$available_packages
+EOF
     
-    rm -f "$temp_available"
-    
-    local cached_count=$(wc -l < "$cache_file")
-    echo "[DEBUG] Package availability cache created: $cached_count packages" >> "$CONFIG_DIR/debug.log"
+    local cached_count=$(echo "$available_packages" | wc -l)
+    echo "[DEBUG] Package availability cache created: $cached_count packages from ASU" >> "$CONFIG_DIR/debug.log"
     
     return 0
 }
