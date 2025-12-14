@@ -1046,6 +1046,8 @@ entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 ==
                 package_compatible "$pkg_id" || continue
             fi
             
+            check_package_available "$pkg_id" "$caller" || continue
+            
             # 依存パッケージ判定（uniqueIdを優先）
             local is_dependent=0
             
