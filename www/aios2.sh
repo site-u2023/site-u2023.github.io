@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0433"
+VERSION="R7.1215.0454"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -1430,10 +1430,11 @@ get_package_checked() {
 get_package_name() {
     local pkg_id="$1"
     
-    # 初回のみキャッシュ構築
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '{
+            awk -F'"' '
+            BEGIN { in_deps=0 }
+            {
                 id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
@@ -1442,12 +1443,13 @@ get_package_name() {
                     if($i=="installOptions")installOptions=$(i+2);
                     if($i=="enableVar")enableVar=$(i+2);
                     if($i=="dependencies") {
-                        # dependencies配列を収集（カンマ区切り）
+                        in_deps=1;
                         for(j=i+2;j<=NF;j++){
-                            if($j ~ /^[a-z0-9_-]+$/) deps=deps$j",";
-                            if($j=="]") break;
+                            if($j=="]") { in_deps=0; break; }
+                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot") 
+                                deps=deps$j",";
                         }
-                        sub(/,$/, "", deps);  # 末尾のカンマ削除
+                        sub(/,$/, "", deps);
                     }
                 }
                 if(id&&name){
@@ -1455,11 +1457,12 @@ get_package_name() {
                 }
             }')
         
-        # customfeeds.json も同様に処理
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             local custom_cache
             custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-                awk -F'"' '{
+                awk -F'"' '
+                BEGIN { in_deps=0 }
+                {
                     id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
@@ -1468,9 +1471,11 @@ get_package_name() {
                         if($i=="installOptions")installOptions=$(i+2);
                         if($i=="enableVar")enableVar=$(i+2);
                         if($i=="dependencies") {
+                            in_deps=1;
                             for(j=i+2;j<=NF;j++){
-                                if($j ~ /^[a-z0-9_-]+$/) deps=deps$j",";
-                                if($j=="]") break;
+                                if($j=="]") { in_deps=0; break; }
+                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot")
+                                    deps=deps$j",";
                             }
                             sub(/,$/, "", deps);
                         }
@@ -1484,11 +1489,8 @@ ${custom_cache}"
         fi
         
         _PACKAGE_NAME_LOADED=1
-        echo "[DEBUG] Package name cache:" >> "$CONFIG_DIR/debug.log"
-        echo "$_PACKAGE_NAME_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # name を返す（既存ロジック）
     echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg {
             print $2
