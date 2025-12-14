@@ -1299,28 +1299,23 @@ is_dependency_required_by_others() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # Get all selected packages except the one we're checking
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
+    # ★ 選択済みパッケージファイルから直接読み込む（高速化）
+    while read -r selected_line; do
+        [ -z "$selected_line" ] && continue
         
         local current_pkg_id
-        current_pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        current_pkg_id=$(echo "$selected_line" | cut -d= -f1)
         
         # Skip the package we're excluding
         [ "$current_pkg_id" = "$excluding_pkg_id" ] && continue
         
-        # Check if current package is selected
-        if grep -q "^${current_pkg_id}=" "$target_file" 2>/dev/null; then
-            # Get its dependencies
-            local deps
-            deps=$(get_package_dependencies "$current_pkg_id" "$caller")
-            
-            # Check if our dependency is in this package's dependencies
-            echo "$deps" | grep -qx "$dep_id" && return 0
-        fi
-    done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
+        # ★ キャッシュから依存関係を取得（フィールド6）
+        local deps
+        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}')
+        
+        # ★ カンマ区切りの中から dep_id を検索
+        echo "$deps" | tr ',' '\n' | grep -qx "$dep_id" && return 0
+    done < "$target_file"
     
     return 1
 }
