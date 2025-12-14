@@ -971,8 +971,15 @@ EOF
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
             fi
+
+            echo "[DEBUG] Checking availability for $pkg_id (caller=$caller)" >> "$CONFIG_DIR/debug.log"
             
-            check_package_available "$pkg_id" "$caller" || continue
+            if ! check_package_available "$pkg_id" "$caller"; then
+                echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+    
+            echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
             
             # 依存パッケージ判定（uniqueIdを優先）
             local is_dependent=0
