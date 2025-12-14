@@ -973,6 +973,11 @@ EOF
             fi
 
             echo "[DEBUG] Checking availability for $pkg_id (caller=$caller)" >> "$CONFIG_DIR/debug.log"
+            
+            if ! check_package_available "$pkg_id" "$caller"; then
+                echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
     
             echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
             
