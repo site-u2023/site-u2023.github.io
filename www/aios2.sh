@@ -516,6 +516,7 @@ get_device_info() {
     
     if [ -f /etc/openwrt_release ]; then
         DEVICE_TARGET=$(grep 'DISTRIB_TARGET' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+        DEVICE_ARCH=$(grep 'DISTRIB_ARCH' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     fi
     
     # vendor/subtarget分離
@@ -526,6 +527,7 @@ get_device_info() {
     
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown"
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
+    [ -z "$DEVICE_ARCH" ] && DEVICE_ARCH="unknown"
 }
 
 reset_detected_conn_type() {
@@ -834,12 +836,10 @@ cache_package_availability() {
     echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
     
     local version="$OPENWRT_VERSION"
-    local arch="$state.device.arch"
-    local vendor="$DEVICE_VENDOR"
-    local subtarget="$DEVICE_SUBTARGET"
+    local arch="$DEVICE_ARCH"
     
     if [ -z "$version" ] || [ -z "$arch" ]; then
-        echo "[DEBUG] Missing version or arch" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Missing version ($version) or arch ($arch)" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     
@@ -892,7 +892,7 @@ EOF
         fi
     done
     
-    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l)
+    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -c ":")
     echo "[DEBUG] Cache built: $count packages" >> "$CONFIG_DIR/debug.log"
     
     return 0
@@ -3706,10 +3706,14 @@ aios2_main() {
     export OPENWRT_VERSION
     export ASU_URL
     export DEVICE_MODEL
+    export DEVICE_ARCH
     export DEVICE_VENDOR
     export DEVICE_SUBTARGET
     
     echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
