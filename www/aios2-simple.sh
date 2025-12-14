@@ -994,22 +994,17 @@ package_selection() {
     packages=$(get_category_packages "$cat_id")
     
     while true; do
-        # 依存パッケージIDのキャッシュ処理
+        # 【修正版】依存パッケージIDをキャッシュから取得（JSON パース削除）
         local dependent_ids=" "
         
         while read -r parent_id; do
             [ -z "$parent_id" ] && continue
             
-            local deps
-            if [ "$caller" = "custom_feeds" ]; then
-                deps=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-            else
-                deps=$(jsonfilter -i "$PACKAGES_JSON" \
-                    -e "@.categories[@.id='$cat_id'].packages[@.id='$parent_id'].dependencies[*]" 2>/dev/null)
-            fi
+            # ★ キャッシュから依存関係を取得（フィールド6）
+            local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
             
-            while read -r dep; do
+            # カンマ区切りを改行に変換して処理
+            echo "$deps" | tr ',' '\n' | while read -r dep; do
                 [ -z "$dep" ] && continue
                 
                 local matched_line matched_id
@@ -1023,14 +1018,13 @@ package_selection() {
                         dependent_ids="${dependent_ids}${dep} "
                     fi
                 fi
-            done <<DEPS
-$deps
-DEPS
+            done
         done <<EOF
 $packages
 EOF
         
         dependent_ids="${dependent_ids} "
+        # 【修正版終了】
         
         local menu_items=""
         local display_names=""
