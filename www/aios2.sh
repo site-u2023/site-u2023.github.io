@@ -1432,7 +1432,8 @@ get_category_packages() {
                     if($i=="uniqueId") uid=$(i+2);
                     if($i=="hidden") hidden=$(i+2);
                 }
-                if(hidden == "true") next;
+                # ★修正：文字列とブール両方に対応
+                if(hidden == "true" || hidden == "\"true\"") next;
                 if(uid) print uid; else if(id) print id;
             }'
         fi
@@ -1445,7 +1446,8 @@ get_category_packages() {
                 if($i=="uniqueId") uid=$(i+2);
                 if($i=="hidden") hidden=$(i+2);
             }
-            if(hidden == "true") next;
+            # ★修正：文字列とブール両方に対応
+            if(hidden == "true" || hidden == "\"true\"") next;
             if(uid) print uid; else if(id) print id;
         }'
     } | grep -v '^$' | awk '!seen[$0]++'
