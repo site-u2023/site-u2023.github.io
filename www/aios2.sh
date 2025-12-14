@@ -1490,7 +1490,7 @@ remove_package_with_dependencies() {
     local all_entries
     # まずuniqueIdで完全一致検索
     all_entries=$(awk -F= -v id="$pkg_id" '$3 == id' "$target_file" 2>/dev/null)
-    # 見つからなければidで検索
+    # 見つからなければidで検索（uniqueIdが空の行のみ）
     [ -z "$all_entries" ] && all_entries=$(awk -F= -v id="$pkg_id" '$1 == id && $3 == ""' "$target_file" 2>/dev/null)
     
     while read -r entry; do
@@ -1506,7 +1506,10 @@ remove_package_with_dependencies() {
 $all_entries
 ENTRIES
     
-    sed -i "/^${pkg_id}=/d" "$target_file"
+    # 正確な行削除（awk使用）
+    awk -F= -v target="$pkg_id" '
+        !(($1 == target && $3 == "") || $3 == target)
+    ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
     
     # Check and remove orphaned dependencies
     while read -r dep_id; do
@@ -1523,7 +1526,10 @@ ENTRIES
             if ! is_dependency_required_by_others "$dep_id" "$pkg_id" "$caller"; then
                 # No other parent needs this dependency, safe to remove
                 local dep_entries
-                dep_entries=$(awk -F= -v id="$dep_real_id" '$1 == id' "$target_file" 2>/dev/null)
+                # uniqueIdで検索
+                dep_entries=$(awk -F= -v id="$dep_real_id" '$3 == id' "$target_file" 2>/dev/null)
+                # 見つからなければidで検索（uniqueIdが空の行のみ）
+                [ -z "$dep_entries" ] && dep_entries=$(awk -F= -v id="$dep_real_id" '$1 == id && $3 == ""' "$target_file" 2>/dev/null)
                 
                 while read -r dep_entry; do
                     [ -z "$dep_entry" ] && continue
@@ -1538,7 +1544,11 @@ ENTRIES
 $dep_entries
 DEP_ENTRIES
                 
-                sed -i "/^${dep_real_id}=/d" "$target_file"
+                # 正確な行削除（awk使用）
+                awk -F= -v target="$dep_real_id" '
+                    !(($1 == target && $3 == "") || $3 == target)
+                ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
+                
                 echo "[DEP] Auto-removed orphaned dependency: $dep_real_id (no longer required)" >> "$CONFIG_DIR/debug.log"
             else
                 echo "[DEP] Kept dependency: $dep_real_id (still required by other packages)" >> "$CONFIG_DIR/debug.log"
