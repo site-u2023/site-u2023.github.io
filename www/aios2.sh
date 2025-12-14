@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0125"
+VERSION="R7.1215.0132"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -518,6 +518,12 @@ get_device_info() {
         DEVICE_TARGET=$(grep 'DISTRIB_TARGET' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
     fi
     
+    # vendor/subtarget分離
+    if [ -n "$DEVICE_TARGET" ]; then
+        DEVICE_VENDOR=$(echo "$DEVICE_TARGET" | cut -d'/' -f1)
+        DEVICE_SUBTARGET=$(echo "$DEVICE_TARGET" | cut -d'/' -f2)
+    fi
+    
     [ -z "$DEVICE_MODEL" ] && DEVICE_MODEL="Unknown"
     [ -z "$DEVICE_TARGET" ] && DEVICE_TARGET="unknown/unknown"
 }
@@ -825,39 +831,69 @@ check_package_available() {
 }
 
 cache_package_availability() {
-    echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
     
-    local api_url="${ASU_URL}/api/v1/packages/${OPENWRT_VERSION}/${DEVICE_TARGET}"
-    echo "[DEBUG] API URL: $api_url" >> "$CONFIG_DIR/debug.log"
+    local version="$OPENWRT_VERSION"
+    local arch="$state.device.arch"
+    local vendor="$DEVICE_VENDOR"
+    local subtarget="$DEVICE_SUBTARGET"
     
-    local response
-    response=$(wget -qO- "$api_url" 2>&1)
-    local wget_exit=$?
-    
-    echo "[DEBUG] wget exit code: $wget_exit" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Response length: ${#response}" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Response (first 500 chars): ${response:0:500}" >> "$CONFIG_DIR/debug.log"
-    
-    if [ -z "$response" ] || [ $wget_exit -ne 0 ]; then
-        echo "[DEBUG] Failed to fetch package list from ASU API" >> "$CONFIG_DIR/debug.log"
+    if [ -z "$version" ] || [ -z "$arch" ]; then
+        echo "[DEBUG] Missing version or arch" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
     
-    # JSONから全パッケージ名を抽出してメモリキャッシュに格納
-    local available_packages
-    available_packages=$(echo "$response" | jsonfilter -e '@.packages[*]' 2>/dev/null | sort -u)
+    # フィードリスト
+    local feeds="base packages luci"
     
-    # メモリキャッシュに保存（pkg_id:1 形式）
-    while read -r pkg; do
-        [ -z "$pkg" ] && continue
-        _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
+    # SNAPSHOT判定
+    local is_snapshot=0
+    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+    
+    for feed in $feeds; do
+        local url
+        if [ $is_snapshot -eq 1 ]; then
+            # SNAPSHOT: index.json
+            url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+        else
+            # リリース: Packages
+            url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+        fi
+        
+        echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
+        
+        local response
+        response=$(wget -qO- "$url" 2>/dev/null)
+        
+        if [ -z "$response" ]; then
+            echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
+        if [ $is_snapshot -eq 1 ]; then
+            # JSON解析
+            local packages
+            packages=$(echo "$response" | jsonfilter -e '@.packages[*].name' 2>/dev/null)
+            
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
 "
-    done <<EOF
-$available_packages
+            done <<EOF
+$packages
 EOF
+        else
+            # Packages形式解析
+            echo "$response" | awk '/^Package: / {print $2}' | while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
+"
+            done
+        fi
+    done
     
-    local cached_count=$(echo "$available_packages" | wc -l)
-    echo "[DEBUG] Package availability cache created: $cached_count packages from ASU" >> "$CONFIG_DIR/debug.log"
+    local count=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l)
+    echo "[DEBUG] Cache built: $count packages" >> "$CONFIG_DIR/debug.log"
     
     return 0
 }
@@ -3670,6 +3706,8 @@ aios2_main() {
     export OPENWRT_VERSION
     export ASU_URL
     export DEVICE_MODEL
+    export DEVICE_VENDOR
+    export DEVICE_SUBTARGET
     
     echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
