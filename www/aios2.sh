@@ -411,6 +411,7 @@ init() {
     echo "$$" > "$LOCK_FILE"
     trap "rm -f '$LOCK_FILE'" EXIT INT TERM
     
+    # すべてのキャッシュファイルを削除
     rm -f "$CONFIG_DIR"/*.json "$CONFIG_DIR"/*.sh "$CONFIG_DIR"/*.txt "$CONFIG_DIR"/debug.log 2>/dev/null
     
     load_config_from_js || {
@@ -418,7 +419,7 @@ init() {
         return 1
     }
 
-    # キャッシュ変数の完全初期化
+    # キャッシュ変数の完全初期化（unset）
     unset _PACKAGE_NAME_CACHE
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
@@ -445,6 +446,7 @@ init() {
     _SETUP_CATEGORIES_LOADED=0
     _PACKAGE_AVAILABILITY_LOADED=0
     
+    # ファイル初期化
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
