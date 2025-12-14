@@ -869,13 +869,15 @@ check_package_available() {
         return 0
     fi
 
-    # ★ キャッシュから virtual フラグを取得
-    local virtual_flag
+    # キャッシュから virtual フラグを取得
+    local virtual_flag="false"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
         virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
+        [ -z "$virtual_flag" ] && virtual_flag="false"
     fi
     
     if [ "$virtual_flag" = "true" ]; then
+        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 
@@ -887,13 +889,16 @@ check_package_available() {
     fi
 
     if [ ! -f "$cache_file" ]; then
+        echo "[DEBUG] Availability cache not found, allowing $pkg_id" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 
     if grep -qx "$real_id" "$cache_file" 2>/dev/null; then
+        echo "[DEBUG] Package $real_id found in availability cache" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 
+    echo "[DEBUG] Package $real_id NOT found in availability cache" >> "$CONFIG_DIR/debug.log"
     return 1
 }
 
@@ -1457,6 +1462,8 @@ get_package_name() {
     local pkg_id="$1"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        echo "[DEBUG] Building package name cache with extended fields..." >> "$CONFIG_DIR/debug.log"
+        
         _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '
             BEGIN { in_deps=0 }
@@ -1478,7 +1485,7 @@ get_package_name() {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
                             if($j=="]") { in_deps=0; break; }
-                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot") 
+                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual") 
                                 deps=deps$j",";
                         }
                         sub(/,$/, "", deps);
@@ -1512,7 +1519,7 @@ get_package_name() {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
                                 if($j=="]") { in_deps=0; break; }
-                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot")
+                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual")
                                     deps=deps$j",";
                             }
                             sub(/,$/, "", deps);
@@ -1527,11 +1534,15 @@ ${custom_cache}"
         fi
         
         _PACKAGE_NAME_LOADED=1
+        
+        echo "[DEBUG] Cache built with $(echo "$_PACKAGE_NAME_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Sample entry: $(echo "$_PACKAGE_NAME_CACHE" | head -1)" >> "$CONFIG_DIR/debug.log"
     fi
     
     echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
-        $1 == pkg {
+        $1 == pkg || $3 == pkg {
             print $2
+            exit
         }
     '
 }
