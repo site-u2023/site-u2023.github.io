@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0454"
+VERSION="R7.1215.0505"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -837,10 +837,6 @@ check_package_available() {
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
-
-    if [ "$caller" = "dependent" ]; then
-        return 0
-    fi
 
     if [ "$caller" = "custom_feeds" ]; then
         return 0
