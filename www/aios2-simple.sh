@@ -999,7 +999,7 @@ package_selection() {
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
-        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id {print $6; exit}')
+        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
         
         while read -r dep; do
             [ -z "$dep" ] && continue
@@ -1035,7 +1035,7 @@ EOF
             
             # キャッシュから該当行を抽出
             local entry
-            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
+entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
             [ -z "$entry" ] && continue
             
             local pkg_name uid
