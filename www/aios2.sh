@@ -818,6 +818,54 @@ check_package_available() {
     return 1
 }
 
+get_kmods_directory() {
+    local version="$1"
+    local vendor="$2"
+    local subtarget="$3"
+    local kernel_version="$4"
+    
+    local index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
+    
+    # インデックスページから該当カーネルバージョンのディレクトリを取得
+    local kmod_dir
+    kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
+        sed -n 's/.*href="\([^"]*\)".*/\1/p' | \
+        grep "^${kernel_version}" | \
+        head -1)
+    
+    if [ -n "$kmod_dir" ]; then
+        # 末尾のスラッシュを削除
+        kmod_dir=$(echo "$kmod_dir" | sed 's:/$::')
+        echo "$kmod_dir"
+        return 0
+    fi
+    
+    return 1
+}
+
+get_kmods_directory() {
+    local version="$1"
+    local vendor="$2"
+    local subtarget="$3"
+    local kernel_version="$4"
+    
+    local index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
+    
+    local kmod_dir
+    kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
+        sed -n 's/.*href="\([^"]*\)".*/\1/p' | \
+        grep "^${kernel_version}" | \
+        head -1)
+    
+    if [ -n "$kmod_dir" ]; then
+        kmod_dir=$(echo "$kmod_dir" | sed 's:/$::')
+        echo "$kmod_dir"
+        return 0
+    fi
+    
+    return 1
+}
+
 cache_package_availability() {
     echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
     
@@ -829,7 +877,6 @@ cache_package_availability() {
         return 1
     fi
     
-    # ★ ファイルに直接書き込み（変数は使わない）
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     : > "$cache_file"
     
@@ -837,9 +884,22 @@ cache_package_availability() {
     local is_snapshot=0
     echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
     
+    # kmods追加
+    local kernel_version=$(uname -r)
+    local kmod_dir
+    kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
+    
+    if [ -n "$kmod_dir" ]; then
+        feeds="$feeds kmods"
+        echo "[DEBUG] Found kmods directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
+    fi
+    
     for feed in $feeds; do
         local url
-        if [ $is_snapshot -eq 1 ]; then
+        
+        if [ "$feed" = "kmods" ]; then
+            url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
+        elif [ $is_snapshot -eq 1 ]; then
             url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
         else
             url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
@@ -860,7 +920,7 @@ cache_package_availability() {
             continue
         fi
         
-        if [ $is_snapshot -eq 1 ]; then
+        if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
             jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
                 awk 'NF {print $0":1"}' >> "$cache_file"
         else
