@@ -882,7 +882,6 @@ get_kmods_directory() {
     
     local index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
     
-    # インデックスページから該当カーネルバージョンのディレクトリを取得
     local kmod_dir
     kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
         sed -n 's/.*href="\([^"]*\)".*/\1/p' | \
@@ -890,7 +889,6 @@ get_kmods_directory() {
         head -1)
     
     if [ -n "$kmod_dir" ]; then
-        # 末尾のスラッシュを削除
         kmod_dir=$(echo "$kmod_dir" | sed 's:/$::')
         echo "$kmod_dir"
         return 0
@@ -1087,91 +1085,94 @@ XXXXX_cache_package_availability() {
 }
 
 cache_package_availability() {
-    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
-
-    local version="$OPENWRT_VERSION"
-    local arch="$DEVICE_ARCH"
-
-    if [ -z "$version" ] || [ -z "$arch" ]; then
-        echo "[DEBUG] Missing version ($version) or arch ($arch)" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-    : > "$cache_file"
-
-    local feeds="base packages luci"
-    local is_snapshot=0
-    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
-
-    local kernel_version=$(uname -r)
-    local kmod_dir
-    kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
-
-    if [ -n "$kmod_dir" ]; then
-        feeds="$feeds kmods"
-        echo "[DEBUG] Found kmods directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
-    fi
-
-    local pids=""
-    for feed in $feeds; do
-        (
-            local url temp_file
-            temp_file="$CONFIG_DIR/cache_${feed}.txt"
-
-            if [ "$feed" = "kmods" ]; then
-                url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
-            elif [ $is_snapshot -eq 1 ]; then
-                url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-            else
-                url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-            fi
-
-            echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
-
-            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-            if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
-                echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
-                rm -f "$temp_response"
-                exit 1
-            fi
-
-            if [ ! -s "$temp_response" ]; then
-                echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
-                rm -f "$temp_response"
-                exit 1
-            fi
-
-            if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
-                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null \
-                    | awk 'NF {print $0}' > "$temp_file"
-            else
-                awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
-            fi
-
-            rm -f "$temp_response"
-
-            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
-        ) &
-        pids="$pids $!"
-    done
-
-    wait $pids
-
-    for feed in $feeds; do
-        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-        if [ -f "$temp_file" ]; then
-            cat "$temp_file" >> "$cache_file"
-            rm -f "$temp_file"
+    {
+        echo "[DEBUG] Building package availability cache..."
+        
+        local version="$OPENWRT_VERSION"
+        local arch="$DEVICE_ARCH"
+        
+        if [ -z "$version" ] || [ -z "$arch" ]; then
+            echo "[DEBUG] Missing version ($version) or arch ($arch)"
+            return 1
         fi
-    done
-
-    sort -u "$cache_file" -o "$cache_file"
-
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
-
+        
+        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+        : > "$cache_file"
+        
+        local feeds="base packages luci"
+        local is_snapshot=0
+        echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+        
+        local kernel_version=$(uname -r)
+        local kmod_dir
+        kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
+        
+        if [ -n "$kmod_dir" ]; then
+            feeds="$feeds kmods"
+            echo "[DEBUG] Found kmods directory: $kmod_dir"
+        fi
+        
+        local pids=""
+        for feed in $feeds; do
+            (
+                local url temp_file
+                temp_file="$CONFIG_DIR/cache_${feed}.txt"
+                
+                if [ "$feed" = "kmods" ]; then
+                    url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
+                elif [ $is_snapshot -eq 1 ]; then
+                    url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+                else
+                    url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+                fi
+                
+                echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
+                
+                local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
+                if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
+                    echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
+                    rm -f "$temp_response"
+                    exit 1
+                fi
+                
+                if [ ! -s "$temp_response" ]; then
+                    echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
+                    rm -f "$temp_response"
+                    exit 1
+                fi
+                
+                if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
+                    jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null \
+                        | awk 'NF {print $0}' > "$temp_file"
+                else
+                    awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
+                fi
+                
+                rm -f "$temp_response"
+                
+                local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
+                echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
+            ) >/dev/null 2>&1 &  # ← 標準出力・標準エラーを抑制
+            pids="$pids $!"
+        done
+        
+        wait $pids
+        
+        for feed in $feeds; do
+            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+            if [ -f "$temp_file" ]; then
+                cat "$temp_file" >> "$cache_file"
+                rm -f "$temp_file"
+            fi
+        done
+        
+        sort -u "$cache_file" -o "$cache_file"
+        
+        local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
+        echo "[DEBUG] Cache built: $count packages total"
+        
+    } >> "$CONFIG_DIR/debug.log" 2>&1  # ← 関数全体の出力をdebug.logへ
+    
     return 0
 }
 
