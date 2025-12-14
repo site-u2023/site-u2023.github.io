@@ -3659,6 +3659,17 @@ aios2_main() {
     # DEVICE_TARGET, OPENWRT_VERSIONをここで設定
     # ========================================
     get_extended_device_info
+
+    # バックグラウンドプロセス用に export
+    export DEVICE_TARGET
+    export OPENWRT_VERSION
+    export ASU_URL
+    export DEVICE_MODEL
+    
+    echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
     # Phase 8: パッケージ存在確認キャッシュ構築
