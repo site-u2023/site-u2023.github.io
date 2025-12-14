@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0252"
+VERSION="R7.1215.0255"
 
 # パッケージ要件
 # 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
@@ -834,14 +834,11 @@ XXXXX_check_package_available() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
 
-    # custom_feeds は常に許可
     [ "$caller" = "custom_feeds" ] && return 0
 
-    # virtual パッケージは常に許可
     local is_virtual
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" \
         -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
@@ -850,25 +847,18 @@ check_package_available() {
     # 判定キー正規化（uniqueId 優先）
     local check_id="$pkg_id"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local uid
-        uid=$(echo "$_PACKAGE_NAME_CACHE" \
-            | awk -F= -v id="$pkg_id" '$3 == id {print $3; exit}')
-        [ -n "$uid" ] && check_id="$uid"
+        local real
+        real=$(echo "$_PACKAGE_NAME_CACHE" \
+            | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$real" ] && check_id="$real"
     fi
 
-    # ① repo に存在するか（最重要）
-    if ! echo "$_PACKAGE_NAME_CACHE" | grep -q "^${check_id}="; then
-        return 1
+    # 実在パッケージキャッシュで存在確認
+    if echo "$_PKG_AVAILABLE_CACHE" | grep -qx "$check_id"; then
+        return 0
     fi
 
-    # ② インストール済み判定（補助情報）
-    if [ -f "$cache_file" ] && grep -q "^${check_id}:1$" "$cache_file"; then
-        export PACKAGE_ALREADY_INSTALLED=1
-    else
-        export PACKAGE_ALREADY_INSTALLED=0
-    fi
-
-    return 0
+    return 1
 }
 
 get_kmods_directory() {
