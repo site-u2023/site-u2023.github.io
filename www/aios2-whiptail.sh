@@ -1147,20 +1147,28 @@ package_selection() {
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
+        # parent_idはuniqueIdの可能性があるので、idまたはuniqueIdで検索
         local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
+        
+        echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
         
         while read -r dep; do
             [ -z "$dep" ] && continue
             
-            local matched_line matched_id
-            matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$3 == dep {print; exit}')
+            # depもidまたはuniqueIdで検索
+            local matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$1 == dep || $3 == dep {print; exit}')
             
             if [ -n "$matched_line" ]; then
-                matched_id=$(echo "$matched_line" | cut -d= -f1)
-                dependent_ids="${dependent_ids}${matched_id} ${dep} "
-            else
-                if echo "$_PACKAGE_NAME_CACHE" | cut -d= -f1 | grep -qx "$dep"; then
-                    dependent_ids="${dependent_ids}${dep} "
+                local matched_id=$(echo "$matched_line" | cut -d= -f1)
+                local matched_uid=$(echo "$matched_line" | cut -d= -f3)
+                
+                # uniqueIdがある場合は両方追加、ない場合はidのみ
+                if [ -n "$matched_uid" ]; then
+                    dependent_ids="${dependent_ids}${matched_id} ${matched_uid} "
+                    echo "[DEBUG] Added dependency: id=$matched_id, uid=$matched_uid" >> "$CONFIG_DIR/debug.log"
+                else
+                    dependent_ids="${dependent_ids}${matched_id} "
+                    echo "[DEBUG] Added dependency: id=$matched_id" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
         done <<DEPS_INNER
@@ -1171,6 +1179,7 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
+    echo "[DEBUG] Final dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
     
     # ループ開始 - 更新ボタンでここに戻る
     while true; do
@@ -1179,13 +1188,12 @@ EOF
         idx=1
         local display_names=""
         
-        # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
 
             echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
             
-            # キャッシュから該当行を抽出
+            # pkg_idはuniqueIdの可能性があるので、idまたはuniqueIdで検索
             local entry
             entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
 
@@ -1204,16 +1212,23 @@ EOF
                 package_compatible "$pkg_id" || continue
             fi
 
-            # 依存パッケージ判定（uniqueIdを優先）
+            # 依存パッケージ判定（uniqueIdとidの両方をチェック）
             local is_dependent=0
             
             if [ -n "$uid" ]; then
+                # uniqueIdがある場合、uniqueIdで検索
                 if echo " ${dependent_ids} " | grep -q " ${uid} "; then
                     is_dependent=1
+                    echo "[DEBUG] $pkg_id is dependent (matched by uid=$uid)" >> "$CONFIG_DIR/debug.log"
                 fi
-            else
-                if echo " ${dependent_ids} " | grep -q " ${pkg_id} "; then
+            fi
+            
+            # uniqueIdでマッチしなかった場合、idでも検索
+            if [ "$is_dependent" -eq 0 ]; then
+                local real_id=$(echo "$entry" | cut -d= -f1)
+                if echo " ${dependent_ids} " | grep -q " ${real_id} "; then
                     is_dependent=1
+                    echo "[DEBUG] $pkg_id is dependent (matched by id=$real_id)" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
 
@@ -1221,9 +1236,9 @@ EOF
             local avail_caller="$caller"
             [ "$is_dependent" -eq 1 ] && avail_caller="dependent"
 
-            echo "[DEBUG] Checking availability for $pkg_id (caller=$caller)" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] Checking availability for $pkg_id (caller=$avail_caller)" >> "$CONFIG_DIR/debug.log"
             
-	    if ! check_package_available "$pkg_id" "$avail_caller"; then
+            if ! check_package_available "$pkg_id" "$avail_caller"; then
                 echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
@@ -1233,7 +1248,9 @@ EOF
             # hidden チェック（独立パッケージのみ）
             if [ "$is_dependent" -eq 0 ]; then
                 local is_hidden_entry
+                local real_id=$(echo "$entry" | cut -d= -f1)
                 
+                # カテゴリ指定なしでグローバル検索
                 if [ -n "$uid" ]; then
                     if [ "$caller" = "custom_feeds" ]; then
                         is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
@@ -1245,14 +1262,17 @@ EOF
                 else
                     if [ "$caller" = "custom_feeds" ]; then
                         is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                            -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
                     else
                         is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                            -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
                     fi
                 fi
                 
-                [ "$is_hidden_entry" = "true" ] && continue
+                if [ "$is_hidden_entry" = "true" ]; then
+                    echo "[DEBUG] Package $pkg_id is hidden, skipped" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             fi
             
             local display_name="$pkg_name"
