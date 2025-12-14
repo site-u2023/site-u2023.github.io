@@ -1416,7 +1416,7 @@ add_package_with_dependencies() {
     local cache_line
     cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
     # 見つからなければidで検索
-    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
+    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
     
     if [ -n "$cache_line" ]; then
         # ★ メモリ内で重複チェック
@@ -1491,7 +1491,7 @@ remove_package_with_dependencies() {
     # まずuniqueIdで完全一致検索
     all_entries=$(awk -F= -v id="$pkg_id" '$3 == id' "$target_file" 2>/dev/null)
     # 見つからなければidで検索
-    [ -z "$all_entries" ] && all_entries=$(awk -F= -v id="$pkg_id" '$1 == id' "$target_file" 2>/dev/null)
+    [ -z "$all_entries" ] && all_entries=$(awk -F= -v id="$pkg_id" '$1 == id && $3 == ""' "$target_file" 2>/dev/null)
     
     while read -r entry; do
         [ -z "$entry" ] && continue
