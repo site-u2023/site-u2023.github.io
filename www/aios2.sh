@@ -4,40 +4,54 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0505"
+VERSION="R7.1215.0510"
 
-# パッケージ要件
-# 本スクリプトでは初動でデバイス名確定後、実行中の変更は無い
-# 【uniqueId の扱い】
-#   - uniqueId がある場合、判定には必ず uniqueId を使用（id は使わない）
-#   - uniqueId がない場合のみ id で判定
-#   - 例: id="collectd", uniqueId="collectd-htop" の場合
-#     → 依存判定は uniqueId="collectd-htop" でのみ行う
+# =============================================================================
+# Package Management Architecture
+# =============================================================================
 #
-# 【依存パッケージ判定の順序】
-#   1. uniqueId があるか確認
-#   2. uniqueId がある → uniqueId で dependent_ids を検索
-#   3. uniqueId がない → id で dependent_ids を検索
-#   4. 依存パッケージ (is_dependent=1) → インデント表示
-#   5. 独立パッケージ (is_dependent=0) → hidden チェック実行
+# 【Package Cache Structure】
+# _PACKAGE_NAME_CACHE format:
+#   id=name=uniqueId=installOptions=enableVar=dependencies
 #
-# 【hidden 属性】
-#   - hidden: true のパッケージは独立パッケージとして非表示
-#   - 依存パッケージとしては表示される（インデント付き）
+# Example:
+#   apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil
+#   luci-app-ttyd=luci-app-ttyd====
 #
-# postinst.json要件
-# - **id**: `apache` ← インストールする実際のパッケージ
-# - **name**: `htpasswd` ← **UIに表示する名前**
-# - **uniqueId**: `htpasswd-from-apache` ← 識別子（内部使用：同じidの複数エントリを区別）
+# 【uniqueId Handling】
+# - If uniqueId exists: ALL checks use uniqueId (NOT id)
+# - If uniqueId absent: use id for checks
+# - Example: id="collectd", uniqueId="collectd-htop"
+#   → Dependency check uses uniqueId="collectd-htop" ONLY
 #
-# キャッシュ形式
-# id=name=uniqueId=installOptions=enableVar=dependencies
-# dependencies がある場合
-# apache#apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil
-# dependencies がない場合
-# luci-app-ttyd#luci-app-ttyd=luci-app-ttyd=
-# uniqueId がない場合
-# htop#htop=htop===enable_htop=collectd-htop,collectd-mod-th
+# 【Dependency Resolution Order】
+# 1. Check if uniqueId exists
+# 2. If uniqueId exists → search dependent_ids by uniqueId
+# 3. If uniqueId absent → search dependent_ids by id
+# 4. Dependent package (is_dependent=1) → display with indent
+# 5. Independent package (is_dependent=0) → execute hidden check
+#
+# 【hidden Attribute】
+# - hidden: true packages are hidden as independent packages
+# - But displayed as dependent packages (with indent)
+#
+# 【Package Availability Check】
+# check_package_available() verifies package existence in repository:
+# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, kmods
+# - Cache file: $CONFIG_DIR/pkg_availability_cache.txt (one package per line)
+# - Returns 0 (available) or 1 (not available)
+# - Exceptions:
+#   * virtual=true packages: always return 0 (skip check)
+#   * custom_feeds caller: always return 0 (skip check)
+#   * dependent packages: MUST pass availability check (no exception)
+#
+# 【Package Installation Requirements】
+# postinst.json structure:
+# - **id**: Package name to install (e.g. "apache")
+# - **name**: Display name in UI (e.g. "htpasswd")
+# - **uniqueId**: Internal identifier for distinguishing multiple entries with same id
+#               (e.g. "htpasswd-from-apache")
+# =============================================================================
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -1090,7 +1104,8 @@ cache_package_availability() {
         local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
         : > "$cache_file"
         
-        local feeds="base packages luci"
+        # ★ 全フィードをカバー
+        local feeds="base packages luci routing telephony"
         local is_snapshot=0
         echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
         
