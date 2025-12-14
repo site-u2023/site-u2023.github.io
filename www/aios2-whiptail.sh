@@ -1204,33 +1204,15 @@ EOF
                 continue
             }
             
-            local pkg_name uid real_id
+            local pkg_name uid real_id hidden_flag
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
+            hidden_flag=$(echo "$entry" | cut -d= -f7)
             
-            # ★ hidden チェック（依存/独立問わず最初に実行）
-            local is_hidden_entry
-            if [ -n "$uid" ]; then
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                fi
-            else
-                if [ "$caller" = "custom_feeds" ]; then
-                    is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                        -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
-                else
-                    is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        -e "@.categories[*].packages[@.id='$real_id'].hidden" 2>/dev/null | head -1)
-                fi
-            fi
-            
-            if [ "$is_hidden_entry" = "true" ]; then
-                echo "[DEBUG] Package $pkg_id is hidden, skipped" >> "$CONFIG_DIR/debug.log"
+            # hidden チェック（キャッシュから取得）
+            if [ "$hidden_flag" = "true" ]; then
+                echo "[DEBUG] Package $pkg_id is hidden (from cache), skipped" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
             
