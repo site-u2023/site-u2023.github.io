@@ -86,6 +86,8 @@ _CATEGORIES_CACHE=""
 _CATEGORIES_LOADED=0
 _SETUP_CATEGORIES_CACHE=""
 _SETUP_CATEGORIES_LOADED=0
+_PACKAGE_AVAILABILITY_CACHE=""
+_PACKAGE_AVAILABILITY_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -399,6 +401,7 @@ init() {
     unset _CATEGORIES_CACHE
     unset _SETUP_CATEGORIES_CACHE
     unset _TRANSLATIONS_LOADED
+    unset _PACKAGE_AVAILABILITY_CACHE
     unset _TRANSLATIONS_DATA
     unset _TRANSLATIONS_EN_LOADED
     unset _TRANSLATIONS_EN_DATA
@@ -413,6 +416,7 @@ init() {
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
+    _PACKAGE_AVAILABILITY_LOADED=0
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
@@ -758,6 +762,100 @@ build_deviceinfo_display() {
 }
 
 # Package Management
+
+# =============================================================================
+# Package Availability Check
+# =============================================================================
+# Checks if a package is available in the package manager's repository
+# Uses cache to avoid repeated checks
+# Args:
+#   $1 - package id (not name!)
+#   $2 - caller ("normal" or "custom_feeds")
+# Returns:
+#   0 if package is available, 1 otherwise
+# =============================================================================
+check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    
+    # カスタムフィードのパッケージは存在確認をスキップ
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    fi
+    
+    # virtual パッケージは常に利用可能
+    local is_virtual
+    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
+    
+    if [ "$is_virtual" = "true" ]; then
+        return 0
+    fi
+    
+    # uniqueIdの場合はidに変換
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+    
+    # メモリキャッシュチェック
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
+        local status
+        status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
+        [ "$status" = "1" ] && return 0 || return 1
+    fi
+    
+    # ASU APIで存在確認
+    local available=0
+    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
+    local response
+    
+    response=$(wget -qO- "${api_url}?package=${real_id}" 2>/dev/null)
+    
+    if echo "$response" | grep -q "\"${real_id}\""; then
+        available=1
+    fi
+    
+    # メモリキャッシュに保存
+    _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
+"
+    
+    [ "$available" -eq 1 ] && return 0 || return 1
+}
+
+cache_package_availability() {
+    echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
+    
+    # ASU APIから全パッケージリストを取得
+    local api_url="${ASU_URL}/api/v1/packages/${DEVICE_TARGET}/${OPENWRT_VERSION}"
+    local response
+    
+    response=$(wget -qO- "$api_url" 2>/dev/null)
+    
+    if [ -z "$response" ]; then
+        echo "[DEBUG] Failed to fetch package list from ASU API" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    # JSONから全パッケージ名を抽出してメモリキャッシュに格納
+    local available_packages
+    available_packages=$(echo "$response" | jsonfilter -e '@.packages[*]' 2>/dev/null | sort -u)
+    
+    # メモリキャッシュに保存（pkg_id:1 形式）
+    while read -r pkg; do
+        [ -z "$pkg" ] && continue
+        _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${pkg}:1
+"
+    done <<EOF
+$available_packages
+EOF
+    
+    local cached_count=$(echo "$available_packages" | wc -l)
+    echo "[DEBUG] Package availability cache created: $cached_count packages from ASU" >> "$CONFIG_DIR/debug.log"
+    
+    return 0
+}
 
 package_compatible() {
     local pkg_id="$1"
@@ -3552,8 +3650,8 @@ aios2_main() {
     get_extended_device_info
 
     # 10. パッケージ存在確認をバックグラウンドで開始
-    # cache_package_availability &
-    # CACHE_PKG_PID=$!
+    cache_package_availability &
+    CACHE_PKG_PID=$!
     
     # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -3578,8 +3676,8 @@ aios2_main() {
     fi
 
     # UIモジュールの起動前に待機
-    # wait $CACHE_PKG_PID
-    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    wait $CACHE_PKG_PID
+    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
 
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
