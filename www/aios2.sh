@@ -394,27 +394,39 @@ init() {
         return 1
     }
 
-    unset _TRANSLATIONS_LOADED
-    unset _TRANSLATIONS_DATA
-    
-    : > "$SELECTED_PACKAGES"
-    : > "$SELECTED_CUSTOM_PACKAGES"
-    : > "$SETUP_VARS"
-    : > "$CONFIG_DIR/debug.log"
-
+    # ★★★ キャッシュ変数の完全初期化 ★★★
     unset _PACKAGE_NAME_CACHE
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _PACKAGE_COMPAT_CACHE
+    unset _CONDITIONAL_PACKAGES_CACHE
     unset _CUSTOMFEED_CATEGORIES_CACHE
     unset _CATEGORIES_CACHE
     unset _SETUP_CATEGORIES_CACHE
     unset _PACKAGE_AVAILABILITY_CACHE
+    unset _TRANSLATIONS_LOADED
+    unset _TRANSLATIONS_DATA
+    unset _TRANSLATIONS_EN_LOADED
+    unset _TRANSLATIONS_EN_DATA
+    unset _CURRENT_LANG
     
+    # ★★★ フラグを明示的に0に設定 ★★★
     _PACKAGE_NAME_LOADED=0
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _PACKAGE_COMPAT_LOADED=0
+    _CONDITIONAL_PACKAGES_LOADED=0
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
     _PACKAGE_AVAILABILITY_LOADED=0
     
-    echo "[DEBUG] $(date): Init complete, cache cleared" >> "$CONFIG_DIR/debug.log"
+    : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
+    : > "$SETUP_VARS"
+    : > "$CONFIG_DIR/debug.log"
+    
+    echo "[DEBUG] $(date): Init complete, all caches cleared" >> "$CONFIG_DIR/debug.log"
 }
 
 # Language and Translation
