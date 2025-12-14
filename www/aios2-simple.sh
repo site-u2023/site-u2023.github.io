@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - simple TEXT Module
 # This file contains simple text-based UI functions
 
-VERSION="R7.1210.1146"
+VERSION="R7.1214.1120"
 
 CHOICE_BACK="0"
 CHOICE_EXIT="00"
@@ -993,7 +993,7 @@ package_selection() {
     
     packages=$(get_category_packages "$cat_id")
     
-    # 【修正版】依存パッケージIDをキャッシュから取得（while true の外に移動）
+    # 依存パッケージIDをキャッシュから取得（while true の外に移動）
     local dependent_ids=" "
     
     while read -r parent_id; do
@@ -1023,22 +1023,24 @@ $packages
 EOF
     
     dependent_ids="${dependent_ids} "
-    # 【修正版終了】
     
     while true; do
         local menu_items=""
         local display_names=""
         local idx=1
         
-        while read -r entry; do
+        # ★★★ ここが改善ポイント：カテゴリのパッケージリストでループ ★★★
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            
+            # キャッシュから該当行を抽出
+            local entry
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id {print; exit}')
             [ -z "$entry" ] && continue
             
-            local pkg_id pkg_name uid
-            pkg_id=$(echo "$entry" | cut -d= -f1)
+            local pkg_name uid
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
-            
-            echo "$packages" | grep -qx "$pkg_id" || continue
             
             if [ "$caller" = "custom_feeds" ]; then
                 package_compatible "$pkg_id" || continue
@@ -1103,7 +1105,7 @@ EOF
             menu_items="$menu_items $idx \"${status_mark}${display_name}\""
             idx=$((idx+1))
         done <<EOF
-$_PACKAGE_NAME_CACHE
+$packages
 EOF
         
         local choice
