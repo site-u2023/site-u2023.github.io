@@ -80,7 +80,7 @@ filters:
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: 豆腐フィルタ
-    id: 9
+    id: 99
 
 user_rules:
   - '# google analytecs'
