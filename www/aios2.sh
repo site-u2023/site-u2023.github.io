@@ -827,13 +827,18 @@ check_package_available() {
 cache_package_availability() {
     echo "[DEBUG] Building package availability cache from ASU API..." >> "$CONFIG_DIR/debug.log"
     
-    # ASU APIから全パッケージリストを取得
     local api_url="${ASU_URL}/api/v1/packages/${OPENWRT_VERSION}/${DEVICE_TARGET}"
+    echo "[DEBUG] API URL: $api_url" >> "$CONFIG_DIR/debug.log"
+    
     local response
+    response=$(wget -qO- "$api_url" 2>&1)
+    local wget_exit=$?
     
-    response=$(wget -qO- "$api_url" 2>/dev/null)
+    echo "[DEBUG] wget exit code: $wget_exit" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Response length: ${#response}" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Response (first 500 chars): ${response:0:500}" >> "$CONFIG_DIR/debug.log"
     
-    if [ -z "$response" ]; then
+    if [ -z "$response" ] || [ $wget_exit -ne 0 ]; then
         echo "[DEBUG] Failed to fetch package list from ASU API" >> "$CONFIG_DIR/debug.log"
         return 1
     fi
