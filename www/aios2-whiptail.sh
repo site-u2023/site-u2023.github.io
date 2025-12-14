@@ -1070,9 +1070,7 @@ EOF
             
             # pkg_id は uniqueId（ある場合）または id
             # フィールド1（id）またはフィールド3（uniqueId）で完全一致チェック
-            if awk -F= -v target="$pkg_id" '
-                ($1 == target && $3 == "") || $3 == target
-            ' "$target_file" | grep -q .; then
+            if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
                 old_selection="${old_selection}${pkg_id}
 "
             fi
