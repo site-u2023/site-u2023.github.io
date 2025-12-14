@@ -36,7 +36,7 @@
 # uniqueId がない場合
 # htop#htop=htop===enable_htop=collectd-htop,collectd-mod-th
 
-VERSION="R7.1214.0045"
+VERSION="R7.1214.1033"
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
