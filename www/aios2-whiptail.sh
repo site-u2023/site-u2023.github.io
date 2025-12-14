@@ -1028,7 +1028,7 @@ EOF
 "
             
             local status
-            if is_package_selected "$pkg_name" "$caller"; then
+            if is_package_selected "$pkg_id" "$caller"; then 
                 status="ON"
             else
                 status="OFF"
