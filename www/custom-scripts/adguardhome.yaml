@@ -76,11 +76,11 @@ filters:
   - enabled: false
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
     name: AdGuard Japanese filter
-    id: 1764215105
+    id: 7
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: 豆腐フィルタ
-    id: 1764215106
+    id: 9
 
 user_rules:
   - '# google analytecs'
