@@ -92,7 +92,7 @@
         {
           "id": "tc-full",
           "name": "tc-full",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-app-statistics",
@@ -103,12 +103,12 @@
           "id": "collectd",
           "name": "collectd",
           "uniqueId": "collectd-app-statistics",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "rrdtool1",
           "name": "rrdtool1",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-app-nlbwmon",
@@ -130,12 +130,12 @@
         {
           "id": "wget-ssl",
           "name": "wget-ssl",
-          "hidden": true        
+          "hidden": "true"        
         },
         {
           "id": "bind-host",
           "name": "bind-host",
-          "hidden": true        
+          "hidden": "true"        
         },  
         {
           "id": "luci-app-tor",
@@ -149,7 +149,7 @@
         {
           "id": "mwan3",
           "name": "mwan3",
-          "hidden": true
+          "hidden": "true"
         }
       ]
     },
@@ -191,32 +191,32 @@
         {
           "id": "kmod-usb-wdm",
           "name": "kmod-usb-wdm",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "kmod-usb-net-cdc-mbim",
           "name": "kmod-usb-net-cdc-mbim",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "kmod-usb-net-qmi-wwan",
           "name": "kmod-usb-net-qmi-wwan",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "uqmi",
           "name": "uqmi",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "mbim-utils",
           "name": "mbim-utils",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "screen",
           "name": "screen",
-          "hidden": true
+          "hidden": "true"
         }
       ]
     },
@@ -267,12 +267,12 @@
           "id": "collectd",
           "name": "collectd",
           "uniqueId": "collectd-htop", 
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "collectd-mod-thermal",
           "name": "collectd-mod-thermal",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "mtr-nojson",
@@ -359,12 +359,12 @@
         {
           "id": "luci-theme-material",
           "name": "luci-theme-material",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-theme-openwrt-2020",
           "name": "luci-theme-openwrt-2020",
-          "hidden": true
+          "hidden": "true"
         }
       ]
     },
@@ -384,13 +384,13 @@
           "id": "owut",
           "name": "owut",
           "checked": true,
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "auc",
           "name": "auc",
           "checked": true,
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-proto-wireguard",
@@ -400,12 +400,12 @@
         {
           "id": "luci-app-wireguard",
           "name": "luci-app-wireguard",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "wireguard-tools",
           "name": "wireguard-tools",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "zerotier",
@@ -424,12 +424,12 @@
           "id": "docker-compose",
           "name": "docker-compose",
           "dependencies": ["docker"],
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "docker",
           "name": "docker",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-app-openvpn",
@@ -456,7 +456,7 @@
         {
           "id": "libnewt",
           "name": "libnewt",
-          "hidden": true
+          "hidden": "true"
         }
       ]
     },
@@ -479,17 +479,17 @@
         {
           "id": "block-mount",
           "name": "block-mount",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "usbutils",
           "name": "usbutils",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "gdisk",
           "name": "gdisk",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "dosfstools",
@@ -499,7 +499,7 @@
         {
           "id": "kmod-fs-vfat",
           "name": "kmod-fs-vfat",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -510,7 +510,7 @@
         {
           "id": "kmod-fs-ext4",
           "name": "kmod-fs-ext4",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -521,7 +521,7 @@
         {
           "id": "kmod-fs-f2fs",
           "name": "kmod-fs-f2fs",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -532,7 +532,7 @@
         {
           "id": "kmod-fs-exfat",
           "name": "kmod-fs-exfat",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -543,7 +543,7 @@
         {
           "id": "kmod-fs-ntfs3",
           "name": "kmod-fs-ntfs3",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -554,13 +554,13 @@
         {
           "id": "kmod-fs-hfs",
           "name": "kmod-fs-hfs",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
           "id": "kmod-fs-hfsplus",
           "name": "kmod-fs-hfsplus",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -582,7 +582,7 @@
         {
           "id": "kmod-usb-net-cdc-ether",
           "name": "kmod-usb-net-cdc-ether",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -595,7 +595,7 @@
         {
           "id": "kmod-usb-dwc2",
           "name": "kmod-usb-dwc2",
-          "hidden": true,
+          "hidden": "true",
           "reboot": true
         },
         {
@@ -607,13 +607,13 @@
         {
           "id": "parted",
           "name": "parted",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "f2fs-tools",
           "name": "f2fs-tools",
           "uniqueId": "f2fs-tools-resize2fs",
-          "hidden": true
+          "hidden": "true"
         }
       ]
     },
@@ -632,7 +632,7 @@
         {
           "id": "wsdd2",
           "name": "wsdd2",
-          "hidden": true
+          "hidden": "true"
         },
         {
           "id": "luci-app-transmission",
@@ -682,7 +682,7 @@
           "id": "japan-tofukko-filter",
           "name": "Japan Tofukko Filter",
           "enableVar": "enable_tofukko_filter",
-          "hidden": true,
+          "hidden": "true",
           "virtual": true
         },
         {
@@ -704,38 +704,38 @@
       "name": "Setup-driven Packages",
       "class": "tr-setup-driven-packages",
       "description": "Packages automatically managed by setup.json configuration",
-      "hidden": true,
+      "hidden": "true",
       "packages": [
         {
           "id": "map",
           "name": "map",
-          "hidden": true,
+          "hidden": "true",
           "description": "MAP-E support package",
           "reboot": true
         },
         {
             "id": "coreutils-sha1sum",
             "name": "coreutils-sha1sum",
-            "hidden": true,
+            "hidden": "true",
             "description": "SHA1 checksum utility for MAP-E"
         },
         {
           "id": "ds-lite", 
           "name": "ds-lite",
-          "hidden": true,
+          "hidden": "true",
           "description": "DS-Lite support package",
           "reboot": true
         },
         {
           "id": "luci-app-usteer",
           "name": "luci-app-usteer",
-          "hidden": true,
+          "hidden": "true",
           "description": "Usteer package managed by Wi-Fi setup"
         },
         {
           "id": "adguardhome",
           "name": "adguardhome",
-          "hidden": true,
+          "hidden": "true",
           "enableVar": "enable_adguardhome",
           "description": "AdGuard Home DNS server (managed by Custom Scripts)"
         }
