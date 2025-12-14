@@ -31,10 +31,10 @@
       "dependencies": ["libaprutil", "libapr"],
       "enableVar": "enable_htpasswd",
       "installOptions": "ignoreDeps",
-      "hidden": false,
-      "virtual": false,
-      "reboot": false,
-      "checked": false
+      "hidden": "false",
+      "virtual": "false",
+      "reboot": "false",
+      "checked": "false"
     }
   },
   "categories": [
@@ -48,12 +48,12 @@
           "id": "luci-app-ttyd",
           "name": "luci-app-ttyd",
           "enableVar": "enable_ttyd",
-          "checked": true
+          "checked": "true"
         },
         {
           "id": "openssh-sftp-server",
           "name": "openssh-sftp-server",
-          "checked": true
+          "checked": "true"
         },
         {
           "id": "luci-app-commands",
@@ -349,7 +349,7 @@
         {
           "id": "luci-mod-dashboard",
           "name": "luci-mod-dashboard",
-          "checked": true
+          "checked": "true"
         },
         {
           "id": "luci-theme-openwrt",
@@ -377,19 +377,19 @@
         {
           "id": "luci-app-attendedsysupgrade",
           "name": "luci-app-attendedsysupgrade",
-          "checked": true,
+          "checked": "true",
           "dependencies": ["owut", "auc"]
         },
         {
           "id": "owut",
           "name": "owut",
-          "checked": true,
+          "checked": "true",
           "hidden": "true"
         },
         {
           "id": "auc",
           "name": "auc",
-          "checked": true,
+          "checked": "true",
           "hidden": "true"
         },
         {
@@ -451,7 +451,7 @@
           "id": "whiptail",
           "name": "whiptail",
           "dependencies": ["libnewt"],
-          "checked": true
+          "checked": "true"
         },
         {
           "id": "libnewt",
