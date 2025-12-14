@@ -822,11 +822,9 @@ XXX_check_package_available() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/package_availability.cache"
     
     # カスタムフィードのパッケージは存在確認をスキップ
     if [ "$caller" = "custom_feeds" ]; then
-        echo "[DEBUG] Package $pkg_id is from custom feed, skipping availability check" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
@@ -835,7 +833,6 @@ check_package_available() {
     is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
     
     if [ "$is_virtual" = "true" ]; then
-        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
@@ -847,19 +844,14 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
     
-    # ファイルキャッシュがあれば優先使用（高速）
-    if [ -f "$cache_file" ]; then
-        grep -qx "$real_id" "$cache_file" && return 0 || return 1
-    fi
-    
-    # メモリキャッシュチェック（従来の方式）
+    # メモリキャッシュチェック
     if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -q "^${real_id}:"; then
         local status
         status=$(echo "$_PACKAGE_AVAILABILITY_CACHE" | grep "^${real_id}:" | cut -d: -f2)
         [ "$status" = "1" ] && return 0 || return 1
     fi
     
-    # 実際の存在確認
+    # リアルタイムで存在確認
     local available=0
     if [ "$PKG_MGR" = "opkg" ]; then
         if opkg list "$real_id" 2>/dev/null | grep -q "^${real_id} "; then
@@ -871,7 +863,7 @@ check_package_available() {
         fi
     fi
     
-    # メモリキャッシュに保存
+    # メモリキャッシュに保存（次回以降は高速化）
     _PACKAGE_AVAILABILITY_CACHE="${_PACKAGE_AVAILABILITY_CACHE}${real_id}:${available}
 "
     
@@ -3745,8 +3737,8 @@ aios2_main() {
     get_extended_device_info
 
     # 10. パッケージ存在確認をバックグラウンドで開始
-    cache_package_availability &
-    CACHE_PKG_PID=$!
+    # cache_package_availability &
+    # CACHE_PKG_PID=$!
     
     # 11. APIから言語コードが取得できた場合、母国語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -3771,8 +3763,8 @@ aios2_main() {
     fi
 
     # UIモジュールの起動前に待機
-    wait $CACHE_PKG_PID
-    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    # wait $CACHE_PKG_PID
+    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
 
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
