@@ -782,10 +782,23 @@ build_deviceinfo_display() {
 # Returns:
 #   0 if package is available, 1 otherwise
 # =============================================================================
+# キャッシュ構築プロセス(PID)が生きていれば完了を待つ
+wait_for_package_cache() {
+    if [ -n "$CACHE_PKG_PID" ] && kill -0 "$CACHE_PKG_PID" 2>/dev/null; then
+        echo "[DEBUG] Waiting for package cache (PID: $CACHE_PKG_PID)..." >> "$CONFIG_DIR/debug.log"
+        # 完了するまでブロック
+        wait "$CACHE_PKG_PID"
+        # 完了したら変数をクリア（次回以降は待たない）
+        unset CACHE_PKG_PID
+    fi
+}
+
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+
+    wait_for_package_cache
     
     if [ "$caller" = "custom_feeds" ]; then
         return 0
@@ -805,7 +818,7 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
     
-    # ★ ファイルから直接検索
+    # ファイルから直接検索
     if [ ! -f "$cache_file" ]; then
         echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
         return 1
@@ -3884,13 +3897,13 @@ aios2_main() {
     # ========================================
     # Phase 10: パッケージキャッシュ完了を待機
     # ========================================
-    echo "Building package cache..."
-    wait $CACHE_PKG_PID
-    CACHE_STATUS=$?
-    if [ $CACHE_STATUS -ne 0 ]; then
-        echo "[WARNING] Package cache build failed, some packages may not be available" >> "$CONFIG_DIR/debug.log"
-    fi
-    echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    # echo "Building package cache..."
+    # wait $CACHE_PKG_PID
+    # CACHE_STATUS=$?
+    # if [ $CACHE_STATUS -ne 0 ]; then
+    #     echo "[WARNING] Package cache build failed, some packages may not be available" >> "$CONFIG_DIR/debug.log"
+    # fi
+    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
     # Phase 11: UIモジュール起動
