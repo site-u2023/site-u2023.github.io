@@ -2811,7 +2811,7 @@ XXX_auto_cleanup_conditional_variables() {
     echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-auto_cleanup_conditional_variables() {
+XXXXX_auto_cleanup_conditional_variables() {
     local cat_id="$1"
     
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
@@ -2939,7 +2939,7 @@ XXX_check_and_cleanup_variable() {
     fi
 }
 
-check_and_cleanup_variable() {
+XXXXX_check_and_cleanup_variable() {
     local item_id="$1"
     local variable show_when parent_section
     
@@ -3016,6 +3016,119 @@ EOF
         fi
     else
         echo "[DEBUG] Kept variable: $variable (condition met for $item_id)" >> "$CONFIG_DIR/debug.log"
+    fi
+}
+
+auto_cleanup_conditional_variables() {
+    local cat_id="$1"
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    # 実効接続タイプを取得（検出変数または設定値）
+    local effective_conn_type
+    effective_conn_type=$(get_effective_connection_type)
+    echo "[DEBUG] Effective connection type for cleanup: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
+
+    # カテゴリ内アイテムスキャン処理
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        local item_type
+        item_type=$(get_setup_item_type "$item_id")
+        
+        if [ "$item_type" = "section" ]; then
+            local nested_items
+            nested_items=$(get_section_nested_items "$item_id")
+            for nested_id in $nested_items; do
+                # 実効タイプを第2引数として渡す
+                check_and_cleanup_variable "$nested_id" "$effective_conn_type"
+            done
+        else
+            check_and_cleanup_variable "$item_id" "$effective_conn_type"
+        fi
+    done
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+check_and_cleanup_variable() {
+    local item_id="$1"
+    local effective_type="${2:-}" # 第2引数で実効タイプを受け取る
+    local variable show_when parent_section
+    
+    # この項目が変数を持っているか確認
+    variable=$(get_setup_item_variable "$item_id")
+    [ -z "$variable" ] && return 0
+    
+    # 1. 項目レベルの showWhen をチェック
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    
+    if [ -z "$show_when" ]; then
+        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    fi
+    
+    # 2. showWhen がない場合、親 section の showWhen を確認
+    if [ -z "$show_when" ]; then
+        # 親 section の id を取得
+        parent_section=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.items[*].id='$item_id'].id" 2>/dev/null | head -1)
+        
+        if [ -n "$parent_section" ]; then
+            show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$parent_section'].showWhen" 2>/dev/null | head -1)
+            # echo "[DEBUG] $item_id: Using parent section ($parent_section) showWhen: $show_when" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+    
+    # 3. showWhen がない項目はスキップ（削除対象外）
+    if [ -z "$show_when" ]; then
+        # echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # 4. showWhen 条件を解析
+    local show_when_normalized should_keep
+    show_when_normalized=$(echo "$show_when" | tr '-' '_')
+    
+    local var_name
+    var_name=$(echo "$show_when_normalized" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    
+    local expected
+    expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
+$show_when_normalized
+EOF
+)
+    
+    if [ -z "$expected" ]; then
+        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
+$show_when_normalized
+EOF
+)
+    fi
+    
+    # 5. 現在値を取得
+    local current_val
+    if [ "$var_name" = "connection_type" ] && [ -n "$effective_type" ]; then
+        # connection_type の判定には、渡された実効値を使用する
+        current_val="$effective_type"
+        # echo "[DEBUG] Using passed effective type: $current_val for item $item_id" >> "$CONFIG_DIR/debug.log"
+    else
+        current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    fi
+    
+    # 6. 条件判定
+    should_keep=0
+    if [ -z "$current_val" ]; then
+        should_keep=0
+    elif echo "$expected" | grep -q "^${current_val}\$"; then
+        should_keep=1
+    fi
+    
+    # 7. 条件を満たさない場合、変数を削除
+    if [ "$should_keep" -eq 0 ]; then
+        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${variable}=/d" "$SETUP_VARS"
+            echo "[AUTO] Removed variable: $variable (condition not met for $item_id, expected=$expected, current=$current_val)" >> "$CONFIG_DIR/debug.log"
+        fi
+    # else
+    #     echo "[DEBUG] Kept variable: $variable (condition met for $item_id)" >> "$CONFIG_DIR/debug.log"
     fi
 }
 
