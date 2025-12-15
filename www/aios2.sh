@@ -708,8 +708,6 @@ XXXXX_init() {
 
     download_postinst_json >/dev/null 2>&1
     download_customfeeds_json >/dev/null 2>&1
-    build_package_name_cache >/dev/null 2>&1
-    build_category_packages_cache >/dev/null 2>&1
     
     echo "[DEBUG] $(date): Init complete (package-manager.json loaded)" >> "$CONFIG_DIR/debug.log"
 }
@@ -815,8 +813,6 @@ init() {
 
     download_postinst_json >/dev/null 2>&1
     download_customfeeds_json >/dev/null 2>&1
-    build_package_name_cache >/dev/null 2>&1
-    build_category_packages_cache >/dev/null 2>&1
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
 }
@@ -4532,7 +4528,6 @@ aios2_main() {
     # ========================================
     # Phase 5: 必須JSON完了を待機
     # ========================================
-    wait $API_PID
     
     wait $SETUP_PID
     SETUP_STATUS=$?
@@ -4551,14 +4546,13 @@ aios2_main() {
         read -r _
         return 1
     }
-    
-    wait $UI_DL_PID
+
+    # API_PIDとUI_DL_PIDは並列wait（エラーチェック不要）
+    wait $API_PID $UI_DL_PID
     
     # ========================================
     # Phase 6: 必須JSON完了を待機
     # ========================================
-    # API_PIDとUI_DL_PIDは並列wait（エラーチェック不要）
-    wait $API_PID $UI_DL_PID
     
     # SETUP_PIDとPOSTINST_PIDは個別にエラーチェック
     wait $SETUP_PID
@@ -4593,6 +4587,7 @@ aios2_main() {
     export DEVICE_ARCH
     export DEVICE_VENDOR
     export DEVICE_SUBTARGET
+    export PKG_CHANNEL 
     
     echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
