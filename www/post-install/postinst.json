@@ -423,7 +423,7 @@
         {
           "id": "docker-compose",
           "name": "docker-compose",
-          "dependencies": ["docker"],
+          "dependencies": [],
           "hidden": "true"
         },
         {
