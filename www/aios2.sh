@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.0602"
+VERSION="R7.1215.1346"
 
 # =============================================================================
 # Package Management Architecture
@@ -1475,10 +1475,10 @@ get_package_name() {
                     if($i=="uniqueId")uniqueId=$(i+2);
                     if($i=="installOptions")installOptions=$(i+2);
                     if($i=="enableVar")enableVar=$(i+2);
-                    if($i=="hidden" && $(i+4)=="true")hidden="true";
-                    if($i=="virtual" && $(i+4)=="true")virtual="true";
-                    if($i=="reboot" && $(i+4)=="true")reboot="true";
-                    if($i=="checked" && $(i+4)=="true")checked="true";
+                    if($i=="hidden" && $(i+2)=="true")hidden="true";
+                    if($i=="virtual" && $(i+2)=="true")virtual="true";
+                    if($i=="reboot" && $(i+2)=="true")reboot="true";
+                    if($i=="checked" && $(i+2)=="true")checked="true";
                     if($i=="dependencies") {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
@@ -1509,10 +1509,10 @@ get_package_name() {
                         if($i=="uniqueId")uniqueId=$(i+2);
                         if($i=="installOptions")installOptions=$(i+2);
                         if($i=="enableVar")enableVar=$(i+2);
-                        if($i=="hidden" && $(i+4)=="true")hidden="true";
-                        if($i=="virtual" && $(i+4)=="true")virtual="true";
-                        if($i=="reboot" && $(i+4)=="true")reboot="true";
-                        if($i=="checked" && $(i+4)=="true")checked="true";
+                        if($i=="hidden" && $(i+2)=="true")hidden="true";
+                        if($i=="virtual" && $(i+2)=="true")virtual="true";
+                        if($i=="reboot" && $(i+2)=="true")reboot="true";
+                        if($i=="checked" && $(i+2)=="true")checked="true";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
