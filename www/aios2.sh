@@ -4204,18 +4204,7 @@ aios2_main() {
     fi
     
     # ========================================
-    # Phase 10: パッケージキャッシュ完了を待機
-    # ========================================
-    # echo "Building package cache..."
-    # wait $CACHE_PKG_PID
-    # CACHE_STATUS=$?
-    # if [ $CACHE_STATUS -ne 0 ]; then
-    #     echo "[WARNING] Package cache build failed, some packages may not be available" >> "$CONFIG_DIR/debug.log"
-    # fi
-    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
-    
-    # ========================================
-    # Phase 11: UIモジュール起動
+    # Phase 10: UIモジュール起動
     # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
