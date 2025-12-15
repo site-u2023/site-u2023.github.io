@@ -3140,7 +3140,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             } else {
                 checkbox.disabled = false;
                 const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
-                if (pkgInfo && pkgInfo.checked === true) {
+                if (pkgInfo && pkgInfo.checked === "true") {
                     checkbox.checked = true;
                 }
             }
@@ -3155,12 +3155,12 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             UI.updateElement(packageItem, { show: true });
             checkbox.disabled = false;
             const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
-            if (pkgInfo && pkgInfo.checked === true) {
+            if (pkgInfo && pkgInfo.checked === "true") {
                 checkbox.checked = true;
                 const depCheckboxes = packageItem.querySelectorAll('.package-dependent input[type="checkbox"]');
                 depCheckboxes.forEach(depCb => {
                     const depPkgInfo = findPackageById(depCb.getAttribute('data-package'));
-                    if (depPkgInfo && depPkgInfo.checked === true) {
+                    if (depPkgInfo && depPkgInfo.checked === "true") {
                         depCb.checked = true;
                     }
                 });
@@ -3185,7 +3185,7 @@ function updatePackageAvailabilityUI(uniqueId, isAvailable) {
             } else {
                 checkbox.disabled = false;
                 const pkgInfo = findPackageById(checkbox.getAttribute('data-package'));
-                if (pkgInfo && pkgInfo.checked === true) {
+                if (pkgInfo && pkgInfo.checked === "true") {
                     checkbox.checked = true;
                 }
             }
@@ -3420,7 +3420,8 @@ function createPackageItem(pkg) {
     packageItem.className = 'package-item';
     packageItem.setAttribute('data-package-id', pkg.id);
     
-    const mainCheckbox = createPackageCheckbox(pkg, pkg.checked === true);
+    const isChecked = pkg.checked === "true";
+    const mainCheckbox = createPackageCheckbox(pkg, isChecked);
     packageItem.appendChild(mainCheckbox);
     
     if (pkg.dependencies && Array.isArray(pkg.dependencies)) {
@@ -3430,7 +3431,7 @@ function createPackageItem(pkg) {
         pkg.dependencies.forEach(depId => {
             const depPkg = findPackageById(depId);
             if (depPkg) {
-                const depCheckbox = createPackageCheckbox(depPkg, pkg.checked === true, true);
+                const depCheckbox = createPackageCheckbox(depPkg, isChecked, true);
                 depCheckbox.classList.add('package-dependent');
                 depContainer.appendChild(depCheckbox);
             }
