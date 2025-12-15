@@ -430,35 +430,19 @@ dns:
     - '# DNS-over-TLS'
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
-    - tls://jp.tiar.app
-    - tls://dns.nextdns.io
     - '# DNS-over-HTTPS(coercion HTTP/3)'
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
-    - h3://jp.tiarap.org/dns-query
-    - h3://dns.nextdns.io
   bootstrap_dns:
     - 1.1.1.1
-    - 1.0.0.1
     - 8.8.8.8
-    - 8.8.4.4
-    - 172.104.93.80
-    - 129.250.35.250
-    - 129.250.35.251
     - 2606:4700:4700::1111
-    - 2606:4700:4700::1001
     - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
-    - 2400:8902::f03c:91ff:feda:c514
-    - 2001:418:3ff::53
-    - 2001:418:3ff::1:53
   fallback_dns:
     - https://cloudflare-dns.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
-    - https://jp.tiar.app/dns-query
-    - https://dns.nextdns.io
   upstream_mode: parallel
   cache_size: 1048576
   enable_dnssec: false
@@ -485,13 +469,7 @@ filters:
     name: 豆腐フィルタ
     id: 99
 user_rules:
-  - '# 日本の主要サービス'
-  - '@@||amazon.co.jp^$important'
-  - '@@||rakuten.co.jp^$important'
-  - '@@||yahoo.co.jp^$important'
-  - '# LINE関連'
-  - '@@||line.me^$important'
-  - '@@||line-scdn.net^$important'
+  - '# google analytecs'
 dhcp:
   enabled: false
 filtering:
