@@ -418,19 +418,12 @@ dns:
   port: {{DNS_PORT}}
   refuse_any: true
   upstream_dns:
-    - '# LAN domain intercept'
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
-    - '# NTP service'
     - '[/*.pool.ntp.org/]1.1.1.1'
-    - '[/*.pool.ntp.org/]1.0.0.1'
     - '[/*.pool.ntp.org/]2606:4700:4700::1111'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
-    - '# DNS-over-QUIC'
     - quic://unfiltered.adguard-dns.com
-    - '# DNS-over-TLS'
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
-    - '# DNS-over-HTTPS(coercion HTTP/3)'
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
@@ -496,8 +489,6 @@ filters:
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt
     name: AdGuard Ukrainian filter
     id: 13
-user_rules:
-  - '# google analytecs'
 dhcp:
   enabled: false
 filtering:
