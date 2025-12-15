@@ -412,7 +412,7 @@ load_package_manager_config() {
 
     [ ! -f "$config_json" ] && return 1
 
-    # パッケージマネージャー検出のみを行う
+    # パッケージマネージャー検出
     if command -v opkg >/dev/null 2>&1; then
         PKG_MGR="opkg"
     elif command -v apk >/dev/null 2>&1; then
@@ -422,32 +422,64 @@ load_package_manager_config() {
         return 1
     fi
 
+    # チャネル必須（release / snapshot）
+    if [ -z "$PKG_CHANNEL" ]; then
+        echo "Error: PKG_CHANNEL is not set" >&2
+        return 1
+    fi
+
     debug_log "PKG_MGR detected: $PKG_MGR"
+    debug_log "PKG_CHANNEL detected: $PKG_CHANNEL"
 
-    # 基本設定
-    PKG_EXT=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.ext")
+    # ===== packageManagers 基本設定 =====
+    PKG_EXT=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.ext")
 
-    PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.ignoreDeps")
-    PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.forceOverwrite")
-    PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.allowUntrusted")
+    PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps")
 
-    # URL（release / snapshot は JSON 側に完全委譲）
-    PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.packageIndexUrl")
-    PKG_TARGETS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.targetsIndexUrl")
-    PKG_KMODS_INDEX_BASE_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.kmodsIndexBaseUrl")
-    PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.kmodsIndexUrl")
+    PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.options.forceOverwrite")
 
-    # フィード設定
-    PKG_FEEDS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.feeds[*]" 2>/dev/null | xargs)
-    PKG_INCLUDE_TARGETS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.includeTargets")
-    PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.includeKmods")
+    PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.options.allowUntrusted")
 
-    # コマンドテンプレート
+    PKG_FEEDS=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.feeds[*]" 2>/dev/null | xargs)
+
+    PKG_INCLUDE_TARGETS=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.includeTargets")
+
+    PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.includeKmods")
+
+    # ===== channels URL 設定 =====
+    PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" \
+        -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl")
+
+    PKG_TARGETS_INDEX_URL=$(jsonfilter -i "$config_json" \
+        -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.targetsIndexUrl")
+
+    PKG_KMODS_INDEX_BASE_URL=$(jsonfilter -i "$config_json" \
+        -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexBaseUrl")
+
+    PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" \
+        -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl")
+
+    # ===== コマンドテンプレート =====
     local install_template remove_template update_template upgrade_template
-    install_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.installCommand")
-    remove_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.removeCommand")
-    update_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.updateCommand")
-    upgrade_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.upgradeCommand")
+
+    install_template=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.installCommand")
+
+    remove_template=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.removeCommand")
+
+    update_template=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.updateCommand")
+
+    upgrade_template=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.upgradeCommand")
 
     PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$install_template" \
         "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED")
@@ -456,7 +488,7 @@ load_package_manager_config() {
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
 
-    export PKG_MGR PKG_EXT
+    export PKG_MGR PKG_CHANNEL PKG_EXT
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
     export PKG_UPDATE_CMD PKG_UPGRADE_CMD
     export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
