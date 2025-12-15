@@ -4102,9 +4102,6 @@ aios2_main() {
         fi
     fi
     
-    # 母国語ファイル完了を待機
-    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
-    
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
@@ -4193,7 +4190,7 @@ aios2_main() {
     # ========================================
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
     
-    # APIから言語コードが取得できた場合、母国語ファイルを再取得
+    # LuCIから言語コードが取得できなかった場合、APIから取得した言語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
     fi
@@ -4212,6 +4209,9 @@ aios2_main() {
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
+    # 母国語ファイル完了を待機
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+    
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
