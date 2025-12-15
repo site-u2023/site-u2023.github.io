@@ -2894,20 +2894,51 @@ check_and_cleanup_variable() {
         return 0
     fi
     
-    # ★追加：connection_type関連の変数は実効値でチェック
-    local effective_conn_type
-    if echo "$show_when" | grep -q "connection_type"; then
-        effective_conn_type=$(get_effective_connection_type)
-        echo "[DEBUG] Using effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
+    # ★修正：connection_type の場合は実効値で判定
+    local show_when_normalized should_keep
+    show_when_normalized=$(echo "$show_when" | tr '-' '_')
+    
+    local var_name
+    var_name=$(echo "$show_when_normalized" | sed 's/^{ *"\([^"]*\)".*/\1/')
+    
+    local expected
+    expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
+$show_when_normalized
+EOF
+)
+    
+    if [ -z "$expected" ]; then
+        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
+$show_when_normalized
+EOF
+)
     fi
     
-    # showWhen 条件をチェック
-    if ! should_show_item "$item_id"; then
-        # 条件を満たさない場合、変数を削除
+    # 現在値を取得（connection_typeの場合は実効値を使用）
+    local current_val
+    if [ "$var_name" = "connection_type" ]; then
+        current_val=$(get_effective_connection_type)
+        echo "[DEBUG] Using effective connection type: $current_val for item $item_id" >> "$CONFIG_DIR/debug.log"
+    else
+        current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    fi
+    
+    # 条件判定
+    should_keep=0
+    if [ -z "$current_val" ]; then
+        should_keep=0
+    elif echo "$expected" | grep -q "^${current_val}\$"; then
+        should_keep=1
+    fi
+    
+    # 条件を満たさない場合、変数を削除
+    if [ "$should_keep" -eq 0 ]; then
         if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
             sed -i "/^${variable}=/d" "$SETUP_VARS"
-            echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
+            echo "[AUTO] Removed variable: $variable (condition not met for $item_id, expected=$expected, current=$current_val)" >> "$CONFIG_DIR/debug.log"
         fi
+    else
+        echo "[DEBUG] Kept variable: $variable (condition met for $item_id)" >> "$CONFIG_DIR/debug.log"
     fi
 }
 
