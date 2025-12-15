@@ -615,6 +615,11 @@ init() {
     : > "$SETUP_VARS"
     : > "$CONFIG_DIR/debug.log"
 
+    download_postinst_json >/dev/null 2>&1
+    download_customfeeds_json >/dev/null 2>&1
+    build_package_name_cache >/dev/null 2>&1
+    build_category_packages_cache >/dev/null 2>&1
+    
     echo "[DEBUG] $(date): Init complete (package-manager.json loaded)" >> "$CONFIG_DIR/debug.log"
 }
 
