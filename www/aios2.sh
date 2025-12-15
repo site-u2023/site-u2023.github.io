@@ -2777,7 +2777,7 @@ EOF
     echo "[DEBUG] === cleanup_radio_group_exclusive_vars finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-auto_cleanup_conditional_variables() {
+XXX_auto_cleanup_conditional_variables() {
     local cat_id="$1"
     
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
@@ -2811,6 +2811,67 @@ auto_cleanup_conditional_variables() {
     echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
+auto_cleanup_conditional_variables() {
+    local cat_id="$1"
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
+    # ★修正：connection_type='auto'でもクリーンアップを実行
+    # （実効値ベースで判定するため、スキップ不要）
+    
+    # カテゴリ内の全アイテムをスキャン
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        local item_type
+        item_type=$(get_setup_item_type "$item_id")
+        
+        # section の中もチェック
+        if [ "$item_type" = "section" ]; then
+            local nested_items
+            nested_items=$(get_section_nested_items "$item_id")
+            for nested_id in $nested_items; do
+                check_and_cleanup_variable "$nested_id"
+            done
+        else
+            check_and_cleanup_variable "$item_id"
+        fi
+    done
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+XXX_check_and_cleanup_variable() {
+    local item_id="$1"
+    local variable show_when
+    
+    # この項目が変数を持っているか確認
+    variable=$(get_setup_item_variable "$item_id")
+    [ -z "$variable" ] && return 0
+    
+    # showWhen が存在するか確認（トップレベル）
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    
+    # showWhen が無い場合、ネストされたアイテムもチェック
+    if [ -z "$show_when" ]; then
+        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    fi
+    
+    # showWhen が無い項目はスキップ（削除対象外）
+    if [ -z "$show_when" ]; then
+        echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # showWhen 条件をチェック
+    if ! should_show_item "$item_id"; then
+        # 条件を満たさない場合、変数を削除
+        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${variable}=/d" "$SETUP_VARS"
+            echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+}
+
 check_and_cleanup_variable() {
     local item_id="$1"
     local variable show_when
@@ -2831,6 +2892,13 @@ check_and_cleanup_variable() {
     if [ -z "$show_when" ]; then
         echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
         return 0
+    fi
+    
+    # ★追加：connection_type関連の変数は実効値でチェック
+    local effective_conn_type
+    if echo "$show_when" | grep -q "connection_type"; then
+        effective_conn_type=$(get_effective_connection_type)
+        echo "[DEBUG] Using effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     fi
     
     # showWhen 条件をチェック
