@@ -439,7 +439,7 @@ XXX_load_package_manager_config() {
     export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
 }
 
-XXXXX_load_package_manager_config() {
+load_package_manager_config() {
     local config_json="$CONFIG_DIR/package-manager.json"
 
     [ ! -f "$config_json" ] && return 1
@@ -494,76 +494,6 @@ XXXXX_load_package_manager_config() {
     PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$remove_template")
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
-
-    export PKG_MGR PKG_EXT
-    export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
-    export PKG_UPDATE_CMD PKG_UPGRADE_CMD
-    export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
-    export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL
-    export PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
-    export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
-}
-
-load_package_manager_config() {
-    local config_json="$CONFIG_DIR/package-manager.json"
-
-    [ ! -f "$config_json" ] && return 1
-
-    # パッケージマネージャー検出
-    if command -v opkg >/dev/null 2>&1; then
-        PKG_MGR="opkg"
-    elif command -v apk >/dev/null 2>&1; then
-        PKG_MGR="apk"
-    else
-        echo "Error: No supported package manager found" >&2
-        return 1
-    fi
-
-    debug_log "PKG_MGR detected: $PKG_MGR"
-    debug_log "PKG_CHANNEL: $PKG_CHANNEL"
-
-    # jsonfilter で一括取得（改行区切り）
-    read -r PKG_EXT \
-             PKG_OPTION_IGNORE_DEPS \
-             PKG_OPTION_FORCE_OVERWRITE \
-             PKG_OPTION_ALLOW_UNTRUSTED \
-             PKG_FEEDS \
-             PKG_INCLUDE_TARGETS \
-             PKG_INCLUDE_KMODS \
-             PKG_PACKAGE_INDEX_URL \
-             PKG_TARGETS_INDEX_URL \
-             PKG_KMODS_INDEX_BASE_URL \
-             PKG_KMODS_INDEX_URL \
-             INSTALL_TEMPLATE \
-             REMOVE_TEMPLATE \
-             UPDATE_TEMPLATE \
-             UPGRADE_TEMPLATE <<EOF
-$(jsonfilter -i "$config_json" \
-    -e "@.packageManagers.${PKG_MGR}.ext" \
-    -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps" \
-    -e "@.packageManagers.${PKG_MGR}.options.forceOverwrite" \
-    -e "@.packageManagers.${PKG_MGR}.options.allowUntrusted" \
-    -e "@.packageManagers.${PKG_MGR}.feeds[*]" \
-    -e "@.packageManagers.${PKG_MGR}.includeTargets" \
-    -e "@.packageManagers.${PKG_MGR}.includeKmods" \
-    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl" \
-    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.targetsIndexUrl" \
-    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexBaseUrl" \
-    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl" \
-    -e "@.packageManagers.${PKG_MGR}.installCommand" \
-    -e "@.packageManagers.${PKG_MGR}.removeCommand" \
-    -e "@.packageManagers.${PKG_MGR}.updateCommand" \
-    -e "@.packageManagers.${PKG_MGR}.upgradeCommand")
-EOF
-
-    # フィードの整形
-    PKG_FEEDS=$(echo "$PKG_FEEDS" | xargs)
-
-    # コマンドテンプレート展開
-    PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$INSTALL_TEMPLATE" "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED")
-    PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$REMOVE_TEMPLATE")
-    PKG_UPDATE_CMD=$(expand_template "$UPDATE_TEMPLATE")
-    PKG_UPGRADE_CMD=$(expand_template "$UPGRADE_TEMPLATE")
 
     export PKG_MGR PKG_EXT
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
