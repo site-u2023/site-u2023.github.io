@@ -139,6 +139,8 @@ _SETUP_CATEGORIES_CACHE=""
 _SETUP_CATEGORIES_LOADED=0
 _PACKAGE_AVAILABILITY_CACHE=""
 _PACKAGE_AVAILABILITY_LOADED=0
+_CATEGORY_PACKAGES_CACHE=""
+_CATEGORY_PACKAGES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -480,7 +482,8 @@ init() {
     unset PKG_OPTION_IGNORE_DEPS
     unset PKG_OPTION_FORCE_OVERWRITE
     unset PKG_OPTION_ALLOW_UNTRUSTED
-    
+    unset _CATEGORY_PACKAGES_CACHE
+     
     # フラグを明示的に0に設定
     _PACKAGE_NAME_LOADED=0
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -491,6 +494,7 @@ init() {
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
     _PACKAGE_AVAILABILITY_LOADED=0
+    _CATEGORY_PACKAGES_LOADED=0
     
     # ファイル初期化
     : > "$SELECTED_PACKAGES"
@@ -1337,7 +1341,7 @@ get_category_hidden() {
     echo "$hidden"
 }
 
-get_category_packages() {
+XXX_get_category_packages() {
     local cat_id="$1"
     
     {
@@ -1365,13 +1369,112 @@ get_category_packages() {
     } | grep -v '^$' | awk '!seen[$0]++'
 }
 
-get_package_checked() {
+XXXXX_get_category_packages() {
+    local cat_id="$1"
+    
+    {
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+            awk -F'"' '{...}'
+        fi
+        
+        jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null | \
+        awk -F'"' '{...}'
+    } | grep -v '^$' | awk '!seen[$0]++'
+}
+
+get_category_packages() {
+    local cat_id="$1"
+    
+    # 初回のみキャッシュ構築
+    if [ "$_CATEGORY_PACKAGES_LOADED" -eq 0 ]; then
+        echo "[DEBUG] Building category packages cache..." >> "$CONFIG_DIR/debug.log"
+        
+        _CATEGORY_PACKAGES_CACHE=$(
+            {
+                # CUSTOMFEEDS_JSON
+                if [ -f "$CUSTOMFEEDS_JSON" ]; then
+                    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*]' 2>/dev/null | \
+                    awk -F'"' '
+                    {
+                        cat_id=""; pkg_id=""; pkg_uid="";
+                        for(i=1;i<=NF;i++){
+                            if($i=="id" && cat_id=="") cat_id=$(i+2);
+                            if($i=="packages") {
+                                for(j=i;j<=NF;j++){
+                                    if($j=="id") pkg_id=$(j+2);
+                                    if($j=="uniqueId") pkg_uid=$(j+2);
+                                    if($j=="}") {
+                                        if(pkg_uid) print cat_id "|" pkg_uid;
+                                        else if(pkg_id) print cat_id "|" pkg_id;
+                                        pkg_id=""; pkg_uid="";
+                                    }
+                                }
+                            }
+                        }
+                    }'
+                fi
+                
+                # PACKAGES_JSON
+                jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*]' 2>/dev/null | \
+                awk -F'"' '
+                {
+                    cat_id=""; pkg_id=""; pkg_uid="";
+                    for(i=1;i<=NF;i++){
+                        if($i=="id" && cat_id=="") cat_id=$(i+2);
+                        if($i=="packages") {
+                            for(j=i;j<=NF;j++){
+                                if($j=="id") pkg_id=$(j+2);
+                                if($j=="uniqueId") pkg_uid=$(j+2);
+                                if($j=="}") {
+                                    if(pkg_uid) print cat_id "|" pkg_uid;
+                                    else if(pkg_id) print cat_id "|" pkg_id;
+                                    pkg_id=""; pkg_uid="";
+                                }
+                            }
+                        }
+                    }
+                }'
+            } | awk '!seen[$0]++'
+        )
+        
+        _CATEGORY_PACKAGES_LOADED=1
+        echo "[DEBUG] Category packages cache built: $(echo "$_CATEGORY_PACKAGES_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # キャッシュから取得
+    echo "$_CATEGORY_PACKAGES_CACHE" | awk -F'|' -v cat="$cat_id" '$1 == cat {print $2}'
+}
+
+XXX_get_package_checked() {
     local pkg_id="$1"
     local checked
     
     checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
     echo "$checked"
+}
+
+XXX_get_package_checked() {
+    local pkg_id="$1"
+    local checked
+    
+    checked=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
+    [ -z "$checked" ] && checked=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].checked" 2>/dev/null | head -1)
+    echo "$checked"
+}
+
+get_package_checked() {
+    local pkg_id="$1"
+    
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" >/dev/null 2>&1
+    fi
+    
+    # キャッシュから取得（フィールド10 = checked）
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+        $1 == pkg || $3 == pkg { print $10; exit }
+    '
 }
 
 get_package_name() {
