@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.0200"
+VERSION="R7.1216.0207"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3019,31 +3019,109 @@ EOF
     fi
 }
 
+recursive_check_and_cleanup() {
+    local parent_id="$1"
+    local effective_type="$2"
+    
+    local nested_items
+    nested_items=$(get_section_nested_items "$parent_id")
+    
+    for item_id in $nested_items; do
+        # 子アイテムについても表示判定を行う
+        if ! check_item_visibility "$item_id" "$effective_type"; then
+            # 表示不要なら削除
+            recursive_delete_variables "$item_id"
+        else
+            # 表示必要なら、さらにその子要素（もしあれば）をチェック
+            recursive_check_and_cleanup "$item_id" "$effective_type"
+        fi
+    done
+}
+
+recursive_delete_variables() {
+    local parent_id="$1"
+    
+    # 1. このアイテム自体が変数を持っていれば削除
+    local variable
+    variable=$(get_setup_item_variable "$parent_id") # 変数名取得関数（既存）
+    if [ -n "$variable" ]; then
+        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
+            sed -i "/^${variable}=/d" "$SETUP_VARS"
+            echo "[CLEANUP] Force deleted variable: $variable (belongs to hidden section $parent_id)" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+
+    # 2. 子アイテムがあれば再帰的に処理
+    local item_type
+    item_type=$(get_setup_item_type "$parent_id")
+    
+    if [ "$item_type" = "section" ] || [ "$item_type" = "group" ]; then
+        local nested_items
+        nested_items=$(get_section_nested_items "$parent_id")
+        for nested_id in $nested_items; do
+            recursive_delete_variables "$nested_id"
+        done
+    fi
+}
+
+check_item_visibility() {
+    local item_id="$1"
+    local effective_type="$2"
+    local show_when var_name expected
+
+    # showWhenを取得
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    
+    # showWhenがない項目は「常に表示」とみなす（削除対象にしない）
+    [ -z "$show_when" ] && return 0
+
+    # 条件をパース（connection_type の値と比較）
+    var_name=$(echo "$show_when" | tr '-' '_' | sed 's/^{ *"\([^"]*\)".*/\1/')
+    expected=$(echo "$show_when" | tr '-' '_' | jsonfilter -e "@.${var_name}[*]")
+    [ -z "$expected" ] && expected=$(echo "$show_when" | tr '-' '_' | jsonfilter -e "@.${var_name}")
+
+    # 変数が connection_type の場合、実効値と比較
+    local check_val
+    if [ "$var_name" = "connection_type" ]; then
+        check_val="$effective_type"
+    else
+        # connection_type以外の条件（例: wifi_mode）は現在のファイルから読む
+        check_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    fi
+
+    # 値が期待値リストに含まれているか
+    if echo "$expected" | grep -q "^${check_val}\$"; then
+        return 0 # 表示（削除しない）
+    else
+        return 1 # 非表示（削除対象）
+    fi
+}
+
 auto_cleanup_conditional_variables() {
     local cat_id="$1"
     
-    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] === auto_cleanup_conditional_variables (Aggressive Mode) called ===" >> "$CONFIG_DIR/debug.log"
     
-    # 1. 判定用の「実効接続タイプ」変数を一つ用意する
-    #    ユーザー様のご提案通り、autoの場合でもここを見れば何かわかるようにします
+    # 1. 現在の実効接続タイプを取得（Autoの場合は検出結果、手動の場合は選択値）
     local effective_conn_type
     effective_conn_type=$(get_effective_connection_type)
-    echo "[DEBUG] Effective connection type for cleanup: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
 
-    # 2. カテゴリ内の全項目をスキャンし、一元的な判定関数に投げる
-    for item_id in $(get_setup_category_items "$cat_id"); do
-        local item_type
-        item_type=$(get_setup_item_type "$item_id")
-        
-        if [ "$item_type" = "section" ]; then
-            local nested_items
-            nested_items=$(get_section_nested_items "$item_id")
-            for nested_id in $nested_items; do
-                # 判定関数に「実効接続タイプ」を渡す
-                check_and_cleanup_variable "$nested_id" "$effective_conn_type"
-            done
+    # 2. カテゴリ直下のアイテム（主にセクション）を取得
+    #    例: internet-connection カテゴリなら dslite-section, mape-section 等が返る
+    local root_items
+    root_items=$(get_setup_category_items "$cat_id")
+
+    for item_id in $root_items; do
+        # このアイテム（セクション）が表示されるべきか判定
+        if ! check_item_visibility "$item_id" "$effective_conn_type"; then
+            # ★ 表示すべきでないセクションなら、その配下の変数を「根こそぎ削除」
+            echo "[AUTO] Section '$item_id' is not active for type '$effective_conn_type'. Wiping variables..." >> "$CONFIG_DIR/debug.log"
+            recursive_delete_variables "$item_id"
         else
-            check_and_cleanup_variable "$item_id" "$effective_conn_type"
+             # 表示されるセクション内でも、さらに細かい条件（showWhen）があるかもしれないのでチェック
+             # （例: DS-Lite内の transix/xpass 切り替えなど）
+             recursive_check_and_cleanup "$item_id" "$effective_conn_type"
         fi
     done
     
