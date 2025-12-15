@@ -996,29 +996,13 @@ EOF
             
             # hidden チェック（独立パッケージのみ）
             if [ "$is_dependent" -eq 0 ]; then
-                local is_hidden_entry
+                # キャッシュから取得（PACKAGES_JSON/CUSTOMFEEDS_JSON共通）
+                local hidden_flag=$(echo "$entry" | cut -d= -f7)
                 
-                if [ -n "$uid" ]; then
-                    if [ "$caller" = "custom_feeds" ]; then
-                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                    else
-                        hidden_flag=$(echo "$entry" | cut -d= -f7)
-                        # is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        #     -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
-                    fi
-                else
-                    if [ "$caller" = "custom_feeds" ]; then
-                        is_hidden_entry=$(jsonfilter -i "$CUSTOMFEEDS_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                    else
-                        hidden_flag=$(echo "$entry" | cut -d= -f7)
-                        # is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                        #     -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
-                    fi
+                if [ "$hidden_flag" = "true" ]; then
+                    echo "[DEBUG] Package $pkg_id is hidden (independent package), skipped" >> "$CONFIG_DIR/debug.log"
+                    continue
                 fi
-                
-                [ "$is_hidden_entry" = "true" ] && continue
             fi
             
             local display_name="$pkg_name"
