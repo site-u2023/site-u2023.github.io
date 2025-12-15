@@ -9,7 +9,14 @@
       "ignoreDeps": "--nodeps",
       "forceOverwrite": "--force-overwrite",
       "allowUntrusted": ""
-    }
+    },
+    "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
+    "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/Packages",
+    "kmodsIndexBaseUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
+    "kmodsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/Packages",
+    "feeds": ["base", "packages", "luci", "routing", "telephony", "community"],
+    "includeTargets": true,
+    "includeKmods": true
   },
   "apk": {
     "ext": "apk",
@@ -21,6 +28,13 @@
       "ignoreDeps": "--force-broken-world",
       "forceOverwrite": "--force-overwrite",
       "allowUntrusted": "--allow-untrusted"
-    }
+    },
+    "packageIndexUrl": "https://downloads.openwrt.org/snapshots/packages/{arch}/{feed}/index.json",
+    "targetsIndexUrl": "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/packages/index.json",
+    "kmodsIndexBaseUrl": "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/",
+    "kmodsIndexUrl": "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json",
+    "feeds": ["base", "packages", "luci", "routing", "telephony", "community"],
+    "includeTargets": true,
+    "includeKmods": true
   }
 }
