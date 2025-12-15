@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1421"
+VERSION="R7.1215.1502"
 
 # =============================================================================
 # Package Management Architecture
@@ -868,44 +868,6 @@ XXXXX_check_package_available() {
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
-    
-    if [ "$caller" = "custom_feeds" ]; then
-        return 0
-    fi
-    
-    local is_virtual
-    is_virtual=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].virtual" 2>/dev/null | head -1)
-    
-    if [ "$is_virtual" = "true" ]; then
-        return 0
-    fi
-    
-    local real_id="$pkg_id"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local cached_real_id
-        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
-    fi
-    
-    # ファイルから直接検索
-    if [ ! -f "$cache_file" ]; then
-        echo "[DEBUG] Cache file not found: $cache_file" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    if grep -q "^${real_id}:1$" "$cache_file" 2>/dev/null; then
-        return 0
-    fi
-    
-    return 1
-}
-
-check_package_available() {
-    local pkg_id="$1"
-    local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-
-    wait_for_package_cache
 
     if [ "$caller" = "custom_feeds" ]; then
         return 0
@@ -941,6 +903,52 @@ check_package_available() {
     fi
 
     echo "[DEBUG] Package $real_id NOT found in availability cache" >> "$CONFIG_DIR/debug.log"
+    return 1
+}
+
+check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+
+    wait_for_package_cache
+
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    fi
+
+    # キャッシュから virtual フラグを取得
+    local virtual_flag="false"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
+        [ -z "$virtual_flag" ] && virtual_flag="false"
+    fi
+    
+    if [ "$virtual_flag" = "true" ]; then
+        return 0
+    fi
+
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+
+    # ★ メモリキャッシュをロード（初回のみ）
+    if [ "$_PACKAGE_AVAILABILITY_LOADED" -eq 0 ]; then
+        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+        if [ -f "$cache_file" ]; then
+            _PACKAGE_AVAILABILITY_CACHE=$(cat "$cache_file")
+            _PACKAGE_AVAILABILITY_LOADED=1
+        else
+            _PACKAGE_AVAILABILITY_LOADED=1
+            return 0
+        fi
+    fi
+
+    # ★ メモリ内で検索（grepより高速）
+    echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id" && return 0
+
     return 1
 }
 
