@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1512"
+VERSION="R7.1215.1534"
 
 # =============================================================================
 # Package Management Architecture
@@ -862,7 +862,7 @@ wait_for_package_cache() {
     fi
 }
 
-check_package_available() {
+XXX_check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
 
@@ -905,6 +905,63 @@ check_package_available() {
     # ★ メモリ内で検索（grepより高速）
     echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id" && return 0
 
+    return 1
+}
+
+check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+
+    wait_for_package_cache
+
+    # custom_feeds は常に利用可能
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    fi
+
+    # キャッシュから virtual フラグを取得
+    local virtual_flag="false"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
+        [ -z "$virtual_flag" ] && virtual_flag="false"
+    fi
+    
+    # virtualパッケージは常に利用可能
+    if [ "$virtual_flag" = "true" ]; then
+        debug_log "Package $pkg_id is virtual, skipping availability check"
+        return 0
+    fi
+
+    # uniqueIdがあれば実際のIDに変換
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+
+    # availability cacheをメモリにロード（初回のみ）
+    if [ "$_PACKAGE_AVAILABILITY_LOADED" -eq 0 ]; then
+        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+        
+        if [ -f "$cache_file" ]; then
+            _PACKAGE_AVAILABILITY_CACHE=$(cat "$cache_file")
+            _PACKAGE_AVAILABILITY_LOADED=1
+            debug_log "Package availability cache loaded to memory ($(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l) packages)"
+        else
+            _PACKAGE_AVAILABILITY_LOADED=1
+            debug_log "Availability cache not found, allowing all packages"
+            return 0
+        fi
+    fi
+
+    # メモリ内で検索（ディスクI/O不要）
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
+        debug_log "Package $real_id found in availability cache"
+        return 0
+    fi
+
+    debug_log "Package $real_id NOT found in availability cache"
     return 1
 }
 
@@ -3701,7 +3758,7 @@ show_log() {
     fi
 }
 
-XXX_aios2_main() {
+XXXXX_aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     # ヘルパー: 経過時間計測
@@ -4015,26 +4072,18 @@ aios2_main() {
     UI_END=$(cut -d' ' -f1 /proc/uptime)
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
-    # 母国語ファイル完了を待機
-    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
-    
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
-    # ========================================
-    # Phase 5: package-manager.jsonロード（すべてのケースで1回だけ）
-    # ========================================
-    wait $PKG_MGR_DL_PID
-    
-    load_package_manager_config || {
-        echo "Failed to load package manager config"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    # whiptail選択 かつ 未インストールの場合のみインストール
+    # whiptail選択 かつ 未インストールの場合 → package-manager.json完了を待ってインストール
     if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Waiting for package manager configuration..."
+        wait $PKG_MGR_DL_PID
+        
+        load_package_manager_config || {
+            echo "Failed to load package manager config"
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
+        }
+        
         echo "Installing whiptail..."
         echo "Updating package lists..."
         eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
@@ -4047,8 +4096,14 @@ aios2_main() {
         fi
     fi
     
+    # 母国語ファイル完了を待機
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+    
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    
     # ========================================
-    # Phase 6: 必須JSON完了を待機
+    # Phase 5: 必須JSON完了を待機
     # ========================================
     wait $API_PID
     
@@ -4071,6 +4126,31 @@ aios2_main() {
     }
     
     wait $UI_DL_PID
+    
+    # ========================================
+    # Phase 6: 必須JSON完了を待機
+    # ========================================
+    # API_PIDとUI_DL_PIDは並列wait（エラーチェック不要）
+    wait $API_PID $UI_DL_PID
+    
+    # SETUP_PIDとPOSTINST_PIDは個別にエラーチェック
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    [ $SETUP_STATUS -ne 0 ] && {
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
     
     # ========================================
     # Phase 7: デバイス情報取得（API情報で上書き・補完）
@@ -4096,20 +4176,16 @@ aios2_main() {
     echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
-    # Phase 8: パッケージ存在確認キャッシュ構築（バックグラウンド）
-    # 実際の利用タイミング（package_selection初回呼び出し時）に
-    # wait_for_package_cache()で自動的に待機する
+    # Phase 8: パッケージ存在確認キャッシュ構築
+    # 変数が揃った後に実行
     # ========================================
     cache_package_availability &
     CACHE_PKG_PID=$!
     
     # ========================================
-    # Phase 9: 残りのバックグラウンド処理完了を待機
+    # Phase 9: 残りのバックグラウンド処理完了を待機（並列）
     # ========================================
-    wait $CUSTOMFEEDS_PID
-    wait $CUSTOMSCRIPTS_PID
-    wait $TEMPLATES_PID
-    wait $LANG_EN_PID
+    wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
     
     # APIから言語コードが取得できた場合、母国語ファイルを再取得
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -4119,7 +4195,7 @@ aios2_main() {
     # 処理時間計測
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
-    echo "[TIME] Total auto-processing: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
+    debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
     
     # simple UIの場合、Yes/No表記を簡略化
     if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
@@ -4128,7 +4204,18 @@ aios2_main() {
     fi
     
     # ========================================
-    # Phase 10: UIモジュール起動
+    # Phase 10: パッケージキャッシュ完了を待機
+    # ========================================
+    # echo "Building package cache..."
+    # wait $CACHE_PKG_PID
+    # CACHE_STATUS=$?
+    # if [ $CACHE_STATUS -ne 0 ]; then
+    #     echo "[WARNING] Package cache build failed, some packages may not be available" >> "$CONFIG_DIR/debug.log"
+    # fi
+    # echo "[DEBUG] Package availability cache ready" >> "$CONFIG_DIR/debug.log"
+    
+    # ========================================
+    # Phase 11: UIモジュール起動
     # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
