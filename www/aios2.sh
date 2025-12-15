@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.2335"
+VERSION="R7.1216.0121"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -2874,27 +2874,37 @@ XXX_check_and_cleanup_variable() {
 
 check_and_cleanup_variable() {
     local item_id="$1"
-    local variable show_when
+    local variable show_when parent_section
     
     # この項目が変数を持っているか確認
     variable=$(get_setup_item_variable "$item_id")
     [ -z "$variable" ] && return 0
     
-    # showWhen が存在するか確認（トップレベル）
+    # 1. 項目レベルの showWhen をチェック
     show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     
-    # showWhen が無い場合、ネストされたアイテムもチェック
     if [ -z "$show_when" ]; then
         show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
     fi
     
-    # showWhen が無い項目はスキップ（削除対象外）
+    # 2. showWhen がない場合、親 section の showWhen を確認
+    if [ -z "$show_when" ]; then
+        # 親 section の id を取得
+        parent_section=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.items[*].id='$item_id'].id" 2>/dev/null | head -1)
+        
+        if [ -n "$parent_section" ]; then
+            show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$parent_section'].showWhen" 2>/dev/null | head -1)
+            echo "[DEBUG] $item_id: Using parent section ($parent_section) showWhen: $show_when" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+    
+    # 3. showWhen がない項目はスキップ（削除対象外）
     if [ -z "$show_when" ]; then
         echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
-    # ★修正：connection_type の場合は実効値で判定
+    # 4. showWhen 条件を解析
     local show_when_normalized should_keep
     show_when_normalized=$(echo "$show_when" | tr '-' '_')
     
@@ -2914,7 +2924,7 @@ EOF
 )
     fi
     
-    # 現在値を取得（connection_typeの場合は実効値を使用）
+    # 5. 現在値を取得（connection_typeの場合は実効値を使用）
     local current_val
     if [ "$var_name" = "connection_type" ]; then
         current_val=$(get_effective_connection_type)
@@ -2923,7 +2933,7 @@ EOF
         current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     fi
     
-    # 条件判定
+    # 6. 条件判定
     should_keep=0
     if [ -z "$current_val" ]; then
         should_keep=0
@@ -2931,7 +2941,7 @@ EOF
         should_keep=1
     fi
     
-    # 条件を満たさない場合、変数を削除
+    # 7. 条件を満たさない場合、変数を削除
     if [ "$should_keep" -eq 0 ]; then
         if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
             sed -i "/^${variable}=/d" "$SETUP_VARS"
