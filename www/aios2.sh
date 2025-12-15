@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1718"
+VERSION="R7.1215.1743"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -987,11 +987,10 @@ get_kmods_directory() {
     local subtarget="$3"
     local kernel_version="$4"
     
-    local kernel_major_minor=$(echo "$kernel_version" | cut -d. -f1-2)
-    
     local is_snapshot=0
     echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
     
+    # config.jsからURLテンプレートを取得
     local index_url
     if [ $is_snapshot -eq 1 ]; then
         index_url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/"
@@ -999,19 +998,28 @@ get_kmods_directory() {
         index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
     fi
     
+    echo "[DEBUG] Fetching kmods index from: $index_url" >> "$CONFIG_DIR/debug.log"
+    
+    # HTMLを取得してディレクトリ名を抽出（custom.jsと同じロジック）
     local kmod_dir
     kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
-        sed -n 's/.*href="\([^"]*\)".*/\1/p' | \
-        grep "^${kernel_major_minor}\." | \
+        grep -o 'href="[^/"]\+/"' | \
+        sed 's/href="//;s/\/"$//' | \
+        grep -v '^\s*$' | \
+        grep -v '^#' | \
+        grep -v '^?' | \
+        grep -v '^\.' | \
+        grep '^[a-zA-Z0-9._-]\+$' | \
         sort -V | \
         tail -1)
     
     if [ -n "$kmod_dir" ]; then
-        kmod_dir=$(echo "$kmod_dir" | sed 's:/$::')
+        echo "[DEBUG] Found kmod directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
         echo "$kmod_dir"
         return 0
     fi
     
+    echo "[DEBUG] No kmod directory found" >> "$CONFIG_DIR/debug.log"
     return 1
 }
 
@@ -1047,47 +1055,24 @@ cache_package_availability() {
             local url temp_file
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
+            # URL構築（custom.js の buildPackageUrl() と同じロジック）
             if [ "$feed" = "targets" ]; then
                 if [ $is_snapshot -eq 1 ]; then
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/packages/index.json"
-                    else
-                        url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/packages/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/packages/index.json"
                 else
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/index.json"
-                    else
-                        url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
                 fi
             elif [ "$feed" = "kmods" ]; then
                 if [ $is_snapshot -eq 1 ]; then
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/index.json"
-                    else
-                        url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/index.json"
                 else
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/index.json"
-                    else
-                        url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
                 fi
             else
                 if [ $is_snapshot -eq 1 ]; then
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-                    else
-                        url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
                 else
-                    if [ "$PKG_MGR" = "apk" ]; then
-                        url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/index.json"
-                    else
-                        url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-                    fi
+                    url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
                 fi
             fi
             
@@ -1098,9 +1083,12 @@ cache_package_availability() {
             
             [ ! -s "$temp_response" ] && exit 1
             
-            if [ "$PKG_MGR" = "apk" ]; then
+            # パッケージ名抽出（custom.js の fetchFeedSet() と同じロジック）
+            if echo "$url" | grep -q 'index.json$'; then
+                # APK形式（SNAPSHOT）
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
+                # OPKG形式（リリース版）
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
