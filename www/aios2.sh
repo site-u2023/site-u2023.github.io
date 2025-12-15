@@ -2817,15 +2817,82 @@ auto_cleanup_conditional_variables() {
     echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
-    # ★修正：connection_type='auto'でもクリーンアップを実行
-    # （実効値ベースで判定するため、スキップ不要）
+    # ★★★ connection_type='auto' の特別処理 ★★★
+    local conn_type effective_conn_type
+    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # カテゴリ内の全アイテムをスキャン
+    if [ "$conn_type" = "auto" ]; then
+        effective_conn_type=$(get_effective_connection_type)
+        echo "[DEBUG] connection_type='auto', effective='$effective_conn_type'" >> "$CONFIG_DIR/debug.log"
+        
+        # 実効値以外の接続タイプ変数を全削除
+        case "$effective_conn_type" in
+            mape)
+                # DS-Lite変数を削除
+                sed -i '/^dslite_aftr_type=/d' "$SETUP_VARS"
+                sed -i '/^dslite_jurisdiction=/d' "$SETUP_VARS"
+                sed -i '/^dslite_aftr_address=/d' "$SETUP_VARS"
+                # PPPoE変数を削除
+                sed -i '/^pppoe_username=/d' "$SETUP_VARS"
+                sed -i '/^pppoe_password=/d' "$SETUP_VARS"
+                # AP変数を削除
+                sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
+                sed -i '/^ap_gateway=/d' "$SETUP_VARS"
+                echo "[AUTO] Removed non-mape variables (effective: mape)" >> "$CONFIG_DIR/debug.log"
+                ;;
+            dslite)
+                # MAP-E変数を削除
+                sed -i '/^mape_type=/d' "$SETUP_VARS"
+                sed -i '/^mape_gua_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_br=/d' "$SETUP_VARS"
+                sed -i '/^mape_ealen=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv4_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv4_prefixlen=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv6_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv6_prefixlen=/d' "$SETUP_VARS"
+                sed -i '/^mape_psid_offset=/d' "$SETUP_VARS"
+                sed -i '/^mape_psidlen=/d' "$SETUP_VARS"
+                # PPPoE変数を削除
+                sed -i '/^pppoe_username=/d' "$SETUP_VARS"
+                sed -i '/^pppoe_password=/d' "$SETUP_VARS"
+                # AP変数を削除
+                sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
+                sed -i '/^ap_gateway=/d' "$SETUP_VARS"
+                echo "[AUTO] Removed non-dslite variables (effective: dslite)" >> "$CONFIG_DIR/debug.log"
+                ;;
+            dhcp|pppoe|ap)
+                # MAP-E変数を削除
+                sed -i '/^mape_type=/d' "$SETUP_VARS"
+                sed -i '/^mape_gua_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_br=/d' "$SETUP_VARS"
+                sed -i '/^mape_ealen=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv4_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv4_prefixlen=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv6_prefix=/d' "$SETUP_VARS"
+                sed -i '/^mape_ipv6_prefixlen=/d' "$SETUP_VARS"
+                sed -i '/^mape_psid_offset=/d' "$SETUP_VARS"
+                sed -i '/^mape_psidlen=/d' "$SETUP_VARS"
+                # DS-Lite変数を削除
+                sed -i '/^dslite_aftr_type=/d' "$SETUP_VARS"
+                sed -i '/^dslite_jurisdiction=/d' "$SETUP_VARS"
+                sed -i '/^dslite_aftr_address=/d' "$SETUP_VARS"
+                # PPPoE変数を削除（dhcpの場合）
+                [ "$effective_conn_type" = "dhcp" ] && {
+                    sed -i '/^pppoe_username=/d' "$SETUP_VARS"
+                    sed -i '/^pppoe_password=/d' "$SETUP_VARS"
+                    sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
+                    sed -i '/^ap_gateway=/d' "$SETUP_VARS"
+                }
+                echo "[AUTO] Removed transition tech variables (effective: $effective_conn_type)" >> "$CONFIG_DIR/debug.log"
+                ;;
+        esac
+    fi
+    
+    # 既存のカテゴリ内アイテムスキャン処理
     for item_id in $(get_setup_category_items "$cat_id"); do
         local item_type
         item_type=$(get_setup_item_type "$item_id")
         
-        # section の中もチェック
         if [ "$item_type" = "section" ]; then
             local nested_items
             nested_items=$(get_section_nested_items "$item_id")
