@@ -1141,13 +1141,12 @@ package_selection() {
     echo "$packages" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
     
-    # 依存パッケージIDをキャッシュから取得（while true の外に移動）
+    # 依存パッケージIDをキャッシュから取得（1階層目のみ）
     local dependent_ids=" "
     
     while read -r parent_id; do
         [ -z "$parent_id" ] && continue
         
-        # parent_idはuniqueIdの可能性があるので、idまたはuniqueIdで検索
         local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
         
         echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
@@ -1155,14 +1154,12 @@ package_selection() {
         while read -r dep; do
             [ -z "$dep" ] && continue
             
-            # depもidまたはuniqueIdで検索
             local matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$1 == dep || $3 == dep {print; exit}')
             
             if [ -n "$matched_line" ]; then
                 local matched_id=$(echo "$matched_line" | cut -d= -f1)
                 local matched_uid=$(echo "$matched_line" | cut -d= -f3)
                 
-                # uniqueIdがある場合は両方追加、ない場合はidのみ
                 if [ -n "$matched_uid" ]; then
                     dependent_ids="${dependent_ids}${matched_id} ${matched_uid} "
                     echo "[DEBUG] Added dependency: id=$matched_id, uid=$matched_uid" >> "$CONFIG_DIR/debug.log"
@@ -1193,7 +1190,6 @@ EOF
 
             echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
             
-            # pkg_idはuniqueIdの可能性があるので、idまたはuniqueIdで検索
             local entry
             entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
 
@@ -1204,12 +1200,12 @@ EOF
                 continue
             }
             
-            # フィールド解析（拡張キャッシュ対応）
-            local pkg_name uid real_id hidden_flag
+            local pkg_name uid real_id hidden_flag virtual_flag
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
             hidden_flag=$(echo "$entry" | cut -d= -f7)
+            virtual_flag=$(echo "$entry" | cut -d= -f8)
             
             echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
             
@@ -1217,18 +1213,16 @@ EOF
                 package_compatible "$pkg_id" || continue
             fi
 
-            # ★★★ 依存パッケージ判定を先に実行 ★★★
+            # ★★★ 依存パッケージ判定（1階層目のみ）★★★
             local is_dependent=0
             
             if [ -n "$uid" ]; then
-                # uniqueIdがある場合、uniqueIdで検索
                 if echo " ${dependent_ids} " | grep -q " ${uid} "; then
                     is_dependent=1
                     echo "[DEBUG] $pkg_id is dependent (matched by uid=$uid)" >> "$CONFIG_DIR/debug.log"
                 fi
             fi
             
-            # uniqueIdでマッチしなかった場合、idでも検索
             if [ "$is_dependent" -eq 0 ]; then
                 if echo " ${dependent_ids} " | grep -q " ${real_id} "; then
                     is_dependent=1
@@ -1236,14 +1230,16 @@ EOF
                 fi
             fi
 
-            # ★★★ hidden チェック（独立パッケージのみ）★★★
+            # ★★★ hidden チェック ★★★
             if [ "$is_dependent" -eq 0 ]; then
+                # 独立パッケージ：hidden=true なら非表示
                 if [ "$hidden_flag" = "true" ]; then
                     echo "[DEBUG] Package $pkg_id is hidden (independent package), skipped" >> "$CONFIG_DIR/debug.log"
                     continue
                 fi
             else
-                echo "[DEBUG] Package $pkg_id is dependent, ignoring hidden flag" >> "$CONFIG_DIR/debug.log"
+                # 1階層目の依存パッケージ：hidden を無視して表示
+                echo "[DEBUG] Package $pkg_id is dependent (level 1), ignoring hidden flag" >> "$CONFIG_DIR/debug.log"
             fi
 
             # availability check 用 caller を決定
@@ -1252,9 +1248,11 @@ EOF
 
             echo "[DEBUG] Checking availability for $pkg_id (caller=$avail_caller)" >> "$CONFIG_DIR/debug.log"
             
-            if ! check_package_available "$pkg_id" "$avail_caller"; then
-                echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
-                continue
+            if [ "$virtual_flag" != "true" ] && [ "$caller" != "custom_feeds" ]; then
+                if ! check_package_available "$pkg_id" "$avail_caller"; then
+                    echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             fi
     
             echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
@@ -1280,7 +1278,6 @@ EOF
 $packages
 EOF
         
-        # ボタン名の設定
         local tr_space_toggle
         tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
         local btn_refresh=$(translate "tr-tui-refresh")
@@ -1303,13 +1300,10 @@ EOF
             target_file="$SELECTED_PACKAGES"
         fi
         
-        # カテゴリの既存エントリを取得
         local old_selection=""
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             
-            # pkg_id は uniqueId（ある場合）または id
-            # フィールド1（id）またはフィールド3（uniqueId）で完全一致チェック
             if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
                 old_selection="${old_selection}${pkg_id}
 "
@@ -1318,7 +1312,6 @@ EOF
 $packages
 EOF
         
-        # 新しい選択状態を取得
         local new_selection=""
         for idx_str in $selected; do
             idx_clean=$(echo "$idx_str" | tr -d '"')
@@ -1332,7 +1325,6 @@ EOF
             fi
         done
         
-        # 変更検出と処理
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
             if ! echo "$old_selection" | grep -qx "$pkg_id"; then
@@ -1352,63 +1344,6 @@ $old_selection
 OLD_SEL
         
         clear_selection_cache
-    done
-}
-
-view_customfeeds() {
-    local tr_main_menu tr_review tr_customfeeds breadcrumb
-    local menu_items i cat_id cat_name choice selected_cat cat_breadcrumb script_file
-    local categories
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    tr_customfeeds=$(translate "tr-tui-view-customfeeds")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review" "$tr_customfeeds")
-    
-    if [ ! -f "$CUSTOMFEEDS_JSON" ]; then
-        show_msgbox "$breadcrumb" "No custom feeds available"
-        return 0
-    fi
-    
-    categories=$(get_customfeed_categories)
-    
-    while true; do
-        menu_items="" 
-        i=1
-        
-        while read -r cat_id; do
-            cat_name=$(get_category_name "$cat_id")
-            menu_items="$menu_items $i \"$cat_name\""
-            i=$((i+1))
-        done <<EOF
-$categories
-EOF
-        
-        if [ -z "$menu_items" ]; then
-            show_msgbox "$breadcrumb" "No custom feeds available"
-            return 0
-        fi
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
-            return 0
-        fi
-        
-        if [ -n "$choice" ]; then
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            cat_name=$(get_category_name "$selected_cat")
-            cat_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-            
-            script_file="$CONFIG_DIR/customfeeds-${selected_cat}.sh"
-            
-            if [ -f "$script_file" ]; then
-                cat "$script_file" > "$CONFIG_DIR/customfeeds_view.txt"
-                show_textbox "$cat_breadcrumb" "$CONFIG_DIR/customfeeds_view.txt"
-            else
-                show_msgbox "$cat_breadcrumb" "Script not found: customfeeds-${selected_cat}.sh"
-            fi
-        fi
     done
 }
 
