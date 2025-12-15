@@ -1201,14 +1201,16 @@ cache_package_availability() {
     
     wait $pids
     
-    # ★ この部分を静かに実行
-    for feed in $feeds; do
-        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-        [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file" 2>/dev/null
-        rm -f "$temp_file" 2>/dev/null
-    done
-    
-    sort -u "$cache_file" -o "$cache_file" 2>/dev/null
+    # ★ マージとソートを完全に静かに実行
+    {
+        for feed in $feeds; do
+            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
+            rm -f "$temp_file"
+        done
+        
+        sort -u "$cache_file" -o "$cache_file"
+    } >/dev/null 2>&1
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
