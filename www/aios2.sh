@@ -3274,6 +3274,307 @@ SCRIPTS
     fi
 }
 
+generate_files() {
+    local pkgs selected_pkgs cat_id template_url api_url download_url pkg_id pattern
+    local tpl_custom enable_var
+    local script_id script_file template_path script_url
+    local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
+
+    : > "$temp_enablevars"
+    
+    local selected_packages_content=""
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        selected_packages_content=$(cat "$SELECTED_PACKAGES")
+        
+        while read -r cache_line; do
+            local pkg_id unique_id enable_var
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            unique_id=$(echo "$cache_line" | cut -d= -f3)
+            
+            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+            
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${enable_var}='1'" >> "$temp_enablevars"
+            fi
+        done <<EOF
+$selected_packages_content
+EOF
+        
+        [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
+    fi
+    rm -f "$temp_enablevars"
+    
+    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
+    
+    if [ -f "$TPL_POSTINST" ]; then
+        if [ -n "$selected_packages_content" ]; then
+            local id_opts_list=""
+            
+            while IFS='=' read -r pkg_id _name _unique install_opts _enablevar; do
+                local install_opts_value=""
+                if [ -n "$install_opts" ]; then
+                    install_opts_value=$(convert_install_option "$install_opts")
+                fi
+                
+                id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
+"
+            done <<EOF
+$selected_packages_content
+EOF
+            
+            local final_list=""
+            local processed_ids=""
+            
+            echo "$id_opts_list" | awk -F'|' 'NF==2 {print $1 "|" $2}' | \
+            while IFS='|' read -r current_id current_opts; do
+                case "$processed_ids" in
+                    *"${current_id}"*) continue ;;
+                esac
+                
+                local same_id_lines
+                same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
+                local count
+                count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
+                
+                if [ "$count" -gt 1 ]; then
+                    local no_opts_line
+                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
+                    
+                    if [ -n "$no_opts_line" ]; then
+                        final_list="${final_list}${current_id}
+"
+                    else
+                        local has_opts_line opts_value
+                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
+                        
+                        if [ -n "$has_opts_line" ]; then
+                            opts_value="${has_opts_line#*|}"
+                            final_list="${final_list}${opts_value} ${current_id}
+"
+                        else
+                            final_list="${final_list}${current_id}
+"
+                        fi
+                    fi
+                else
+                    if [ -n "$current_opts" ]; then
+                        final_list="${final_list}${current_opts} ${current_id}
+"
+                    else
+                        final_list="${final_list}${current_id}
+"
+                    fi
+                fi
+                
+                processed_ids="${processed_ids}${current_id}
+"
+            done
+            
+            local install_cmd=""
+            pkgs=$(echo "$final_list" | xargs)
+            install_cmd=$(echo "$PKG_INSTALL_CMD_TEMPLATE" | sed "s|{package}|$pkgs|g" | sed "s|{allowUntrusted}||g" | sed 's/  */ /g')
+        else
+            pkgs=""
+            install_cmd=""
+        fi
+        
+        awk -v install_cmd="$install_cmd" '
+            /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                print
+                print "INSTALL_CMD=\"" install_cmd "\""
+                skip=1
+                next
+            }
+            /^# END_VARIABLE_DEFINITIONS/ {
+                skip=0
+            }
+            !skip
+        ' "$TPL_POSTINST" > "$CONFIG_DIR/postinst.sh"
+        
+        chmod +x "$CONFIG_DIR/postinst.sh"
+    fi
+    
+    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
+    
+    if [ -f "$TPL_SETUP" ]; then
+        awk '
+            /^# BEGIN_VARS/ {
+                print
+                if (vars_file != "") {
+                    while ((getline line < vars_file) > 0) {
+                        print line
+                    }
+                    close(vars_file)
+                }
+                skip=1
+                next
+            }
+            /^# END_VARS/ {
+                skip=0
+            }
+            !skip
+        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh"
+        
+        chmod +x "$CONFIG_DIR/setup.sh"
+    fi
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        local pids=""
+        local categories_list
+        categories_list=$(get_customfeed_categories)
+        
+        local category_packages=""
+        while read -r cat_id; do
+            local packages_for_cat
+            packages_for_cat=$(get_category_packages "$cat_id")
+            
+            local selected_patterns=""
+            while read -r pkg_id; do
+                if grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    pattern=$(get_customfeed_package_pattern "$pkg_id")
+                    selected_patterns="${selected_patterns}${pattern} "
+                fi
+            done <<EOF2
+$packages_for_cat
+EOF2
+            
+            category_packages="${category_packages}${cat_id}|${selected_patterns}
+"
+        done <<EOF3
+$categories_list
+EOF3
+        
+        local failed_pids=""
+        while read -r cat_entry; do
+            [ -z "$cat_entry" ] && continue
+            
+            (
+                IFS='|' read -r cat_id selected_pkgs <<CATEOF
+$cat_entry
+CATEOF
+                selected_pkgs=$(echo "$selected_pkgs" | sed 's/ $//')
+
+                if [ -z "$selected_pkgs" ]; then
+                    echo "[DEBUG] No packages selected for $cat_id, skipping script generation" >> "$CONFIG_DIR/debug.log"
+                    exit 0
+                fi
+
+                min_version=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+                if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
+                    if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
+                        echo "[DEBUG] Skipping $cat_id: requires OpenWrt $min_version+, current is $OPENWRT_VERSION_MAJOR" >> "$CONFIG_DIR/debug.log"
+                        exit 0
+                    fi
+                fi
+        
+                template_url=$(get_customfeed_template_url "$cat_id")
+                
+                [ -z "$template_url" ] && exit 0
+                
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                
+                fetch_cached_template "$template_url" "$tpl_custom"
+                
+                [ ! -f "$tpl_custom" ] && exit 0
+                
+                api_url=$(get_customfeed_api_base "$cat_id")
+                download_url=$(get_customfeed_download_base "$cat_id")
+                
+                awk -v packages="$selected_pkgs" \
+                    -v api="$api_url" \
+                    -v download="$download_url" '
+                    /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                        print
+                        print "PACKAGES=\"" packages "\""
+                        print "API_URL=\"" api "\""
+                        print "DOWNLOAD_BASE_URL=\"" download "\""
+                        print "RUN_OPKG_UPDATE=\"0\""
+                        skip=1
+                        next
+                    }
+                    /^# END_VARIABLE_DEFINITIONS/ {
+                        skip=0
+                    }
+                    !skip
+                ' "$tpl_custom" > "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+                
+                chmod +x "$CONFIG_DIR/customfeeds-${cat_id}.sh"
+            ) &
+            pids="$pids $!"
+        done <<EOF4
+$category_packages
+EOF4
+        
+        # エラーハンドリング
+        for pid in $pids; do
+            if ! wait $pid; then
+                failed_pids="$failed_pids $pid"
+            fi
+        done
+        
+        if [ -n "$failed_pids" ]; then
+            echo "[WARNING] Some customfeeds scripts failed to generate (PIDs:$failed_pids)" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        echo "[DEBUG] customfeeds generation completed in parallel" >> "$CONFIG_DIR/debug.log"
+    else
+        {
+            echo "#!/bin/sh"
+            echo "# No custom feeds configured"
+            echo "exit 0"
+        } > "$CONFIG_DIR/customfeeds-none.sh"
+        chmod +x "$CONFIG_DIR/customfeeds-none.sh"
+    fi
+
+    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
+        while read -r script_id; do
+            script_file=$(get_customscript_file "$script_id")
+            [ -z "$script_file" ] && continue
+        
+            script_url="${BASE_URL}/custom-script/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+        
+            if [ -f "$template_path" ]; then
+                {
+                    awk '
+                        /^# BEGIN_VARIABLE_DEFINITIONS/ {
+                            print
+                            if (vars_file != "") {
+                                while ((getline line < vars_file) > 0) {
+                                    print line
+                                }
+                                close(vars_file)
+                            }
+                            skip=1
+                            next
+                        }
+                        /^# END_VARIABLE_DEFINITIONS/ {
+                            skip=0
+                        }
+                        !skip
+                    ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
+                
+                    echo ""
+                    echo "${script_id}_main -t"
+                
+                    # 実行後にクリーンアップ
+                    echo ""
+                    echo "# Cleanup after execution"
+                    echo "rm -f \"$CONFIG_DIR/script_vars_${script_id}.txt\""
+                } > "$CONFIG_DIR/customscripts-${script_id}.sh"
+            
+                chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
+            fi
+        done <<SCRIPTS
+$(get_customscript_all_scripts)
+SCRIPTS
+    
+        echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
+    fi
+
+    clear_selection_cache
+}
+
 generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
