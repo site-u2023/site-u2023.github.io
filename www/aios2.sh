@@ -354,7 +354,7 @@ load_package_manager_config() {
     
     [ ! -f "$config_json" ] && return 1
     
-    # ★ 1. 最初にパッケージマネージャーを検出
+    # パッケージマネージャー検出
     if command -v opkg >/dev/null 2>&1; then
         PKG_MGR="opkg"
     elif command -v apk >/dev/null 2>&1; then
@@ -364,17 +364,27 @@ load_package_manager_config() {
         return 1
     fi
     
-    echo "[DEBUG] PKG_MGR detected: $PKG_MGR" >> "$CONFIG_DIR/debug.log"
+    debug_log "PKG_MGR detected: $PKG_MGR"
     
-    # ★ 2. 検出したPKG_MGRを使ってJSONから読み込む
+    # 基本設定
     PKG_EXT=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.ext")
-    
     PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.ignoreDeps")
     PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.forceOverwrite")
     PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.options.allowUntrusted")
     
-    local install_template remove_template update_template upgrade_template
+    # URLテンプレート
+    PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.packageIndexUrl")
+    PKG_TARGETS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.targetsIndexUrl")
+    PKG_KMODS_INDEX_BASE_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.kmodsIndexBaseUrl")
+    PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.kmodsIndexUrl")
     
+    # フィード設定
+    PKG_FEEDS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.feeds[*]" 2>/dev/null | xargs)
+    PKG_INCLUDE_TARGETS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.includeTargets" 2>/dev/null)
+    PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.includeKmods" 2>/dev/null)
+    
+    # コマンドテンプレート
+    local install_template remove_template update_template upgrade_template
     install_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.installCommand")
     remove_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.removeCommand")
     update_template=$(jsonfilter -i "$config_json" -e "@.${PKG_MGR}.updateCommand")
@@ -389,15 +399,12 @@ load_package_manager_config() {
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
 
-    export PKG_MGR
-    export PKG_EXT
-    export PKG_INSTALL_CMD_TEMPLATE
-    export PKG_REMOVE_CMD_TEMPLATE
-    export PKG_UPDATE_CMD
-    export PKG_UPGRADE_CMD
-    export PKG_OPTION_IGNORE_DEPS
-    export PKG_OPTION_FORCE_OVERWRITE
-    export PKG_OPTION_ALLOW_UNTRUSTED
+    # export
+    export PKG_MGR PKG_EXT
+    export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE PKG_UPDATE_CMD PKG_UPGRADE_CMD
+    export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
+    export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
+    export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
 }
 
 install_package() {
@@ -987,20 +994,15 @@ get_kmods_directory() {
     local subtarget="$3"
     local kernel_version="$4"
     
-    local is_snapshot=0
-    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
-    
-    # config.jsからURLテンプレートを取得
+    # JSONから取得したURLテンプレートを使用
     local index_url
-    if [ $is_snapshot -eq 1 ]; then
-        index_url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/"
-    else
-        index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
-    fi
+    index_url=$(expand_template "$PKG_KMODS_INDEX_BASE_URL" \
+        "version" "$version" \
+        "vendor" "$vendor" \
+        "subtarget" "$subtarget")
     
-    echo "[DEBUG] Fetching kmods index from: $index_url" >> "$CONFIG_DIR/debug.log"
+    debug_log "Fetching kmods index from: $index_url"
     
-    # HTMLを取得してディレクトリ名を抽出（custom.jsと同じロジック）
     local kmod_dir
     kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
         grep -o 'href="[^/"]\+/"' | \
@@ -1014,17 +1016,17 @@ get_kmods_directory() {
         tail -1)
     
     if [ -n "$kmod_dir" ]; then
-        echo "[DEBUG] Found kmod directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
+        debug_log "Found kmod directory: $kmod_dir"
         echo "$kmod_dir"
         return 0
     fi
     
-    echo "[DEBUG] No kmod directory found" >> "$CONFIG_DIR/debug.log"
+    debug_log "No kmod directory found"
     return 1
 }
 
 cache_package_availability() {
-    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
+    debug_log "Building package availability cache..."
     
     local version="$OPENWRT_VERSION"
     local arch="$DEVICE_ARCH"
@@ -1032,22 +1034,26 @@ cache_package_availability() {
     local subtarget="$DEVICE_SUBTARGET"
     
     if [ -z "$version" ] || [ -z "$arch" ]; then
-        echo "[DEBUG] Missing version or arch" >> "$CONFIG_DIR/debug.log"
+        debug_log "Missing version or arch"
         return 1
     fi
     
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     : > "$cache_file"
     
-    local feeds="base packages luci routing telephony community targets"
-    local is_snapshot=0
-    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+    # JSONから取得したフィードリスト
+    local feeds="$PKG_FEEDS"
     
-    local kernel_version=$(uname -r)
+    # targets追加
+    [ "$PKG_INCLUDE_TARGETS" = "true" ] && feeds="$feeds targets"
+    
+    # kmods追加
     local kmod_dir
-    kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
-    
-    [ -n "$kmod_dir" ] && feeds="$feeds kmods"
+    if [ "$PKG_INCLUDE_KMODS" = "true" ]; then
+        local kernel_version=$(uname -r)
+        kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
+        [ -n "$kmod_dir" ] && feeds="$feeds kmods"
+    fi
     
     local pids=""
     for feed in $feeds; do
@@ -1055,53 +1061,52 @@ cache_package_availability() {
             local url temp_file
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
-            # URL構築（custom.js の buildPackageUrl() と同じロジック）
+            # URL構築
             if [ "$feed" = "targets" ]; then
-                if [ $is_snapshot -eq 1 ]; then
-                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/packages/index.json"
-                else
-                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
-                fi
+                url=$(expand_template "$PKG_TARGETS_INDEX_URL" \
+                    "version" "$version" \
+                    "vendor" "$vendor" \
+                    "subtarget" "$subtarget")
             elif [ "$feed" = "kmods" ]; then
-                if [ $is_snapshot -eq 1 ]; then
-                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/index.json"
-                else
-                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
-                fi
+                url=$(expand_template "$PKG_KMODS_INDEX_URL" \
+                    "version" "$version" \
+                    "vendor" "$vendor" \
+                    "subtarget" "$subtarget" \
+                    "kmod" "$kmod_dir")
             else
-                if [ $is_snapshot -eq 1 ]; then
-                    url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-                else
-                    url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-                fi
+                url=$(expand_template "$PKG_PACKAGE_INDEX_URL" \
+                    "version" "$version" \
+                    "arch" "$arch" \
+                    "feed" "$feed")
             fi
             
-            echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
+            debug_log "Fetching $feed from $url"
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             wget -q -T 10 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
             
             [ ! -s "$temp_response" ] && exit 1
             
-            # パッケージ名抽出（custom.js の fetchFeedSet() と同じロジック）
+            # パッケージ名抽出
             if echo "$url" | grep -q 'index.json$'; then
-                # APK形式（SNAPSHOT）
+                # APK
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
-                # OPKG形式（リリース版）
+                # OPKG
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
             rm -f "$temp_response"
             
             local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
+            debug_log "$feed: fetched $count packages"
         ) >/dev/null 2>&1 &
         pids="$pids $!"
     done
     
     wait $pids
     
+    # マージ
     {
         for feed in $feeds; do
             local temp_file="$CONFIG_DIR/cache_${feed}.txt"
@@ -1113,7 +1118,7 @@ cache_package_availability() {
     } >/dev/null 2>&1
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
+    debug_log "Cache built: $count packages total"
     
     return 0
 }
