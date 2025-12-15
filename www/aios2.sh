@@ -3121,7 +3121,7 @@ fetch_cached_template() {
     return $?
 }
 
-XXX_prefetch_templates() {
+prefetch_templates() {
     local cat_id template_url tpl_custom
     local script_id script_file script_url template_path
     
@@ -3156,7 +3156,7 @@ EOF
     fi
 }
 
-prefetch_templates() {
+XXX_prefetch_templates() {
     # 全変数を関数の先頭で宣言
     local cat_id template_url tpl_custom
     local script_id script_file script_url template_path
