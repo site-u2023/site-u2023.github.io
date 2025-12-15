@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1502"
+VERSION="R7.1215.1512"
 
 # =============================================================================
 # Package Management Architecture
@@ -862,50 +862,6 @@ wait_for_package_cache() {
     fi
 }
 
-XXXXX_check_package_available() {
-    local pkg_id="$1"
-    local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-
-    wait_for_package_cache
-
-    if [ "$caller" = "custom_feeds" ]; then
-        return 0
-    fi
-
-    # キャッシュから virtual フラグを取得
-    local virtual_flag="false"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
-        [ -z "$virtual_flag" ] && virtual_flag="false"
-    fi
-    
-    if [ "$virtual_flag" = "true" ]; then
-        echo "[DEBUG] Package $pkg_id is virtual, skipping availability check" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-
-    local real_id="$pkg_id"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local cached_real_id
-        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
-    fi
-
-    if [ ! -f "$cache_file" ]; then
-        echo "[DEBUG] Availability cache not found, allowing $pkg_id" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-
-    if grep -qx "$real_id" "$cache_file" 2>/dev/null; then
-        echo "[DEBUG] Package $real_id found in availability cache" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-
-    echo "[DEBUG] Package $real_id NOT found in availability cache" >> "$CONFIG_DIR/debug.log"
-    return 1
-}
-
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
@@ -996,170 +952,6 @@ get_kmods_directory() {
     fi
     
     return 1
-}
-
-XXX_cache_package_availability() {
-    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
-    
-    local version="$OPENWRT_VERSION"
-    local arch="$DEVICE_ARCH"
-    
-    if [ -z "$version" ] || [ -z "$arch" ]; then
-        echo "[DEBUG] Missing version ($version) or arch ($arch)" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-    : > "$cache_file"
-    
-    local feeds="base packages luci"
-    local is_snapshot=0
-    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
-    
-    # kmods追加
-    local kernel_version=$(uname -r)
-    local kmod_dir
-    kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
-    
-    if [ -n "$kmod_dir" ]; then
-        feeds="$feeds kmods"
-        echo "[DEBUG] Found kmods directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    for feed in $feeds; do
-        local url
-        
-        if [ "$feed" = "kmods" ]; then
-            url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
-        elif [ $is_snapshot -eq 1 ]; then
-            url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-        else
-            url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-        fi
-        
-        echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
-        
-        local temp_response="$CONFIG_DIR/feed_response.txt"
-        if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
-            echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
-            rm -f "$temp_response"
-            continue
-        fi
-        
-        if [ ! -s "$temp_response" ]; then
-            echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
-            rm -f "$temp_response"
-            continue
-        fi
-        
-        if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
-            jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
-                awk 'NF {print $0":1"}' >> "$cache_file"
-        else
-            awk '/^Package: / {print $2":1"}' "$temp_response" >> "$cache_file"
-        fi
-        
-        rm -f "$temp_response"
-        
-        local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-        echo "[DEBUG] Fetched $count packages so far" >> "$CONFIG_DIR/debug.log"
-    done
-    
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
-    
-    return 0
-}
-
-XXXXX_cache_package_availability() {
-    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
-    
-    local version="$OPENWRT_VERSION"
-    local arch="$DEVICE_ARCH"
-    
-    if [ -z "$version" ] || [ -z "$arch" ]; then
-        echo "[DEBUG] Missing version ($version) or arch ($arch)" >> "$CONFIG_DIR/debug.log"
-        return 1
-    fi
-    
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-    : > "$cache_file"
-    
-    local feeds="base packages luci"
-    local is_snapshot=0
-    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
-    
-    # kmods追加（先にディレクトリ取得）
-    local kernel_version=$(uname -r)
-    local kmod_dir
-    kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
-    
-    if [ -n "$kmod_dir" ]; then
-        feeds="$feeds kmods"
-        echo "[DEBUG] Found kmods directory: $kmod_dir" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    # 並列処理でダウンロード
-    local pids=""
-    for feed in $feeds; do
-        (
-            local url temp_file
-            temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            
-            if [ "$feed" = "kmods" ]; then
-                url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
-            elif [ $is_snapshot -eq 1 ]; then
-                url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-            else
-                url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-            fi
-            
-            echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
-            
-            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-            if ! wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null; then
-                echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
-                rm -f "$temp_response"
-                exit 1
-            fi
-            
-            if [ ! -s "$temp_response" ]; then
-                echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
-                rm -f "$temp_response"
-                exit 1
-            fi
-            
-            if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
-                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
-                    awk 'NF {print $0":1"}' > "$temp_file"
-            else
-                awk '/^Package: / {print $2":1"}' "$temp_response" > "$temp_file"
-            fi
-            
-            rm -f "$temp_response"
-            
-            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
-        ) &
-        pids="$pids $!"
-    done
-    
-    # 全プロセス完了を待つ
-    wait $pids
-    
-    # 結果をマージ
-    for feed in $feeds; do
-        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-        if [ -f "$temp_file" ]; then
-            cat "$temp_file" >> "$cache_file"
-            rm -f "$temp_file"
-        fi
-    done
-    
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
-    
-    return 0
 }
 
 cache_package_availability() {
@@ -3909,7 +3701,7 @@ show_log() {
     fi
 }
 
-aios2_main() {
+XXX_aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     # ヘルパー: 経過時間計測
@@ -4127,6 +3919,216 @@ aios2_main() {
     
     # ========================================
     # Phase 11: UIモジュール起動
+    # ========================================
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        return 1
+    fi
+    
+    echo ""
+    echo "Thank you for using aios2!"
+    echo ""
+}
+
+aios2_main() {
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
+    
+    # ヘルパー: 経過時間計測
+    elapsed_time() {
+        local current=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
+    }
+    
+    # バナー表示と言語コード取得
+    clear
+    print_banner
+    mkdir -p "$CONFIG_DIR"
+    get_language_code
+    
+    # ========================================
+    # Phase 1: 初期化とconfig.js取得
+    # ========================================
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    init  # キャッシュクリア、ロックファイル作成、config.js読込（ASU_URL設定）
+    
+    # ========================================
+    # Phase 2: 必須ファイルを並列ダウンロード
+    # ========================================
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
+    PKG_MGR_DL_PID=$!
+    
+    (download_api_with_retry) &
+    API_PID=$!
+    
+    (download_setup_json) &
+    SETUP_PID=$!
+    
+    (download_postinst_json) &
+    POSTINST_PID=$!
+    
+    (download_customfeeds_json >/dev/null 2>&1) &
+    CUSTOMFEEDS_PID=$!
+    
+    (download_customscripts_json >/dev/null 2>&1) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    (prefetch_templates) &
+    TEMPLATES_PID=$!
+    
+    (download_language_json "en" >/dev/null 2>&1) &
+    LANG_EN_PID=$!
+    
+    # 母国語ファイル（enでない場合のみ）
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    # UIモジュールファイル
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    # ========================================
+    # Phase 3: whiptail有無チェック
+    # ========================================
+    WHIPTAIL_AVAILABLE=0
+    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
+    
+    # ========================================
+    # Phase 4: UI選択（ユーザー入力）
+    # ========================================
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # 母国語ファイル完了を待機
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+    
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    
+    # ========================================
+    # Phase 5: package-manager.jsonロード（すべてのケースで1回だけ）
+    # ========================================
+    wait $PKG_MGR_DL_PID
+    
+    load_package_manager_config || {
+        echo "Failed to load package manager config"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    # whiptail選択 かつ 未インストールの場合のみインストール
+    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Installing whiptail..."
+        echo "Updating package lists..."
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        
+        if ! install_package whiptail; then
+            echo "Installation failed. Falling back to simple mode."
+            UI_MODE="simple"
+        else
+            echo "Installation successful."
+        fi
+    fi
+    
+    # ========================================
+    # Phase 6: 必須JSON完了を待機
+    # ========================================
+    wait $API_PID
+    
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    [ $SETUP_STATUS -ne 0 ] && {
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $UI_DL_PID
+    
+    # ========================================
+    # Phase 7: デバイス情報取得（API情報で上書き・補完）
+    # DEVICE_TARGET, OPENWRT_VERSIONをここで設定
+    # ========================================
+    get_extended_device_info
+
+    # バックグラウンドプロセス用に export
+    export DEVICE_TARGET
+    export OPENWRT_VERSION
+    export ASU_URL
+    export DEVICE_MODEL
+    export DEVICE_ARCH
+    export DEVICE_VENDOR
+    export DEVICE_SUBTARGET
+    
+    echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
+    
+    # ========================================
+    # Phase 8: パッケージ存在確認キャッシュ構築（バックグラウンド）
+    # 実際の利用タイミング（package_selection初回呼び出し時）に
+    # wait_for_package_cache()で自動的に待機する
+    # ========================================
+    cache_package_availability &
+    CACHE_PKG_PID=$!
+    
+    # ========================================
+    # Phase 9: 残りのバックグラウンド処理完了を待機
+    # ========================================
+    wait $CUSTOMFEEDS_PID
+    wait $CUSTOMSCRIPTS_PID
+    wait $TEMPLATES_PID
+    wait $LANG_EN_PID
+    
+    # APIから言語コードが取得できた場合、母国語ファイルを再取得
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
+    fi
+    
+    # 処理時間計測
+    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    echo "[TIME] Total auto-processing: ${TOTAL_AUTO_TIME}s" >> "$CONFIG_DIR/debug.log"
+    
+    # simple UIの場合、Yes/No表記を簡略化
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    fi
+    
+    # ========================================
+    # Phase 10: UIモジュール起動
     # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
