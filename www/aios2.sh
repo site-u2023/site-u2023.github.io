@@ -415,40 +415,35 @@ load_package_manager_config() {
     # パッケージマネージャー検出
     if command -v opkg >/dev/null 2>&1; then
         PKG_MGR="opkg"
+        PKG_CHANNEL="release"  # ★ opkg は release（元の動作）
     elif command -v apk >/dev/null 2>&1; then
         PKG_MGR="apk"
+        PKG_CHANNEL="snapshot"  # ★ apk は snapshot（元の動作）
     else
         echo "Error: No supported package manager found" >&2
         return 1
     fi
     
-    # ★ チャネル検出（release or snapshot）
-    if [ "$OPENWRT_VERSION" = "SNAPSHOT" ]; then
-        PKG_CHANNEL="snapshot"
-    else
-        PKG_CHANNEL="release"
-    fi
+    debug_log "PKG_MGR detected: $PKG_MGR"
     
-    debug_log "PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL"
-    
-    # 基本設定（パッケージマネージャー定義から）
+    # 基本設定
     PKG_EXT=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.ext")
     PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps")
     PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.forceOverwrite")
     PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.allowUntrusted")
     
-    # ★ URLテンプレート（チャネル定義から）
+    # ★ URLテンプレート（元の動作を維持：opkg=release, apk=snapshot）
     PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl")
     PKG_TARGETS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.targetsIndexUrl")
     PKG_KMODS_INDEX_BASE_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexBaseUrl")
     PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl")
     
-    # フィード設定（パッケージマネージャー定義から）
+    # フィード設定
     PKG_FEEDS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.feeds[*]" 2>/dev/null | xargs)
     PKG_INCLUDE_TARGETS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.includeTargets" 2>/dev/null)
     PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.includeKmods" 2>/dev/null)
     
-    # コマンドテンプレート（パッケージマネージャー定義から）
+    # コマンドテンプレート
     local install_template remove_template update_template upgrade_template
     install_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.installCommand")
     remove_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.removeCommand")
@@ -465,7 +460,7 @@ load_package_manager_config() {
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
 
     # export
-    export PKG_MGR PKG_CHANNEL PKG_EXT
+    export PKG_MGR PKG_EXT
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE PKG_UPDATE_CMD PKG_UPGRADE_CMD
     export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
     export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
@@ -739,13 +734,6 @@ init() {
         echo "Fatal: Cannot download package-manager.json"
         return 1
     fi
-
-    # ★ OPENWRT_VERSION を先に取得（チャネル検出に必要）
-    if [ -f /etc/openwrt_release ]; then
-        OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-    fi
-    [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="SNAPSHOT"
-    export OPENWRT_VERSION
 
     # パッケージマネージャー設定読込（チャネル検出含む）
     load_package_manager_config || {
