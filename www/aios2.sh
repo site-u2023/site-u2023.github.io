@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1709"
+VERSION="R7.1215.1718"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -987,13 +987,28 @@ get_kmods_directory() {
     local subtarget="$3"
     local kernel_version="$4"
     
-    local index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
+    # メジャー・マイナーバージョンのみ取得（例: 6.12.60 → 6.12）
+    local kernel_major_minor=$(echo "$kernel_version" | cut -d. -f1-2)
     
+    # SNAPSHOT判定
+    local is_snapshot=0
+    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+    
+    # URL構築
+    local index_url
+    if [ $is_snapshot -eq 1 ]; then
+        index_url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/"
+    else
+        index_url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/"
+    fi
+    
+    # メジャー・マイナーバージョンで前方一致し、最新を取得
     local kmod_dir
     kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
         sed -n 's/.*href="\([^"]*\)".*/\1/p' | \
-        grep "^${kernel_version}" | \
-        head -1)
+        grep "^${kernel_major_minor}\." | \
+        sort -V | \
+        tail -1)
     
     if [ -n "$kmod_dir" ]; then
         kmod_dir=$(echo "$kmod_dir" | sed 's:/$::')
@@ -1044,6 +1059,8 @@ cache_package_availability() {
     : > "$cache_file"
     
     local feeds="base packages luci routing telephony community targets"
+    
+    # SNAPSHOT判定（リポジトリURL用）
     local is_snapshot=0
     echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
     
@@ -1059,14 +1076,38 @@ cache_package_availability() {
             local url temp_file
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
+            # URL構築
             if [ "$feed" = "targets" ]; then
-                url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
+                if [ $is_snapshot -eq 1 ]; then
+                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/packages/Packages"
+                else
+                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
+                fi
             elif [ "$feed" = "kmods" ]; then
-                url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
-            elif [ $is_snapshot -eq 1 ]; then
-                url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+                if [ $is_snapshot -eq 1 ]; then
+                    url="https://downloads.openwrt.org/snapshots/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
+                else
+                    url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
+                fi
             else
-                url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+                if [ $is_snapshot -eq 1 ]; then
+                    # SNAPSHOT版（現在はAPKのみ）
+                    if [ "$PKG_MGR" = "apk" ]; then
+                        url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+                    else
+                        # 将来的にSNAPSHOTでOPKGが使われる可能性は低いが念のため
+                        url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/Packages"
+                    fi
+                else
+                    # リリース版（OPKGまたは将来のAPK）
+                    if [ "$PKG_MGR" = "apk" ]; then
+                        # 将来のAPK対応リリース版（仮定）
+                        url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/index.json"
+                    else
+                        # 従来のOPKG版
+                        url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+                    fi
+                fi
             fi
             
             echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
@@ -1076,11 +1117,12 @@ cache_package_availability() {
             
             [ ! -s "$temp_response" ] && exit 1
             
-            if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ] && [ "$feed" != "targets" ]; then
-                # ✅ SNAPSHOT版（APK）: index.json からパッケージ名を抽出
+            # パッケージ名抽出（フォーマット判定）
+            if [ "$PKG_MGR" = "apk" ] && [ "$feed" != "kmods" ] && [ "$feed" != "targets" ]; then
+                # APK: index.json形式
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
-                # リリース版（OPKG）: Packages ファイルからパッケージ名を抽出
+                # OPKG: Packages形式（kmodsとtargetsは常にPackages形式）
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
