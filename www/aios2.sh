@@ -349,7 +349,7 @@ check_packages_installed() {
     [ -z "$MISSING_UI_PKGS" ]
 }
 
-XXX_load_package_manager_config() {
+load_package_manager_config() {
     local config_json="$CONFIG_DIR/package-manager.json"
 
     [ ! -f "$config_json" ] && return 1
@@ -439,7 +439,7 @@ XXX_load_package_manager_config() {
     export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
 }
 
-load_package_manager_config() {
+XXX_load_package_manager_config() {
     local config_json="$CONFIG_DIR/package-manager.json"
 
     [ ! -f "$config_json" ] && return 1
