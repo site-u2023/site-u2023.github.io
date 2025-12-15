@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1417"
+VERSION="R7.1215.1421"
 
 # =============================================================================
 # Package Management Architecture
@@ -411,7 +411,7 @@ init() {
     echo "$$" > "$LOCK_FILE"
     trap "rm -f '$LOCK_FILE'" EXIT INT TERM
     
-    # ★ 修正：自分自身を除外してキャッシュファイルを削除
+    # 自分自身を除外してキャッシュファイルを削除
     local self_script
     self_script="$(basename "$0")"
     
@@ -445,6 +445,17 @@ init() {
     unset _TRANSLATIONS_EN_LOADED
     unset _TRANSLATIONS_EN_DATA
     unset _CURRENT_LANG
+    
+    # ★ パッケージマネージャー関連変数を確実に削除
+    unset PKG_MGR
+    unset PKG_EXT
+    unset PKG_INSTALL_CMD_TEMPLATE
+    unset PKG_REMOVE_CMD_TEMPLATE
+    unset PKG_UPDATE_CMD
+    unset PKG_UPGRADE_CMD
+    unset PKG_OPTION_IGNORE_DEPS
+    unset PKG_OPTION_FORCE_OVERWRITE
+    unset PKG_OPTION_ALLOW_UNTRUSTED
     
     # フラグを明示的に0に設定
     _PACKAGE_NAME_LOADED=0
