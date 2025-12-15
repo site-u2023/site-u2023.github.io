@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1929"
+VERSION="R7.1215.1938"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -424,7 +424,7 @@ convert_install_option() {
     jsonfilter -i "$PACKAGE_MANAGER_JSON" -e "@.${PKG_MGR}.options.${opt_key}" 2>/dev/null
 }
 
-init() {
+XXX_init() {
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
     
     mkdir -p "$CONFIG_DIR"
@@ -517,6 +517,107 @@ init() {
     
     echo "[DEBUG] $(date): Init complete, all caches cleared (except $self_script)" >> "$CONFIG_DIR/debug.log"
 }
+
+init() {
+    local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
+
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$BACKUP_DIR"
+
+    if [ -f "$LOCK_FILE" ]; then
+        local old_pid
+        old_pid=$(cat "$LOCK_FILE" 2>/dev/null)
+
+        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+            echo "Another instance (PID: $old_pid) is running."
+            echo "Multiple instances can run simultaneously, but may overwrite each other's configuration."
+            printf "Continue anyway? (y/n): "
+            read -r answer
+            if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+                exit 1
+            fi
+        else
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+
+    echo "$$" > "$LOCK_FILE"
+    trap "rm -f '$LOCK_FILE'" EXIT INT TERM
+
+    # 自分自身を除外してキャッシュファイルを削除
+    local self_script
+    self_script="$(basename "$0")"
+
+    # JSON / TXT / ログ削除（package-manager.json は後で再取得）
+    rm -f "$CONFIG_DIR"/postinst.json \
+          "$CONFIG_DIR"/setup.json \
+          "$CONFIG_DIR"/customfeeds.json \
+          "$CONFIG_DIR"/customscripts.json \
+          "$CONFIG_DIR"/*.txt \
+          "$CONFIG_DIR"/debug.log 2>/dev/null
+
+    # シェルスクリプトは自分自身以外を削除
+    for file in "$CONFIG_DIR"/*.sh; do
+        [ -f "$file" ] || continue
+        [ "$(basename "$file")" = "$self_script" ] && continue
+        rm -f "$file"
+    done
+
+    # config.js 読み込み
+    load_config_from_js || {
+        echo "Fatal: Cannot load configuration"
+        return 1
+    }
+
+    # package-manager.json を必ず取得
+    if ! download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON"; then
+        echo "Fatal: Cannot download package-manager.json"
+        return 1
+    fi
+
+    # パッケージマネージャー設定読込
+    load_package_manager_config || {
+        echo "Fatal: Cannot load package manager configuration"
+        return 1
+    }
+
+    # キャッシュ変数の完全初期化
+    unset _PACKAGE_NAME_CACHE
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _PACKAGE_COMPAT_CACHE
+    unset _CONDITIONAL_PACKAGES_CACHE
+    unset _CUSTOMFEED_CATEGORIES_CACHE
+    unset _CATEGORIES_CACHE
+    unset _SETUP_CATEGORIES_CACHE
+    unset _TRANSLATIONS_LOADED
+    unset _PACKAGE_AVAILABILITY_CACHE
+    unset _TRANSLATIONS_DATA
+    unset _TRANSLATIONS_EN_LOADED
+    unset _TRANSLATIONS_EN_DATA
+    unset _CURRENT_LANG
+    unset _CATEGORY_PACKAGES_CACHE
+
+    _PACKAGE_NAME_LOADED=0
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _PACKAGE_COMPAT_LOADED=0
+    _CONDITIONAL_PACKAGES_LOADED=0
+    _CUSTOMFEED_CATEGORIES_LOADED=0
+    _CATEGORIES_LOADED=0
+    _SETUP_CATEGORIES_LOADED=0
+    _PACKAGE_AVAILABILITY_LOADED=0
+    _CATEGORY_PACKAGES_LOADED=0
+
+    # ファイル初期化
+    : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
+    : > "$SETUP_VARS"
+    : > "$CONFIG_DIR/debug.log"
+
+    echo "[DEBUG] $(date): Init complete (package-manager.json loaded)" >> "$CONFIG_DIR/debug.log"
+}
+
 
 # Language and Translation
 
