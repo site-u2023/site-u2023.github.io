@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1743"
+VERSION="R7.1215.1929"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1027,6 +1027,7 @@ get_kmods_directory() {
 
 cache_package_availability() {
     debug_log "Building package availability cache..."
+    debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
     
     local version="$OPENWRT_VERSION"
     local arch="$DEVICE_ARCH"
