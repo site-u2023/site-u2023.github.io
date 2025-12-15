@@ -411,8 +411,19 @@ init() {
     echo "$$" > "$LOCK_FILE"
     trap "rm -f '$LOCK_FILE'" EXIT INT TERM
     
-    # すべてのキャッシュファイルを削除
-    rm -f "$CONFIG_DIR"/*.json "$CONFIG_DIR"/*.sh "$CONFIG_DIR"/*.txt "$CONFIG_DIR"/debug.log 2>/dev/null
+    # ★ 修正：自分自身を除外してキャッシュファイルを削除
+    local self_script
+    self_script="$(basename "$0")"
+    
+    # JSON, TXT, ログファイルは全削除
+    rm -f "$CONFIG_DIR"/*.json "$CONFIG_DIR"/*.txt "$CONFIG_DIR"/debug.log 2>/dev/null
+    
+    # シェルスクリプトは自分自身以外を削除
+    for file in "$CONFIG_DIR"/*.sh; do
+        [ -f "$file" ] || continue
+        [ "$(basename "$file")" = "$self_script" ] && continue
+        rm -f "$file"
+    done
     
     load_config_from_js || {
         echo "Fatal: Cannot load configuration"
@@ -452,7 +463,7 @@ init() {
     : > "$SETUP_VARS"
     : > "$CONFIG_DIR/debug.log"
     
-    echo "[DEBUG] $(date): Init complete, all caches cleared" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] $(date): Init complete, all caches cleared (except $self_script)" >> "$CONFIG_DIR/debug.log"
 }
 
 # Language and Translation
