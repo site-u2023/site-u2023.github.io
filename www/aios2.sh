@@ -2561,7 +2561,7 @@ EOF
     return 1
 }
 
-XXX_auto_add_conditional_packages() {
+auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
@@ -2671,7 +2671,7 @@ EOF
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-auto_add_conditional_packages() {
+XXX_auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
@@ -3220,7 +3220,7 @@ fetch_cached_template() {
     return $?
 }
 
-XXX_prefetch_templates() {
+prefetch_templates() {
     local cat_id template_url tpl_custom
     local script_id script_file script_url template_path
     
@@ -3255,7 +3255,7 @@ EOF
     fi
 }
 
-prefetch_templates() {
+XXX_prefetch_templates() {
     local pids=""
 
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST" &
