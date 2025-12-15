@@ -68,7 +68,10 @@ VERSION="R7.1215.1421"
 # Package Display Rules
 # =============================================================================
 # 
-# **dependencies Array**: UI parent-child relationship ONLY (not package manager deps)
+# **dependencies Array**: Packages to select together in UI (parent-child relationship)
+#   - NOT related to opkg/apk dependencies
+#   - Used when parent is selected → children are auto-selected
+#   - Children are displayed with indentation under parent
 # 
 # **hidden Attribute**:
 #   - Independent packages: hidden=true → HIDDEN
