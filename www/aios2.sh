@@ -68,31 +68,16 @@ VERSION="R7.1215.1421"
 # Package Display Rules
 # =============================================================================
 # 
-# 1. **hidden Attribute Display Logic**
-#    - Independent packages (not in any dependencies array):
-#      * hidden=true → HIDDEN
-#      * hidden=false → SHOWN
-#    
-#    - Level 1 dependent packages (direct dependencies):
-#      * hidden=true → SHOWN (hidden flag is IGNORED)
-#      * hidden=false → SHOWN
-#    
-#    - Level 2+ dependent packages (indirect dependencies):
-#      * hidden=true → HIDDEN
-#      * hidden=false → SHOWN
+# **dependencies Array**: UI parent-child relationship ONLY (not package manager deps)
 # 
-# 2. **Dependency Level Definition**
-#    Level 1 (direct):   Parent → Dependency A
-#    Level 2 (indirect): Parent → Dependency A → Dependency B
-#    
-#    Example:
-#    - luci-app-dockerman → docker-compose (Level 1) → SHOWN
-#    - docker-compose → docker (Level 2) → HIDDEN if hidden=true
+# **hidden Attribute**:
+#   - Independent packages: hidden=true → HIDDEN
+#   - Level 1 dependencies: hidden=true → SHOWN (ignored)
+#   - Level 2+ dependencies: hidden=true → HIDDEN
 # 
-# 3. **Availability Check**
-#    - virtual=true packages: Skip check (always available)
-#    - custom_feeds caller: Skip check (always available)
-#    - All other packages: Must pass availability check
+# **Availability Check**:
+#   - virtual=true or custom_feeds: Skip check
+#   - Others: Must exist in repository
 # 
 # =============================================================================
 
