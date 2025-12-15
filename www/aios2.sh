@@ -2561,7 +2561,7 @@ EOF
     return 1
 }
 
-auto_add_conditional_packages() {
+XXX_auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
@@ -2671,7 +2671,7 @@ EOF
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-XXX_auto_add_conditional_packages() {
+auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
