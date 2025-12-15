@@ -1396,53 +1396,49 @@ get_category_packages() {
     if [ "$_CATEGORY_PACKAGES_LOADED" -eq 0 ]; then
         echo "[DEBUG] Building category packages cache..." >> "$CONFIG_DIR/debug.log"
         
-        _CATEGORY_PACKAGES_CACHE=$(
-            {
-                # CUSTOMFEEDS_JSON
-                if [ -f "$CUSTOMFEEDS_JSON" ]; then
-                    jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*]' 2>/dev/null | \
-                    awk -F'"' '
-                    {
-                        cat_id=""; pkg_id=""; pkg_uid="";
-                        for(i=1;i<=NF;i++){
-                            if($i=="id" && cat_id=="") cat_id=$(i+2);
-                            if($i=="packages") {
-                                for(j=i;j<=NF;j++){
-                                    if($j=="id") pkg_id=$(j+2);
-                                    if($j=="uniqueId") pkg_uid=$(j+2);
-                                    if($j=="}") {
-                                        if(pkg_uid) print cat_id "|" pkg_uid;
-                                        else if(pkg_id) print cat_id "|" pkg_id;
-                                        pkg_id=""; pkg_uid="";
-                                    }
-                                }
-                            }
-                        }
-                    }'
-                fi
-                
-                # PACKAGES_JSON
-                jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*]' 2>/dev/null | \
-                awk -F'"' '
+        _CATEGORY_PACKAGES_CACHE=""
+        
+        # 全カテゴリ分をキャッシュに格納
+        local all_cats
+        all_cats=$(get_categories)
+        
+        for cat in $all_cats; do
+            local packages
+            packages=$(
                 {
-                    cat_id=""; pkg_id=""; pkg_uid="";
-                    for(i=1;i<=NF;i++){
-                        if($i=="id" && cat_id=="") cat_id=$(i+2);
-                        if($i=="packages") {
-                            for(j=i;j<=NF;j++){
-                                if($j=="id") pkg_id=$(j+2);
-                                if($j=="uniqueId") pkg_uid=$(j+2);
-                                if($j=="}") {
-                                    if(pkg_uid) print cat_id "|" pkg_uid;
-                                    else if(pkg_id) print cat_id "|" pkg_id;
-                                    pkg_id=""; pkg_uid="";
-                                }
+                    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+                        jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat'].packages[*]" 2>/dev/null | \
+                        awk -F'"' '{
+                            id=""; uid="";
+                            for(i=1;i<=NF;i++){
+                                if($i=="id") id=$(i+2);
+                                if($i=="uniqueId") uid=$(i+2);
                             }
+                            if(uid) print uid; else if(id) print id;
+                        }'
+                    fi
+                    
+                    jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat'].packages[*]" 2>/dev/null | \
+                    awk -F'"' '{
+                        id=""; uid="";
+                        for(i=1;i<=NF;i++){
+                            if($i=="id") id=$(i+2);
+                            if($i=="uniqueId") uid=$(i+2);
                         }
-                    }
-                }'
-            } | awk '!seen[$0]++'
-        )
+                        if(uid) print uid; else if(id) print id;
+                    }'
+                } | grep -v '^$' | awk '!seen[$0]++'
+            )
+            
+            # カテゴリ|パッケージ形式でキャッシュに追加
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                _CATEGORY_PACKAGES_CACHE="${_CATEGORY_PACKAGES_CACHE}${cat}|${pkg}
+"
+            done <<EOF
+$packages
+EOF
+        done
         
         _CATEGORY_PACKAGES_LOADED=1
         echo "[DEBUG] Category packages cache built: $(echo "$_CATEGORY_PACKAGES_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
