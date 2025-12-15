@@ -1398,9 +1398,10 @@ get_category_packages() {
         
         _CATEGORY_PACKAGES_CACHE=""
         
-        # 全カテゴリ分をキャッシュに格納
+        # 全カテゴリ分をキャッシュに格納（通常 + カスタムフィード）
         local all_cats
-        all_cats=$(get_categories)
+        all_cats="$(get_categories)
+$(get_customfeed_categories)"
         
         for cat in $all_cats; do
             local packages
