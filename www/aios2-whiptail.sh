@@ -1200,11 +1200,12 @@ EOF
                 continue
             }
             
+            # ★ キャッシュから全フィールドを取得
             local pkg_name uid real_id hidden_flag virtual_flag
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
-            hidden_flag=$(echo "$entry" | cut -d= -f7)
+            hidden_flag=$(echo "$entry" | cut -d= -f7)  # ★ hiddenをキャッシュから取得
             virtual_flag=$(echo "$entry" | cut -d= -f8)
             
             echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
@@ -1213,7 +1214,7 @@ EOF
                 package_compatible "$pkg_id" || continue
             fi
 
-            # ★★★ 依存パッケージ判定（1階層目のみ）★★★
+            # ★ 依存パッケージ判定（1階層目のみ）
             local is_dependent=0
             
             if [ -n "$uid" ]; then
@@ -1230,7 +1231,7 @@ EOF
                 fi
             fi
 
-            # ★★★ hidden チェック ★★★
+            # ★ hidden チェック（キャッシュから取得したフラグを使用）
             if [ "$is_dependent" -eq 0 ]; then
                 # 独立パッケージ：hidden=true なら非表示
                 if [ "$hidden_flag" = "true" ]; then
