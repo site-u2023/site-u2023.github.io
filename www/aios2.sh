@@ -11,6 +11,7 @@ DEBUG_MODE="${DEBUG_MODE:-0}"
 debug_log() {
     [ "$DEBUG_MODE" -eq 1 ] && echo "[DEBUG] $*" >> "$CONFIG_DIR/debug.log"
 }
+
 # =============================================================================
 # Package Management Architecture
 # =============================================================================
