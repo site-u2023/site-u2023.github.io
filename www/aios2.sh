@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1611"
+VERSION="R7.1215.1709"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1077,8 +1077,10 @@ cache_package_availability() {
             [ ! -s "$temp_response" ] && exit 1
             
             if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ] && [ "$feed" != "targets" ]; then
-                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | awk 'NF {print $0}' > "$temp_file"
+                # ✅ SNAPSHOT版（APK）: index.json からパッケージ名を抽出
+                grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
+                # リリース版（OPKG）: Packages ファイルからパッケージ名を抽出
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
@@ -1092,7 +1094,6 @@ cache_package_availability() {
     
     wait $pids
     
-    # ★ マージとソートを完全に静かに実行
     {
         for feed in $feeds; do
             local temp_file="$CONFIG_DIR/cache_${feed}.txt"
