@@ -766,6 +766,14 @@ init() {
         return 1
     fi
 
+    if [ -z "$PKG_CHANNEL" ]; then
+        if command -v apk >/dev/null 2>&1; then
+            PKG_CHANNEL="snapshot"
+        else
+            PKG_CHANNEL="release"
+        fi
+    fi
+
     # パッケージマネージャー設定読込（チャネル検出含む）
     load_package_manager_config || {
         echo "Fatal: Cannot load package manager configuration"
