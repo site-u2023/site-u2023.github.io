@@ -349,7 +349,7 @@ check_packages_installed() {
     [ -z "$MISSING_UI_PKGS" ]
 }
 
-load_package_manager_config() {
+XXX_load_package_manager_config() {
     local config_json="$CONFIG_DIR/package-manager.json"
     
     [ ! -f "$config_json" ] && return 1
@@ -401,6 +401,71 @@ load_package_manager_config() {
 
     # export
     export PKG_MGR PKG_EXT
+    export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE PKG_UPDATE_CMD PKG_UPGRADE_CMD
+    export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
+    export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
+    export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
+}
+
+load_package_manager_config() {
+    local config_json="$CONFIG_DIR/package-manager.json"
+    
+    [ ! -f "$config_json" ] && return 1
+    
+    # パッケージマネージャー検出
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Error: No supported package manager found" >&2
+        return 1
+    fi
+    
+    # ★ チャネル検出（release or snapshot）
+    if [ "$OPENWRT_VERSION" = "SNAPSHOT" ]; then
+        PKG_CHANNEL="snapshot"
+    else
+        PKG_CHANNEL="release"
+    fi
+    
+    debug_log "PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL"
+    
+    # 基本設定（パッケージマネージャー定義から）
+    PKG_EXT=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.ext")
+    PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps")
+    PKG_OPTION_FORCE_OVERWRITE=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.forceOverwrite")
+    PKG_OPTION_ALLOW_UNTRUSTED=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.options.allowUntrusted")
+    
+    # ★ URLテンプレート（チャネル定義から）
+    PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl")
+    PKG_TARGETS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.targetsIndexUrl")
+    PKG_KMODS_INDEX_BASE_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexBaseUrl")
+    PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl")
+    
+    # フィード設定（パッケージマネージャー定義から）
+    PKG_FEEDS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.feeds[*]" 2>/dev/null | xargs)
+    PKG_INCLUDE_TARGETS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.includeTargets" 2>/dev/null)
+    PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.includeKmods" 2>/dev/null)
+    
+    # コマンドテンプレート（パッケージマネージャー定義から）
+    local install_template remove_template update_template upgrade_template
+    install_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.installCommand")
+    remove_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.removeCommand")
+    update_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.updateCommand")
+    upgrade_template=$(jsonfilter -i "$config_json" -e "@.packageManagers.${PKG_MGR}.upgradeCommand")
+    
+    PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$install_template" \
+        "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED" \
+        "ignoreDeps" "$PKG_OPTION_IGNORE_DEPS" \
+        "forceOverwrite" "$PKG_OPTION_FORCE_OVERWRITE")
+    
+    PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$remove_template")
+    PKG_UPDATE_CMD=$(expand_template "$update_template")
+    PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
+
+    # export
+    export PKG_MGR PKG_CHANNEL PKG_EXT
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE PKG_UPDATE_CMD PKG_UPGRADE_CMD
     export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
     export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
@@ -518,7 +583,7 @@ XXX_init() {
     echo "[DEBUG] $(date): Init complete, all caches cleared (except $self_script)" >> "$CONFIG_DIR/debug.log"
 }
 
-init() {
+XXXXX_init() {
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
 
     mkdir -p "$CONFIG_DIR"
@@ -623,6 +688,111 @@ init() {
     echo "[DEBUG] $(date): Init complete (package-manager.json loaded)" >> "$CONFIG_DIR/debug.log"
 }
 
+init() {
+    local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
+
+    mkdir -p "$CONFIG_DIR"
+    mkdir -p "$BACKUP_DIR"
+
+    if [ -f "$LOCK_FILE" ]; then
+        local old_pid
+        old_pid=$(cat "$LOCK_FILE" 2>/dev/null)
+
+        if [ -n "$old_pid" ] && kill -0 "$old_pid" 2>/dev/null; then
+            echo "Another instance (PID: $old_pid) is running."
+            echo "Multiple instances can run simultaneously, but may overwrite each other's configuration."
+            printf "Continue anyway? (y/n): "
+            read -r answer
+            if [ "$answer" != "y" ] && [ "$answer" != "Y" ]; then
+                exit 1
+            fi
+        else
+            rm -f "$LOCK_FILE"
+        fi
+    fi
+
+    echo "$$" > "$LOCK_FILE"
+    trap "rm -f '$LOCK_FILE'" EXIT INT TERM
+
+    local self_script
+    self_script="$(basename "$0")"
+
+    rm -f "$CONFIG_DIR"/postinst.json \
+          "$CONFIG_DIR"/setup.json \
+          "$CONFIG_DIR"/customfeeds.json \
+          "$CONFIG_DIR"/customscripts.json \
+          "$CONFIG_DIR"/*.txt \
+          "$CONFIG_DIR"/debug.log 2>/dev/null
+
+    for file in "$CONFIG_DIR"/*.sh; do
+        [ -f "$file" ] || continue
+        [ "$(basename "$file")" = "$self_script" ] && continue
+        rm -f "$file"
+    done
+
+    load_config_from_js || {
+        echo "Fatal: Cannot load configuration"
+        return 1
+    }
+
+    if ! download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON"; then
+        echo "Fatal: Cannot download package-manager.json"
+        return 1
+    fi
+
+    # ★ OPENWRT_VERSION を先に取得（チャネル検出に必要）
+    if [ -f /etc/openwrt_release ]; then
+        OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+    fi
+    [ -z "$OPENWRT_VERSION" ] && OPENWRT_VERSION="SNAPSHOT"
+    export OPENWRT_VERSION
+
+    # パッケージマネージャー設定読込（チャネル検出含む）
+    load_package_manager_config || {
+        echo "Fatal: Cannot load package manager configuration"
+        return 1
+    }
+
+    # キャッシュ変数の完全初期化
+    unset _PACKAGE_NAME_CACHE
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _PACKAGE_COMPAT_CACHE
+    unset _CONDITIONAL_PACKAGES_CACHE
+    unset _CUSTOMFEED_CATEGORIES_CACHE
+    unset _CATEGORIES_CACHE
+    unset _SETUP_CATEGORIES_CACHE
+    unset _TRANSLATIONS_LOADED
+    unset _PACKAGE_AVAILABILITY_CACHE
+    unset _TRANSLATIONS_DATA
+    unset _TRANSLATIONS_EN_LOADED
+    unset _TRANSLATIONS_EN_DATA
+    unset _CURRENT_LANG
+    unset _CATEGORY_PACKAGES_CACHE
+
+    _PACKAGE_NAME_LOADED=0
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _PACKAGE_COMPAT_LOADED=0
+    _CONDITIONAL_PACKAGES_LOADED=0
+    _CUSTOMFEED_CATEGORIES_LOADED=0
+    _CATEGORIES_LOADED=0
+    _SETUP_CATEGORIES_LOADED=0
+    _PACKAGE_AVAILABILITY_LOADED=0
+    _CATEGORY_PACKAGES_LOADED=0
+
+    : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
+    : > "$SETUP_VARS"
+    : > "$CONFIG_DIR/debug.log"
+
+    download_postinst_json >/dev/null 2>&1
+    download_customfeeds_json >/dev/null 2>&1
+    build_package_name_cache >/dev/null 2>&1
+    build_category_packages_cache >/dev/null 2>&1
+    
+    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
+}
 
 # Language and Translation
 
