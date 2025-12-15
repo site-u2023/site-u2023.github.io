@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1346"
+VERSION="R7.1215.1410"
 
 # =============================================================================
 # Package Management Architecture
@@ -1115,68 +1115,101 @@ XXXXX_cache_package_availability() {
 }
 
 cache_package_availability() {
-    {
-        local version="$OPENWRT_VERSION"
-        local arch="$DEVICE_ARCH"
-        
-        if [ -z "$version" ] || [ -z "$arch" ]; then
-            return 1
-        fi
-        
-        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-        : > "$cache_file"
-        
-        # ★ 全フィード（telephony, community 追加）
-        local feeds="base packages luci routing telephony community"
-        local is_snapshot=0
-        echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
-        
-        local kernel_version=$(uname -r)
-        local kmod_dir
-        kmod_dir=$(get_kmods_directory "$version" "$DEVICE_VENDOR" "$DEVICE_SUBTARGET" "$kernel_version")
-        
-        [ -n "$kmod_dir" ] && feeds="$feeds kmods"
-        
-        local pids=""
-        for feed in $feeds; do
-            (
-                local url temp_file
-                temp_file="$CONFIG_DIR/cache_${feed}.txt"
-                
-                if [ "$feed" = "kmods" ]; then
-                    url="https://downloads.openwrt.org/releases/${version}/targets/${DEVICE_VENDOR}/${DEVICE_SUBTARGET}/kmods/${kmod_dir}/Packages"
-                elif [ $is_snapshot -eq 1 ]; then
-                    url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
-                else
-                    url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
-                fi
-                
-                local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-                wget -q -T 10 -O "$temp_response" "$url" 2>/dev/null || exit 1
-                
-                [ ! -s "$temp_response" ] && exit 1
-                
-                if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ]; then
-                    jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | awk 'NF {print $0}' > "$temp_file"
-                else
-                    awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
-                fi
-                
-                rm -f "$temp_response"
-            ) >/dev/null 2>&1 &
-            pids="$pids $!"
-        done
-        
-        wait $pids
-        
-        for feed in $feeds; do
-            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
-            rm -f "$temp_file"
-        done
-        
-        sort -u "$cache_file" -o "$cache_file"
-    } >/dev/null 2>&1
+    echo "[DEBUG] Building package availability cache..." >> "$CONFIG_DIR/debug.log"
+    
+    local version="$OPENWRT_VERSION"
+    local arch="$DEVICE_ARCH"
+    local vendor="$DEVICE_VENDOR"
+    local subtarget="$DEVICE_SUBTARGET"
+    
+    if [ -z "$version" ] || [ -z "$arch" ]; then
+        echo "[DEBUG] Missing version or arch" >> "$CONFIG_DIR/debug.log"
+        return 1
+    fi
+    
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+    : > "$cache_file"
+    
+    # ★ targets フィードを追加
+    local feeds="base packages luci routing telephony community targets"
+    local is_snapshot=0
+    echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
+    
+    # kmods 追加
+    local kernel_version=$(uname -r)
+    local kmod_dir
+    kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
+    
+    [ -n "$kmod_dir" ] && feeds="$feeds kmods"
+    
+    # 並列ダウンロード
+    local pids=""
+    for feed in $feeds; do
+        (
+            local url temp_file
+            temp_file="$CONFIG_DIR/cache_${feed}.txt"
+            
+            if [ "$feed" = "targets" ]; then
+                # ★ targets フィードの URL
+                url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
+            elif [ "$feed" = "kmods" ]; then
+                url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
+            elif [ $is_snapshot -eq 1 ]; then
+                url="https://downloads.openwrt.org/snapshots/packages/${arch}/${feed}/index.json"
+            else
+                url="https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/Packages"
+            fi
+            
+            echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
+            
+            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
+            if ! wget -q -T 10 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log"; then
+                echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
+                exit 1
+            fi
+            
+            if [ ! -s "$temp_response" ]; then
+                echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
+                exit 1
+            fi
+            
+            if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ] && [ "$feed" != "targets" ]; then
+                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
+                    awk 'NF {print $0}' > "$temp_file"
+            else
+                awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
+            fi
+            
+            rm -f "$temp_response"
+            
+            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
+            echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
+        ) &
+        pids="$pids $!"
+    done
+    
+    # 全プロセス完了を待つ
+    wait $pids
+    
+    # 結果をマージ
+    for feed in $feeds; do
+        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+        [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
+        rm -f "$temp_file"
+    done
+    
+    # 重複削除
+    sort -u "$cache_file" -o "$cache_file"
+    
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
+    echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
+    
+    # uqmi 確認
+    if grep -q "^uqmi$" "$cache_file"; then
+        echo "[DEBUG] uqmi found in cache" >> "$CONFIG_DIR/debug.log"
+    else
+        echo "[WARNING] uqmi NOT found in cache" >> "$CONFIG_DIR/debug.log"
+    fi
     
     return 0
 }
