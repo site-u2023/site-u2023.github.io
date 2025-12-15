@@ -349,7 +349,7 @@ check_packages_installed() {
     [ -z "$MISSING_UI_PKGS" ]
 }
 
-load_package_manager_config() {
+XXX_load_package_manager_config() {
     local config_json="$CONFIG_DIR/package-manager.json"
 
     [ ! -f "$config_json" ] && return 1
@@ -439,6 +439,140 @@ load_package_manager_config() {
     export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
 }
 
+XXXXX_load_package_manager_config() {
+    local config_json="$CONFIG_DIR/package-manager.json"
+
+    [ ! -f "$config_json" ] && return 1
+
+    # パッケージマネージャー検出
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Error: No supported package manager found" >&2
+        return 1
+    fi
+
+    debug_log "PKG_MGR detected: $PKG_MGR"
+    debug_log "PKG_CHANNEL: $PKG_CHANNEL"
+
+    # JSON を一度だけ読み込む
+    local CONFIG_DATA
+    CONFIG_DATA=$(cat "$config_json")
+
+    # packageManagers 配下
+    local PKG_MGR_JSON
+    PKG_MGR_JSON=$(echo "$CONFIG_DATA" | jsonfilter -e "@.packageManagers.${PKG_MGR}")
+
+    PKG_EXT=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.ext")
+    PKG_OPTION_IGNORE_DEPS=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.options.ignoreDeps")
+    PKG_OPTION_FORCE_OVERWRITE=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.options.forceOverwrite")
+    PKG_OPTION_ALLOW_UNTRUSTED=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.options.allowUntrusted")
+    PKG_FEEDS=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.feeds[*]" 2>/dev/null | xargs)
+    PKG_INCLUDE_TARGETS=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.includeTargets")
+    PKG_INCLUDE_KMODS=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.includeKmods")
+
+    # channels 配下（release / snapshot）
+    local CHANNEL_JSON
+    CHANNEL_JSON=$(echo "$CONFIG_DATA" | jsonfilter -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}")
+
+    PKG_PACKAGE_INDEX_URL=$(echo "$CHANNEL_JSON" | jsonfilter -e "@.packageIndexUrl")
+    PKG_TARGETS_INDEX_URL=$(echo "$CHANNEL_JSON" | jsonfilter -e "@.targetsIndexUrl")
+    PKG_KMODS_INDEX_BASE_URL=$(echo "$CHANNEL_JSON" | jsonfilter -e "@.kmodsIndexBaseUrl")
+    PKG_KMODS_INDEX_URL=$(echo "$CHANNEL_JSON" | jsonfilter -e "@.kmodsIndexUrl")
+
+    # コマンドテンプレート
+    local install_template remove_template update_template upgrade_template
+
+    install_template=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.installCommand")
+    remove_template=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.removeCommand")
+    update_template=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.updateCommand")
+    upgrade_template=$(echo "$PKG_MGR_JSON" | jsonfilter -e "@.upgradeCommand")
+
+    PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$install_template" "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED")
+    PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$remove_template")
+    PKG_UPDATE_CMD=$(expand_template "$update_template")
+    PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
+
+    export PKG_MGR PKG_EXT
+    export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
+    export PKG_UPDATE_CMD PKG_UPGRADE_CMD
+    export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
+    export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL
+    export PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
+    export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
+}
+
+load_package_manager_config() {
+    local config_json="$CONFIG_DIR/package-manager.json"
+
+    [ ! -f "$config_json" ] && return 1
+
+    # パッケージマネージャー検出
+    if command -v opkg >/dev/null 2>&1; then
+        PKG_MGR="opkg"
+    elif command -v apk >/dev/null 2>&1; then
+        PKG_MGR="apk"
+    else
+        echo "Error: No supported package manager found" >&2
+        return 1
+    fi
+
+    debug_log "PKG_MGR detected: $PKG_MGR"
+    debug_log "PKG_CHANNEL: $PKG_CHANNEL"
+
+    # jsonfilter で一括取得（改行区切り）
+    read -r PKG_EXT \
+             PKG_OPTION_IGNORE_DEPS \
+             PKG_OPTION_FORCE_OVERWRITE \
+             PKG_OPTION_ALLOW_UNTRUSTED \
+             PKG_FEEDS \
+             PKG_INCLUDE_TARGETS \
+             PKG_INCLUDE_KMODS \
+             PKG_PACKAGE_INDEX_URL \
+             PKG_TARGETS_INDEX_URL \
+             PKG_KMODS_INDEX_BASE_URL \
+             PKG_KMODS_INDEX_URL \
+             INSTALL_TEMPLATE \
+             REMOVE_TEMPLATE \
+             UPDATE_TEMPLATE \
+             UPGRADE_TEMPLATE <<EOF
+$(jsonfilter -i "$config_json" \
+    -e "@.packageManagers.${PKG_MGR}.ext" \
+    -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps" \
+    -e "@.packageManagers.${PKG_MGR}.options.forceOverwrite" \
+    -e "@.packageManagers.${PKG_MGR}.options.allowUntrusted" \
+    -e "@.packageManagers.${PKG_MGR}.feeds[*]" \
+    -e "@.packageManagers.${PKG_MGR}.includeTargets" \
+    -e "@.packageManagers.${PKG_MGR}.includeKmods" \
+    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl" \
+    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.targetsIndexUrl" \
+    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexBaseUrl" \
+    -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl" \
+    -e "@.packageManagers.${PKG_MGR}.installCommand" \
+    -e "@.packageManagers.${PKG_MGR}.removeCommand" \
+    -e "@.packageManagers.${PKG_MGR}.updateCommand" \
+    -e "@.packageManagers.${PKG_MGR}.upgradeCommand")
+EOF
+
+    # フィードの整形
+    PKG_FEEDS=$(echo "$PKG_FEEDS" | xargs)
+
+    # コマンドテンプレート展開
+    PKG_INSTALL_CMD_TEMPLATE=$(expand_template "$INSTALL_TEMPLATE" "allowUntrusted" "$PKG_OPTION_ALLOW_UNTRUSTED")
+    PKG_REMOVE_CMD_TEMPLATE=$(expand_template "$REMOVE_TEMPLATE")
+    PKG_UPDATE_CMD=$(expand_template "$UPDATE_TEMPLATE")
+    PKG_UPGRADE_CMD=$(expand_template "$UPGRADE_TEMPLATE")
+
+    export PKG_MGR PKG_EXT
+    export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
+    export PKG_UPDATE_CMD PKG_UPGRADE_CMD
+    export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
+    export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL
+    export PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
+    export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
+}
 
 install_package() {
     local package="$1"
