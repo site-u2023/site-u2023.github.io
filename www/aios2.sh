@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1410"
+VERSION="R7.1215.1417"
 
 # =============================================================================
 # Package Management Architecture
@@ -1130,19 +1130,16 @@ cache_package_availability() {
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     : > "$cache_file"
     
-    # ★ targets フィードを追加
     local feeds="base packages luci routing telephony community targets"
     local is_snapshot=0
     echo "$version" | grep -q "SNAPSHOT" && is_snapshot=1
     
-    # kmods 追加
     local kernel_version=$(uname -r)
     local kmod_dir
     kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
     
     [ -n "$kmod_dir" ] && feeds="$feeds kmods"
     
-    # 並列ダウンロード
     local pids=""
     for feed in $feeds; do
         (
@@ -1150,7 +1147,6 @@ cache_package_availability() {
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
             if [ "$feed" = "targets" ]; then
-                # ★ targets フィードの URL
                 url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/Packages"
             elif [ "$feed" = "kmods" ]; then
                 url="https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmod_dir}/Packages"
@@ -1163,19 +1159,12 @@ cache_package_availability() {
             echo "[DEBUG] Fetching $feed from $url" >> "$CONFIG_DIR/debug.log"
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-            if ! wget -q -T 10 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log"; then
-                echo "[DEBUG] Failed to fetch $feed" >> "$CONFIG_DIR/debug.log"
-                exit 1
-            fi
+            wget -q -T 10 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
             
-            if [ ! -s "$temp_response" ]; then
-                echo "[DEBUG] Empty response for $feed" >> "$CONFIG_DIR/debug.log"
-                exit 1
-            fi
+            [ ! -s "$temp_response" ] && exit 1
             
             if [ $is_snapshot -eq 1 ] && [ "$feed" != "kmods" ] && [ "$feed" != "targets" ]; then
-                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | \
-                    awk 'NF {print $0}' > "$temp_file"
+                jsonfilter -i "$temp_response" -e '@.packages[*].name' 2>/dev/null | awk 'NF {print $0}' > "$temp_file"
             else
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
@@ -1184,32 +1173,23 @@ cache_package_availability() {
             
             local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
             echo "[DEBUG] $feed: fetched $count packages" >> "$CONFIG_DIR/debug.log"
-        ) &
+        ) >/dev/null 2>&1 &
         pids="$pids $!"
     done
     
-    # 全プロセス完了を待つ
     wait $pids
     
-    # 結果をマージ
+    # ★ この部分を静かに実行
     for feed in $feeds; do
         local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-        [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
-        rm -f "$temp_file"
+        [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file" 2>/dev/null
+        rm -f "$temp_file" 2>/dev/null
     done
     
-    # 重複削除
-    sort -u "$cache_file" -o "$cache_file"
+    sort -u "$cache_file" -o "$cache_file" 2>/dev/null
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Cache built: $count packages total" >> "$CONFIG_DIR/debug.log"
-    
-    # uqmi 確認
-    if grep -q "^uqmi$" "$cache_file"; then
-        echo "[DEBUG] uqmi found in cache" >> "$CONFIG_DIR/debug.log"
-    else
-        echo "[WARNING] uqmi NOT found in cache" >> "$CONFIG_DIR/debug.log"
-    fi
     
     return 0
 }
