@@ -4,20 +4,20 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1215.1534"
+VERSION="R7.1215.1611"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
 debug_log() {
     [ "$DEBUG_MODE" -eq 1 ] && echo "[DEBUG] $*" >> "$CONFIG_DIR/debug.log"
 }
-
 # =============================================================================
 # Package Management Architecture
 # =============================================================================
 #
 # 【Package Cache Structure】
-# _PACKAGE_NAME_CACHE format:
+# 
+# 1. _PACKAGE_NAME_CACHE format:
 #   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked
 #
 # Field details:
@@ -32,10 +32,19 @@ debug_log() {
 #   9. reboot          - "true" if reboot required, "false" otherwise
 #  10. checked         - "true" if selected by default, "false" otherwise
 #
+# 2. _CATEGORY_PACKAGES_CACHE format:
+#   category_id|package_id_or_uniqueId
+#
 # Example:
-#   apache=htpasswd=htpasswd-from-apache=ignoreDeps=enable_htpasswd=libaprutil=false=false=false=false
-#   luci-app-ttyd=luci-app-ttyd====enable_ttyd==false=false=false=true
-#   docker=docker======true=false=false=false
+#   basic-system|luci-app-ttyd
+#   usb-storage|kmod-usb-storage-uas
+#
+# 【Cache Loading Strategy】
+# - Both caches are built on first access (lazy loading)
+# - Source: postinst.json + customfeeds.json
+# - After cache build, NO jsonfilter calls for package info
+# - All package queries use grep/awk on cached data
+# - Cache cleared only on init() or explicit clear_selection_cache()
 #
 # 【uniqueId Handling】
 # - If uniqueId exists: ALL checks use uniqueId (NOT id)
@@ -50,29 +59,7 @@ debug_log() {
 # 4. Dependent package (is_dependent=1) → display with indent
 # 5. Independent package (is_dependent=0) → execute hidden check
 #
-# 【hidden Attribute】
-# - hidden: true packages are ALWAYS hidden (both independent and dependent)
-# - NOT displayed even as dependent packages
-#
-# 【Package Availability Check】
-# check_package_available() verifies package existence in repository:
-# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, community, kmods
-# - Cache file: $CONFIG_DIR/pkg_availability_cache.txt (one package per line)
-# - Returns 0 (available) or 1 (not available)
-# - Exceptions:
-#   * virtual=true packages: always return 0 (skip check)
-#   * custom_feeds caller: always return 0 (skip check)
-#   * ALL other packages (including dependents): MUST pass availability check
-#
-# 【Package Installation Requirements】
-# postinst.json structure:
-# - **id**: Package name to install (e.g. "apache")
-# - **name**: Display name in UI (e.g. "htpasswd")
-# - **uniqueId**: Internal identifier for distinguishing multiple entries with same id
-#               (e.g. "htpasswd-from-apache")
-# =============================================================================
-# Package Display Rules
-# =============================================================================
+# 【Package Display Rules】
 # 
 # **dependencies Array**: Packages to select together in UI (parent-child relationship)
 #   - NOT related to opkg/apk dependencies
@@ -81,13 +68,31 @@ debug_log() {
 # 
 # **hidden Attribute**:
 #   - Independent packages: hidden=true → HIDDEN
-#   - Level 1 dependencies: hidden=true → SHOWN (ignored)
-#   - Level 2+ dependencies: hidden=true → HIDDEN
+#   - Level 1 dependencies (direct): hidden=true → SHOWN (ignored for UX)
+#   - Level 2+ dependencies (nested): hidden=true → HIDDEN
 # 
 # **Availability Check**:
-#   - virtual=true or custom_feeds: Skip check
-#   - Others: Must exist in repository
-# 
+#   - virtual=true: Skip check (always available)
+#   - custom_feeds: Skip check (always available)
+#   - Others: Must exist in repository (check_package_available)
+#
+# 【Package Availability Check】
+# check_package_available() verifies package existence in repository:
+# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, community, kmods
+# - Cache stored in memory: _PACKAGE_AVAILABILITY_CACHE
+# - Returns 0 (available) or 1 (not available)
+# - Exceptions:
+#   * virtual=true packages: always return 0 (skip check)
+#   * custom_feeds caller: always return 0 (skip check)
+#   * dependent packages: use caller="dependent" for check
+#   * ALL other packages: MUST pass availability check
+#
+# 【Package Installation Requirements】
+# postinst.json structure:
+# - **id**: Package name to install (e.g. "apache")
+# - **name**: Display name in UI (e.g. "htpasswd")
+# - **uniqueId**: Internal identifier for distinguishing multiple entries with same id
+#               (e.g. "htpasswd-from-apache")
 # =============================================================================
 
 SCRIPT_NAME=$(basename "$0")
