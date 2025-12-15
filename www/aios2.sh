@@ -422,16 +422,12 @@ load_package_manager_config() {
         return 1
     fi
 
-    # チャネル必須（release / snapshot）
-    if [ -z "$PKG_CHANNEL" ]; then
-        echo "Error: PKG_CHANNEL is not set" >&2
-        return 1
-    fi
-
     debug_log "PKG_MGR detected: $PKG_MGR"
-    debug_log "PKG_CHANNEL detected: $PKG_CHANNEL"
+    debug_log "PKG_CHANNEL: $PKG_CHANNEL"
 
-    # ===== packageManagers 基本設定 =====
+    #
+    # packageManagers 配下
+    #
     PKG_EXT=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.ext")
 
@@ -453,7 +449,9 @@ load_package_manager_config() {
     PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.includeKmods")
 
-    # ===== channels URL 設定 =====
+    #
+    # channels 配下（release / snapshot）
+    #
     PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" \
         -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl")
 
@@ -466,7 +464,9 @@ load_package_manager_config() {
     PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" \
         -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl")
 
-    # ===== コマンドテンプレート =====
+    #
+    # コマンドテンプレート
+    #
     local install_template remove_template update_template upgrade_template
 
     install_template=$(jsonfilter -i "$config_json" \
@@ -488,7 +488,7 @@ load_package_manager_config() {
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
 
-    export PKG_MGR PKG_CHANNEL PKG_EXT
+    export PKG_MGR PKG_EXT
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
     export PKG_UPDATE_CMD PKG_UPGRADE_CMD
     export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
@@ -496,6 +496,7 @@ load_package_manager_config() {
     export PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
     export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
 }
+
 
 install_package() {
     local package="$1"
