@@ -1005,7 +1005,7 @@ EOF
                     else
                         hidden_flag=$(echo "$entry" | cut -d= -f7)
                         # is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
+                        #     -e "@.categories[*].packages[@.uniqueId='$uid'].hidden" 2>/dev/null | head -1)
                     fi
                 else
                     if [ "$caller" = "custom_feeds" ]; then
@@ -1014,7 +1014,7 @@ EOF
                     else
                         hidden_flag=$(echo "$entry" | cut -d= -f7)
                         # is_hidden_entry=$(jsonfilter -i "$PACKAGES_JSON" \
-                            -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
+                        #     -e "@.categories[@.id='$cat_id'].packages[@.id='$pkg_id'].hidden" 2>/dev/null | head -1)
                     fi
                 fi
                 
