@@ -3935,7 +3935,6 @@ aios2_main() {
     # ========================================
     # Phase 5: 必須JSON完了を待機
     # ========================================
-    
     wait $SETUP_PID
     SETUP_STATUS=$?
     [ $SETUP_STATUS -ne 0 ] && {
@@ -3958,30 +3957,7 @@ aios2_main() {
     wait $API_PID $UI_DL_PID
     
     # ========================================
-    # Phase 6: 必須JSON完了を待機
-    # ========================================
-    
-    # SETUP_PIDとPOSTINST_PIDは個別にエラーチェック
-    wait $SETUP_PID
-    SETUP_STATUS=$?
-    [ $SETUP_STATUS -ne 0 ] && {
-        echo "Cannot continue without setup.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    wait $POSTINST_PID
-    POSTINST_STATUS=$?
-    [ $POSTINST_STATUS -ne 0 ] && {
-        echo "Cannot continue without postinst.json"
-        printf "Press [Enter] to exit. "
-        read -r _
-        return 1
-    }
-    
-    # ========================================
-    # Phase 7: デバイス情報取得（API情報で上書き・補完）
+    # Phase 6: デバイス情報取得（API情報で上書き・補完）
     # DEVICE_TARGET, OPENWRT_VERSIONをここで設定
     # ========================================
     get_extended_device_info
@@ -4005,14 +3981,14 @@ aios2_main() {
     echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
-    # Phase 8: パッケージ存在確認キャッシュ構築
+    # Phase 7: パッケージ存在確認キャッシュ構築
     # 変数が揃った後に実行
     # ========================================
     cache_package_availability &
     CACHE_PKG_PID=$!
     
     # ========================================
-    # Phase 9: 残りのバックグラウンド処理完了を待機（並列）
+    # Phase 8: 残りのバックグラウンド処理完了を待機（並列）
     # ========================================
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
     
@@ -4033,7 +4009,7 @@ aios2_main() {
     fi
     
     # ========================================
-    # Phase 10: UIモジュール起動
+    # Phase 9: UIモジュール起動
     # ========================================
     # 母国語ファイル完了を待機
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
