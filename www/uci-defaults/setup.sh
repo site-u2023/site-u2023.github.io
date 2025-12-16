@@ -408,12 +408,9 @@ fi
         cat > "$agh_yaml" << 'AGHEOF'
 http:
   address: 0.0.0.0:{{WEB_PORT}}
-  session_ttl: 720h
 users:
   - name: {{AGH_USER}}
     password: {{AGH_HASH}}
-auth_attempts: 5
-block_auth_min: 15
 dns:
   port: {{DNS_PORT}}
   refuse_any: true
@@ -437,13 +434,8 @@ dns:
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
   upstream_mode: parallel
-  cache_size: 1048576
-  enable_dnssec: false
-  use_private_ptr_resolvers: true
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
-tls:
-  enabled: false
 filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
@@ -453,11 +445,6 @@ filters:
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
     id: 2
-dhcp:
-  enabled: false
-filtering:
-  parental_enabled: false
-  safebrowsing_enabled: false
 log:
   file: ""
 schema_version: 29
