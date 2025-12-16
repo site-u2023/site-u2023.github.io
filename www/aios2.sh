@@ -1906,7 +1906,6 @@ custom_script_options() {
     local parent_breadcrumb="$2"
     local script_name breadcrumb
     local options filtered_options
-    local min_mem rec_mem min_flash rec_flash msg
     
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb} > ${script_name}"
@@ -1933,9 +1932,6 @@ custom_script_options() {
             return 1
         fi
     fi
-
-    # テンプレートを読み込んで変数を取得
-    . "$template_path"
     
     options=$(get_customscript_options "$script_id")
     
@@ -1967,21 +1963,6 @@ EOF
     # インストールオプションがある場合のみリソースチェック
     if [ "$has_install_option" -eq 1 ]; then
         if ! check_script_requirements "$script_id"; then
-            min_mem="${MINIMUM_MEM}"
-            rec_mem="${RECOMMENDED_MEM}"
-            min_flash="${MINIMUM_FLASH}"
-            rec_flash="${RECOMMENDED_FLASH}"
-            
-            msg="$(translate 'tr-tui-customscript-resource-check')
-
-$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available')
-  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
-$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available')
-  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB
-
-$(translate 'tr-tui-customscript-resource-ng')"
-            
-            show_msgbox "$breadcrumb" "$msg"
             return 0
         fi
     fi
@@ -2373,13 +2354,20 @@ collect_script_inputs() {
 check_script_requirements() {
     local script_id="$1"
     
+    # JSONからリソース要件を取得
+    local min_mem rec_mem min_flash rec_flash
+    min_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.minMemory" 2>/dev/null)
+    rec_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.recommendedMemory" 2>/dev/null)
+    min_flash=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.minFlash" 2>/dev/null)
+    rec_flash=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.recommendedFlash" 2>/dev/null)
+    
     local msg="$(translate 'tr-tui-customscript-resource-check')
 $(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${MINIMUM_MEM}MB / $(translate 'tr-tui-customscript-recommended'): ${RECOMMENDED_MEM}MB
+  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
 $(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${MINIMUM_FLASH}MB / $(translate 'tr-tui-customscript-recommended'): ${RECOMMENDED_FLASH}MB"
+  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB"
     
-    if [ "$MEM_FREE_MB" -lt "$MINIMUM_MEM" ] || [ "$FLASH_FREE_MB" -lt "$MINIMUM_FLASH" ]; then
+    if [ "$MEM_FREE_MB" -lt "$min_mem" ] || [ "$FLASH_FREE_MB" -lt "$min_flash" ]; then
         msg="${msg}
 
 $(translate 'tr-tui-customscript-resource-ng')"
