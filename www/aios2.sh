@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1457"
+VERSION="R7.1216.1504"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1576,12 +1576,11 @@ initialize_installed_packages() {
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
-    # インストール済みパッケージキャッシュが未構築なら構築
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
     
     local count=0
     
-    # キャッシュから全パッケージをチェック
+    # 通常パッケージ
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
@@ -1589,9 +1588,7 @@ initialize_installed_packages() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # デバイスにインストールされているか確認
         if is_package_installed "$pkg_id"; then
-            # 既に選択済みかチェック
             local already_selected=0
             
             if [ -n "$uid" ]; then
@@ -1610,7 +1607,6 @@ initialize_installed_packages() {
                 count=$((count + 1))
                 echo "[INIT] Found installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
                 
-                # enableVar追加
                 local enable_var
                 enable_var=$(get_package_enablevar "$pkg_id" "$uid")
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
@@ -1621,6 +1617,29 @@ initialize_installed_packages() {
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
+    
+    # ★★★ カスタムフィードパッケージ ★★★
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        for cat_id in $(get_customfeed_categories); do
+            for pkg_id in $(get_category_packages "$cat_id"); do
+                local pattern exclude installed_pkgs
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                
+                [ -z "$installed_pkgs" ] && continue
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_CUSTOM_PACKAGES"
+                    count=$((count + 1))
+                    echo "[INIT] Found installed custom: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                fi
+            done
+        done
+    fi
     
     echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
@@ -4368,7 +4387,7 @@ aios2_main() {
     initialize_installed_packages
 
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-    
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
