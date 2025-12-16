@@ -2085,7 +2085,7 @@ get_customscript_input_hidden() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1
 }
 
-# is_adguardhome_installed() {
+XXX_is_adguardhome_installed() {
     /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || \
     /usr/bin/AdGuardHome --version >/dev/null 2>&1
 }
