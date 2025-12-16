@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.2226"
+VERSION="R7.1216.2250"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3467,6 +3467,43 @@ EOF2
     echo "$remove_list" | xargs
 }
 
+# ========================================
+# 削除リスト展開（言語パッケージを先に追加）
+# ========================================
+expand_remove_list() {
+    local packages="$1"
+    local lang_packages=""
+    local result=""
+    
+    for pkg in $packages; do
+        local base_name=""
+        case "$pkg" in
+            luci-app-*)   base_name="${pkg#luci-app-}" ;;
+            luci-proto-*) base_name="${pkg#luci-proto-}" ;;
+            luci-theme-*) base_name="${pkg#luci-theme-}" ;;
+            luci-mod-*)   base_name="${pkg#luci-mod-}" ;;
+        esac
+        
+        if [ -n "$base_name" ]; then
+            local found_lang=""
+            if [ "$PKG_MGR" = "apk" ]; then
+                found_lang=$(apk info 2>/dev/null | grep "^luci-i18n-${base_name}-")
+            else
+                found_lang=$(opkg list-installed 2>/dev/null | awk '{print $1}' | grep "^luci-i18n-${base_name}-")
+            fi
+            if [ -n "$found_lang" ]; then
+                lang_packages="$lang_packages $found_lang"
+                echo "[DEBUG] Found lang package for $pkg: $found_lang" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+        
+        result="$result $pkg"
+    done
+    
+    # 言語パッケージを先、本体を後
+    echo "$lang_packages $result" | tr -s ' ' | sed 's/^ //;s/ $//'
+}
+
 # 削除スクリプト生成
 generate_remove_script() {
     local packages_to_remove="$1"
@@ -3477,26 +3514,29 @@ generate_remove_script() {
         return 0
     }
     
-    echo "[DEBUG] Generating remove script for: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Original packages to remove: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
+    
+    # 言語パッケージを展開（逆順削除）
+    local expanded_packages
+    expanded_packages=$(expand_remove_list "$packages_to_remove")
+    
+    echo "[DEBUG] Expanded packages (with lang): $expanded_packages" >> "$CONFIG_DIR/debug.log"
     
     local remove_cmd
-    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$packages_to_remove")
+    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$expanded_packages")
     
     cat > "$output_file" <<'REMOVE_EOF'
 #!/bin/sh
 # Auto-generated package removal script
-
 echo "========================================="
 echo "Removing unselected packages..."
 echo "========================================="
 echo ""
-
 REMOVE_EOF
     
     echo "${remove_cmd}" >> "$output_file"
     
     cat >> "$output_file" <<'REMOVE_EOF'
-
 echo ""
 echo "========================================="
 echo "Package removal completed."
