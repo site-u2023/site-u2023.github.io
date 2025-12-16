@@ -2213,7 +2213,15 @@ EOF
             ' "$yaml_file"
             ;;
         web_port)
-            awk '/^bind_port:/ {print $2; exit}' "$yaml_file"
+            awk '
+            /^http:/ { in_http=1; next }
+            in_http && /^[^ ]/ { exit }
+            in_http && /^  address:/ {
+                split($2, parts, ":")
+                print parts[2]
+                exit
+            }
+            ' "$yaml_file"
             ;;
     esac
 }
