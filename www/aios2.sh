@@ -393,6 +393,9 @@ load_package_manager_config() {
     PKG_INCLUDE_KMODS=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.includeKmods")
 
+    PKG_LIST_INSTALLED_CMD=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.listInstalledCommand")
+
     #
     # channels 配下（release / snapshot）
     #
@@ -439,6 +442,7 @@ load_package_manager_config() {
     export PKG_PACKAGE_INDEX_URL PKG_TARGETS_INDEX_URL
     export PKG_KMODS_INDEX_BASE_URL PKG_KMODS_INDEX_URL
     export PKG_FEEDS PKG_INCLUDE_TARGETS PKG_INCLUDE_KMODS
+    export PKG_LIST_INSTALLED_CMD
 }
 
 install_package() {
@@ -1550,11 +1554,7 @@ cache_installed_packages() {
     
     echo "[DEBUG] Building installed packages cache..." >> "$CONFIG_DIR/debug.log"
     
-    if [ "$PKG_MGR" = "opkg" ]; then
-        _INSTALLED_PACKAGES_CACHE=$(opkg list-installed | awk '{print $1}')
-    elif [ "$PKG_MGR" = "apk" ]; then
-        _INSTALLED_PACKAGES_CACHE=$(apk info 2>/dev/null)
-    fi
+    _INSTALLED_PACKAGES_CACHE=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null)
     
     _INSTALLED_PACKAGES_LOADED=1
     
