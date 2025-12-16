@@ -84,7 +84,6 @@ firewall_wan() {
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
 }
-
 [ -n "${enable_diag}" ] && {
     SEC=luci
     SET diag=diag
