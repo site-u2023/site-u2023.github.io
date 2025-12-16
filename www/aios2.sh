@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1614"
+VERSION="R7.1216.1626"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1634,12 +1634,6 @@ initialize_installed_packages() {
                 echo "$cache_line" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
                 echo "[INIT] Found installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
-                
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "$uid")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                fi
             fi
         fi
     done <<EOF
