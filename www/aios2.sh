@@ -4504,11 +4504,12 @@ aios2_main() {
     # ========================================
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
-    
-    initialize_installed_packages
 
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    
+    initialize_installed_packages
+    
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
