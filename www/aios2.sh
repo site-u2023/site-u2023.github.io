@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1719"
+VERSION="R7.1216.1748"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4134,6 +4134,177 @@ INITIAL_CUSTOM
         fi
         
         # カスタムスクリプト
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local script_id script_name
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            script_name=$(get_customscript_name "$script_id")
+            [ -z "$script_name" ] && script_name="$script_id"
+            
+            printf "🔴 %s: %s\n\n" "$tr_customscripts" "$script_name"
+            cat "$var_file"
+            echo ""
+            has_content=1
+        done
+        
+        if [ "$has_content" -eq 0 ]; then
+            echo "$(translate 'tr-tui-no-config')"
+        fi
+    } > "$summary_file"
+    
+    echo "$summary_file"
+}
+
+generate_lightweight_summary() {
+    local summary_file="$CONFIG_DIR/config_summary_light.txt"
+    local tr_packages tr_customfeeds tr_variables tr_customscripts
+    local has_content=0
+    
+    tr_packages=$(translate "tr-tui-summary-packages")
+    tr_customfeeds=$(translate "tr-tui-summary-customfeeds")
+    tr_variables=$(translate "tr-tui-summary-variables")
+    tr_customscripts=$(translate "tr-tui-summary-customscripts")
+    
+    {
+        # スナップショットをメモリにロード（1回のみ）
+        local initial_packages=""
+        local initial_custom=""
+        
+        if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+            initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
+        fi
+        
+        if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
+            initial_custom=$(cat "$CONFIG_DIR/custom_packages_initial_snapshot.txt")
+        fi
+        
+        # ========================================
+        # パッケージ変更（メモリ内処理のみ）
+        # ========================================
+        local install_list=""
+        local remove_list=""
+        
+        if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
+            local current_packages
+            current_packages=$(cat "$SELECTED_PACKAGES")
+            
+            # 追加されるパッケージ
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                local pkg_id uid
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                uid=$(echo "$cache_line" | cut -d= -f3)
+                
+                local found=0
+                if [ -n "$uid" ]; then
+                    echo "$initial_packages" | grep -q "=${uid}=" && found=1
+                else
+                    echo "$initial_packages" | grep -q "^${pkg_id}=" && found=1
+                fi
+                
+                if [ "$found" -eq 0 ]; then
+                    install_list="${install_list}install ${pkg_id}
+"
+                fi
+            done <<EOF
+$current_packages
+EOF
+            
+            # 削除されるパッケージ
+            if [ -n "$initial_packages" ]; then
+                while read -r cache_line; do
+                    [ -z "$cache_line" ] && continue
+                    local pkg_id uid
+                    pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                    uid=$(echo "$cache_line" | cut -d= -f3)
+                    
+                    local still_selected=0
+                    if [ -n "$uid" ]; then
+                        echo "$current_packages" | grep -q "=${uid}=" && still_selected=1
+                    else
+                        echo "$current_packages" | grep -q "^${pkg_id}=" && still_selected=1
+                    fi
+                    
+                    if [ "$still_selected" -eq 0 ]; then
+                        remove_list="${remove_list}remove ${pkg_id}
+"
+                    fi
+                done <<INITIAL
+$initial_packages
+INITIAL
+            fi
+        fi
+        
+        # パッケージ変更がある場合のみ表示
+        if [ -n "$install_list" ] || [ -n "$remove_list" ]; then
+            printf "🔵 %s\n\n" "$tr_packages"
+            [ -n "$install_list" ] && echo "$install_list"
+            [ -n "$remove_list" ] && echo "$remove_list"
+            echo ""
+            has_content=1
+        fi
+        
+        # ========================================
+        # カスタムフィード変更
+        # ========================================
+        local custom_install=""
+        local custom_remove=""
+        
+        # 追加されるカスタムフィード
+        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            local current_custom
+            current_custom=$(cat "$SELECTED_CUSTOM_PACKAGES")
+            
+            while read -r cache_line; do
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                if ! echo "$initial_custom" | grep -q "^${pkg_id}="; then
+                    custom_install="${custom_install}install ${pkg_id}
+"
+                fi
+            done <<EOF
+$current_custom
+EOF
+        fi
+        
+        # 削除されるカスタムフィード
+        if [ -n "$initial_custom" ]; then
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    custom_remove="${custom_remove}remove ${pkg_id}
+"
+                fi
+            done <<INITIAL_CUSTOM
+$initial_custom
+INITIAL_CUSTOM
+        fi
+        
+        # カスタムフィード変更がある場合のみ表示
+        if [ -n "$custom_install" ] || [ -n "$custom_remove" ]; then
+            printf "🟢 %s\n\n" "$tr_customfeeds"
+            [ -n "$custom_install" ] && echo "$custom_install"
+            [ -n "$custom_remove" ] && echo "$custom_remove"
+            echo ""
+            has_content=1
+        fi
+        
+        # ========================================
+        # 設定変数
+        # ========================================
+        if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+            printf "🟡 %s\n\n" "$tr_variables"
+            cat "$SETUP_VARS"
+            echo ""
+            has_content=1
+        fi
+        
+        # ========================================
+        # カスタムスクリプト
+        # ========================================
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
