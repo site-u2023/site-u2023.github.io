@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.2135"
+VERSION="R7.1216.2226"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3880,6 +3880,11 @@ SCRIPTS
         echo "[DEBUG] No packages to remove" >> "$CONFIG_DIR/debug.log"
     fi
 
+    # ========================================
+    # Phase 7: 実行計画ファイルの生成
+    # ========================================
+    generate_execution_plan
+
     # キャッシュクリア
     clear_selection_cache
 }
@@ -4381,6 +4386,81 @@ XXX_generate_config_summary() {
     } > "$summary_file"
     
     echo "$summary_file"
+}
+
+# generate_files() の末尾に追加する関数
+# ========================================
+# Phase 7: 実行計画ファイルの生成
+# ========================================
+generate_execution_plan() {
+    local plan_file="$CONFIG_DIR/execution_plan.sh"
+    
+    local has_remove=0
+    local has_install=0
+    local has_customfeeds=0
+    local has_setup=0
+    local has_customscripts=0
+    local needs_update=0
+    
+    # 削除対象チェック
+    if [ -f "$CONFIG_DIR/remove.sh" ] && [ -s "$CONFIG_DIR/remove.sh" ]; then
+        has_remove=1
+        echo "[PLAN] has_remove=1" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # インストール対象チェック（postinst.sh の INSTALL_CMD）
+    if [ -f "$CONFIG_DIR/postinst.sh" ]; then
+        local install_cmd
+        install_cmd=$(grep '^INSTALL_CMD=' "$CONFIG_DIR/postinst.sh" 2>/dev/null | cut -d'"' -f2)
+        if [ -n "$install_cmd" ]; then
+            has_install=1
+            needs_update=1
+            echo "[PLAN] has_install=1 (INSTALL_CMD=$install_cmd)" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+    
+    # カスタムフィードチェック（customfeeds-*.sh の PACKAGES）
+    for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+        [ -f "$script" ] || continue
+        [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+        
+        local packages_value
+        packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
+        if [ -n "$packages_value" ]; then
+            has_customfeeds=1
+            needs_update=1
+            echo "[PLAN] has_customfeeds=1 ($(basename "$script"): $packages_value)" >> "$CONFIG_DIR/debug.log"
+            break
+        fi
+    done
+    
+    # 設定チェック（SETUP_VARS が空でないか）
+    if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+        has_setup=1
+        echo "[PLAN] has_setup=1" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # カスタムスクリプトチェック（script_vars_*.txt が存在するか）
+    for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+        if [ -f "$var_file" ]; then
+            has_customscripts=1
+            echo "[PLAN] has_customscripts=1 ($(basename "$var_file"))" >> "$CONFIG_DIR/debug.log"
+            break
+        fi
+    done
+    
+    # 実行計画ファイル出力
+    cat > "$plan_file" <<PLAN_EOF
+# Execution Plan - Auto-generated
+HAS_REMOVE=$has_remove
+HAS_INSTALL=$has_install
+HAS_CUSTOMFEEDS=$has_customfeeds
+HAS_SETUP=$has_setup
+HAS_CUSTOMSCRIPTS=$has_customscripts
+NEEDS_UPDATE=$needs_update
+PLAN_EOF
+    
+    echo "[PLAN] Execution plan generated: $plan_file" >> "$CONFIG_DIR/debug.log"
 }
 
 generate_config_summary() {
