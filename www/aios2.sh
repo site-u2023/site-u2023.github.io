@@ -3405,27 +3405,47 @@ generate_files() {
 
     : > "$temp_enablevars"
     
-    # ========================================
-    # Phase 1: インストール対象パッケージの抽出
-    # （既存のインストール済みパッケージを除外）
+# ========================================
+    # Phase 1: インストール対象パッケージの抽出（初期スナップショットとの差分）
     # ========================================
     local install_packages_content=""
     local packages_to_install=""
+    
+    # 初期スナップショットをロード
+    local initial_packages=""
+    if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+        initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
+    fi
     
     if [ -s "$SELECTED_PACKAGES" ]; then
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
             
-            local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            local pkg_id uid
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            uid=$(echo "$cache_line" | cut -d= -f3)
             
-            # インストール済みパッケージはスキップ
-            if is_package_installed "$pkg_id"; then
-                echo "[INFO] Skipping already installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
-                continue
+            # スナップショットに存在するかチェック
+            local in_snapshot=0
+            if [ -n "$initial_packages" ]; then
+                if [ -n "$uid" ]; then
+                    if echo "$initial_packages" | grep -q "=${uid}="; then
+                        in_snapshot=1
+                    fi
+                else
+                    if echo "$initial_packages" | grep -q "^${pkg_id}="; then
+                        in_snapshot=1
+                    fi
+                fi
             fi
             
-            packages_to_install="${packages_to_install}${cache_line}
+            # スナップショットに存在しない = 新規インストール対象
+            if [ "$in_snapshot" -eq 0 ]; then
+                packages_to_install="${packages_to_install}${cache_line}
 "
+            else
+                echo "[INFO] Skipping already installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            fi
         done < "$SELECTED_PACKAGES"
         
         # enableVar処理（全選択パッケージ対象）
@@ -3864,58 +3884,108 @@ generate_config_summary() {
     
     {
         # ========================================
-        # パッケージ変更
+        # パッケージ変更（差分のみ表示）
         # ========================================
         local install_list=""
         local remove_list=""
         
-        # 追加されるパッケージ
+        # 初期スナップショットをメモリにロード
+        local initial_packages=""
+        if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+            initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
+        fi
+        
+        # 追加されるパッケージ（スナップショットに存在しない）
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             while read -r cache_line; do
-                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                local pkg_id uid
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                uid=$(echo "$cache_line" | cut -d= -f3)
                 
-                # 初期スナップショットに存在しない = 追加
-                if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
-                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null; then
-                        install_list="${install_list}install ${pkg_id}
-"
+                # スナップショット内検索
+                local found=0
+                if [ -n "$uid" ]; then
+                    # uniqueIdで検索
+                    if echo "$initial_packages" | grep -q "=${uid}="; then
+                        found=1
                     fi
                 else
+                    # idで検索（uniqueIdが空）
+                    if echo "$initial_packages" | grep -q "^${pkg_id}="; then
+                        found=1
+                    fi
+                fi
+                
+                # スナップショットに存在しない = 新規追加
+                if [ "$found" -eq 0 ]; then
                     install_list="${install_list}install ${pkg_id}
 "
                 fi
             done < "$SELECTED_PACKAGES"
         fi
         
-        # 削除されるパッケージ
-        local removed_packages=$(detect_packages_to_remove)
-        if [ -n "$removed_packages" ]; then
-            for pkg in $removed_packages; do
-                remove_list="${remove_list}remove ${pkg}
+        # 削除されるパッケージ（スナップショットに存在するが現在は選択されていない）
+        if [ -n "$initial_packages" ]; then
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                
+                local pkg_id uid
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                uid=$(echo "$cache_line" | cut -d= -f3)
+                
+                # 現在の選択リスト内検索
+                local still_selected=0
+                if [ -n "$uid" ]; then
+                    if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                        still_selected=1
+                    fi
+                else
+                    if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                        still_selected=1
+                    fi
+                fi
+                
+                # 選択されていない = 削除対象
+                if [ "$still_selected" -eq 0 ]; then
+                    remove_list="${remove_list}remove ${pkg_id}
 "
-            done
+                fi
+            done <<INITIAL
+$initial_packages
+INITIAL
         fi
         
         # パッケージ変更がある場合のみ表示
         if [ -n "$install_list" ] || [ -n "$remove_list" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
-            
-            if [ -n "$install_list" ]; then
-                echo "$install_list"
-            fi
-            
-            if [ -n "$remove_list" ]; then
-                echo "$remove_list"
-            fi
-            
+            [ -n "$install_list" ] && echo "$install_list"
+            [ -n "$remove_list" ] && echo "$remove_list"
             echo ""
             has_content=1
         fi
         
-        # カスタムフィード
+        # カスタムフィード（同様に差分検出）
+        local custom_install=""
+        local initial_custom=""
+        
+        if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
+            initial_custom=$(cat "$CONFIG_DIR/custom_packages_initial_snapshot.txt")
+        fi
+        
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            while read -r cache_line; do
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                # スナップショットに存在しない = 新規追加
+                if ! echo "$initial_custom" | grep -q "^${pkg_id}="; then
+                    custom_install="${custom_install}${pkg_id} "
+                fi
+            done < "$SELECTED_CUSTOM_PACKAGES"
+        fi
+        
+        if [ -n "$custom_install" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
-            cut -d= -f1 "$SELECTED_CUSTOM_PACKAGES"
+            echo "$custom_install"
             echo ""
             has_content=1
         fi
@@ -3927,49 +3997,27 @@ generate_config_summary() {
             echo ""
             has_content=1
         fi
-
-        # カスタムフィードで選択されたパッケージ
-        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-            local custom_changes=""
-            while read -r cache_line; do
-                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                # 初期スナップショットに存在しない = 追加
-                if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
-                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
-                        custom_changes="${custom_changes}${pkg_id} "
-                    fi
-                else
-                    custom_changes="${custom_changes}${pkg_id} "
-                fi
-            done < "$SELECTED_CUSTOM_PACKAGES"
-            if [ -n "$custom_changes" ]; then
-                printf "🟢 %s\n\n" "$tr_customfeeds"
-                echo "$custom_changes"
-                echo ""
-                has_content=1
-            fi
-        fi
-       
+        
         # カスタムスクリプト
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
-           
+            
             local script_id script_name
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             script_name=$(get_customscript_name "$script_id")
             [ -z "$script_name" ] && script_name="$script_id"
-           
-            printf "🔴 %s\n\n" "$tr_customscripts"
+            
+            printf "🔴 %s: %s\n\n" "$tr_customscripts" "$script_name"
             cat "$var_file"
             echo ""
             has_content=1
         done
-       
+        
         if [ "$has_content" -eq 0 ]; then
             echo "$(translate 'tr-tui-no-config')"
         fi
     } > "$summary_file"
-   
+    
     echo "$summary_file"
 }
 
