@@ -3725,7 +3725,7 @@ SCRIPTS
     clear_selection_cache
 }
 
-generate_config_summary() {
+OLD_generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
     local has_content=0
@@ -3821,6 +3821,127 @@ generate_config_summary() {
         fi
     } > "$summary_file"
     
+    echo "$summary_file"
+}
+
+generate_config_summary() {
+    local summary_file="$CONFIG_DIR/config_summary.txt"
+    local tr_packages tr_customfeeds tr_variables tr_customscripts
+    local has_content=0
+    
+    tr_packages=$(translate "tr-tui-summary-packages")
+    tr_customfeeds=$(translate "tr-tui-summary-customfeeds")
+    tr_variables=$(translate "tr-tui-summary-variables")
+    tr_customscripts=$(translate "tr-tui-summary-customscripts")
+    
+    {
+        # ========================================
+        # パッケージ変更
+        # ========================================
+        local install_list=""
+        local remove_list=""
+        
+        # 追加されるパッケージ
+        if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
+            while read -r cache_line; do
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                # 初期スナップショットに存在しない = 追加
+                if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null; then
+                        install_list="${install_list}install ${pkg_id}
+"
+                    fi
+                else
+                    install_list="${install_list}install ${pkg_id}
+"
+                fi
+            done < "$SELECTED_PACKAGES"
+        fi
+        
+        # 削除されるパッケージ
+        local removed_packages=$(detect_packages_to_remove)
+        if [ -n "$removed_packages" ]; then
+            for pkg in $removed_packages; do
+                remove_list="${remove_list}remove ${pkg}
+"
+            done
+        fi
+        
+        # パッケージ変更がある場合のみ表示
+        if [ -n "$install_list" ] || [ -n "$remove_list" ]; then
+            printf "🔵 %s\n\n" "$tr_packages"
+            
+            if [ -n "$install_list" ]; then
+                echo "$install_list"
+            fi
+            
+            if [ -n "$remove_list" ]; then
+                echo "$remove_list"
+            fi
+            
+            echo ""
+            has_content=1
+        fi
+        
+        # カスタムフィード
+        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            printf "🟢 %s\n\n" "$tr_customfeeds"
+            cut -d= -f1 "$SELECTED_CUSTOM_PACKAGES"
+            echo ""
+            has_content=1
+        fi
+        
+        # 設定変数
+        if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
+            printf "🟡 %s\n\n" "$tr_variables"
+            cat "$SETUP_VARS"
+            echo ""
+            has_content=1
+        fi
+
+        # カスタムフィードで選択されたパッケージ
+        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            local custom_changes=""
+            while read -r cache_line; do
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                # 初期スナップショットに存在しない = 追加
+                if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
+                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
+                        custom_changes="${custom_changes}${pkg_id} "
+                    fi
+                else
+                    custom_changes="${custom_changes}${pkg_id} "
+                fi
+            done < "$SELECTED_CUSTOM_PACKAGES"
+            if [ -n "$custom_changes" ]; then
+                printf "🟢 %s\n\n" "$tr_customfeeds"
+                echo "$custom_changes"
+                echo ""
+                has_content=1
+            fi
+        fi
+       
+        # カスタムスクリプト
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+           
+            local script_id script_name
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            script_name=$(get_customscript_name "$script_id")
+            [ -z "$script_name" ] && script_name="$script_id"
+           
+            printf "🔴 %s\n\n" "$tr_customscripts"
+            cat "$var_file"
+            echo ""
+            has_content=1
+        done
+       
+        if [ "$has_content" -eq 0 ]; then
+            echo "$(translate 'tr-tui-no-config')"
+        fi
+    } > "$summary_file"
+   
     echo "$summary_file"
 }
 
