@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1214"
+VERSION="R7.1216.1424"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3207,9 +3207,37 @@ SCRIPTS
     fi
 }
 
-detect_packages_to_remove() {
-    : > "$CONFIG_DIR/packages_to_remove.txt"
+# カスタムフィードのインストール状態チェック
+is_customfeed_installed() {
+    local pattern="$1"
+    local exclude="$2"
     
+    local installed_list=""
+    
+    if [ "$PKG_MGR" = "opkg" ]; then
+        if [ -n "$exclude" ]; then
+            installed_list=$(opkg list-installed | grep "^${pattern}" | grep -v "$exclude" | awk '{print $1}')
+        else
+            installed_list=$(opkg list-installed | grep "^${pattern}" | awk '{print $1}')
+        fi
+    elif [ "$PKG_MGR" = "apk" ]; then
+        if [ -n "$exclude" ]; then
+            installed_list=$(apk info | grep "^${pattern}" | grep -v "$exclude")
+        else
+            installed_list=$(apk info | grep "^${pattern}")
+        fi
+    fi
+    
+    echo "$installed_list"
+}
+
+# 削除対象パッケージ検出
+detect_packages_to_remove() {
+    local remove_list=""
+    
+    echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
+    
+    # 通常パッケージ
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
@@ -3217,10 +3245,8 @@ detect_packages_to_remove() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # インストール済みでない場合はスキップ
         is_package_installed "$pkg_id" || continue
         
-        # 選択リストにあるかチェック
         local still_selected=0
         if [ -n "$uid" ]; then
             if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
@@ -3233,14 +3259,83 @@ detect_packages_to_remove() {
             fi
         fi
         
-        # 選択されていなければアンインストール対象
         if [ "$still_selected" -eq 0 ]; then
-            echo "$pkg_id" >> "$CONFIG_DIR/packages_to_remove.txt"
+            remove_list="${remove_list}${pkg_id} "
             echo "[REMOVE] Marked for removal: $pkg_id" >> "$CONFIG_DIR/debug.log"
         fi
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
+    
+    # カスタムフィード
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        for cat_id in $(get_customfeed_categories); do
+            for pkg_id in $(get_category_packages "$cat_id"); do
+                local pattern exclude
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                local installed_pkgs
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                
+                [ -z "$installed_pkgs" ] && continue
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    while read -r installed_pkg; do
+                        [ -z "$installed_pkg" ] && continue
+                        remove_list="${remove_list}${installed_pkg} "
+                        echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                    done <<EOF2
+$installed_pkgs
+EOF2
+                fi
+            done
+        done
+    fi
+    
+    echo "$remove_list" | xargs
+}
+
+# 削除スクリプト生成
+generate_remove_script() {
+    local packages_to_remove="$1"
+    local output_file="$CONFIG_DIR/remove.sh"
+    
+    [ -z "$packages_to_remove" ] && {
+        echo "[DEBUG] No packages to remove" >> "$CONFIG_DIR/debug.log"
+        return 0
+    }
+    
+    echo "[DEBUG] Generating remove script for: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
+    
+    local remove_cmd
+    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$packages_to_remove")
+    
+    cat > "$output_file" <<'REMOVE_EOF'
+#!/bin/sh
+# Auto-generated package removal script
+
+echo "========================================="
+echo "Removing unselected packages..."
+echo "========================================="
+echo ""
+
+REMOVE_EOF
+    
+    echo "${remove_cmd}" >> "$output_file"
+    
+    cat >> "$output_file" <<'REMOVE_EOF'
+
+echo ""
+echo "========================================="
+echo "Package removal completed."
+echo "========================================="
+REMOVE_EOF
+    
+    chmod +x "$output_file"
+    echo "[DEBUG] Remove script generated: $output_file" >> "$CONFIG_DIR/debug.log"
 }
 
 generate_files() {
@@ -3251,11 +3346,36 @@ generate_files() {
 
     : > "$temp_enablevars"
     
-    local selected_packages_content=""
+    # ========================================
+    # Phase 1: インストール対象パッケージの抽出
+    # （既存のインストール済みパッケージを除外）
+    # ========================================
+    local install_packages_content=""
+    local packages_to_install=""
+    
     if [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
+            local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            
+            # インストール済みパッケージはスキップ
+            if is_package_installed "$pkg_id"; then
+                echo "[INFO] Skipping already installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            packages_to_install="${packages_to_install}${cache_line}
+"
+        done < "$SELECTED_PACKAGES"
+        
+        # enableVar処理（全選択パッケージ対象）
+        local selected_packages_content
         selected_packages_content=$(cat "$SELECTED_PACKAGES")
         
         while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
             local pkg_id unique_id enable_var
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             unique_id=$(echo "$cache_line" | cut -d= -f3)
@@ -3270,16 +3390,22 @@ $selected_packages_content
 EOF
         
         [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
+        install_packages_content="$packages_to_install"
     fi
     rm -f "$temp_enablevars"
     
+    # ========================================
+    # Phase 2: postinst.sh生成（未インストールパッケージのみ）
+    # ========================================
     fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
     
     if [ -f "$TPL_POSTINST" ]; then
-        if [ -n "$selected_packages_content" ]; then
+        if [ -n "$install_packages_content" ]; then
             local id_opts_list=""
             
             while IFS='=' read -r pkg_id _name _unique install_opts _enablevar; do
+                [ -z "$pkg_id" ] && continue
+                
                 local install_opts_value=""
                 if [ -n "$install_opts" ]; then
                     install_opts_value=$(convert_install_option "$install_opts")
@@ -3288,7 +3414,7 @@ EOF
                 id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
 "
             done <<EOF
-$selected_packages_content
+$install_packages_content
 EOF
             
             local final_list=""
@@ -3341,7 +3467,12 @@ EOF
             
             local install_cmd=""
             pkgs=$(echo "$final_list" | xargs)
-            install_cmd=$(echo "$PKG_INSTALL_CMD_TEMPLATE" | sed "s|{package}|$pkgs|g" | sed "s|{allowUntrusted}||g" | sed 's/  */ /g')
+            
+            if [ -n "$pkgs" ]; then
+                install_cmd=$(expand_template "$PKG_INSTALL_CMD_TEMPLATE" "package" "$pkgs")
+                # allowUntrustedプレースホルダーを削除
+                install_cmd=$(echo "$install_cmd" | sed 's/{allowUntrusted}//g' | sed 's/  */ /g')
+            fi
         else
             pkgs=""
             install_cmd=""
@@ -3363,6 +3494,9 @@ EOF
         chmod +x "$CONFIG_DIR/postinst.sh"
     fi
     
+    # ========================================
+    # Phase 3: setup.sh生成
+    # ========================================
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
     
     if [ -f "$TPL_SETUP" ]; then
@@ -3387,6 +3521,9 @@ EOF
         chmod +x "$CONFIG_DIR/setup.sh"
     fi
     
+    # ========================================
+    # Phase 4: customfeedsスクリプト生成（並列）
+    # ========================================
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         local pids=""
         local categories_list
@@ -3474,7 +3611,6 @@ CATEOF
 $category_packages
 EOF4
         
-        # エラーハンドリング
         for pid in $pids; do
             if ! wait $pid; then
                 failed_pids="$failed_pids $pid"
@@ -3495,6 +3631,9 @@ EOF4
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
 
+    # ========================================
+    # Phase 5: customscriptsスクリプト生成
+    # ========================================
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
         while read -r script_id; do
             script_file=$(get_customscript_file "$script_id")
@@ -3526,7 +3665,6 @@ EOF4
                     echo ""
                     echo "${script_id}_main -t"
                 
-                    # 実行後にクリーンアップ
                     echo ""
                     echo "# Cleanup after execution"
                     echo "rm -f \"$CONFIG_DIR/script_vars_${script_id}.txt\""
@@ -3541,9 +3679,19 @@ SCRIPTS
         echo "[DEBUG] customscripts generation completed" >> "$CONFIG_DIR/debug.log"
     fi
 
-    clear_selection_cache
+    # ========================================
+    # Phase 6: 削除対象パッケージの検出と削除スクリプト生成
+    # ========================================
+    local packages_to_remove=$(detect_packages_to_remove)
+    
+    if [ -n "$packages_to_remove" ]; then
+        generate_remove_script "$packages_to_remove"
+    else
+        echo "[DEBUG] No packages to remove" >> "$CONFIG_DIR/debug.log"
+    fi
 
-    detect_packages_to_remove
+    # キャッシュクリア
+    clear_selection_cache
 }
 
 generate_config_summary() {
