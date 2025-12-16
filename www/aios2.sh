@@ -3469,18 +3469,15 @@ generate_files() {
     : > "$temp_enablevars"
     
     # ========================================
-    # Phase 1: インストール対象パッケージの抽出（初期スナップショットとの差分）
+    # Phase 1: インストール対象パッケージの抽出（現在のインストール状態との比較）
     # ========================================
     local install_packages_content=""
     local packages_to_install=""
     
-    # 初期スナップショットをロード
-    local initial_packages=""
-    if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
-        initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
-    fi
-    
     if [ -s "$SELECTED_PACKAGES" ]; then
+        # 現在インストールされているパッケージキャッシュをロード
+        [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+        
         # 新規インストール対象パッケージの抽出
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
@@ -3489,24 +3486,11 @@ generate_files() {
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             uid=$(echo "$cache_line" | cut -d= -f3)
             
-            # スナップショットに存在するかチェック
-            local in_snapshot=0
-            if [ -n "$initial_packages" ]; then
-                if [ -n "$uid" ]; then
-                    if echo "$initial_packages" | grep -q "=${uid}="; then
-                        in_snapshot=1
-                    fi
-                else
-                    if echo "$initial_packages" | grep -q "^${pkg_id}="; then
-                        in_snapshot=1
-                    fi
-                fi
-            fi
-            
-            # スナップショットに存在しない = 新規インストール対象
-            if [ "$in_snapshot" -eq 0 ]; then
+            # 現在インストールされているかチェック
+            if ! is_package_installed "$pkg_id"; then
                 packages_to_install="${packages_to_install}${cache_line}
 "
+                echo "[INFO] New install: $pkg_id" >> "$CONFIG_DIR/debug.log"
             else
                 echo "[INFO] Skipping already installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
             fi
