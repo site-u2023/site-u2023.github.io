@@ -1570,9 +1570,8 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-    echo "[DEBUG] Detecting installed packages..." >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Initializing default packages..." >> "$CONFIG_DIR/debug.log"
     
-    # パッケージ名キャッシュが必要
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
@@ -1586,18 +1585,8 @@ initialize_installed_packages() {
         uid=$(echo "$cache_line" | cut -d= -f3)
         checked_flag=$(echo "$cache_line" | cut -d= -f10)
         
-        # インストール済みかチェック
-        local should_select=0
-        if is_package_installed "$pkg_id"; then
-            should_select=1
-            echo "[INIT] Installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
-        elif [ "$checked_flag" = "true" ]; then
-            should_select=1
-            echo "[INIT] Checked by default: $pkg_id" >> "$CONFIG_DIR/debug.log"
-        fi
-        
-        # 選択対象の場合、SELECTED_PACKAGESに追加
-        if [ "$should_select" -eq 1 ]; then
+        # checked=true のパッケージのみ選択
+        if [ "$checked_flag" = "true" ]; then
             local already_selected=0
             
             if [ -n "$uid" ]; then
@@ -1614,6 +1603,14 @@ initialize_installed_packages() {
             if [ "$already_selected" -eq 0 ]; then
                 echo "$cache_line" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
+                echo "[INIT] Checked by default: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                
+                # enableVar追加
+                local enable_var
+                enable_var=$(get_package_enablevar "$pkg_id" "")
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                fi
             fi
         fi
     done <<EOF
