@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1710"
+VERSION="R7.1216.1719"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4075,28 +4075,52 @@ INITIAL
             has_content=1
         fi
         
-        # カスタムフィード（同様に差分検出）
+        # ========================================
+        # カスタムフィード変更（差分検出）
+        # ========================================
         local custom_install=""
+        local custom_remove=""
         local initial_custom=""
         
         if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
             initial_custom=$(cat "$CONFIG_DIR/custom_packages_initial_snapshot.txt")
         fi
         
+        # 追加されるカスタムフィード
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             while read -r cache_line; do
                 local pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 
                 # スナップショットに存在しない = 新規追加
                 if ! echo "$initial_custom" | grep -q "^${pkg_id}="; then
-                    custom_install="${custom_install}${pkg_id} "
+                    custom_install="${custom_install}install ${pkg_id}
+"
                 fi
             done < "$SELECTED_CUSTOM_PACKAGES"
         fi
         
-        if [ -n "$custom_install" ]; then
+        # 削除されるカスタムフィード
+        if [ -n "$initial_custom" ]; then
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                # 現在の選択リスト内検索
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    custom_remove="${custom_remove}remove ${pkg_id}
+"
+                fi
+            done <<INITIAL_CUSTOM
+$initial_custom
+INITIAL_CUSTOM
+        fi
+        
+        # カスタムフィード変更がある場合のみ表示
+        if [ -n "$custom_install" ] || [ -n "$custom_remove" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
-            echo "$custom_install"
+            [ -n "$custom_install" ] && echo "$custom_install"
+            [ -n "$custom_remove" ] && echo "$custom_remove"
             echo ""
             has_content=1
         fi
