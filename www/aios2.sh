@@ -4690,10 +4690,6 @@ aios2_main() {
     # ========================================
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
-
-    if [ ! -f "$CONFIG_DIR/installed_packages_cache.txt" ]; then
-        echo "[ERROR] Installed packages cache file not found" >> "$CONFIG_DIR/debug.log"
-    fi
     
     initialize_installed_packages
 
