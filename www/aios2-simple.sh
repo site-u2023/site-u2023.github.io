@@ -339,7 +339,7 @@ EOF
     done
 }
 
-review_and_apply() {
+OLD_review_and_apply() {
     local need_fetch=0
     
     [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
@@ -483,6 +483,192 @@ EOF
         clear_selection_cache
         
         # 3. カスタムスクリプト関連のキャッシュもリア
+        unset _CUSTOMSCRIPT_CACHE
+        unset _CUSTOMSCRIPT_LOADED
+        
+        echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
+        
+        echo ""
+        
+        # エラー表示
+        if [ "$failed_count" -gt 0 ]; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
+
+Warning: $failed_count script(s) failed:
+$failed_scripts"
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+        fi
+    fi
+    
+    return 0
+}
+
+review_and_apply() {
+    local need_fetch=0
+    
+    [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
+    [ ! -f "$TPL_SETUP" ] || [ ! -s "$TPL_SETUP" ] && need_fetch=1
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ] && [ "$need_fetch" -eq 0 ]; then
+        while read -r cat_id; do
+            local template_url tpl_custom
+            template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -n "$template_url" ]; then
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                if [ ! -f "$tpl_custom" ] || [ ! -s "$tpl_custom" ]; then
+                    need_fetch=1
+                    break
+                fi
+            fi
+        done <<EOF
+$(get_customfeed_categories)
+EOF
+    fi
+    
+    if [ "$need_fetch" -eq 1 ]; then
+        echo "[DEBUG] Fetching missing templates..." >> "$CONFIG_DIR/debug.log"
+        prefetch_templates
+    else
+        echo "[DEBUG] All templates already cached" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    generate_files
+    
+    local tr_main_menu tr_review breadcrumb
+    local summary_file
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+    
+    summary_file=$(generate_config_summary)
+    
+    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ] || grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
+        return 0
+    fi
+    
+    show_menu_header "$breadcrumb"
+    cat "$summary_file"
+    echo ""
+    echo "----------------------------------------"
+    
+    if show_yesno "$breadcrumb" "🟣 $(translate 'tr-tui-apply-confirm-question')"; then
+        echo "$(translate 'tr-tui-creating-backup')"
+        if ! create_backup "before_apply"; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+            return 1
+        fi
+        
+        clear
+        
+        # パッケージマネージャーのアップデート
+        update_package_manager
+        
+        # 失敗カウンタ
+        local failed_count=0
+        local failed_scripts=""
+        
+        # パッケージアンインストール
+        if [ -f "$CONFIG_DIR/packages_to_remove.txt" ] && [ -s "$CONFIG_DIR/packages_to_remove.txt" ]; then
+            echo ""
+            echo "$(translate 'tr-tui-removing-packages')"
+            
+            while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                
+                local remove_cmd
+                remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$pkg_id")
+                
+                echo "Removing: $pkg_id"
+                eval "$remove_cmd"
+                
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}remove-${pkg_id} "
+                fi
+            done < "$CONFIG_DIR/packages_to_remove.txt"
+        fi
+        
+        # パッケージインストール
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            echo "$(translate 'tr-tui-installing-packages')"
+            sh "$CONFIG_DIR/postinst.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}postinst.sh "
+            fi
+        fi
+        
+        # カスタムフィードパッケージインストール
+        local has_custom_packages=0
+        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+            [ -f "$script" ] || continue
+            [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+            
+            if grep -q '^PACKAGES=' "$script" && [ -n "$(grep '^PACKAGES=' "$script" | cut -d'"' -f2)" ]; then
+                if [ "$has_custom_packages" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-packages')"
+                    has_custom_packages=1
+                fi
+                
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
+            fi
+        done
+        
+        # システム設定適用
+        if [ -s "$SETUP_VARS" ]; then
+            echo ""
+            echo "$(translate 'tr-tui-applying-config')"
+            sh "$CONFIG_DIR/setup.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}setup.sh "
+            fi
+        fi
+        
+        # カスタムスクリプト実行
+        local has_custom_scripts=0
+        for script in "$CONFIG_DIR"/customscripts-*.sh; do
+            [ -f "$script" ] || continue
+            
+            script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
+            
+            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                if [ "$has_custom_scripts" -eq 0 ]; then
+                    echo ""
+                    echo "$(translate 'tr-tui-installing-custom-scripts')"
+                    has_custom_scripts=1
+                fi
+                
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
+            fi
+        done
+        
+        # スクリプト実行後のクリーンアップ 
+        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
+        
+        # 1. ファイルベースのキャッシュを削除
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        rm -f "$CONFIG_DIR"/customscripts-*.sh
+        rm -f "$CONFIG_DIR"/temp_*.txt
+        rm -f "$CONFIG_DIR"/*_snapshot*.txt
+        
+        # 2. メモリキャッシュをクリア
+        clear_selection_cache
+        
+        # 3. カスタムスクリプト関連のキャッシュもクリア
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
         
