@@ -1853,11 +1853,7 @@ EOF
         # ========================================
         # 2. パッケージマネージャー更新（インストール対象がある場合のみ）
         # ========================================
-        if [ "$NEEDS_UPDATE" -eq 1 ]; then
-            echo ""
-            echo "Updating package database..."
-            update_package_manager
-        fi
+        update_package_manager
         
         # ========================================
         # 3. パッケージインストール
