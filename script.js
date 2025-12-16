@@ -18,7 +18,7 @@ const DEFAULT_SERVICES = {
     luci: { name: 'LuCI', port: '80', protocol: 'http' },
     ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
     filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
-    adguard: { name: 'AdGuardHome', port: '3000', protocol: 'http' }
+    adguard: { name: 'AdGuardHome', port: '8000', protocol: 'http' }
 };
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
 const AIOS_URL2 = 'https://site-u.pages.dev/www/aios2.sh';
