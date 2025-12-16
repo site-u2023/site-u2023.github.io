@@ -4586,7 +4586,10 @@ aios2_main() {
     fi
     
     initialize_installed_packages
-    
+
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
