@@ -190,6 +190,7 @@
     "tr-tui-auto-config-applied": "自動設定を適用しました！",
     "tr-tui-use-auto-config": "この自動検出された設定を使用しますか？",
     "tr-tui-removing-packages": "パッケージを削除中...",
+    "tr-tui-removal-completed": "パッケージの削除が完了しました",
     "tr-tui-package-removal-failed": "パッケージの削除に失敗しました",
     
     "tr-tui-space-toggle": "スペース=切替",
