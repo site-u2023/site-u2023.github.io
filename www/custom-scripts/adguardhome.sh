@@ -104,10 +104,10 @@ DEFAULT_DNS_BACKUP_PORT="54"
 # Requirements
 # =============================================================================
 
-export MINIMUM_MEM="20"
-export MINIMUM_FLASH="25"
-export RECOMMENDED_MEM="50"
-export RECOMMENDED_FLASH="100"
+MINIMUM_MEM="20"
+MINIMUM_FLASH="25"
+RECOMMENDED_MEM="50"
+RECOMMENDED_FLASH="100"
 
 # =============================================================================
 # Package Name Definitions
