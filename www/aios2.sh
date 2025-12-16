@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1448"
+VERSION="R7.1216.1457"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4366,6 +4366,8 @@ aios2_main() {
     unset CACHE_INSTALLED_PID
     
     initialize_installed_packages
+
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     
     # ========================================
     # Phase 10: UIモジュール起動
