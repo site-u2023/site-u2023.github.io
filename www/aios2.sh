@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1504"
+VERSION="R7.1216.1512"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1553,7 +1553,7 @@ cache_installed_packages() {
     if [ "$PKG_MGR" = "opkg" ]; then
         _INSTALLED_PACKAGES_CACHE=$(opkg list-installed | awk '{print $1}')
     elif [ "$PKG_MGR" = "apk" ]; then
-        _INSTALLED_PACKAGES_CACHE=$(apk info -e 2>/dev/null)
+        _INSTALLED_PACKAGES_CACHE=$(apk info 2>/dev/null)
     fi
     
     _INSTALLED_PACKAGES_LOADED=1
