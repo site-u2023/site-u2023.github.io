@@ -2181,11 +2181,13 @@ EOF
     echo "$filtered" | grep -v '^$'
 }
 
-get_adguardhome_current_user() {
+get_adguardhome_yaml_value() {
+    local field="$1"  # "username" or "web_port"
+    local script_id="adguardhome"
     local yaml_file=""
+    local paths
     
-    # JSONから既知のパスを取得してチェック
-    local paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='adguardhome'].yamlPaths[*]" 2>/dev/null)
+    paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].yamlPaths[*]" 2>/dev/null)
     
     while read -r path; do
         [ -z "$path" ] && continue
@@ -2199,15 +2201,21 @@ EOF
     
     [ -z "$yaml_file" ] && return 1
     
-    # ユーザー名抽出
-    awk '
-    /^users:/ { in_users=1; next }
-    in_users && /^[^ ]/ { exit }
-    in_users && $1 == "-" && $2 == "name:" {
-        print $3
-        exit
-    }
-    ' "$yaml_file"
+    case "$field" in
+        username)
+            awk '
+            /^users:/ { in_users=1; next }
+            in_users && /^[^ ]/ { exit }
+            in_users && $1 == "-" && $2 == "name:" {
+                print $3
+                exit
+            }
+            ' "$yaml_file"
+            ;;
+        web_port)
+            awk '/^bind_port:/ {print $2; exit}' "$yaml_file"
+            ;;
+    esac
 }
 
 validate_input_value() {
@@ -2295,10 +2303,19 @@ collect_script_inputs() {
             fi
         fi
         
-        if [ "$script_id" = "adguardhome" ] && [ "$input_envvar" = "AGH_USER" ]; then
-            local current_user
-            current_user=$(get_adguardhome_current_user)
-            [ -n "$current_user" ] && input_default="$current_user"
+        if [ "$script_id" = "adguardhome" ]; then
+            case "$input_envvar" in
+                AGH_USER)
+                    local current_user
+                    current_user=$(get_adguardhome_yaml_value "username")
+                    [ -n "$current_user" ] && input_default="$current_user"
+                    ;;
+                WEB_PORT)
+                    local current_port
+                    current_port=$(get_adguardhome_yaml_value "web_port")
+                    [ -n "$current_port" ] && input_default="$current_port"
+                    ;;
+            esac
         fi
         
         if [ "$input_envvar" = "LAN_ADDR" ] && [ -n "$LAN_ADDR" ]; then
