@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.0207"
+VERSION="R7.1216.0903"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -2462,116 +2462,6 @@ EOF
     return 1
 }
 
-XXX_auto_add_conditional_packages() {
-    local cat_id="$1"
-    local effective_conn_type
-    
-    echo "[DEBUG] === auto_add_conditional_packages called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    effective_conn_type=$(get_effective_connection_type)
-    echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
-    
-    # 初回のみキャッシュ構築
-    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(
-            # wifi_mode (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|wifi_mode|${when_val}"
-            fi
-            
-            # connection_type (配列)
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
-            
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                echo "$values" | while read -r val; do
-                    [ -z "$val" ] && continue
-                    echo "${pkg_id}|connection_type|${val}"
-                done
-            done
-        )
-        _CONDITIONAL_PACKAGES_LOADED=1
-        echo "[DEBUG] Conditional packages cache built:" >> "$CONFIG_DIR/debug.log"
-        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    # キャッシュから処理
-    while IFS='|' read -r pkg_id when_var expected; do
-        [ -z "$pkg_id" ] && continue
-        
-        echo "[DEBUG] Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
-        
-        # 現在値取得（SETUP_VARSから直接）
-        local current_val
-        current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        
-        echo "[DEBUG] current_val=$current_val" >> "$CONFIG_DIR/debug.log"
-        
-        # 条件判定
-        local should_add=0
-        if [ "$current_val" = "$expected" ]; then
-            should_add=1
-            echo "[DEBUG] Match found!" >> "$CONFIG_DIR/debug.log"
-        fi
-        
-        # パッケージ追加/削除
-        if [ "$should_add" -eq 1 ]; then
-            if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_PACKAGES"
-                echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
-                
-                # enableVar追加
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Added enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-        else
-            # 削除する前に他の条件でマッチしないか確認
-            local has_other_match=0
-            while IFS='|' read -r check_pkg check_var check_val; do
-                [ "$check_pkg" != "$pkg_id" ] && continue
-                [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
-                
-                local check_current
-                check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                
-                if [ "$check_current" = "$check_val" ]; then
-                    has_other_match=1
-                    break
-                fi
-            done <<CHECK
-$_CONDITIONAL_PACKAGES_CACHE
-CHECK
-            
-            if [ "$has_other_match" -eq 0 ]; then
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
-                    echo "[AUTO] Removed package: $pkg_id (no matching conditions)" >> "$CONFIG_DIR/debug.log"
-                    
-                    # enableVar削除
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                        echo "[DEBUG] Removed enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
-                    fi
-                fi
-            fi
-        fi
-    done <<EOF
-$_CONDITIONAL_PACKAGES_CACHE
-EOF
-    
-    echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
-}
-
 auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
@@ -2714,7 +2604,40 @@ get_section_nested_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
 }
 
-# ラジオボタングループの排他変数クリーンアップ（汎用）
+# aios2.shに追加
+auto_cleanup_conditional_variables() {
+    local cat_id="$1"
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
+    
+    # 実効接続タイプを取得
+    local effective_conn_type
+    effective_conn_type=$(get_effective_connection_type)
+    echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
+    
+    # connection_type の exclusiveVars を使ってクリーンアップ
+    cleanup_radio_group_exclusive_vars "connection-type" "$effective_conn_type"
+    
+    # カテゴリ内の他のアイテムも処理
+    for item_id in $(get_setup_category_items "$cat_id"); do
+        local item_type
+        item_type=$(get_setup_item_type "$item_id")
+        
+        if [ "$item_type" = "section" ]; then
+            local nested_items
+            nested_items=$(get_section_nested_items "$item_id")
+            for nested_id in $nested_items; do
+                check_and_cleanup_variable "$nested_id" "$effective_conn_type"
+            done
+        else
+            check_and_cleanup_variable "$item_id" "$effective_conn_type"
+        fi
+    done
+    
+    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+# cleanup_radio_group_exclusive_vars を拡張（既存のものを置き換え）
 cleanup_radio_group_exclusive_vars() {
     local item_id="$1"
     local current_value="$2"
@@ -2727,7 +2650,6 @@ cleanup_radio_group_exclusive_vars() {
     has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
     
     if [ -z "$has_exclusive" ]; then
-        # ネストされた項目もチェック
         has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
     fi
     
@@ -2742,8 +2664,7 @@ cleanup_radio_group_exclusive_vars() {
     options=$(get_setup_item_options "$item_id")
     
     while read -r option_value; do
-        [ -z "$option_value" ] && continue
-        [ "$option_value" = "___EMPTY___" ] && continue
+        [ -z "$option_value" ] || [ "$option_value" = "___EMPTY___" ] && continue
         
         # このオプションに紐づく変数リスト
         local vars_json
@@ -2775,357 +2696,6 @@ $all_exclusive_vars
 EOF
     
     echo "[DEBUG] === cleanup_radio_group_exclusive_vars finished ===" >> "$CONFIG_DIR/debug.log"
-}
-
-XXX_auto_cleanup_conditional_variables() {
-    local cat_id="$1"
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    # connection_type='auto' の場合、internet-connection カテゴリはスキップ
-    local conn_type
-    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    if [ "$conn_type" = "auto" ] && [ "$cat_id" = "internet-connection" ]; then
-        echo "[DEBUG] Skipping cleanup for internet-connection (connection_type=auto)" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    # カテゴリ内の全アイテムをスキャン
-    for item_id in $(get_setup_category_items "$cat_id"); do
-        local item_type
-        item_type=$(get_setup_item_type "$item_id")
-        
-        # section の中もチェック
-        if [ "$item_type" = "section" ]; then
-            local nested_items
-            nested_items=$(get_section_nested_items "$item_id")
-            for nested_id in $nested_items; do
-                check_and_cleanup_variable "$nested_id"
-            done
-        else
-            check_and_cleanup_variable "$item_id"
-        fi
-    done
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
-}
-
-XXXXX_auto_cleanup_conditional_variables() {
-    local cat_id="$1"
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    # ★★★ connection_type='auto' の特別処理 ★★★
-    local conn_type effective_conn_type
-    conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    if [ "$conn_type" = "auto" ]; then
-        effective_conn_type=$(get_effective_connection_type)
-        echo "[DEBUG] connection_type='auto', effective='$effective_conn_type'" >> "$CONFIG_DIR/debug.log"
-        
-        # 実効値以外の接続タイプ変数を全削除
-        case "$effective_conn_type" in
-            mape)
-                # DS-Lite変数を削除
-                sed -i '/^dslite_aftr_type=/d' "$SETUP_VARS"
-                sed -i '/^dslite_jurisdiction=/d' "$SETUP_VARS"
-                sed -i '/^dslite_aftr_address=/d' "$SETUP_VARS"
-                # PPPoE変数を削除
-                sed -i '/^pppoe_username=/d' "$SETUP_VARS"
-                sed -i '/^pppoe_password=/d' "$SETUP_VARS"
-                # AP変数を削除
-                sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
-                sed -i '/^ap_gateway=/d' "$SETUP_VARS"
-                echo "[AUTO] Removed non-mape variables (effective: mape)" >> "$CONFIG_DIR/debug.log"
-                ;;
-            dslite)
-                # MAP-E変数を削除
-                sed -i '/^mape_type=/d' "$SETUP_VARS"
-                sed -i '/^mape_gua_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_br=/d' "$SETUP_VARS"
-                sed -i '/^mape_ealen=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv4_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv4_prefixlen=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv6_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv6_prefixlen=/d' "$SETUP_VARS"
-                sed -i '/^mape_psid_offset=/d' "$SETUP_VARS"
-                sed -i '/^mape_psidlen=/d' "$SETUP_VARS"
-                # PPPoE変数を削除
-                sed -i '/^pppoe_username=/d' "$SETUP_VARS"
-                sed -i '/^pppoe_password=/d' "$SETUP_VARS"
-                # AP変数を削除
-                sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
-                sed -i '/^ap_gateway=/d' "$SETUP_VARS"
-                echo "[AUTO] Removed non-dslite variables (effective: dslite)" >> "$CONFIG_DIR/debug.log"
-                ;;
-            dhcp|pppoe|ap)
-                # MAP-E変数を削除
-                sed -i '/^mape_type=/d' "$SETUP_VARS"
-                sed -i '/^mape_gua_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_br=/d' "$SETUP_VARS"
-                sed -i '/^mape_ealen=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv4_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv4_prefixlen=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv6_prefix=/d' "$SETUP_VARS"
-                sed -i '/^mape_ipv6_prefixlen=/d' "$SETUP_VARS"
-                sed -i '/^mape_psid_offset=/d' "$SETUP_VARS"
-                sed -i '/^mape_psidlen=/d' "$SETUP_VARS"
-                # DS-Lite変数を削除
-                sed -i '/^dslite_aftr_type=/d' "$SETUP_VARS"
-                sed -i '/^dslite_jurisdiction=/d' "$SETUP_VARS"
-                sed -i '/^dslite_aftr_address=/d' "$SETUP_VARS"
-                # PPPoE変数を削除（dhcpの場合）
-                [ "$effective_conn_type" = "dhcp" ] && {
-                    sed -i '/^pppoe_username=/d' "$SETUP_VARS"
-                    sed -i '/^pppoe_password=/d' "$SETUP_VARS"
-                    sed -i '/^ap_ip_address=/d' "$SETUP_VARS"
-                    sed -i '/^ap_gateway=/d' "$SETUP_VARS"
-                }
-                echo "[AUTO] Removed transition tech variables (effective: $effective_conn_type)" >> "$CONFIG_DIR/debug.log"
-                ;;
-        esac
-    fi
-    
-    # 既存のカテゴリ内アイテムスキャン処理
-    for item_id in $(get_setup_category_items "$cat_id"); do
-        local item_type
-        item_type=$(get_setup_item_type "$item_id")
-        
-        if [ "$item_type" = "section" ]; then
-            local nested_items
-            nested_items=$(get_section_nested_items "$item_id")
-            for nested_id in $nested_items; do
-                check_and_cleanup_variable "$nested_id"
-            done
-        else
-            check_and_cleanup_variable "$item_id"
-        fi
-    done
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
-}
-
-XXX_check_and_cleanup_variable() {
-    local item_id="$1"
-    local variable show_when
-    
-    # この項目が変数を持っているか確認
-    variable=$(get_setup_item_variable "$item_id")
-    [ -z "$variable" ] && return 0
-    
-    # showWhen が存在するか確認（トップレベル）
-    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
-    
-    # showWhen が無い場合、ネストされたアイテムもチェック
-    if [ -z "$show_when" ]; then
-        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
-    fi
-    
-    # showWhen が無い項目はスキップ（削除対象外）
-    if [ -z "$show_when" ]; then
-        echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    # showWhen 条件をチェック
-    if ! should_show_item "$item_id"; then
-        # 条件を満たさない場合、変数を削除
-        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
-            sed -i "/^${variable}=/d" "$SETUP_VARS"
-            echo "[AUTO] Removed variable: $variable (condition not met for $item_id)" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-}
-
-XXXXX_check_and_cleanup_variable() {
-    local item_id="$1"
-    local variable show_when parent_section
-    
-    # この項目が変数を持っているか確認
-    variable=$(get_setup_item_variable "$item_id")
-    [ -z "$variable" ] && return 0
-    
-    # 1. 項目レベルの showWhen をチェック
-    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
-    
-    if [ -z "$show_when" ]; then
-        show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
-    fi
-    
-    # 2. showWhen がない場合、親 section の showWhen を確認
-    if [ -z "$show_when" ]; then
-        # 親 section の id を取得
-        parent_section=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.items[*].id='$item_id'].id" 2>/dev/null | head -1)
-        
-        if [ -n "$parent_section" ]; then
-            show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$parent_section'].showWhen" 2>/dev/null | head -1)
-            echo "[DEBUG] $item_id: Using parent section ($parent_section) showWhen: $show_when" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-    
-    # 3. showWhen がない項目はスキップ（削除対象外）
-    if [ -z "$show_when" ]; then
-        echo "[DEBUG] $item_id has no showWhen, skipping cleanup" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    # 4. showWhen 条件を解析
-    local show_when_normalized should_keep
-    show_when_normalized=$(echo "$show_when" | tr '-' '_')
-    
-    local var_name
-    var_name=$(echo "$show_when_normalized" | sed 's/^{ *"\([^"]*\)".*/\1/')
-    
-    local expected
-    expected=$(jsonfilter -e "@.${var_name}[*]" 2>/dev/null <<EOF
-$show_when_normalized
-EOF
-)
-    
-    if [ -z "$expected" ]; then
-        expected=$(jsonfilter -e "@.${var_name}" 2>/dev/null <<EOF
-$show_when_normalized
-EOF
-)
-    fi
-    
-    # 5. 現在値を取得（connection_typeの場合は実効値を使用）
-    local current_val
-    if [ "$var_name" = "connection_type" ]; then
-        current_val=$(get_effective_connection_type)
-        echo "[DEBUG] Using effective connection type: $current_val for item $item_id" >> "$CONFIG_DIR/debug.log"
-    else
-        current_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    fi
-    
-    # 6. 条件判定
-    should_keep=0
-    if [ -z "$current_val" ]; then
-        should_keep=0
-    elif echo "$expected" | grep -q "^${current_val}\$"; then
-        should_keep=1
-    fi
-    
-    # 7. 条件を満たさない場合、変数を削除
-    if [ "$should_keep" -eq 0 ]; then
-        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
-            sed -i "/^${variable}=/d" "$SETUP_VARS"
-            echo "[AUTO] Removed variable: $variable (condition not met for $item_id, expected=$expected, current=$current_val)" >> "$CONFIG_DIR/debug.log"
-        fi
-    else
-        echo "[DEBUG] Kept variable: $variable (condition met for $item_id)" >> "$CONFIG_DIR/debug.log"
-    fi
-}
-
-recursive_check_and_cleanup() {
-    local parent_id="$1"
-    local effective_type="$2"
-    
-    local nested_items
-    nested_items=$(get_section_nested_items "$parent_id")
-    
-    for item_id in $nested_items; do
-        # 子アイテムについても表示判定を行う
-        if ! check_item_visibility "$item_id" "$effective_type"; then
-            # 表示不要なら削除
-            recursive_delete_variables "$item_id"
-        else
-            # 表示必要なら、さらにその子要素（もしあれば）をチェック
-            recursive_check_and_cleanup "$item_id" "$effective_type"
-        fi
-    done
-}
-
-recursive_delete_variables() {
-    local parent_id="$1"
-    
-    # 1. このアイテム自体が変数を持っていれば削除
-    local variable
-    variable=$(get_setup_item_variable "$parent_id") # 変数名取得関数（既存）
-    if [ -n "$variable" ]; then
-        if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
-            sed -i "/^${variable}=/d" "$SETUP_VARS"
-            echo "[CLEANUP] Force deleted variable: $variable (belongs to hidden section $parent_id)" >> "$CONFIG_DIR/debug.log"
-        fi
-    fi
-
-    # 2. 子アイテムがあれば再帰的に処理
-    local item_type
-    item_type=$(get_setup_item_type "$parent_id")
-    
-    if [ "$item_type" = "section" ] || [ "$item_type" = "group" ]; then
-        local nested_items
-        nested_items=$(get_section_nested_items "$parent_id")
-        for nested_id in $nested_items; do
-            recursive_delete_variables "$nested_id"
-        done
-    fi
-}
-
-check_item_visibility() {
-    local item_id="$1"
-    local effective_type="$2"
-    local show_when var_name expected
-
-    # showWhenを取得
-    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
-    
-    # showWhenがない項目は「常に表示」とみなす（削除対象にしない）
-    [ -z "$show_when" ] && return 0
-
-    # 条件をパース（connection_type の値と比較）
-    var_name=$(echo "$show_when" | tr '-' '_' | sed 's/^{ *"\([^"]*\)".*/\1/')
-    expected=$(echo "$show_when" | tr '-' '_' | jsonfilter -e "@.${var_name}[*]")
-    [ -z "$expected" ] && expected=$(echo "$show_when" | tr '-' '_' | jsonfilter -e "@.${var_name}")
-
-    # 変数が connection_type の場合、実効値と比較
-    local check_val
-    if [ "$var_name" = "connection_type" ]; then
-        check_val="$effective_type"
-    else
-        # connection_type以外の条件（例: wifi_mode）は現在のファイルから読む
-        check_val=$(grep "^${var_name}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    fi
-
-    # 値が期待値リストに含まれているか
-    if echo "$expected" | grep -q "^${check_val}\$"; then
-        return 0 # 表示（削除しない）
-    else
-        return 1 # 非表示（削除対象）
-    fi
-}
-
-auto_cleanup_conditional_variables() {
-    local cat_id="$1"
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables (Aggressive Mode) called ===" >> "$CONFIG_DIR/debug.log"
-    
-    # 1. 現在の実効接続タイプを取得（Autoの場合は検出結果、手動の場合は選択値）
-    local effective_conn_type
-    effective_conn_type=$(get_effective_connection_type)
-    echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
-
-    # 2. カテゴリ直下のアイテム（主にセクション）を取得
-    #    例: internet-connection カテゴリなら dslite-section, mape-section 等が返る
-    local root_items
-    root_items=$(get_setup_category_items "$cat_id")
-
-    for item_id in $root_items; do
-        # このアイテム（セクション）が表示されるべきか判定
-        if ! check_item_visibility "$item_id" "$effective_conn_type"; then
-            # ★ 表示すべきでないセクションなら、その配下の変数を「根こそぎ削除」
-            echo "[AUTO] Section '$item_id' is not active for type '$effective_conn_type'. Wiping variables..." >> "$CONFIG_DIR/debug.log"
-            recursive_delete_variables "$item_id"
-        else
-             # 表示されるセクション内でも、さらに細かい条件（showWhen）があるかもしれないのでチェック
-             # （例: DS-Lite内の transix/xpass 切り替えなど）
-             recursive_check_and_cleanup "$item_id" "$effective_conn_type"
-        fi
-    done
-    
-    echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
 check_and_cleanup_variable() {
@@ -3467,41 +3037,6 @@ fetch_cached_template() {
     
     __download_file_core "$url" "$output_path"
     return $?
-}
-
-XXX_prefetch_templates() {
-    local cat_id template_url tpl_custom
-    local script_id script_file script_url template_path
-    
-    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST"
-    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
-    
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        while read -r cat_id; do
-            template_url=$(get_customfeed_template_url "$cat_id")
-            
-            if [ -n "$template_url" ]; then
-                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
-                fetch_cached_template "$template_url" "$tpl_custom"
-            fi
-        done <<EOF
-$(get_customfeed_categories)
-EOF
-    fi
-    
-    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
-        while read -r script_id; do
-            script_file=$(get_customscript_file "$script_id")
-            [ -z "$script_file" ] && continue
-            
-            script_url="${BASE_URL}/custom-scripts/${script_file}"
-            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
-            
-            fetch_cached_template "$script_url" "$template_path"
-        done <<EOF
-$(get_customscript_all_scripts)
-EOF
-    fi
 }
 
 prefetch_templates() {
