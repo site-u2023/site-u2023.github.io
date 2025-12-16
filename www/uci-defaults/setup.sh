@@ -438,19 +438,15 @@ filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
-    id: 1
   - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
-    id: 2
   - enabled: false
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
     name: AdGuard Japanese filter
-    id: 7
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: 豆腐フィルタ
-    id: 99
 log:
   file: ""
 schema_version: 29
