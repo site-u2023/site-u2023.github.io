@@ -1544,10 +1544,6 @@ get_package_enablevar() {
     echo "$enable_var"
 }
 
-# グローバル変数追加
-_INSTALLED_PACKAGES_CACHE=""
-_INSTALLED_PACKAGES_LOADED=0
-
 # キャッシュ構築関数
 cache_installed_packages() {
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 1 ] && return 0
@@ -1569,10 +1565,11 @@ cache_installed_packages() {
 is_package_installed() {
     local pkg_id="$1"
     
-    # 初回のみキャッシュ構築
-    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+    # 確実にキャッシュがロードされるまで待機
+    while [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; do
+        sleep 0.1
+    done
     
-    # メモリ内検索（高速）
     echo "$_INSTALLED_PACKAGES_CACHE" | grep -qx "$pkg_id"
 }
 
@@ -4354,16 +4351,16 @@ aios2_main() {
     echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
     # ========================================
-    # Phase 7: パッケージ存在確認キャッシュ構築
-    # 変数が揃った後に実行
+    # Phase 7: パッケージキャッシュ構築（並列）
     # ========================================
     cache_package_availability &
     CACHE_PKG_PID=$!
-
-    cache_installed_packages
+    
+    cache_installed_packages &
+    CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
-   
+    
     # ========================================
     # Phase 8: 残りのバックグラウンド処理完了を待機（並列）
     # ========================================
@@ -4385,6 +4382,11 @@ aios2_main() {
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
 
+    # ========================================
+    # Phase 8.5: インストール済みパッケージ初期化
+    # （キャッシュ完了を待機してから実行）
+    # ========================================
+    wait $CACHE_INSTALLED_PID
     initialize_installed_packages
     
     # ========================================
