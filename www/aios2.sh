@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1424"
+VERSION="R7.1216.1439"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1565,11 +1565,7 @@ cache_installed_packages() {
 is_package_installed() {
     local pkg_id="$1"
     
-    # 確実にキャッシュがロードされるまで待機
-    while [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; do
-        sleep 0.1
-    done
-    
+    # この時点でキャッシュは必ずロード済み
     echo "$_INSTALLED_PACKAGES_CACHE" | grep -qx "$pkg_id"
 }
 
@@ -4383,14 +4379,16 @@ aios2_main() {
     fi
 
     # ========================================
-    # Phase 8.5: インストール済みパッケージ初期化
+    # Phase 9: インストール済みパッケージ初期化
     # （キャッシュ完了を待機してから実行）
     # ========================================
     wait $CACHE_INSTALLED_PID
+    unset CACHE_INSTALLED_PID
+    
     initialize_installed_packages
     
     # ========================================
-    # Phase 9: UIモジュール起動
+    # Phase 10: UIモジュール起動
     # ========================================
     # 母国語ファイル完了を待機
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
