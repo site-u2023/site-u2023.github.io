@@ -3348,9 +3348,11 @@ EOF2
 expand_remove_list() {
     local packages="$1"
     local lang_packages=""
+    local dep_packages=""
     local result=""
     
     for pkg in $packages; do
+        # 1. 言語パッケージを検索
         local base_name=""
         case "$pkg" in
             luci-app-*)   base_name="${pkg#luci-app-}" ;;
@@ -3372,11 +3374,47 @@ expand_remove_list() {
             fi
         fi
         
+        # 2. opkg依存パッケージを検索（他に依存されていないもののみ）
+        if [ "$PKG_MGR" = "opkg" ]; then
+            local deps
+            deps=$(opkg depends "$pkg" 2>/dev/null | grep -v "^$pkg" | sed 's/^[[:space:]]*//' | grep -v "^$")
+            
+            for dep in $deps; do
+                # システム基本パッケージは除外
+                case "$dep" in
+                    libc|libgcc*|libubox*|libubus*|libuci*|luci-base|luci-lib-*|luci-compat|rpcd*|uhttpd*|ubus*|uci) continue ;;
+                esac
+                
+                # インストールされているか確認
+                if ! opkg list-installed "$dep" >/dev/null 2>&1; then
+                    continue
+                fi
+                
+                # 他のパッケージに依存されているか確認
+                local dependents
+                dependents=$(opkg whatdepends "$dep" 2>/dev/null | grep -v "^$dep" | grep -v "^What depends" | sed 's/^[[:space:]]*//' | grep -v "^$")
+                
+                # 削除対象以外に依存されていなければ追加
+                local other_depends=0
+                for dependent in $dependents; do
+                    case " $packages " in
+                        *" $dependent "*) ;;
+                        *) other_depends=1; break ;;
+                    esac
+                done
+                
+                if [ "$other_depends" -eq 0 ]; then
+                    dep_packages="$dep_packages $dep"
+                    echo "[DEBUG] Found removable dependency for $pkg: $dep" >> "$CONFIG_DIR/debug.log"
+                fi
+            done
+        fi
+        
         result="$result $pkg"
     done
     
-    # 言語パッケージを先、本体を後
-    echo "$lang_packages $result" | tr -s ' ' | sed 's/^ //;s/ $//'
+    # 順序: 言語パッケージ → 本体 → 依存パッケージ
+    echo "$lang_packages $result $dep_packages" | tr -s ' ' | sed 's/^ //;s/ $//'
 }
 
 # 削除スクリプト生成
