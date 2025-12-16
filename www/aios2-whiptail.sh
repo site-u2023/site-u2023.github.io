@@ -1752,10 +1752,6 @@ $failed_scripts"
     return 0
 }
 
-# aios2-whiptail.sh の review_and_apply()
-
-# aios2-whiptail.sh の review_and_apply()
-
 review_and_apply() {
     local need_fetch=0
     
