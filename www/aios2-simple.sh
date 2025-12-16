@@ -664,9 +664,6 @@ process_items() {
 
                         cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
                         
-                        auto_add_conditional_packages "$cat_id"
-                        auto_cleanup_conditional_variables "$cat_id"
-                        cleanup_orphaned_enablevars "$cat_id"
                     fi
                 fi
                 ;;
@@ -781,10 +778,6 @@ process_items() {
                                 sed -i "/^${variable}=/d" "$SETUP_VARS"
                                 echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
                             fi
-                            
-                            auto_add_conditional_packages "$cat_id"
-                            auto_cleanup_conditional_variables "$cat_id"
-                            cleanup_orphaned_enablevars "$cat_id"
                             
                             if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-area" ]; then
                                 local aftr_type area computed
