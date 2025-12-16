@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1443"
+VERSION="R7.1216.1448"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1570,23 +1570,28 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-    echo "[DEBUG] Initializing default packages..." >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
+    # インストール済みパッケージキャッシュが未構築なら構築
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+    
     local count=0
+    
+    # キャッシュから全パッケージをチェック
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
-        local pkg_id uid checked_flag
+        local pkg_id uid
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
-        checked_flag=$(echo "$cache_line" | cut -d= -f10)
         
-        # checked=true のパッケージのみ選択
-        if [ "$checked_flag" = "true" ]; then
+        # デバイスにインストールされているか確認
+        if is_package_installed "$pkg_id"; then
+            # 既に選択済みかチェック
             local already_selected=0
             
             if [ -n "$uid" ]; then
@@ -1603,11 +1608,11 @@ initialize_installed_packages() {
             if [ "$already_selected" -eq 0 ]; then
                 echo "$cache_line" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
-                echo "[INIT] Checked by default: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                echo "[INIT] Found installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
                 
                 # enableVar追加
                 local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
+                enable_var=$(get_package_enablevar "$pkg_id" "$uid")
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
                     echo "${enable_var}='1'" >> "$SETUP_VARS"
                 fi
@@ -1617,7 +1622,7 @@ initialize_installed_packages() {
 $_PACKAGE_NAME_CACHE
 EOF
     
-    echo "[DEBUG] Auto-selected $count packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
 
 is_package_selected() {
