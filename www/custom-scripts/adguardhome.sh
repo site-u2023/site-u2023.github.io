@@ -33,7 +33,24 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1211.0007"
+VERSION="R7.1216.1225"
+
+# =============================================================================
+# AdGuard Home Path Definitions
+# =============================================================================
+
+# Binary paths
+AGH_BINARY_OFFICIAL="/etc/AdGuardHome/AdGuardHome"
+AGH_BINARY_OPENWRT="/usr/bin/AdGuardHome"
+
+# Config file paths
+AGH_CONFIG_OFFICIAL="/etc/AdGuardHome/AdGuardHome.yaml"
+AGH_CONFIG_SNAPSHOT="/etc/adguardhome/adguardhome.yaml"
+AGH_CONFIG_RELEASE="/etc/adguardhome.yaml"
+
+# Config directory paths
+AGH_DIR_OFFICIAL="/etc/AdGuardHome"
+AGH_DIR_SNAPSHOT="/etc/adguardhome"
 
 # =============================================================================
 # Variable Initialization (empty by default)
@@ -290,20 +307,19 @@ is_interactive_mode() {
 #   0 - Service found
 #   1 - Service not found
 detect_adguardhome_service() {
-    if /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1; then
+    if [ -x "$AGH_BINARY_OFFICIAL" ] && "$AGH_BINARY_OFFICIAL" --version >/dev/null 2>&1; then
         DETECTED_SERVICE_TYPE="official"
         DETECTED_SERVICE_NAME="AdGuardHome"
-        DETECTED_CONFIG_FILE="/etc/AdGuardHome/AdGuardHome.yaml"
+        DETECTED_CONFIG_FILE="$AGH_CONFIG_OFFICIAL"
         return 0
-    elif /usr/bin/AdGuardHome --version >/dev/null 2>&1; then
+    elif [ -x "$AGH_BINARY_OPENWRT" ] && "$AGH_BINARY_OPENWRT" --version >/dev/null 2>&1; then
         DETECTED_SERVICE_TYPE="openwrt"
         DETECTED_SERVICE_NAME="adguardhome"
         
-        # Detect config file path based on package manager
-        if command -v apk >/dev/null 2>&1; then
-            DETECTED_CONFIG_FILE="/etc/adguardhome/adguardhome.yaml"  # SNAPSHOT
+        if [ -f "$AGH_CONFIG_SNAPSHOT" ]; then
+            DETECTED_CONFIG_FILE="$AGH_CONFIG_SNAPSHOT"
         else
-            DETECTED_CONFIG_FILE="/etc/adguardhome.yaml"              # Release
+            DETECTED_CONFIG_FILE="$AGH_CONFIG_RELEASE"
         fi
         return 0
     else
@@ -1417,20 +1433,20 @@ remove_adguardhome() {
         fi
     fi
 
-    if [ -d "/etc/${detected_service}" ] || [ -f "/etc/adguardhome.yaml" ]; then
+    if [ -d /etc/AdGuardHome ] || [ -d /etc/adguardhome ] || [ -f /etc/adguardhome.yaml ]; then
         if [ "$auto_confirm" != "auto" ]; then
             printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
             read -r cfg
             case "$cfg" in
                 [yY]*) 
-                    [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
-                    [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
+                    [ -d /etc/AdGuardHome ] && rm -rf /etc/AdGuardHome
+                    [ -d /etc/adguardhome ] && rm -rf /etc/adguardhome
                     rm -f /etc/adguardhome.yaml
                     ;;
             esac
         else
-            [ -d "/etc/AdGuardHome" ] && rm -rf /etc/AdGuardHome
-            [ -d "/etc/adguardhome" ] && rm -rf /etc/adguardhome
+            [ -d /etc/AdGuardHome ] && rm -rf /etc/AdGuardHome
+            [ -d /etc/adguardhome ] && rm -rf /etc/adguardhome
             rm -f /etc/adguardhome.yaml
         fi
     fi
@@ -1474,10 +1490,12 @@ EOF
 get_access() {
     local cfg port addr
     
-    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
-        cfg="/etc/AdGuardHome/AdGuardHome.yaml"
-    elif [ -f "/etc/adguardhome.yaml" ]; then
-        cfg="/etc/adguardhome.yaml"
+    if [ -f "$AGH_CONFIG_OFFICIAL" ]; then
+        cfg="$AGH_CONFIG_OFFICIAL"
+    elif [ -f "$AGH_CONFIG_SNAPSHOT" ]; then
+        cfg="$AGH_CONFIG_SNAPSHOT"
+    elif [ -f "$AGH_CONFIG_RELEASE" ]; then
+        cfg="$AGH_CONFIG_RELEASE"
     fi
     
     if [ -n "$cfg" ]; then
@@ -1497,7 +1515,6 @@ get_access() {
     printf "\033[1;33m  Password: %s\033[0m\n" "$AGH_PASS"
     printf "\033[1;32m========================================\033[0m\n"
     
-    # printf "\033[1;33mNote: Web interface will be available after reboot\033[0m\n\n"
     printf "\033[1;32mWeb interface is now available:\033[0m\n\n"
     
     printf "\033[1;32mWeb interface IPv4:\033[0m\n"
