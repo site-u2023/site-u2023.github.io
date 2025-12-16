@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1111"
+VERSION="R7.1216.1214"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -2130,12 +2130,11 @@ XXX_is_adguardhome_installed() {
 }
 
 is_adguardhome_installed() {
-    # JSONからバイナリパスを取得してチェック
     local paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='adguardhome'].binaryPaths[*]" 2>/dev/null)
     
     while read -r path; do
         [ -z "$path" ] && continue
-        [ -f "$path" ] && return 0
+        "$path" --version >/dev/null 2>&1 && return 0
     done <<EOF
 $paths
 EOF
