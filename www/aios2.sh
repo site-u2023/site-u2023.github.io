@@ -1548,8 +1548,25 @@ get_package_enablevar() {
     echo "$enable_var"
 }
 
-# キャッシュ構築関数
 cache_installed_packages() {
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 1 ] && return 0
+    
+    echo "[DEBUG] Building installed packages cache..." >> "$CONFIG_DIR/debug.log"
+    
+    if [ "$PKG_MGR" = "opkg" ]; then
+        _INSTALLED_PACKAGES_CACHE=$(opkg list-installed | awk '{print $1}')
+    elif [ "$PKG_MGR" = "apk" ]; then
+        _INSTALLED_PACKAGES_CACHE=$(apk info 2>/dev/null)
+    fi
+    
+    _INSTALLED_PACKAGES_LOADED=1
+    
+    local count=$(echo "$_INSTALLED_PACKAGES_CACHE" | wc -l)
+    echo "[DEBUG] Installed packages cache built: $count packages" >> "$CONFIG_DIR/debug.log"
+}
+
+# キャッシュ構築関数
+OK_cache_installed_packages() {
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 1 ] && return 0
     
     echo "[DEBUG] Building installed packages cache..." >> "$CONFIG_DIR/debug.log"
@@ -4505,10 +4522,10 @@ aios2_main() {
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
 
+    initialize_installed_packages
+    
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    
-    initialize_installed_packages
     
     # ========================================
     # Phase 10: UIモジュール起動
