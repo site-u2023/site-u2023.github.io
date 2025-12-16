@@ -3725,7 +3725,7 @@ SCRIPTS
     clear_selection_cache
 }
 
-generate_config_summary() {
+XXX_generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
     local has_content=0
@@ -3824,7 +3824,7 @@ generate_config_summary() {
     echo "$summary_file"
 }
 
-XXX_generate_config_summary() {
+generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
     local has_content=0
