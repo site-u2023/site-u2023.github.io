@@ -3467,7 +3467,7 @@ REMOVE_EOF
     local packages_to_install=""
     
     if [ -s "$SELECTED_PACKAGES" ]; then
-        # ★ 現在インストールされているパッケージキャッシュをロード
+        # 現在インストールされているパッケージキャッシュをロード
         [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
         
         # 新規インストール対象パッケージの抽出
@@ -3478,7 +3478,7 @@ REMOVE_EOF
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             uid=$(echo "$cache_line" | cut -d= -f3)
             
-            # ★ 現在インストールされているかチェック（スナップショットではなく）
+            # 現在インストールされているかチェック
             if ! is_package_installed "$pkg_id"; then
                 packages_to_install="${packages_to_install}${cache_line}
 "
