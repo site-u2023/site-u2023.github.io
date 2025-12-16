@@ -2637,7 +2637,6 @@ auto_cleanup_conditional_variables() {
     echo "[DEBUG] === auto_cleanup_conditional_variables finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-# cleanup_radio_group_exclusive_vars を拡張（既存のものを置き換え）
 cleanup_radio_group_exclusive_vars() {
     local item_id="$1"
     local current_value="$2"
