@@ -2085,9 +2085,23 @@ get_customscript_input_hidden() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1
 }
 
-is_adguardhome_installed() {
+# is_adguardhome_installed() {
     /etc/AdGuardHome/AdGuardHome --version >/dev/null 2>&1 || \
     /usr/bin/AdGuardHome --version >/dev/null 2>&1
+}
+
+is_adguardhome_installed() {
+    # JSONからバイナリパスを取得してチェック
+    local paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='adguardhome'].binaryPaths[*]" 2>/dev/null)
+    
+    while read -r path; do
+        [ -z "$path" ] && continue
+        [ -f "$path" ] && return 0
+    done <<EOF
+$paths
+EOF
+    
+    return 1
 }
 
 filter_script_options() {
@@ -2129,17 +2143,24 @@ EOF
 }
 
 get_adguardhome_current_user() {
-    local yaml_file
+    local yaml_file=""
     
-    if [ -f "/etc/AdGuardHome/AdGuardHome.yaml" ]; then
-        yaml_file="/etc/AdGuardHome/AdGuardHome.yaml"
-    elif [ -f "/etc/adguardhome.yaml" ]; then
-        yaml_file="/etc/adguardhome.yaml"
-    else
-        echo ""
-        return 1
-    fi
-
+    # JSONから既知のパスを取得してチェック
+    local paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='adguardhome'].yamlPaths[*]" 2>/dev/null)
+    
+    while read -r path; do
+        [ -z "$path" ] && continue
+        if [ -f "$path" ]; then
+            yaml_file="$path"
+            break
+        fi
+    done <<EOF
+$paths
+EOF
+    
+    [ -z "$yaml_file" ] && return 1
+    
+    # ユーザー名抽出
     awk '
     /^users:/ { in_users=1; next }
     in_users && /^[^ ]/ { exit }
