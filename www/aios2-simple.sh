@@ -504,6 +504,8 @@ $failed_scripts"
     return 0
 }
 
+# aios2-simple.sh の review_and_apply()
+
 review_and_apply() {
     local need_fetch=0
     
@@ -564,9 +566,6 @@ EOF
         
         clear
         
-        # パッケージマネージャーのアップデート
-        update_package_manager
-        
         # 失敗カウンタ
         local failed_count=0
         local failed_scripts=""
@@ -581,11 +580,40 @@ EOF
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}remove.sh "
+            else
+                echo "$(translate 'tr-tui-removal-completed')"
             fi
+        fi
+        
+        # パッケージインストールがあるか確認
+        local needs_update=0
+        
+        if [ -s "$SELECTED_PACKAGES" ]; then
+            needs_update=1
+        fi
+        
+        if [ "$needs_update" -eq 0 ]; then
+            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                [ -f "$script" ] || continue
+                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+                
+                if grep -q '^PACKAGES=' "$script" && [ -n "$(grep '^PACKAGES=' "$script" | cut -d'"' -f2)" ]; then
+                    needs_update=1
+                    break
+                fi
+            done
+        fi
+        
+        # パッケージインストールがある場合のみアップデート
+        if [ "$needs_update" -eq 1 ]; then
+            echo ""
+            echo "Updating package database..."
+            update_package_manager
         fi
         
         # パッケージインストール
         if [ -s "$SELECTED_PACKAGES" ]; then
+            echo ""
             echo "$(translate 'tr-tui-installing-packages')"
             sh "$CONFIG_DIR/postinst.sh"
             if [ $? -ne 0 ]; then
@@ -651,16 +679,13 @@ EOF
         # スクリプト実行後のクリーンアップ 
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
         
-        # 1. ファイルベースのキャッシュを削除
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         rm -f "$CONFIG_DIR"/customscripts-*.sh
         rm -f "$CONFIG_DIR"/temp_*.txt
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
         
-        # 2. メモリキャッシュをクリア
         clear_selection_cache
         
-        # 3. カスタムスクリプト関連のキャッシュもクリア
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
         
