@@ -190,6 +190,7 @@
     "tr-tui-auto-config-applied": "Auto-configuration applied!",
     "tr-tui-use-auto-config": "Use this auto-detected configuration?",
     "tr-tui-removing-packages": "Removing packages...",
+    "tr-tui-removal-completed": "Package removal completed",
     "tr-tui-package-removal-failed": "Package removal failed",
     
     "tr-tui-space-toggle": "Space=toggle",
