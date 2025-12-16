@@ -1819,13 +1819,24 @@ EOF
         echo "Generating installation scripts..."
         generate_files
         
+        # ========================================
+        # 実行計画ファイルを読み込み
+        # ========================================
+        local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
+        
+        if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
+            . "$CONFIG_DIR/execution_plan.sh"
+        else
+            echo "[ERROR] Execution plan not found" >> "$CONFIG_DIR/debug.log"
+        fi
+        
         local failed_count=0
         local failed_scripts=""
         
         # ========================================
-        # パッケージ削除（remove.sh が存在し、中身がある場合のみ）
+        # 1. パッケージ削除
         # ========================================
-        if [ -f "$CONFIG_DIR/remove.sh" ] && [ -s "$CONFIG_DIR/remove.sh" ]; then
+        if [ "$HAS_REMOVE" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-removing-packages')"
             
@@ -1840,50 +1851,18 @@ EOF
         fi
         
         # ========================================
-        # インストール対象があるか判定（INSTALL_CMD / PACKAGES が空でないか）
+        # 2. パッケージマネージャー更新（インストール対象がある場合のみ）
         # ========================================
-        local has_install_packages=0
-        local has_custom_packages=0
-        
-        # postinst.sh の INSTALL_CMD をチェック
-        if [ -f "$CONFIG_DIR/postinst.sh" ]; then
-            local install_cmd
-            install_cmd=$(grep '^INSTALL_CMD=' "$CONFIG_DIR/postinst.sh" 2>/dev/null | cut -d'"' -f2)
-            if [ -n "$install_cmd" ]; then
-                has_install_packages=1
-                echo "[DEBUG] postinst.sh has INSTALL_CMD: $install_cmd" >> "$CONFIG_DIR/debug.log"
-            else
-                echo "[DEBUG] postinst.sh INSTALL_CMD is empty" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-        
-        # customfeeds-*.sh の PACKAGES をチェック
-        for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-            [ -f "$script" ] || continue
-            [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
-            
-            local packages_value
-            packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
-            if [ -n "$packages_value" ]; then
-                has_custom_packages=1
-                echo "[DEBUG] $(basename "$script") has PACKAGES: $packages_value" >> "$CONFIG_DIR/debug.log"
-                break
-            fi
-        done
-        
-        # ========================================
-        # パッケージマネージャー更新（インストール対象がある場合のみ）
-        # ========================================
-        if [ "$has_install_packages" -eq 1 ] || [ "$has_custom_packages" -eq 1 ]; then
+        if [ "$NEEDS_UPDATE" -eq 1 ]; then
             echo ""
             echo "Updating package database..."
             update_package_manager
         fi
         
         # ========================================
-        # パッケージインストール（INSTALL_CMD が空でない場合のみ）
+        # 3. パッケージインストール
         # ========================================
-        if [ "$has_install_packages" -eq 1 ]; then
+        if [ "$HAS_INSTALL" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-packages')"
             sh "$CONFIG_DIR/postinst.sh"
@@ -1894,36 +1873,32 @@ EOF
         fi
         
         # ========================================
-        # カスタムフィードパッケージインストール（PACKAGES が空でない場合のみ）
+        # 4. カスタムフィードパッケージインストール
         # ========================================
-        if [ "$has_custom_packages" -eq 1 ]; then
-            local custom_header_shown=0
+        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-installing-custom-packages')"
+            
             for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                 [ -f "$script" ] || continue
                 [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
                 
                 local packages_value
                 packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
-                if [ -n "$packages_value" ]; then
-                    if [ "$custom_header_shown" -eq 0 ]; then
-                        echo ""
-                        echo "$(translate 'tr-tui-installing-custom-packages')"
-                        custom_header_shown=1
-                    fi
-                    
-                    sh "$script"
-                    if [ $? -ne 0 ]; then
-                        failed_count=$((failed_count + 1))
-                        failed_scripts="${failed_scripts}$(basename "$script") "
-                    fi
+                [ -z "$packages_value" ] && continue
+                
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
                 fi
             done
         fi
         
         # ========================================
-        # システム設定適用
+        # 5. システム設定適用
         # ========================================
-        if [ -s "$SETUP_VARS" ]; then
+        if [ "$HAS_SETUP" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
             sh "$CONFIG_DIR/setup.sh"
@@ -1934,31 +1909,30 @@ EOF
         fi
         
         # ========================================
-        # カスタムスクリプト実行
+        # 6. カスタムスクリプト実行
         # ========================================
-        local has_custom_scripts=0
-        for script in "$CONFIG_DIR"/customscripts-*.sh; do
-            [ -f "$script" ] || continue
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-installing-custom-scripts')"
             
-            script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
-            
-            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                if [ "$has_custom_scripts" -eq 0 ]; then
-                    echo ""
-                    echo "$(translate 'tr-tui-installing-custom-scripts')"
-                    has_custom_scripts=1
-                fi
+            for script in "$CONFIG_DIR"/customscripts-*.sh; do
+                [ -f "$script" ] || continue
+                
+                local script_id
+                script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
+                
+                [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
                 
                 sh "$script"
                 if [ $? -ne 0 ]; then
                     failed_count=$((failed_count + 1))
                     failed_scripts="${failed_scripts}$(basename "$script") "
                 fi
-            fi
-        done
+            done
+        fi
     
         # ========================================
-        # クリーンアップ
+        # 7. クリーンアップ
         # ========================================
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
     
@@ -1966,6 +1940,7 @@ EOF
         rm -f "$CONFIG_DIR"/customscripts-*.sh
         rm -f "$CONFIG_DIR"/temp_*.txt
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
+        rm -f "$CONFIG_DIR/execution_plan.sh"
     
         clear_selection_cache
 
@@ -1973,11 +1948,6 @@ EOF
         unset _CUSTOMSCRIPT_LOADED
     
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
- 
-        local needs_reboot
-        needs_reboot=$(needs_reboot_check)
-        
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
         
