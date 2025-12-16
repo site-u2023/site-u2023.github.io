@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.2250"
+VERSION="R7.1217.0006"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3377,7 +3377,7 @@ expand_remove_list() {
         # 2. opkg依存パッケージを検索（他に依存されていないもののみ）
         if [ "$PKG_MGR" = "opkg" ]; then
             local deps
-            deps=$(opkg depends "$pkg" 2>/dev/null | grep -v "^$pkg" | sed 's/^[[:space:]]*//' | grep -v "^$")
+            deps=$(opkg depends "$pkg" 2>/dev/null | awk '/^[[:space:]]/ {gsub(/^[[:space:]]+/, ""); print}')
             
             for dep in $deps; do
                 # システム基本パッケージは除外
