@@ -1906,6 +1906,7 @@ custom_script_options() {
     local parent_breadcrumb="$2"
     local script_name breadcrumb
     local options filtered_options
+    local min_mem rec_mem min_flash rec_flash msg
     
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb} > ${script_name}"
@@ -1932,6 +1933,9 @@ custom_script_options() {
             return 1
         fi
     fi
+
+    # テンプレートを読み込んで変数を取得
+    . "$template_path"
     
     options=$(get_customscript_options "$script_id")
     
@@ -1945,6 +1949,41 @@ custom_script_options() {
     if [ -z "$filtered_options" ]; then
         show_msgbox "$breadcrumb" "No options available"
         return 0
+    fi
+    
+    # 削除オプションのみの場合はリソースチェックをスキップ
+    local has_install_option=0
+    while read -r opt_id; do
+        local require_not_installed
+        require_not_installed=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$opt_id'].requireNotInstalled" 2>/dev/null | head -1)
+        if [ "$require_not_installed" = "true" ]; then
+            has_install_option=1
+            break
+        fi
+    done <<EOF
+$filtered_options
+EOF
+    
+    # インストールオプションがある場合のみリソースチェック
+    if [ "$has_install_option" -eq 1 ]; then
+        if ! check_script_requirements "$script_id"; then
+            min_mem="${MINIMUM_MEM}"
+            rec_mem="${RECOMMENDED_MEM}"
+            min_flash="${MINIMUM_FLASH}"
+            rec_flash="${RECOMMENDED_FLASH}"
+            
+            msg="$(translate 'tr-tui-customscript-resource-check')
+
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB
+
+$(translate 'tr-tui-customscript-resource-ng')"
+            
+            show_msgbox "$breadcrumb" "$msg"
+            return 0
+        fi
     fi
     
     custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
