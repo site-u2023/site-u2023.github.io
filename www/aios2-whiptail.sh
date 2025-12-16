@@ -1784,7 +1784,6 @@ EOF
         echo "[DEBUG] All templates already cached" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # ★ 軽量サマリー生成（スクリプト生成なし）
     local tr_main_menu tr_review breadcrumb
     local summary_file summary_content confirm_msg
     
@@ -1819,15 +1818,12 @@ EOF
         
         clear
         
-        # ★ ユーザー確認後にスクリプト生成
         echo "Generating installation scripts..."
         generate_files
         
-        # 失敗カウンタ
         local failed_count=0
         local failed_scripts=""
         
-        # パッケージアンインストール
         if [ -f "$CONFIG_DIR/remove.sh" ] && [ -s "$CONFIG_DIR/remove.sh" ]; then
             echo ""
             echo "$(translate 'tr-tui-removing-packages')"
@@ -1842,7 +1838,6 @@ EOF
             fi
         fi
         
-        # パッケージインストールがあるか確認
         local needs_update=0
         
         if [ -s "$SELECTED_PACKAGES" ]; then
@@ -1861,14 +1856,12 @@ EOF
             done
         fi
         
-        # パッケージインストールがある場合のみアップデート
         if [ "$needs_update" -eq 1 ]; then
             echo ""
             echo "Updating package database..."
             update_package_manager
         fi
         
-        # パッケージインストール
         if [ -s "$SELECTED_PACKAGES" ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-packages')"
@@ -1879,7 +1872,6 @@ EOF
             fi
         fi
         
-        # カスタムフィードパッケージインストール
         local has_custom_packages=0
         for script in "$CONFIG_DIR"/customfeeds-*.sh; do
             [ -f "$script" ] || continue
@@ -1900,7 +1892,6 @@ EOF
             fi
         done
         
-        # システム設定適用
         if [ -s "$SETUP_VARS" ]; then
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
@@ -1911,7 +1902,6 @@ EOF
             fi
         fi
         
-        # カスタムスクリプト実行
         local has_custom_scripts=0
         for script in "$CONFIG_DIR"/customscripts-*.sh; do
             [ -f "$script" ] || continue
@@ -1933,7 +1923,6 @@ EOF
             fi
         done
     
-        # スクリプト実行後のクリーンアップ
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
     
         rm -f "$CONFIG_DIR"/script_vars_*.txt
@@ -1955,7 +1944,6 @@ EOF
         
         echo ""
         
-        # エラー表示
         if [ "$failed_count" -gt 0 ]; then
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
 
