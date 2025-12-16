@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.0006"
+VERSION="R7.1217.0015"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3392,7 +3392,7 @@ expand_remove_list() {
                 
                 # 他のパッケージに依存されているか確認
                 local dependents
-                dependents=$(opkg whatdepends "$dep" 2>/dev/null | grep -v "^$dep" | grep -v "^What depends" | sed 's/^[[:space:]]*//' | grep -v "^$")
+                dependents=$(opkg whatdepends "$dep" 2>/dev/null | awk '/^[[:space:]].*depends on/ {print $1}')
                 
                 # 削除対象以外に依存されていなければ追加
                 local other_depends=0
