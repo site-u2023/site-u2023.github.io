@@ -2604,7 +2604,6 @@ get_section_nested_items() {
     jsonfilter -i "$SETUP_JSON" -e "@.categories[$cat_idx].items[$item_idx].items[*].id" 2>/dev/null
 }
 
-# aios2.shに追加
 auto_cleanup_conditional_variables() {
     local cat_id="$1"
     
