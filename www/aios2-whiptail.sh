@@ -232,6 +232,34 @@ EOF
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
             if [ -n "$selected_option" ]; then
+                # ★ここでリソースチェック（選択後）
+                local require_not_installed
+                require_not_installed=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$selected_option'].requireNotInstalled" 2>/dev/null | head -1)
+                
+                if [ "$require_not_installed" = "true" ]; then
+                    # テンプレートを読み込んでリソース要件を取得
+                    . "$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+                    
+                    if ! check_script_requirements "$script_id"; then
+                        local min_mem="${MINIMUM_MEM}"
+                        local rec_mem="${RECOMMENDED_MEM}"
+                        local min_flash="${MINIMUM_FLASH}"
+                        local rec_flash="${RECOMMENDED_FLASH}"
+                        
+                        local msg="$(translate 'tr-tui-customscript-resource-check')
+
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB $(translate 'tr-tui-customscript-available')
+  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB
+
+$(translate 'tr-tui-customscript-resource-ng')"
+                        
+                        show_msgbox "$breadcrumb" "$msg"
+                        continue  # メニューに戻る
+                    fi
+                fi
+                
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 
                 echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
