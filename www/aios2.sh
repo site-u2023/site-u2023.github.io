@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1512"
+VERSION="R7.1216.1603"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -927,9 +927,7 @@ build_deviceinfo_display() {
 wait_for_package_cache() {
     if [ -n "$CACHE_PKG_PID" ] && kill -0 "$CACHE_PKG_PID" 2>/dev/null; then
         echo "[DEBUG] Waiting for package cache (PID: $CACHE_PKG_PID)..." >> "$CONFIG_DIR/debug.log"
-        # 完了するまでブロック
         wait "$CACHE_PKG_PID"
-        # 完了したら変数をクリア（次回以降は待たない）
         unset CACHE_PKG_PID
     fi
 }
@@ -1553,15 +1551,15 @@ cache_installed_packages() {
     
     echo "[DEBUG] Building installed packages cache..." >> "$CONFIG_DIR/debug.log"
     
+    local cache_file="$CONFIG_DIR/installed_packages_cache.txt"
+    
     if [ "$PKG_MGR" = "opkg" ]; then
-        _INSTALLED_PACKAGES_CACHE=$(opkg list-installed | awk '{print $1}')
+        opkg list-installed | awk '{print $1}' > "$cache_file"
     elif [ "$PKG_MGR" = "apk" ]; then
-        _INSTALLED_PACKAGES_CACHE=$(apk info 2>/dev/null)
+        apk info 2>/dev/null > "$cache_file"
     fi
     
-    _INSTALLED_PACKAGES_LOADED=1
-    
-    local count=$(echo "$_INSTALLED_PACKAGES_CACHE" | wc -l)
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Installed packages cache built: $count packages" >> "$CONFIG_DIR/debug.log"
 }
 
@@ -1582,7 +1580,20 @@ OK_cache_installed_packages() {
 is_package_installed() {
     local pkg_id="$1"
     
-    # この時点でキャッシュは必ずロード済み
+    # 初回のみメモリにロード
+    if [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; then
+        local cache_file="$CONFIG_DIR/installed_packages_cache.txt"
+        
+        if [ -f "$cache_file" ]; then
+            _INSTALLED_PACKAGES_CACHE=$(cat "$cache_file")
+            _INSTALLED_PACKAGES_LOADED=1
+            echo "[DEBUG] Loaded installed packages cache to memory" >> "$CONFIG_DIR/debug.log"
+        else
+            echo "[DEBUG] Installed packages cache file not found" >> "$CONFIG_DIR/debug.log"
+            return 1
+        fi
+    fi
+    
     echo "$_INSTALLED_PACKAGES_CACHE" | grep -qx "$pkg_id"
 }
 
@@ -4522,10 +4533,11 @@ aios2_main() {
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
 
-    initialize_installed_packages
+    if [ ! -f "$CONFIG_DIR/installed_packages_cache.txt" ]; then
+        echo "[ERROR] Installed packages cache file not found" >> "$CONFIG_DIR/debug.log"
+    fi
     
-    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    initialize_installed_packages
     
     # ========================================
     # Phase 10: UIモジュール起動
