@@ -6,6 +6,7 @@
       "removeCommand": "opkg remove {package}",
       "updateCommand": "opkg update",
       "upgradeCommand": "opkg upgrade",
+      "listInstalledCommand": "opkg list-installed | awk '{print $1}'",
       "options": {
         "ignoreDeps": "--nodeps",
         "forceOverwrite": "--force-overwrite",
@@ -21,6 +22,7 @@
       "removeCommand": "apk del {package}",
       "updateCommand": "apk update",
       "upgradeCommand": "apk upgrade",
+      "listInstalledCommand": "apk info",
       "options": {
         "ignoreDeps": "--force-broken-world",
         "forceOverwrite": "--force-overwrite",
