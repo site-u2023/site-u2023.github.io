@@ -1448,24 +1448,16 @@ EOF
         local failed_scripts=""
         
         # パッケージアンインストール
-        if [ -f "$CONFIG_DIR/packages_to_remove.txt" ] && [ -s "$CONFIG_DIR/packages_to_remove.txt" ]; then
+        if [ -f "$CONFIG_DIR/remove.sh" ] && [ -s "$CONFIG_DIR/remove.sh" ]; then
             echo ""
             echo "$(translate 'tr-tui-removing-packages')"
             
-            while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                
-                local remove_cmd
-                remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$pkg_id")
-                
-                echo "Removing: $pkg_id"
-                eval "$remove_cmd"
-                
-                if [ $? -ne 0 ]; then
-                    failed_count=$((failed_count + 1))
-                    failed_scripts="${failed_scripts}remove-${pkg_id} "
-                fi
-            done < "$CONFIG_DIR/packages_to_remove.txt"
+            sh "$CONFIG_DIR/remove.sh"
+            
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}remove.sh "
+            fi
         fi
         
         # パッケージインストール
