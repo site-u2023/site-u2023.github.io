@@ -1419,8 +1419,10 @@ remove_adguardhome() {
     /etc/init.d/"${detected_service}" disable 2>/dev/null || true
 
     if [ "$DETECTED_SERVICE_TYPE" = "official" ]; then
+        # Official binary: uninstall service
         "/etc/${detected_service}/${detected_service}" -s uninstall 2>/dev/null || true
     else
+        # OpenWrt package: remove via package manager
         if [ -z "$PACKAGE_MANAGER" ]; then
             if command -v apk >/dev/null 2>&1; then
                 PACKAGE_MANAGER="apk"
@@ -1431,23 +1433,34 @@ remove_adguardhome() {
                 return 1
             fi
         fi
+        
+        # Remove package
+        printf "Removing adguardhome package... "
+        case "$PACKAGE_MANAGER" in
+            apk)
+                apk del adguardhome >/dev/null 2>&1 && printf "Done\n" || printf "Failed\n"
+                ;;
+            opkg)
+                opkg remove adguardhome >/dev/null 2>&1 && printf "Done\n" || printf "Failed\n"
+                ;;
+        esac
     fi
 
-    if [ -d /etc/AdGuardHome ] || [ -d /etc/adguardhome ] || [ -f /etc/adguardhome.yaml ]; then
+    if [ -d "$AGH_DIR_OFFICIAL" ] || [ -d "$AGH_DIR_SNAPSHOT" ] || [ -f "$AGH_CONFIG_RELEASE" ]; then
         if [ "$auto_confirm" != "auto" ]; then
             printf "Do you want to delete the AdGuard Home configuration file(s)? (y/N): "
             read -r cfg
             case "$cfg" in
                 [yY]*) 
-                    [ -d /etc/AdGuardHome ] && rm -rf /etc/AdGuardHome
-                    [ -d /etc/adguardhome ] && rm -rf /etc/adguardhome
-                    rm -f /etc/adguardhome.yaml
+                    [ -d "$AGH_DIR_OFFICIAL" ] && rm -rf "$AGH_DIR_OFFICIAL"
+                    [ -d "$AGH_DIR_SNAPSHOT" ] && rm -rf "$AGH_DIR_SNAPSHOT"
+                    rm -f "$AGH_CONFIG_RELEASE"
                     ;;
             esac
         else
-            [ -d /etc/AdGuardHome ] && rm -rf /etc/AdGuardHome
-            [ -d /etc/adguardhome ] && rm -rf /etc/adguardhome
-            rm -f /etc/adguardhome.yaml
+            [ -d "$AGH_DIR_OFFICIAL" ] && rm -rf "$AGH_DIR_OFFICIAL"
+            [ -d "$AGH_DIR_SNAPSHOT" ] && rm -rf "$AGH_DIR_SNAPSHOT"
+            rm -f "$AGH_CONFIG_RELEASE"
         fi
     fi
 
@@ -1473,14 +1486,12 @@ commit firewall
 EOF
     fi
 
-    # Clean up dependencies (NEW!)
+    # Clean up dependencies
     remove_dependencies
 
     restart_network_services
 
     printf "\033[1;32mAdGuard Home has been removed successfully.\033[0m\n"
-    
-    # prompt_reboot
 }
 
 # =============================================================================
