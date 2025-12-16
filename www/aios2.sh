@@ -147,6 +147,8 @@ _PACKAGE_AVAILABILITY_CACHE=""
 _PACKAGE_AVAILABILITY_LOADED=0
 _CATEGORY_PACKAGES_CACHE=""
 _CATEGORY_PACKAGES_LOADED=0
+_INSTALLED_PACKAGES_CACHE=""
+_INSTALLED_PACKAGES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -1542,14 +1544,36 @@ get_package_enablevar() {
     echo "$enable_var"
 }
 
+# グローバル変数追加
+_INSTALLED_PACKAGES_CACHE=""
+_INSTALLED_PACKAGES_LOADED=0
+
+# キャッシュ構築関数
+cache_installed_packages() {
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 1 ] && return 0
+    
+    echo "[DEBUG] Building installed packages cache..." >> "$CONFIG_DIR/debug.log"
+    
+    if [ "$PKG_MGR" = "opkg" ]; then
+        _INSTALLED_PACKAGES_CACHE=$(opkg list-installed | awk '{print $1}')
+    elif [ "$PKG_MGR" = "apk" ]; then
+        _INSTALLED_PACKAGES_CACHE=$(apk info -e 2>/dev/null)
+    fi
+    
+    _INSTALLED_PACKAGES_LOADED=1
+    
+    local count=$(echo "$_INSTALLED_PACKAGES_CACHE" | wc -l)
+    echo "[DEBUG] Installed packages cache built: $count packages" >> "$CONFIG_DIR/debug.log"
+}
+
 is_package_installed() {
     local pkg_id="$1"
     
-    if [ "$PKG_MGR" = "opkg" ]; then
-        opkg list-installed | grep -q "^${pkg_id}[[:space:]]*-"
-    elif [ "$PKG_MGR" = "apk" ]; then
-        apk info -e "$pkg_id" >/dev/null 2>&1
-    fi
+    # 初回のみキャッシュ構築
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+    
+    # メモリ内検索（高速）
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep -qx "$pkg_id"
 }
 
 initialize_installed_packages() {
@@ -3207,28 +3231,21 @@ SCRIPTS
     fi
 }
 
-# カスタムフィードのインストール状態チェック
 is_customfeed_installed() {
     local pattern="$1"
     local exclude="$2"
     
-    local installed_list=""
+    # キャッシュから検索（grepパターンマッチ）
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
     
-    if [ "$PKG_MGR" = "opkg" ]; then
-        if [ -n "$exclude" ]; then
-            installed_list=$(opkg list-installed | grep "^${pattern}" | grep -v "$exclude" | awk '{print $1}')
-        else
-            installed_list=$(opkg list-installed | grep "^${pattern}" | awk '{print $1}')
-        fi
-    elif [ "$PKG_MGR" = "apk" ]; then
-        if [ -n "$exclude" ]; then
-            installed_list=$(apk info | grep "^${pattern}" | grep -v "$exclude")
-        else
-            installed_list=$(apk info | grep "^${pattern}")
-        fi
+    local result
+    if [ -n "$exclude" ]; then
+        result=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^${pattern}" | grep -v "$exclude")
+    else
+        result=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^${pattern}")
     fi
     
-    echo "$installed_list"
+    echo "$result"
 }
 
 # 削除対象パッケージ検出
@@ -4342,7 +4359,11 @@ aios2_main() {
     # ========================================
     cache_package_availability &
     CACHE_PKG_PID=$!
+
+    cache_installed_packages
     
+    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
+   
     # ========================================
     # Phase 8: 残りのバックグラウンド処理完了を待機（並列）
     # ========================================
