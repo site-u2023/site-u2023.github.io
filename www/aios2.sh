@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.2343"
+VERSION="R7.1216.2250"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3460,16 +3460,27 @@ REMOVE_EOF
     echo "[DEBUG] Remove script generated: $output_file" >> "$CONFIG_DIR/debug.log"
 }
 
+generate_files() {
+    local pkgs selected_pkgs cat_id template_url api_url download_url pkg_id pattern
+    local tpl_custom enable_var
+    local script_id script_file template_path script_url
+    local temp_enablevars="$CONFIG_DIR/temp_enablevars.txt"
+
+    : > "$temp_enablevars"
+    
     # ========================================
-    # Phase 1: インストール対象パッケージの抽出（現在のインストール状態との比較）
+    # Phase 1: インストール対象パッケージの抽出（初期スナップショットとの差分）
     # ========================================
     local install_packages_content=""
     local packages_to_install=""
     
+    # 初期スナップショットをロード
+    local initial_packages=""
+    if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+        initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
+    fi
+    
     if [ -s "$SELECTED_PACKAGES" ]; then
-        # 現在インストールされているパッケージキャッシュをロード
-        [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
-        
         # 新規インストール対象パッケージの抽出
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
@@ -3478,11 +3489,24 @@ REMOVE_EOF
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             uid=$(echo "$cache_line" | cut -d= -f3)
             
-            # 現在インストールされているかチェック
-            if ! is_package_installed "$pkg_id"; then
+            # スナップショットに存在するかチェック
+            local in_snapshot=0
+            if [ -n "$initial_packages" ]; then
+                if [ -n "$uid" ]; then
+                    if echo "$initial_packages" | grep -q "=${uid}="; then
+                        in_snapshot=1
+                    fi
+                else
+                    if echo "$initial_packages" | grep -q "^${pkg_id}="; then
+                        in_snapshot=1
+                    fi
+                fi
+            fi
+            
+            # スナップショットに存在しない = 新規インストール対象
+            if [ "$in_snapshot" -eq 0 ]; then
                 packages_to_install="${packages_to_install}${cache_line}
 "
-                echo "[INFO] New install: $pkg_id" >> "$CONFIG_DIR/debug.log"
             else
                 echo "[INFO] Skipping already installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
             fi
