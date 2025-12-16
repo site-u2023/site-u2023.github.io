@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1643"
+VERSION="R7.1216.1710"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3528,6 +3528,7 @@ generate_files() {
     fi
     
     if [ -s "$SELECTED_PACKAGES" ]; then
+        # 新規インストール対象パッケージの抽出
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
             
@@ -3558,27 +3559,27 @@ generate_files() {
             fi
         done < "$SELECTED_PACKAGES"
         
-        # enableVar処理（全選択パッケージ対象）
-        local selected_packages_content
-        selected_packages_content=$(cat "$SELECTED_PACKAGES")
-        
-        while read -r cache_line; do
-            [ -z "$cache_line" ] && continue
-            
-            local pkg_id unique_id enable_var
-            pkg_id=$(echo "$cache_line" | cut -d= -f1)
-            unique_id=$(echo "$cache_line" | cut -d= -f3)
-            
-            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
-            
-            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${enable_var}='1'" >> "$temp_enablevars"
-            fi
-        done <<EOF
-$selected_packages_content
+        # enableVar処理（新規インストール対象パッケージのみ）
+        if [ -n "$packages_to_install" ]; then
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                
+                local pkg_id unique_id enable_var
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                unique_id=$(echo "$cache_line" | cut -d= -f3)
+                
+                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+                
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$temp_enablevars"
+                fi
+            done <<EOF
+$packages_to_install
 EOF
+            
+            [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
+        fi
         
-        [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
         install_packages_content="$packages_to_install"
     fi
     rm -f "$temp_enablevars"
