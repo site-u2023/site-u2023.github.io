@@ -3717,78 +3717,56 @@ generate_config_summary() {
     tr_customscripts=$(translate "tr-tui-summary-customscripts")
     
     {
+        # ========================================
+        # パッケージ変更
+        # ========================================
+        local install_list=""
+        local remove_list=""
+        
+        # 追加されるパッケージ
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
+            while read -r cache_line; do
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                # 初期スナップショットに存在しない = 追加
+                if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null; then
+                        install_list="${install_list}install ${pkg_id}
+"
+                    fi
+                else
+                    install_list="${install_list}install ${pkg_id}
+"
+                fi
+            done < "$SELECTED_PACKAGES"
+        fi
+        
+        # 削除されるパッケージ
+        local removed_packages=$(detect_packages_to_remove)
+        if [ -n "$removed_packages" ]; then
+            for pkg in $removed_packages; do
+                remove_list="${remove_list}remove ${pkg}
+"
+            done
+        fi
+        
+        # パッケージ変更がある場合のみ表示
+        if [ -n "$install_list" ] || [ -n "$remove_list" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             
-            # id_opts_list を構築（generate_files()と同じロジック）
-            local id_opts_list=""
-            while read -r cache_line; do
-                local pkg_id install_opts install_opts_value
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                install_opts=$(echo "$cache_line" | cut -d= -f4)
-                
-                # installOptionsキー名を実際のオプション値に変換
-                if [ -n "$install_opts" ]; then
-                    install_opts_value=$(convert_install_option "$install_opts")
-                else
-                    install_opts_value=""
-                fi
-                
-                id_opts_list="${id_opts_list}${pkg_id}|${install_opts_value}
-"
-            done < "$SELECTED_PACKAGES"
+            if [ -n "$install_list" ]; then
+                echo "$install_list"
+            fi
             
-            # 重複除去とオプション処理
-            local processed_ids=""
-            while read -r line; do
-                [ -z "$line" ] && continue
-                
-                local current_id current_opts
-                current_id=$(echo "$line" | cut -d'|' -f1)
-                current_opts=$(echo "$line" | cut -d'|' -f2)
-                
-                echo "$processed_ids" | grep -q "^${current_id}\$" && continue
-                
-                local same_id_lines count
-                same_id_lines=$(echo "$id_opts_list" | grep "^${current_id}|")
-                count=$(echo "$same_id_lines" | grep -c "^${current_id}|")
-                
-                if [ "$count" -gt 1 ]; then
-                    # 同じIDが複数ある場合、オプションなしを優先
-                    local no_opts_line
-                    no_opts_line=$(echo "$same_id_lines" | grep "^${current_id}|$" | head -1)
-                    
-                    if [ -n "$no_opts_line" ]; then
-                        echo "$current_id"
-                    else
-                        local has_opts_line opts_value
-                        has_opts_line=$(echo "$same_id_lines" | grep "|.\+$" | head -1)
-                        
-                        if [ -n "$has_opts_line" ]; then
-                            opts_value=$(echo "$has_opts_line" | cut -d'|' -f2)
-                            echo "${opts_value} ${current_id}"
-                        else
-                            echo "$current_id"
-                        fi
-                    fi
-                else
-                    if [ -n "$current_opts" ]; then
-                        echo "${current_opts} ${current_id}"
-                    else
-                        echo "$current_id"
-                    fi
-                fi
-                
-                processed_ids="${processed_ids}${current_id}
-"
-            done <<EOF
-$id_opts_list
-EOF
+            if [ -n "$remove_list" ]; then
+                echo "$remove_list"
+            fi
             
             echo ""
             has_content=1
         fi
         
+        # カスタムフィード
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
             cut -d= -f1 "$SELECTED_CUSTOM_PACKAGES"
@@ -3796,7 +3774,7 @@ EOF
             has_content=1
         fi
         
-        # 設定変数は SETUP_VARS から一度だけ表示
+        # 設定変数
         if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
             printf "🟡 %s\n\n" "$tr_variables"
             cat "$SETUP_VARS"
@@ -3804,7 +3782,7 @@ EOF
             has_content=1
         fi
         
-        # カスタムスクリプトの変数
+        # カスタムスクリプト
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
