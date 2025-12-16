@@ -1408,25 +1408,30 @@ EOF
     generate_files
     
     local tr_main_menu tr_review breadcrumb
-    local summary_file
+    local summary_file summary_content confirm_msg
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
     summary_file=$(generate_config_summary)
+    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
+        echo "Error: Failed to generate summary"
+        return 1
+    fi
     
-    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ] || grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
+    if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
         show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
         return 0
     fi
     
-    show_menu_header "$breadcrumb"
-    cat "$summary_file"
-    echo ""
-    echo "----------------------------------------"
+    summary_content=$(cat "$summary_file")
     
-    if show_yesno "$breadcrumb" "🟣 $(translate 'tr-tui-apply-confirm-question')"; then
+    confirm_msg="${summary_content}
+
+🟣 $(translate 'tr-tui-apply-confirm-question')"
+    
+    if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
         echo "$(translate 'tr-tui-creating-backup')"
         if ! create_backup "before_apply"; then
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
@@ -1526,24 +1531,29 @@ EOF
                 fi
             fi
         done
-        
-        # スクリプト実行後のクリーンアップ 
+    
+        # スクリプト実行後のクリーンアップ
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
-        
-        # 1. ファイルベースのキャッシュを削除
+    
+        # ファイルベースのキャッシュ削除
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         rm -f "$CONFIG_DIR"/customscripts-*.sh
         rm -f "$CONFIG_DIR"/temp_*.txt
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
-        
-        # 2. メモリキャッシュをクリア
+    
+        # メモリキャッシュをクリア
         clear_selection_cache
-        
-        # 3. カスタムスクリプト関連のキャッシュもクリア
+
+        # カスタムスクリプト関連のキャッシュクリア
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
-        
+    
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
+ 
+        local needs_reboot
+        needs_reboot=$(needs_reboot_check)
+        
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
         
         echo ""
         
