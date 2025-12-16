@@ -1911,8 +1911,31 @@ custom_script_options() {
     script_name=$(get_customscript_name "$script_id")
     breadcrumb="${parent_breadcrumb} > ${script_name}"
 
+    # テンプレートファイルの存在確認とダウンロード
+    local template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+    if [ ! -f "$template_path" ] || [ ! -s "$template_path" ]; then
+        echo "[DEBUG] Template not found, downloading: $template_path" >> "$CONFIG_DIR/debug.log"
+        
+        local script_file=$(get_customscript_file "$script_id")
+        if [ -z "$script_file" ]; then
+            show_msgbox "$breadcrumb" "Error: Script configuration not found"
+            return 1
+        fi
+        
+        local script_url="${BASE_URL}/custom-scripts/${script_file}"
+        if ! fetch_cached_template "$script_url" "$template_path"; then
+            show_msgbox "$breadcrumb" "Error: Failed to download script template"
+            return 1
+        fi
+        
+        if [ ! -f "$template_path" ] || [ ! -s "$template_path" ]; then
+            show_msgbox "$breadcrumb" "Error: Downloaded template is invalid"
+            return 1
+        fi
+    fi
+
     # テンプレートを読み込んで変数を取得
-    . "$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+    . "$template_path"
     
     options=$(get_customscript_options "$script_id")
     
