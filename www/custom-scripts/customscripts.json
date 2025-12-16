@@ -6,6 +6,12 @@
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
+      "requirements": {
+        "minMemory": 20,
+        "minFlash": 25,
+        "recommendedMemory": 50,
+        "recommendedFlash": 100
+      },
       "binaryPaths": [
         "/usr/bin/AdGuardHome",
         "/etc/AdGuardHome/AdGuardHome"
