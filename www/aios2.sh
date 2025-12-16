@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1216.1626"
+VERSION="R7.1216.1643"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4697,6 +4697,7 @@ aios2_main() {
     
     initialize_installed_packages
 
+    : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
 
