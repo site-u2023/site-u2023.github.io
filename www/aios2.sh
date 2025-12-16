@@ -3542,6 +3542,8 @@ SCRIPTS
     fi
 
     clear_selection_cache
+
+    detect_packages_to_remove
 }
 
 generate_config_summary() {
@@ -4213,6 +4215,8 @@ aios2_main() {
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
+
+    initialize_installed_packages
     
     # ========================================
     # Phase 9: UIモジュール起動
