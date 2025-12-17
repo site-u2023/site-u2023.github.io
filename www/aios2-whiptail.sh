@@ -960,8 +960,10 @@ package_selection() {
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
 
-    # 言語パック専用セレクター
     if [ "$cat_id" = "language-pack" ]; then
+        local cat_name breadcrumb
+        cat_name=$(get_category_name "$cat_id")
+        breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
         show_language_selector "$breadcrumb"
         return $?
     fi
@@ -973,7 +975,7 @@ package_selection() {
         get_package_name "dummy" > /dev/null 2>&1
         echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
     fi
-    
+
     local cat_name breadcrumb checklist_items
     local pkg_name status idx selected target_file idx_str idx_clean
     local packages
