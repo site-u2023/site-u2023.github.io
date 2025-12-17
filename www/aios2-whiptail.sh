@@ -782,6 +782,7 @@ category_config() {
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
         fi
+        update_language_packages
     fi
     
     # internet-connection カテゴリの場合、自動検出を試みる
