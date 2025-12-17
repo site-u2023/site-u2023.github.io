@@ -945,10 +945,11 @@ package_selection() {
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
 
+    local cat_name breadcrumb
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+    
     if [ "$cat_id" = "language-pack" ]; then
-        local cat_name breadcrumb
-        cat_name=$(get_category_name "$cat_id")
-        breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
         show_language_selector "$breadcrumb"
         return $?
     fi
