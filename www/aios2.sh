@@ -3068,7 +3068,7 @@ reset_all_settings() {
 }
 
 # 前回確定分の破棄
-reset_state_for_next_session() {
+XXX_reset_state_for_next_session() {
 
     # 選択パッケージ（ファイル）
     rm -f "$SELECTED_PACKAGES"
@@ -3093,6 +3093,26 @@ reset_state_for_next_session() {
     clear_selection_cache
 }
 
+reset_state_for_next_session() {
+    # 選択パッケージ（ファイル）
+    rm -f "$SELECTED_PACKAGES"
+    rm -f "$SELECTED_CUSTOM_PACKAGES"
+
+    # 言語変数をクリア（内部変数）
+    sed -i "/^language=/d" "$SETUP_VARS"
+
+    # 選択キャッシュ
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+
+    # インストール済みを初期選択として再生成
+    initialize_installed_packages
+
+    clear_selection_cache
+}
+
 update_language_packages() {
     local new_lang old_lang
     
@@ -3100,15 +3120,15 @@ update_language_packages() {
     
     # 未選択なら何もしない（初期状態）
     [ -z "$new_lang" ] && return 0
-
-    # 言語が変わっていなければ何もしない
-    [ "$old_lang" = "$new_lang" ] && return 0
         
     # 現在インストール済みのベース言語パックから言語コードを検出
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
-    
+
     local base_lang_pkg
     base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
+
+    # 言語が変わっていなければ何もしない
+    [ "$old_lang" = "$new_lang" ] && return 0
     
     if [ -n "$base_lang_pkg" ]; then
         old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
