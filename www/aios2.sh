@@ -40,12 +40,20 @@ debug_log() {
 #   basic-system|luci-app-ttyd
 #   usb-storage|kmod-usb-storage-uas
 #
+# 3. Language Package Cache:
+#   - File: available_languages.cache
+#   - Source: Extracted from pkg_availability_cache.txt (luci-i18n-base-* packages)
+#   - Built by: cache_available_languages() after pkg_availability_cache completion
+#   - Used by: show_language_selector() for language pack selection UI
+#   - Format: One language code per line (e.g. "ja", "zh-cn")
+#
 # 【Cache Loading Strategy】
 # - Both caches are built on first access (lazy loading)
 # - Source: postinst.json + customfeeds.json
 # - After cache build, NO jsonfilter calls for package info
 # - All package queries use grep/awk on cached data
 # - Cache cleared only on init() or explicit clear_selection_cache()
+# - Language cache: Built in aios2_main() after CACHE_PKG_PID completion
 #
 # 【uniqueId Handling】
 # - If uniqueId exists: ALL checks use uniqueId (NOT id)
@@ -4943,7 +4951,10 @@ aios2_main() {
     # Phase 8: 残りのバックグラウンド処理完了を待機（並列）
     # ========================================
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
-    
+
+    wait $CACHE_PKG_PID
+    cache_available_languages
+
     # LuCIから言語コードが取得できなかった場合、APIから取得した言語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
