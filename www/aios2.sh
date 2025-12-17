@@ -157,6 +157,8 @@ _CATEGORY_PACKAGES_CACHE=""
 _CATEGORY_PACKAGES_LOADED=0
 _INSTALLED_PACKAGES_CACHE=""
 _INSTALLED_PACKAGES_LOADED=0
+_LANGUAGE_MODULE_PATTERNS=""
+_LANGUAGE_MODULE_PATTERNS_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -561,7 +563,8 @@ init() {
     unset _TRANSLATIONS_EN_DATA
     unset _CURRENT_LANG
     unset _CATEGORY_PACKAGES_CACHE
-
+    unset _LANGUAGE_MODULE_PATTERNS
+    
     _PACKAGE_NAME_LOADED=0
     _SELECTED_PACKAGES_CACHE_LOADED=0
     _SELECTED_CUSTOM_CACHE_LOADED=0
@@ -572,7 +575,8 @@ init() {
     _SETUP_CATEGORIES_LOADED=0
     _PACKAGE_AVAILABILITY_LOADED=0
     _CATEGORY_PACKAGES_LOADED=0
-
+    _LANGUAGE_MODULE_PATTERNS_LOADED=0
+    
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
     : > "$SETUP_VARS"
@@ -1478,6 +1482,15 @@ get_package_checked() {
     '
 }
 
+get_language_module_patterns() {
+    if [ "$_LANGUAGE_MODULE_PATTERNS_LOADED" -eq 0 ]; then
+        _LANGUAGE_MODULE_PATTERNS=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_module_patterns[*]' 2>/dev/null)
+        _LANGUAGE_MODULE_PATTERNS_LOADED=1
+        echo "[DEBUG] Loaded language_module_patterns: $_LANGUAGE_MODULE_PATTERNS" >> "$CONFIG_DIR/debug.log"
+    fi
+    echo "$_LANGUAGE_MODULE_PATTERNS"
+}
+
 get_package_name() {
     local pkg_id="$1"
     
@@ -1762,7 +1775,7 @@ is_dependency_required_by_others() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # ★ 選択済みパッケージファイルから直接読み込む（高速化）
+    # 選択済みパッケージファイルから直接読み込む（高速化）
     while read -r selected_line; do
         [ -z "$selected_line" ] && continue
         
@@ -1772,11 +1785,11 @@ is_dependency_required_by_others() {
         # Skip the package we're excluding
         [ "$current_pkg_id" = "$excluding_pkg_id" ] && continue
         
-        # ★ キャッシュから依存関係を取得（フィールド6）
+        # キャッシュから依存関係を取得（フィールド6）
         local deps
         deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}')
         
-        # ★ カンマ区切りの中から dep_id を検索
+        # カンマ区切りの中から dep_id を検索
         echo "$deps" | tr ',' '\n' | grep -qx "$dep_id" && return 0
     done < "$target_file"
     
@@ -1795,7 +1808,7 @@ add_package_with_dependencies() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # ★ ファイル内容を1回だけ読み込む
+    # ファイル内容を1回だけ読み込む
     local existing_packages
     existing_packages=$(cat "$target_file" 2>/dev/null || true)
     
@@ -1813,7 +1826,7 @@ add_package_with_dependencies() {
         cached_id=$(echo "$cache_line" | cut -d= -f1)
         cached_uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # ★ 修正：uniqueId を考慮した正確な重複チェック ★
+        # uniqueId を考慮した正確な重複チェック
         local already_exists=0
         if [ -n "$cached_uid" ]; then
             # uniqueId がある場合：フィールド3 で完全一致
@@ -1834,35 +1847,45 @@ add_package_with_dependencies() {
             local enable_var
             enable_var=$(echo "$cache_line" | cut -d= -f5)
             
-            # ★ メモリ内で重複チェック
+            # メモリ内で重複チェック
             if [ -n "$enable_var" ] && ! echo "$existing_vars" | grep -q "^${enable_var}="; then
                 echo "${enable_var}='1'" >> "$SETUP_VARS"
             fi
             
-            # ★★★ LuCIパッケージの場合のみ言語パック追加 ★★★
+            # LuCIパッケージの場合のみ言語パック追加
             if [ "$caller" != "custom_feeds" ]; then
+                # luci-i18n- は除外
                 case "$cached_id" in
-                    luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
-                        case "$cached_id" in
-                            luci-i18n-*) ;;
-                            *)
-                                # ベース言語パック検出
-                                local installed_lang
-                                installed_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+                    luci-i18n-*) ;;
+                    *)
+                        local patterns module_name=""
+                        patterns=$(get_language_module_patterns)
+                        
+                        # パターンマッチでモジュール名を抽出
+                        for pattern in $patterns; do
+                            case "$cached_id" in
+                                ${pattern}*)
+                                    module_name="${cached_id#$pattern}"
+                                    break
+                                    ;;
+                            esac
+                        done
+                        
+                        if [ -n "$module_name" ]; then
+                            # ベース言語パック検出
+                            local installed_lang
+                            installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+                            
+                            if [ -n "$installed_lang" ]; then
+                                local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
                                 
-                                if [ -n "$installed_lang" ]; then
-                                    local module_name
-                                    module_name=$(echo "$cached_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
-                                    local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
-                                    
-                                    if ! grep -q "^${lang_pkg}=" "$target_file" 2>/dev/null && \
-                                       ! grep -q "=${lang_pkg}=" "$target_file" 2>/dev/null; then
-                                        echo "${lang_pkg}=${lang_pkg}===" >> "$target_file"
-                                        echo "[LANG] Added language package: $lang_pkg for $cached_id" >> "$CONFIG_DIR/debug.log"
-                                    fi
+                                if ! grep -q "^${lang_pkg}=" "$target_file" 2>/dev/null && \
+                                   ! grep -q "=${lang_pkg}=" "$target_file" 2>/dev/null; then
+                                    echo "${lang_pkg}=${lang_pkg}===" >> "$target_file"
+                                    echo "[LANG] Added language package: $lang_pkg for $cached_id" >> "$CONFIG_DIR/debug.log"
                                 fi
-                                ;;
-                        esac
+                            fi
+                        fi
                         ;;
                 esac
             fi
@@ -1903,7 +1926,7 @@ add_package_with_dependencies() {
                     local dep_enable_var
                     dep_enable_var=$(echo "$dep_cache_line" | cut -d= -f5)
                     
-                    # ★ メモリ内で重複チェック
+                    # メモリ内で重複チェック
                     if [ -n "$dep_enable_var" ] && ! echo "$existing_vars" | grep -q "^${dep_enable_var}="; then
                         echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
                     fi
@@ -2979,7 +3002,7 @@ EOF
     # 3. 現在値を取得（ここで「実効値」変数を使用する）
     local current_val
     if [ "$var_name" = "connection_type" ] && [ -n "$effective_type" ]; then
-        # ★ここがポイント: connection_type の判定には、渡された実効値変数を使用する
+        # connection_type の判定には、渡された実効値変数を使用する
         current_val="$effective_type"
     else
         # それ以外の変数は通常通り SETUP_VARS から取得
@@ -3068,31 +3091,6 @@ reset_all_settings() {
 }
 
 # 前回確定分の破棄
-XXX_reset_state_for_next_session() {
-
-    # 選択パッケージ（ファイル）
-    rm -f "$SELECTED_PACKAGES"
-    rm -f "$SELECTED_CUSTOM_PACKAGES"
-
-    # 言語変数をクリア（内部変数）
-    sed -i "/^language=/d" "$SETUP_VARS"
-    
-    # 選択キャッシュ
-    unset _SELECTED_PACKAGES_CACHE
-    unset _SELECTED_CUSTOM_CACHE
-    unset _SELECTED_PACKAGES_LOADED
-
-    # カスタムスクリプトキャッシュ
-    unset _CUSTOMSCRIPT_CACHE
-    unset _CUSTOMSCRIPT_LOADED
-
-    # インストール済みを初期選択として再生成
-    initialize_installed_packages
-
-    # キャッシュは未ロード状態に戻す
-    clear_selection_cache
-}
-
 reset_state_for_next_session() {
     # 選択パッケージ（ファイル）
     rm -f "$SELECTED_PACKAGES"
@@ -3138,15 +3136,31 @@ update_language_packages() {
     
     # SELECTED_PACKAGES から LuCI パッケージを抽出
     local selected_luci_packages=""
+    local patterns
+    patterns=$(get_language_module_patterns)
+    
     if [ -f "$SELECTED_PACKAGES" ]; then
-        selected_luci_packages=$(awk -F'=' '
-            /^luci-app-|^luci-proto-|^luci-mod-/ {
-                # luci-i18n- は除外
-                if ($1 !~ /^luci-i18n-/) {
-                    print $1
-                }
-            }
-        ' "$SELECTED_PACKAGES")
+        while read -r line; do
+            [ -z "$line" ] && continue
+            local pkg_id
+            pkg_id=$(echo "$line" | cut -d= -f1)
+            
+            # luci-i18n- は除外
+            case "$pkg_id" in
+                luci-i18n-*) continue ;;
+            esac
+            
+            # パターンマッチ
+            for pattern in $patterns; do
+                case "$pkg_id" in
+                    ${pattern}*)
+                        selected_luci_packages="${selected_luci_packages}${pkg_id}
+"
+                        break
+                        ;;
+                esac
+            done
+        done < "$SELECTED_PACKAGES"
     fi
     
     # 既存の言語パッケージを全削除
@@ -3163,8 +3177,16 @@ update_language_packages() {
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
-            # luci-app-firewall → firewall
-            local module_name=$(echo "$pkg" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
+            # パターンからモジュール名を抽出
+            local module_name="$pkg"
+            for pattern in $patterns; do
+                case "$pkg" in
+                    ${pattern}*)
+                        module_name="${pkg#$pattern}"
+                        break
+                        ;;
+                esac
+            done
             local lang_pkg="luci-i18n-${module_name}-${new_lang}"
             
             # 重複チェック
@@ -3231,7 +3253,7 @@ initialize_language_packages() {
     
     # システムにインストール済みのベース言語パックを検出
     local installed_lang
-    installed_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
     
     if [ -z "$installed_lang" ]; then
         debug_log "No base language package installed, skipping"
@@ -3239,6 +3261,10 @@ initialize_language_packages() {
     fi
     
     debug_log "Detected installed language: $installed_lang"
+    
+    # JSONからパターンを取得
+    local patterns
+    patterns=$(get_language_module_patterns)
     
     # 選択されたLuCIパッケージの言語パッケージを追加
     if [ -s "$SELECTED_PACKAGES" ]; then
@@ -3248,26 +3274,31 @@ initialize_language_packages() {
             local pkg_id
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             
+            # luci-i18n- は除外
             case "$pkg_id" in
-                luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
-                    # luci-i18n- は除外
-                    case "$pkg_id" in
-                        luci-i18n-*) continue ;;
-                    esac
-                    
-                    # モジュール名を抽出: luci-app-irqbalance -> irqbalance
-                    local module_name
-                    module_name=$(echo "$pkg_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
-                    
-                    local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
-                    
-                    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-                       ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-                        debug_log "Added LuCI language package: $lang_pkg for $pkg_id"
-                    fi
-                    ;;
+                luci-i18n-*) continue ;;
             esac
+            
+            # パターンマッチでモジュール名を抽出
+            local module_name=""
+            for pattern in $patterns; do
+                case "$pkg_id" in
+                    ${pattern}*)
+                        module_name="${pkg_id#$pattern}"
+                        break
+                        ;;
+                esac
+            done
+            
+            if [ -n "$module_name" ]; then
+                local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                
+                if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                   ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    debug_log "Added LuCI language package: $lang_pkg for $pkg_id"
+                fi
+            fi
         done < "$SELECTED_PACKAGES"
     fi
     
