@@ -3559,8 +3559,9 @@ EOF
             local final_list=""
             local processed_ids=""
             
-            echo "$id_opts_list" | awk -F'|' 'NF==2 {print $1 "|" $2}' | \
             while IFS='|' read -r current_id current_opts; do
+                [ -z "$current_id" ] && continue
+                
                 case "$processed_ids" in
                     *"${current_id}"*) continue ;;
                 esac
@@ -3602,7 +3603,9 @@ EOF
                 
                 processed_ids="${processed_ids}${current_id}
 "
-            done
+            done <<IDOPTS
+$(echo "$id_opts_list" | awk -F'|' 'NF==2 {print $1 "|" $2}')
+IDOPTS
             
             local install_cmd=""
             pkgs=$(echo "$final_list" | xargs)
