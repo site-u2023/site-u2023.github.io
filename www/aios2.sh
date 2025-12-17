@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1042"
+VERSION="R7.1217.1138"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3112,23 +3112,47 @@ initialize_language_packages() {
     echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
     
     if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
-        echo "[DEBUG] Language is 'en' or empty, no packages needed" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Language is 'en' or empty, skipping" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
     
-    local prefixes
-    prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+    # ベース言語パックがシステムにインストール済みか確認
+    local base_lang_pkg="luci-i18n-base-${current_lang}"
+    if ! opkg status "$base_lang_pkg" 2>/dev/null | grep -q "^Status:.*installed"; then
+        echo "[DEBUG] Base language package '$base_lang_pkg' not installed, skipping all language packages" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
     
-    for prefix in $prefixes; do
-        local lang_pkg="${prefix}${current_lang}"
-        
-        # キャッシュ形式で追加
-        if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-           ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-            echo "[INIT] Added language package: $lang_pkg" >> "$CONFIG_DIR/debug.log"
-        fi
-    done
+    echo "[DEBUG] Base language package '$base_lang_pkg' is installed, adding LuCI language packages" >> "$CONFIG_DIR/debug.log"
+    
+    # 選択されたLuCIパッケージの言語パッケージを追加
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
+            local pkg_id
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            
+            case "$pkg_id" in
+                luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
+                    case "$pkg_id" in
+                        luci-i18n-*) continue ;;
+                    esac
+                    
+                    local module_name
+                    module_name=$(echo "$pkg_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
+                    
+                    local lang_pkg="luci-i18n-${module_name}-${current_lang}"
+                    
+                    if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                       ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                        echo "[INIT] Added LuCI language package: $lang_pkg for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                    fi
+                    ;;
+            esac
+        done < "$SELECTED_PACKAGES"
+    fi
     
     echo "[DEBUG] === initialize_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
