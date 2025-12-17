@@ -1405,6 +1405,7 @@ package_categories() {
 }
 
 show_language_selector() {
+    local breadcrumb="$1"
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
@@ -1422,6 +1423,8 @@ show_language_selector() {
     else
         current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
     fi
+
+    show_menu_header "$breadcrumb"
     
     local menu_items=""
     local idx=1
@@ -1464,7 +1467,7 @@ package_selection() {
 
     # 言語パック専用セレクター
     if [ "$cat_id" = "language-pack" ]; then
-        show_language_selector
+        show_language_selector "$breadcrumb"
         return $?
     fi
     
