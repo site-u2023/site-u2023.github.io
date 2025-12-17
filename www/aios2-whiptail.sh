@@ -1028,6 +1028,7 @@ EOF
         $radio_list" 3>&1 1>&2 2>&3)
     
     [ $? -ne 0 ] || [ -z "$selected" ] && return 0
+    selected=$(echo "$selected" | tr -d '"')
     
     echo "[DEBUG] Selected language: '$selected', current was: '$current_lang'" >> "$CONFIG_DIR/debug.log"
     
