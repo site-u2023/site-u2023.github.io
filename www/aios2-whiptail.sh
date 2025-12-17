@@ -163,7 +163,7 @@ EOF
         
         # カテゴリ選択処理
         if [ -n "$choice" ]; then
-            selected_cat=$(echo "$categories" | sed -n "${choice}p")
+            selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
             
             if [ -n "$selected_cat" ]; then
                 # ここでパッケージ選択へ遷移
