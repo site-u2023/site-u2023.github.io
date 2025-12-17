@@ -1414,6 +1414,32 @@ EOF
     done
 }
 
+# 前回確定分の破棄
+reset_state_for_next_session() {
+
+    # 選択パッケージ（ファイル）
+    rm -f "$SELECTED_PACKAGES"
+    rm -f "$SELECTED_CUSTOM_PACKAGES"
+
+    # 設定変数
+    : > "$SETUP_VARS"
+
+    # 選択キャッシュ
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _SELECTED_PACKAGES_LOADED
+
+    # カスタムスクリプトキャッシュ
+    unset _CUSTOMSCRIPT_CACHE
+    unset _CUSTOMSCRIPT_LOADED
+
+    # インストール済みを初期選択として再生成
+    initialize_installed_packages
+
+    # キャッシュは未ロード状態に戻す
+    clear_selection_cache
+}
+
 review_and_apply() {
     local need_fetch=0
     
@@ -1600,36 +1626,8 @@ EOF
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
         rm -f "$CONFIG_DIR/execution_plan.sh"
 
-        # 選択パッケージ（ファイル）
-        rm -f "$SELECTED_PACKAGES"
-        rm -f "$SELECTED_CUSTOM_PACKAGES"
-
-        # 設定変数
-        : > "$SETUP_VARS"
-
-        # 選択キャッシュ
-        unset _SELECTED_PACKAGES_CACHE
-        unset _SELECTED_CUSTOM_CACHE
-        unset _SELECTED_PACKAGES_LOADED
-
-        # カスタムスクリプトキャッシュ
-        unset _CUSTOMSCRIPT_CACHE
-        unset _CUSTOMSCRIPT_LOADED
-
-        # インストール済みパッケージキャッシュを再構築
-        unset _INSTALLED_PACKAGES_CACHE
-        _INSTALLED_PACKAGES_LOADED=0
-
-        # インストール済みパッケージキャッシュを無効化
-        unset _INSTALLED_PACKAGES_CACHE
-        _INSTALLED_PACKAGES_LOADED=0
-
-        # インストール済み状態を初期選択として再生成
-        initialize_installed_packages
-
-        # 選択キャッシュをリセット
-        clear_selection_cache
-
+        reset_state_for_next_session
+        
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
         
         echo ""
