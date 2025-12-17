@@ -3063,6 +3063,7 @@ EOF
 
 # 新規構成開始専用
 reset_all_settings() {
+    # : > "$SETUP_VARS"
     rm -f "$SETUP_VARS"
 }
 
@@ -3073,9 +3074,9 @@ reset_state_for_next_session() {
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
 
-    # 設定変数
-    # : > "$SETUP_VARS"
-
+    # 言語変数をクリア（内部変数）
+    sed -i "/^language=/d" "$SETUP_VARS"
+    
     # 選択キャッシュ
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
