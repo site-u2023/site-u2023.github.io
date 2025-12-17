@@ -3222,6 +3222,8 @@ update_language_packages() {
             echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
         done
     fi
+
+    clear_selection_cache
 }
 
 # API値の動的追跡
