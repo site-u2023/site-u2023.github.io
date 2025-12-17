@@ -908,6 +908,8 @@ show_language_selector() {
     else
         current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
     fi
+
+    show_menu_header "$breadcrumb"
     
     local radio_list=""
     while read -r lang; do
