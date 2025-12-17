@@ -890,8 +890,6 @@ EOF
 }
 
 show_language_selector() {
-    echo "[DEBUG] show_language_selector called" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] DIALOG=$DIALOG" >> "$CONFIG_DIR/debug.log"
     
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
