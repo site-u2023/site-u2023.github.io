@@ -26,8 +26,6 @@
       "updateCommand": "apk update",
       "upgradeCommand": "apk upgrade",
       "listInstalledCommand": "apk info",
-      "dependsCommand": "apk info -R {package} 2>/dev/null | tail -n +2",
-      "whatDependsCommand": "apk info -r {package} 2>/dev/null | tail -n +2",
       "systemPackages": ["libc", "libgcc", "busybox"],
       "options": {
         "ignoreDeps": "--force-broken-world",
