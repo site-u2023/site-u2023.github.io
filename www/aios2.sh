@@ -159,6 +159,8 @@ _INSTALLED_PACKAGES_CACHE=""
 _INSTALLED_PACKAGES_LOADED=0
 _LANGUAGE_MODULE_PATTERNS=""
 _LANGUAGE_MODULE_PATTERNS_LOADED=0
+_LANGUAGE_PREFIXES=""
+_LANGUAGE_PREFIXES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -564,6 +566,7 @@ init() {
     unset _CURRENT_LANG
     unset _CATEGORY_PACKAGES_CACHE
     unset _LANGUAGE_MODULE_PATTERNS
+    unset _LANGUAGE_PREFIXES
     
     _PACKAGE_NAME_LOADED=0
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -576,6 +579,7 @@ init() {
     _PACKAGE_AVAILABILITY_LOADED=0
     _CATEGORY_PACKAGES_LOADED=0
     _LANGUAGE_MODULE_PATTERNS_LOADED=0
+    _LANGUAGE_PREFIXES_LOADED=0 
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
@@ -1489,6 +1493,15 @@ get_language_module_patterns() {
         echo "[DEBUG] Loaded language_module_patterns: $_LANGUAGE_MODULE_PATTERNS" >> "$CONFIG_DIR/debug.log"
     fi
     echo "$_LANGUAGE_MODULE_PATTERNS"
+}
+
+get_language_prefixes() {
+    if [ "$_LANGUAGE_PREFIXES_LOADED" -eq 0 ]; then
+        _LANGUAGE_PREFIXES=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes[*]' 2>/dev/null)
+        _LANGUAGE_PREFIXES_LOADED=1
+        echo "[DEBUG] Loaded language_prefixes: $_LANGUAGE_PREFIXES" >> "$CONFIG_DIR/debug.log"
+    fi
+    echo "$_LANGUAGE_PREFIXES"
 }
 
 get_package_name() {
@@ -3111,7 +3124,7 @@ reset_state_for_next_session() {
     clear_selection_cache
 }
 
-update_language_packages() {
+XXX_update_language_packages() {
     local new_lang old_lang
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -3204,6 +3217,79 @@ EOF
     clear_selection_cache
 }
 
+update_language_packages() {
+    local new_lang old_lang
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    [ -z "$new_lang" ] && return 0
+    
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+
+    local base_lang_pkg
+    base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
+
+    if [ -n "$base_lang_pkg" ]; then
+        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
+    else
+        old_lang="en"
+    fi
+    
+    [ "$old_lang" = "$new_lang" ] && return 0
+    
+    # ... (既存のselected_luci_packages抽出ロジック) ...
+    
+    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+    
+    if [ "$new_lang" != "en" ]; then
+        # ★★★ setup.jsonから基本言語プレフィックスを取得 ★★★
+        local prefixes
+        prefixes=$(get_language_prefixes)
+        
+        for prefix in $prefixes; do
+            local lang_pkg="${prefix}${new_lang}"
+            
+            if ! check_package_available "$lang_pkg" "normal"; then
+                debug_log "Base language pack not available: $lang_pkg (skipping)"
+                continue
+            fi
+            
+            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+            debug_log "Added base language package: $lang_pkg"
+        done
+   
+        # ★★★ アプリケーション言語パッケージ（既存ロジック） ★★★
+        local patterns
+        patterns=$(get_language_module_patterns)
+        
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            local module_name="$pkg"
+            for pattern in $patterns; do
+                case "$pkg" in
+                    ${pattern}*)
+                        module_name="${pkg#$pattern}"
+                        break
+                        ;;
+                esac
+            done
+            local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+
+            if ! check_package_available "$lang_pkg" "normal"; then
+                continue
+            fi
+            
+            if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+            fi
+        done <<EOF
+$selected_luci_packages
+EOF
+    fi   
+    clear_selection_cache
+}
+
 # API値の動的追跡
 track_api_value_changes() {
     local cat_id="$1"
@@ -3252,7 +3338,7 @@ track_api_value_changes() {
 # システムにインストール済みの言語に基づき、
 # 選択されたLuCIパッケージの言語パックを自動追加
 # ========================================
-initialize_language_packages() {
+XXX_initialize_language_packages() {
     debug_log "=== initialize_language_packages called ==="
     
     local installed_lang
@@ -3293,6 +3379,83 @@ initialize_language_packages() {
                 local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
                 
                 # ★ availability check を追加
+                if ! check_package_available "$lang_pkg" "normal"; then
+                    debug_log "Language pack not available: $lang_pkg (skipping)"
+                    continue
+                fi
+                
+                if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                   ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    debug_log "Added LuCI language package: $lang_pkg for $pkg_id"
+                fi
+            fi
+        done < "$SELECTED_PACKAGES"
+    fi
+    
+    debug_log "=== initialize_language_packages finished ==="
+}
+
+initialize_language_packages() {
+    debug_log "=== initialize_language_packages called ==="
+    
+    local installed_lang
+    installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    
+    if [ -z "$installed_lang" ]; then
+        debug_log "No base language package installed, skipping"
+        return 0
+    fi
+    
+    debug_log "Detected installed language: $installed_lang"
+    
+    # ★★★ setup.jsonから基本言語プレフィックスを取得 ★★★
+    local prefixes
+    prefixes=$(get_language_prefixes)
+    
+    for prefix in $prefixes; do
+        local lang_pkg="${prefix}${installed_lang}"
+        
+        if ! check_package_available "$lang_pkg" "normal"; then
+            debug_log "Base language pack not available: $lang_pkg (skipping)"
+            continue
+        fi
+        
+        if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+           ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+            debug_log "Added base LuCI language package: $lang_pkg"
+        fi
+    done
+    
+    # ★★★ アプリケーション言語パッケージ（既存ロジック） ★★★
+    local patterns
+    patterns=$(get_language_module_patterns)
+    
+    if [ -s "$SELECTED_PACKAGES" ]; then
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
+            local pkg_id
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            
+            case "$pkg_id" in
+                luci-i18n-*) continue ;;
+            esac
+            
+            local module_name=""
+            for pattern in $patterns; do
+                case "$pkg_id" in
+                    ${pattern}*)
+                        module_name="${pkg_id#$pattern}"
+                        break
+                        ;;
+                esac
+            done
+            
+            if [ -n "$module_name" ]; then
+                local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                
                 if ! check_package_available "$lang_pkg" "normal"; then
                     debug_log "Language pack not available: $lang_pkg (skipping)"
                     continue
