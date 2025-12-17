@@ -3234,7 +3234,7 @@ NG_update_language_packages() {
     debug_log "Language package update completed"
 }
 
-update_language_packages() {
+XXXXXXXXXX_update_language_packages() {
     local new_lang old_lang
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -3280,6 +3280,85 @@ update_language_packages() {
     fi
     clear_selection_cache
     debug_log "Language package update completed"
+}
+
+update_language_packages() {
+    local new_lang old_lang
+    
+    debug_log "=== update_language_packages called ==="
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    debug_log "new_lang='$new_lang'"
+    
+    # キャッシュをロード（初回のみ）
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+    
+    # キャッシュから言語パッケージを取得
+    local installed_lang_pkgs
+    installed_lang_pkgs=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-")
+    
+    debug_log "Installed language packages from cache:"
+    debug_log "$installed_lang_pkgs"
+    
+    # 現在の言語を検出（ベースパッケージから）
+    local base_lang_pkg
+    base_lang_pkg=$(echo "$installed_lang_pkgs" | grep "^luci-i18n-base-" | head -1)
+    
+    if [ -n "$base_lang_pkg" ]; then
+        # luci-i18n-base-ja → ja
+        # luci-i18n-base-zh-cn → zh-cn
+        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
+    else
+        old_lang="en"
+    fi
+    
+    debug_log "old_lang='$old_lang'"
+    
+    # 空欄の場合は全削除
+    if [ -z "$new_lang" ]; then
+        grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+        debug_log "Removed all language packages"
+        clear_selection_cache
+        return 0
+    fi
+    
+    # 言語が変わっていなければ何もしない
+    if [ "$old_lang" = "$new_lang" ]; then
+        debug_log "Language unchanged: $old_lang"
+        return 0
+    fi
+    
+    debug_log "Updating language packages: $old_lang -> $new_lang"
+    
+    # 既存の言語パッケージを全削除
+    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+    debug_log "Removed old language packages from SELECTED_PACKAGES"
+    
+    # 新言語に置き換え（en以外）
+    if [ "$new_lang" != "en" ]; then
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            # luci-i18n-base-ja → luci-i18n-base
+            # luci-i18n-firewall-ja → luci-i18n-firewall
+            local base_name=$(echo "$pkg" | sed 's/-[a-z][a-z]\(-[a-z][a-z]\)\?$//')
+            local new_pkg="${base_name}-${new_lang}"
+            
+            # 重複チェック
+            if ! grep -q "^${new_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
+                debug_log "Added language package: $new_pkg"
+            fi
+        done <<EOF
+$installed_lang_pkgs
+EOF
+    fi
+    
+    clear_selection_cache
+    debug_log "Language package update completed"
+    debug_log "=== update_language_packages finished ==="
 }
 
 # API値の動的追跡
