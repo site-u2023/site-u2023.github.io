@@ -889,7 +889,7 @@ EOF
     done
 }
 
-show_language_selector() {
+XXX_show_language_selector() {
     local breadcrumb="$1"
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
@@ -961,6 +961,101 @@ EOF
     
     # 言語パッケージを更新
     update_language_packages
+    
+    return 0
+}
+
+show_language_selector() {
+    local breadcrumb="$1"
+    local cache_file="$CONFIG_DIR/available_languages.cache"
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        cache_available_languages
+    fi
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-languages-available')"
+        return 1
+    fi
+    
+    # ★ 現在の言語検出（優先順位）
+    # 1. SETUP_VARSから取得（ユーザーが選択した言語）
+    # 2. インストール済みパッケージから取得（実際にインストールされている言語）
+    # 3. どちらもなければ en
+    local current_lang
+    
+    # まずSETUP_VARSを確認
+    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    # SETUP_VARSに無ければインストール済みパッケージから検出
+    if [ -z "$current_lang" ]; then
+        current_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    fi
+    
+    # どちらも無ければ en をデフォルト
+    [ -z "$current_lang" ] && current_lang="en"
+    
+    echo "[DEBUG] show_language_selector: current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # en を含む全言語リストを作成してソート
+    local all_langs
+    all_langs=$(
+        {
+            echo "en"
+            [ -f "$cache_file" ] && cat "$cache_file"
+        } | sort -u
+    )
+    
+    # ラジオリスト構築（アルファベット順）
+    local radio_list=""
+    while read -r lang; do
+        [ -z "$lang" ] && continue
+        
+        local status="OFF"
+        [ "$lang" = "$current_lang" ] && status="ON"
+        
+        radio_list="$radio_list \"$lang\" \"\" $status"
+    done <<EOF
+$all_langs
+EOF
+    
+    local selected
+    selected=$(eval "$DIALOG --title \"$breadcrumb\" \
+        --ok-button \"$(translate 'tr-tui-select')\" \
+        --cancel-button \"$(translate 'tr-tui-back')\" \
+        --radiolist \"$(translate 'tr-tui-select-language')\" \
+        $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
+        $radio_list" 3>&1 1>&2 2>&3)
+    
+    [ $? -ne 0 ] || [ -z "$selected" ] && return 0
+    
+    echo "[DEBUG] Selected language: '$selected', current was: '$current_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # 変更なしの場合は何もしない
+    [ "$selected" = "$current_lang" ] && return 0
+    
+    # SETUP_VARSを更新
+    sed -i "/^language=/d" "$SETUP_VARS"
+    
+    if [ "$selected" = "en" ]; then
+        # en 選択時は language 変数を削除（全言語パック削除トリガー）
+        echo "[DEBUG] Selected 'en', removed language variable" >> "$CONFIG_DIR/debug.log"
+    else
+        # en 以外の場合は変数を設定
+        echo "language='${selected}'" >> "$SETUP_VARS"
+        echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+        
+        # 選択した言語のベースパッケージを追加
+        local lang_pkg="luci-i18n-base-${selected}"
+        if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+            echo "[DEBUG] Added ${lang_pkg} to SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
+        fi
+    fi
+    
+    # 言語パッケージを更新（旧言語パックの削除と新言語パックの追加）
+    update_language_packages
+    clear_selection_cache
     
     return 0
 }
