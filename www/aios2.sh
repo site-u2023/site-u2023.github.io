@@ -1152,6 +1152,11 @@ cache_available_languages() {
 show_language_selector() {
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
+    # キャッシュがなければ生成
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        cache_available_languages
+    fi
+    
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
         show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
         return 1
@@ -1167,7 +1172,7 @@ show_language_selector() {
     
     debug_log "Current installed language: ${current_lang:-none}"
     
-    # ラジオボタンリスト生成
+    # ラジオボタンリスト生成（キャッシュの全言語を表示）
     local radio_list=""
     while read -r lang; do
         [ -z "$lang" ] && continue
