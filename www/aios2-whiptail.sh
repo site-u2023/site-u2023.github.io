@@ -885,6 +885,12 @@ package_selection() {
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
 
+    # 言語パック専用セレクター
+    if [ "$cat_id" = "language-pack" ]; then
+        show_language_selector
+        return $?
+    fi
+    
     echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
