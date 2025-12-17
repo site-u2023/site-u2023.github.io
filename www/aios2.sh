@@ -312,7 +312,7 @@ select_ui_mode() {
     
     echo "Select UI Mode:"
     echo "1) whiptail (Dialog TUI)"
-    echo "2) simple   (List TUI)"
+    echo "2) simple   (List TUI) [EXPERIMENTAL]"
     
     printf "Select [1]: "
     read -r choice
