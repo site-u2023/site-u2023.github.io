@@ -1317,7 +1317,7 @@ EOF
             echo ""
             echo "$(translate 'tr-tui-removing-packages')"
             
-            sh -x "$CONFIG_DIR/remove.sh" 2>&1 | grep "^+ \(opkg\|apk\)"
+            sh "$CONFIG_DIR/remove.sh"
             
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
@@ -1374,7 +1374,7 @@ EOF
         if [ "$HAS_SETUP" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
-            sh -x "$CONFIG_DIR/setup.sh" 2>&1 | grep "^+ uci"
+            sh "$CONFIG_DIR/setup.sh"
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}setup.sh "
