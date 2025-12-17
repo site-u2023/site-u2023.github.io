@@ -1153,7 +1153,7 @@ show_language_selector() {
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
-        show_message "$MSG_ERROR" "$MSG_NO_LANGUAGES_AVAILABLE"
+        show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
         return 1
     fi
     
@@ -1165,28 +1165,25 @@ show_language_selector() {
         current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
     fi
     
+    debug_log "Current installed language: ${current_lang:-none}"
+    
     # ラジオボタンリスト生成
     local radio_list=""
-    local first=1
     while read -r lang; do
         [ -z "$lang" ] && continue
         
         local status="OFF"
-        if [ "$lang" = "$current_lang" ]; then
-            status="ON"
-        elif [ -z "$current_lang" ] && [ "$first" -eq 1 ]; then
-            # 未インストール時はen(なければ最初)をデフォルト
-            [ "$lang" = "en" ] && status="ON"
-        fi
+        [ "$lang" = "$current_lang" ] && status="ON"
         
         radio_list="$radio_list \"$lang\" \"\" $status"
-        first=0
     done < "$cache_file"
     
     # ダイアログ表示
-    local selected
-    selected=$(eval "$DIALOG --title \"$MSG_LANGUAGE_PACKAGE\" \
-        --radiolist \"$MSG_SELECT_LANGUAGE\" \
+    local title selected
+    title=$(translate "tr-tui-language-package")
+    
+    selected=$(eval "$DIALOG --title \"$title\" \
+        --radiolist \"$(translate 'tr-tui-select-language')\" \
         $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
         $radio_list" 3>&1 1>&2 2>&3)
     
@@ -1194,12 +1191,16 @@ show_language_selector() {
     [ $ret -ne 0 ] && return $ret
     [ -z "$selected" ] && return 0
     
-    # 選択された言語パッケージをSELECTED_PACKAGESに追加
+    # 既にインストール済みなら何もしない
+    [ "$selected" = "$current_lang" ] && return 0
+    
+    # 選択された言語パッケージを追加
     local lang_pkg="luci-i18n-base-${selected}"
     
     if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
         echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
         debug_log "Added language package: $lang_pkg"
+        clear_selection_cache
     fi
     
     return 0
