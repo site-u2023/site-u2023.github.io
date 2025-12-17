@@ -1413,7 +1413,7 @@ show_language_selector() {
     fi
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
-        show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-languages-available')"
         return 1
     fi
     
@@ -1437,10 +1437,6 @@ show_language_selector() {
         menu_items="$menu_items $idx \"${mark} $lang\""
         idx=$((idx + 1))
     done < "$cache_file"
-    
-    local title breadcrumb choice selected_lang
-    title=$(translate "tr-tui-language-package")
-    breadcrumb="$(translate 'tr-tui-main-menu')${BREADCRUMB_SEP}${title}"
     
     choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
     
