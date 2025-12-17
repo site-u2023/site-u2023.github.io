@@ -3403,7 +3403,7 @@ EOF
     debug_log "=== update_language_packages finished ==="
 }
 
-update_language_packages() {
+GGG_update_language_packages() {
     local new_lang old_lang
 
     debug_log "=== update_language_packages called ==="
@@ -3456,6 +3456,78 @@ update_language_packages() {
     mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
     debug_log "Removed all existing language packages"
     
+    if [ "$new_lang" != "en" ]; then
+        local base_pkg="luci-i18n-base-${new_lang}"
+        echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
+
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            local module_name=$(echo "$pkg" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
+            local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+            grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+        done <<EOF
+$selected_luci_packages
+EOF
+    fi
+
+    clear_selection_cache
+    debug_log "Language package update completed"
+}
+
+
+update_language_packages() {
+    local new_lang old_lang
+
+    debug_log "=== update_language_packages called ==="
+
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+
+    # 未選択なら何もしない（初期状態）
+    [ -z "$new_lang" ] && return 0
+
+    debug_log "new_lang='$new_lang'"
+
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+
+    local base_lang_pkg
+    base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
+
+    if [ -n "$base_lang_pkg" ]; then
+        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
+    else
+        old_lang="en"
+    fi
+
+    debug_log "old_lang='$old_lang' (detected from device)"
+
+    # 言語が変わっていなければ何もしない
+    [ "$old_lang" = "$new_lang" ] && return 0
+
+    debug_log "Updating language packages: $old_lang -> $new_lang"
+
+    local selected_luci_packages=""
+    if [ -n "$_ENABLED_PACKAGES" ]; then
+        local patterns pkg p
+        patterns=$(jsonfilter -i "$CONFIG_DIR/setup.json" \
+            -e '@.constants.language_module_patterns[*]' 2>/dev/null)
+
+        for pkg in $_ENABLED_PACKAGES; do
+            for p in $patterns; do
+                case "$pkg" in
+                    ${p}*)
+                        selected_luci_packages="${selected_luci_packages}${pkg}
+"
+                        break
+                        ;;
+                esac
+            done
+        done
+    fi
+
+    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+
     if [ "$new_lang" != "en" ]; then
         local base_pkg="luci-i18n-base-${new_lang}"
         echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
