@@ -3183,27 +3183,28 @@ track_api_value_changes() {
     echo "[DEBUG] === track_api_value_changes finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
+# ========================================
 # 言語パッケージの初期化
+# システムにインストール済みの言語に基づき、
+# 選択されたLuCIパッケージの言語パックを自動追加
+# ========================================
 initialize_language_packages() {
-    local current_lang
-    current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    debug_log "=== initialize_language_packages called ==="
     
-    echo "[DEBUG] === initialize_language_packages called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
+    # システムにインストール済みのベース言語パックを検出
+    local installed_lang=""
+    if [ "$PKG_MGR" = "apk" ]; then
+        installed_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    else
+        installed_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
+    fi
     
-    if [ -z "$current_lang" ] || [ "$current_lang" = "en" ]; then
-        echo "[DEBUG] Language is 'en' or empty, skipping" >> "$CONFIG_DIR/debug.log"
+    if [ -z "$installed_lang" ]; then
+        debug_log "No base language package installed, skipping"
         return 0
     fi
     
-    # ベース言語パックがシステムにインストール済みか確認
-    local base_lang_pkg="luci-i18n-base-${current_lang}"
-    if ! opkg status "$base_lang_pkg" 2>/dev/null | grep -q "^Status:.*installed"; then
-        echo "[DEBUG] Base language package '$base_lang_pkg' not installed, skipping all language packages" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    echo "[DEBUG] Base language package '$base_lang_pkg' is installed, adding LuCI language packages" >> "$CONFIG_DIR/debug.log"
+    debug_log "Detected installed language: $installed_lang"
     
     # 選択されたLuCIパッケージの言語パッケージを追加
     if [ -s "$SELECTED_PACKAGES" ]; then
@@ -3215,26 +3216,28 @@ initialize_language_packages() {
             
             case "$pkg_id" in
                 luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
+                    # luci-i18n- は除外
                     case "$pkg_id" in
                         luci-i18n-*) continue ;;
                     esac
                     
+                    # モジュール名を抽出: luci-app-irqbalance -> irqbalance
                     local module_name
                     module_name=$(echo "$pkg_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
                     
-                    local lang_pkg="luci-i18n-${module_name}-${current_lang}"
+                    local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
                     
-                    if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-                       ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                       ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
                         echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-                        echo "[INIT] Added LuCI language package: $lang_pkg for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                        debug_log "Added LuCI language package: $lang_pkg for $pkg_id"
                     fi
                     ;;
             esac
         done < "$SELECTED_PACKAGES"
     fi
     
-    echo "[DEBUG] === initialize_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
+    debug_log "=== initialize_language_packages finished ==="
 }
 
 compute_dslite_aftr() {
