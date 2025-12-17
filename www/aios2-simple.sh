@@ -1399,6 +1399,59 @@ package_categories() {
     done
 }
 
+show_language_selector() {
+    local cache_file="$CONFIG_DIR/available_languages.cache"
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        cache_available_languages
+    fi
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
+        return 1
+    fi
+    
+    local current_lang=""
+    if [ "$PKG_MGR" = "apk" ]; then
+        current_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    else
+        current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
+    fi
+    
+    local menu_items=""
+    local idx=1
+    while read -r lang; do
+        [ -z "$lang" ] && continue
+        
+        local mark=" "
+        [ "$lang" = "$current_lang" ] && mark="*"
+        
+        menu_items="$menu_items $idx \"${mark} $lang\""
+        idx=$((idx + 1))
+    done < "$cache_file"
+    
+    local title breadcrumb choice selected_lang
+    title=$(translate "tr-tui-language-package")
+    breadcrumb="$(translate 'tr-tui-main-menu')${BREADCRUMB_SEP}${title}"
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+    
+    [ $? -ne 0 ] || [ -z "$choice" ] && return 0
+    
+    selected_lang=$(sed -n "${choice}p" "$cache_file")
+    
+    [ "$selected_lang" = "$current_lang" ] && return 0
+    
+    local lang_pkg="luci-i18n-base-${selected_lang}"
+    
+    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+        clear_selection_cache
+    fi
+    
+    return 0
+}
+
 package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
