@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.2219"
+VERSION="R7.1217.2238"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3434,14 +3434,22 @@ update_language_packages() {
     debug_log "Updating language packages: $old_lang -> $new_lang"
 
     local selected_luci_packages=""
-    if [ -f "$SELECTED_PACKAGES" ]; then
-        selected_luci_packages=$(awk -F'=' '
-            /^luci-app-|^luci-proto-|^luci-mod-|^luci-theme-/ {
-                if ($1 !~ /^luci-i18n-/) {
-                    print $1
-                }
-            }
-        ' "$SELECTED_PACKAGES")
+    if [ -n "$_ENABLED_PACKAGES" ]; then
+        local patterns pkg p
+        patterns=$(jsonfilter -i "$CONFIG_DIR/setup.json" \
+            -e '@.constants.language_module_patterns[*]' 2>/dev/null)
+
+        for pkg in $_ENABLED_PACKAGES; do
+            for p in $patterns; do
+                case "$pkg" in
+                    ${p}*)
+                        selected_luci_packages="${selected_luci_packages}${pkg}
+"
+                        break
+                        ;;
+                esac
+            done
+        done
     fi
 
     grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
