@@ -916,10 +916,12 @@ show_language_selector() {
     local title selected
     title=$(translate "tr-tui-language-package")
     
-    selected=$(eval "$DIALOG --title \"$title\" \
+    eval "$DIALOG --title \"$title\" \
         --radiolist \"$(translate 'tr-tui-select-language')\" \
         $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
-        $radio_list" 3>&1 1>&2 2>&3)
+        $radio_list 3>&1 1>&2 2>&3" > /tmp/lang_choice.txt
+    selected=$(cat /tmp/lang_choice.txt)
+    rm -f /tmp/lang_choice.txt
     
     [ $? -ne 0 ] || [ -z "$selected" ] && return 0
     [ "$selected" = "$current_lang" ] && return 0
