@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1029"
+VERSION="R7.1217.1042"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4855,7 +4855,8 @@ aios2_main() {
     unset CACHE_INSTALLED_PID
     
     initialize_installed_packages
-
+    initialize_language_packages
+    
     : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
