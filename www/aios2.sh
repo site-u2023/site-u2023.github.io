@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.0947"
+VERSION="R7.1217.1003"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4281,6 +4281,18 @@ INITIAL_CUSTOM
 
 update_package_manager() {
     local needs_update=0
+    
+    # execution_plan.sh から HAS_INSTALL/HAS_CUSTOMFEEDS を読み込む
+    local plan_file="$CONFIG_DIR/execution_plan.sh"
+    if [ -f "$plan_file" ]; then
+        . "$plan_file"
+        
+        # インストールがない場合はupdateも不要
+        if [ "$HAS_INSTALL" -eq 0 ] && [ "$HAS_CUSTOMFEEDS" -eq 0 ]; then
+            echo "[DEBUG] No installations planned, skipping update" >> "$CONFIG_DIR/debug.log"
+            return 0
+        fi
+    fi
     
     # 1. postinst.json - 選択済みパッケージがある場合のみチェック
     if [ "$needs_update" -eq 0 ] && [ -s "$SELECTED_PACKAGES" ]; then
