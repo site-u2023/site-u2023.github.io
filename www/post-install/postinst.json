@@ -8,7 +8,9 @@
       "class": "Translation key (tr-xxx format)",
       "description": "Category description shown as tooltip",
       "hidden": "If true, category is not displayed but packages are processed",
-      "reboot": "If true, all packages in this category require reboot"
+      "reboot": "If true, all packages in this category require reboot",
+      "type": "Special category type (e.g. 'special' for dynamic content)",
+      "handler": "Handler function name for special categories"
     },
     "package_options": {
       "id": "Package name to install via opkg/apk (required)",
@@ -38,6 +40,15 @@
     }
   },
   "categories": [
+    {
+      "id": "language-pack",
+      "name": "Language Package",
+      "class": "tr-language-package",
+      "description": "LuCI interface language packages",
+      "type": "special",
+      "handler": "language_selector",
+      "packages": []
+    },
     {
       "id": "basic-system",
       "name": "Basic System Features",
