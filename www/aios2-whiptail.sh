@@ -163,8 +163,7 @@ EOF
         
         # カテゴリ選択処理
         if [ -n "$choice" ]; then
-            # selected_cat=$(echo "$categories" | sed -n "${choice}p")
-            selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
+            selected_cat=$(echo "$categories" | sed -n "${choice}p")
             
             if [ -n "$selected_cat" ]; then
                 # ここでパッケージ選択へ遷移
@@ -873,10 +872,8 @@ $visible_categories
 EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        ret=$?
 
-        # if ! [ $? -eq 0 ]; then
-        if ! [ $ret -eq 0 ]; then
+        if ! [ $? -eq 0 ]; then
             return 0
         fi
         
@@ -888,6 +885,9 @@ EOF
 }
 
 show_language_selector() {
+    echo "[DEBUG] show_language_selector called" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] DIALOG=$DIALOG" >> "$CONFIG_DIR/debug.log"
+    
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
