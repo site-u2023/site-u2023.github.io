@@ -3237,54 +3237,49 @@ NG_update_language_packages() {
 update_language_packages() {
     local new_lang old_lang
     
-    echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
-    
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     # デバイスから実際にインストールされている言語パッケージを取得
     local installed_lang_pkgs
     installed_lang_pkgs=$(${PKG_MANAGER} info 2>/dev/null | grep "^luci-i18n-")
     
-    echo "[DEBUG] Installed language packages from device:" >> "$CONFIG_DIR/debug.log"
-    echo "$installed_lang_pkgs" >> "$CONFIG_DIR/debug.log"
-    
-    # インストール済み言語パックから現在の言語を検出
-    old_lang=$(echo "$installed_lang_pkgs" | head -1 | grep -o '[a-z][a-z]$')
+    # 現在の言語を検出
+    old_lang=$(echo "$installed_lang_pkgs" | head -1 | sed 's/.*-\([a-z][a-z]\)$/\1/')
     [ -z "$old_lang" ] && old_lang="en"
     
-    echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
-    
+    # 空欄の場合は全削除
     if [ -z "$new_lang" ]; then
-        sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
-        sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
-        echo "[LANG] Removed all language packages" >> "$CONFIG_DIR/debug.log"
+        grep -v "luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+        debug_log "Removed all language packages"
+        clear_selection_cache
+        return 0
+    fi
+
+    # 言語が変わっていなければ何もしない
+    if [ "$old_lang" = "$new_lang" ]; then
+        debug_log "Language unchanged: $old_lang"
         return 0
     fi
     
-    if [ "$old_lang" = "$new_lang" ]; then
-        echo "[DEBUG] Language unchanged" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
+    debug_log "Updating language packages: $old_lang -> $new_lang"
     
     # 既存の言語パッケージを全削除
-    sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
-    sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
-    echo "[LANG] Removed all old language packages" >> "$CONFIG_DIR/debug.log"
+    grep -v "luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
     
-    # デバイスの言語パッケージを新言語に置き換え
+    # 新言語に置き換え（en以外）
     if [ "$new_lang" != "en" ]; then
         echo "$installed_lang_pkgs" | while read -r pkg; do
             [ -z "$pkg" ] && continue
-            
             local base_name=$(echo "$pkg" | sed 's/-[a-z][a-z]$//')
             local new_pkg="${base_name}-${new_lang}"
-            
             echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
-            echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
+            debug_log "Added language package: $new_pkg"
         done
     fi
     clear_selection_cache
-    echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
+    debug_log "Language package update completed"
 }
 
 # API値の動的追跡
