@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1635"
+VERSION="R7.1217.1745"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3061,7 +3061,7 @@ EOF
     echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-update_language_packages() {
+XXX_update_language_packages() {
     local new_lang old_lang
     
     echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
@@ -3123,6 +3123,92 @@ update_language_packages() {
                 echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
             fi
         done
+    fi
+    
+    grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null
+    
+    echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+update_language_packages() {
+    local new_lang old_lang
+    
+    echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    if [ ! -f "$CONFIG_DIR/vars_snapshot.txt" ]; then
+        old_lang="${AUTO_LANGUAGE:-en}"
+        echo "[DEBUG] First run, old_lang from AUTO_LANGUAGE: '$old_lang'" >> "$CONFIG_DIR/debug.log"
+    else
+        old_lang=$(grep "^language=" "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null | cut -d"'" -f2)
+    fi
+    
+    echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    # 新言語が空の場合、全ての言語パッケージを削除
+    if [ -z "$new_lang" ]; then
+        local prefixes
+        prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
+        
+        for prefix in $prefixes; do
+            sed -i "/=${prefix}[^=]*=/d" "$SELECTED_PACKAGES"
+            sed -i "/=${prefix}[^=]*\$/d" "$SELECTED_PACKAGES"
+            echo "[LANG] Removed all packages with prefix: $prefix" >> "$CONFIG_DIR/debug.log"
+        done
+        
+        grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null || : > "$CONFIG_DIR/vars_snapshot.txt"
+        return 0
+    fi
+    
+    if [ "$old_lang" = "$new_lang" ]; then
+        echo "[DEBUG] Language unchanged, skipping package update" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # 旧言語パッケージを削除（en以外）
+    if [ -n "$old_lang" ] && [ "$old_lang" != "en" ]; then
+        sed -i "/=luci-i18n-.*-${old_lang}=/d" "$SELECTED_PACKAGES"
+        sed -i "/=luci-i18n-.*-${old_lang}\$/d" "$SELECTED_PACKAGES"
+        echo "[LANG] Removed all packages ending with: -${old_lang}" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # ★★★ 新言語パッケージを追加（全LuCIパッケージを走査） ★★★
+    if [ "$new_lang" != "en" ]; then
+        # ベース言語パック
+        local base_lang_pkg="luci-i18n-base-${new_lang}"
+        if ! grep -q "=${base_lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+           ! grep -q "=${base_lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${base_lang_pkg}=${base_lang_pkg}===" >> "$SELECTED_PACKAGES"
+            echo "[LANG] Added base: $base_lang_pkg" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        # 選択済みLuCIパッケージの言語パックを追加
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
+            local pkg_id
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            
+            case "$pkg_id" in
+                luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
+                    case "$pkg_id" in
+                        luci-i18n-*) continue ;;
+                    esac
+                    
+                    local module_name
+                    module_name=$(echo "$pkg_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
+                    
+                    local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+                    
+                    if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                       ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                        echo "[LANG] Added: $lang_pkg for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                    fi
+                    ;;
+            esac
+        done < "$SELECTED_PACKAGES"
     fi
     
     grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null
