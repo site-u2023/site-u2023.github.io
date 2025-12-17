@@ -1500,7 +1500,12 @@ EOF
 
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
-    
+
+        # インストール済みパッケージキャッシュを再構築
+        _INSTALLED_PACKAGES_LOADED=0
+        unset _INSTALLED_PACKAGES_CACHE
+        cache_installed_packages
+        
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
         
         echo ""
