@@ -1599,19 +1599,32 @@ EOF
         rm -f "$CONFIG_DIR"/temp_*.txt
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
         rm -f "$CONFIG_DIR/execution_plan.sh"
+
+        # 選択パッケージ（ファイル）
         rm -f "$SELECTED_PACKAGES"
         rm -f "$SELECTED_CUSTOM_PACKAGES"
-        
-        clear_selection_cache
+
+        # 設定変数
         : > "$SETUP_VARS"
-        
+
+        # 選択キャッシュ
+        unset _SELECTED_PACKAGES_CACHE
+        unset _SELECTED_CUSTOM_CACHE
+        unset _SELECTED_PACKAGES_LOADED
+
+        # カスタムスクリプトキャッシュ
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
 
         # インストール済みパッケージキャッシュを再構築
-        _INSTALLED_PACKAGES_LOADED=0
         unset _INSTALLED_PACKAGES_CACHE
-        cache_installed_packages
+        _INSTALLED_PACKAGES_LOADED=0
+
+        # インストール済みパッケージキャッシュを無効化
+        unset _INSTALLED_PACKAGES_CACHE
+        _INSTALLED_PACKAGES_LOADED=0
+
+        clear_selection_cache
         
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
         
