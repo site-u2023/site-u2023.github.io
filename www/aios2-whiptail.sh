@@ -959,12 +959,9 @@ EOF
         # SETUP_VARSを更新
         sed -i "/^language=/d" "$SETUP_VARS"
         
-        if [ "$selected" = "en" ]; then
-            echo "[DEBUG] Selected 'en', removed language variable" >> "$CONFIG_DIR/debug.log"
-        else
-            echo "language='${selected}'" >> "$SETUP_VARS"
-            echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-            
+echo "language='${selected}'" >> "$SETUP_VARS"
+        echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+        
             local lang_pkg="luci-i18n-base-${selected}"
             if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
                 echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
