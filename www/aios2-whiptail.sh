@@ -902,13 +902,23 @@ show_language_selector() {
         return 1
     fi
     
-    local current_lang=""
-    if [ "$PKG_MGR" = "apk" ]; then
-        current_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
-    else
-        current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
-    fi
+    # 現在の言語検出（言語パックなし = en）
+    local current_lang
+    current_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
     
+    # 言語パックが無い場合は en をデフォルトとする
+    [ -z "$current_lang" ] && current_lang="en"
+    
+    # en を含む全言語リストを作成してソート
+    local all_langs
+    all_langs=$(
+        {
+            echo "en"
+            [ -f "$cache_file" ] && cat "$cache_file"
+        } | sort -u
+    )
+    
+    # ラジオリスト構築（アルファベット順）
     local radio_list=""
     while read -r lang; do
         [ -z "$lang" ] && continue
@@ -917,7 +927,9 @@ show_language_selector() {
         [ "$lang" = "$current_lang" ] && status="ON"
         
         radio_list="$radio_list \"$lang\" \"\" $status"
-    done < "$cache_file"
+    done <<EOF
+$all_langs
+EOF
     
     local selected
     selected=$(eval "$DIALOG --title \"$breadcrumb\" \
@@ -932,10 +944,23 @@ show_language_selector() {
     
     local lang_pkg="luci-i18n-base-${selected}"
     
-    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-        clear_selection_cache
+    # en 選択時は language 変数を削除（全言語パック削除トリガー）
+    sed -i "/^language=/d" "$SETUP_VARS"
+    
+    if [ "$selected" = "en" ]; then
+        echo "[DEBUG] Selected 'en', removed language variable" >> "$CONFIG_DIR/debug.log"
+    else
+        echo "language='${selected}'" >> "$SETUP_VARS"
+        
+        # en 以外の場合のみパッケージ追加
+        if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+            echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+            clear_selection_cache
+        fi
     fi
+    
+    # 言語パッケージを更新
+    update_language_packages
     
     return 0
 }
