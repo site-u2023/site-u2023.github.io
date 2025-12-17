@@ -164,6 +164,9 @@
     "tr-tui-cancel": "Cancel",
     "tr-tui-refresh": "Update",
     
+    "tr-tui-language-package": "Language Package",
+    "tr-tui-select-language": "Select language for LuCI interface",
+    "tr-tui-no-languages-available": "No languages available",
     "tr-tui-view-device-info": "View Device Information",
     "tr-tui-view-package-list": "View Configured Packages",
     "tr-tui-view-custom-packages": "View custom packages",
