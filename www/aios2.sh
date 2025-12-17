@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1745"
+VERSION="R7.1217.1810"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3148,14 +3148,9 @@ update_language_packages() {
     
     # 新言語が空の場合、全ての言語パッケージを削除
     if [ -z "$new_lang" ]; then
-        local prefixes
-        prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes_release[*]' 2>/dev/null)
-        
-        for prefix in $prefixes; do
-            sed -i "/=${prefix}[^=]*=/d" "$SELECTED_PACKAGES"
-            sed -i "/=${prefix}[^=]*\$/d" "$SELECTED_PACKAGES"
-            echo "[LANG] Removed all packages with prefix: $prefix" >> "$CONFIG_DIR/debug.log"
-        done
+        sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
+        sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
+        echo "[LANG] Removed all language packages" >> "$CONFIG_DIR/debug.log"
         
         grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null || : > "$CONFIG_DIR/vars_snapshot.txt"
         return 0
@@ -3173,17 +3168,31 @@ update_language_packages() {
         echo "[LANG] Removed all packages ending with: -${old_lang}" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # ★★★ 新言語パッケージを追加（全LuCIパッケージを走査） ★★★
+    # 新言語パッケージを追加（en以外）
     if [ "$new_lang" != "en" ]; then
-        # ベース言語パック
-        local base_lang_pkg="luci-i18n-base-${new_lang}"
-        if ! grep -q "=${base_lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-           ! grep -q "=${base_lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${base_lang_pkg}=${base_lang_pkg}===" >> "$SELECTED_PACKAGES"
-            echo "[LANG] Added base: $base_lang_pkg" >> "$CONFIG_DIR/debug.log"
-        fi
+        # 1. コアプレフィックス（base, opkg, package-manager, firewall）
+        local core_prefixes
+        core_prefixes=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes[*]' 2>/dev/null)
         
-        # 選択済みLuCIパッケージの言語パックを追加
+        echo "[DEBUG] Core language prefixes: $core_prefixes" >> "$CONFIG_DIR/debug.log"
+        
+        for prefix in $core_prefixes; do
+            local lang_pkg="${prefix}${new_lang}"
+            
+            if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+               ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                echo "[LANG] Added core: $lang_pkg" >> "$CONFIG_DIR/debug.log"
+            fi
+        done
+        
+        # 2. モジュールパターン
+        local module_patterns
+        module_patterns=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_module_patterns[*]' 2>/dev/null)
+        
+        echo "[DEBUG] Module patterns: $module_patterns" >> "$CONFIG_DIR/debug.log"
+        
+        # 3. 選択済みLuCIパッケージの言語パック
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
             
@@ -3191,24 +3200,70 @@ update_language_packages() {
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             
             case "$pkg_id" in
-                luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
-                    case "$pkg_id" in
-                        luci-i18n-*) continue ;;
-                    esac
-                    
-                    local module_name
-                    module_name=$(echo "$pkg_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
-                    
-                    local lang_pkg="luci-i18n-${module_name}-${new_lang}"
-                    
-                    if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-                       ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-                        echo "[LANG] Added: $lang_pkg for $pkg_id" >> "$CONFIG_DIR/debug.log"
-                    fi
-                    ;;
+                luci-i18n-*) continue ;;
             esac
+            
+            local matched=0
+            local module_name=""
+            
+            for pattern in $module_patterns; do
+                case "$pkg_id" in
+                    ${pattern}*)
+                        matched=1
+                        module_name=$(echo "$pkg_id" | sed "s/^${pattern}//")
+                        break
+                        ;;
+                esac
+            done
+            
+            if [ "$matched" -eq 1 ] && [ -n "$module_name" ]; then
+                local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+                
+                if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                   ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    echo "[LANG] Added module: $lang_pkg for $pkg_id" >> "$CONFIG_DIR/debug.log"
+                fi
+            fi
         done < "$SELECTED_PACKAGES"
+        
+        # 4. インストール済みだが選択されていないパッケージの言語パック
+        [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+        
+        while read -r installed_pkg; do
+            [ -z "$installed_pkg" ] && continue
+            
+            grep -q "^${installed_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && continue
+            
+            case "$installed_pkg" in
+                luci-i18n-*) continue ;;
+            esac
+            
+            local matched=0
+            local module_name=""
+            
+            for pattern in $module_patterns; do
+                case "$installed_pkg" in
+                    ${pattern}*)
+                        matched=1
+                        module_name=$(echo "$installed_pkg" | sed "s/^${pattern}//")
+                        break
+                        ;;
+                esac
+            done
+            
+            if [ "$matched" -eq 1 ] && [ -n "$module_name" ]; then
+                local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+                
+                if ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
+                   ! grep -q "=${lang_pkg}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    echo "[LANG] Added module: $lang_pkg for installed $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                fi
+            fi
+        done <<INSTALLED
+$_INSTALLED_PACKAGES_CACHE
+INSTALLED
     fi
     
     grep "^language=" "$SETUP_VARS" > "$CONFIG_DIR/vars_snapshot.txt" 2>/dev/null
