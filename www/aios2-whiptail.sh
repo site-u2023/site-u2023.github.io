@@ -163,6 +163,7 @@ EOF
         
         # カテゴリ選択処理
         if [ -n "$choice" ]; then
+            # selected_cat=$(echo "$categories" | sed -n "${choice}p")
             selected_cat=$(echo "$visible_categories" | sed -n "${choice}p")
             
             if [ -n "$selected_cat" ]; then
@@ -872,8 +873,10 @@ $visible_categories
 EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
-        
-        if ! [ $? -eq 0 ]; then
+        ret=$?
+
+        # if ! [ $? -eq 0 ]; then
+        if ! [ $ret -eq 0 ]; then
             return 0
         fi
         
