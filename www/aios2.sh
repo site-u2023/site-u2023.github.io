@@ -1190,6 +1190,9 @@ show_language_selector() {
         
         radio_list="$radio_list \"$lang\" \"\" $status"
     done < "$cache_file"
+
+    debug_log "Radio list items count: $(echo "$radio_list" | wc -w)"
+    debug_log "Radio list first 100 chars: ${radio_list:0:100}"
     
     # ダイアログ表示
     local title selected
