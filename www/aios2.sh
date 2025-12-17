@@ -3230,7 +3230,6 @@ update_language_packages() {
             debug_log "Added language package: $new_pkg"
         done
     fi
-
     clear_selection_cache
     debug_log "Language package update completed"
 }
