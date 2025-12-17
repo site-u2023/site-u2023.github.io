@@ -1623,8 +1623,6 @@ EOF
         # インストール済みパッケージキャッシュを無効化
         unset _INSTALLED_PACKAGES_CACHE
         _INSTALLED_PACKAGES_LOADED=0
-
-        clear_selection_cache
         
         echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
         
