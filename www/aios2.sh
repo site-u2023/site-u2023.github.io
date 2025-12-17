@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.0005"
+VERSION="R7.1218.0014"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3457,16 +3457,18 @@ $_PACKAGE_NAME_CACHE
 EOF
     
     # ========================================
-    # 言語パッケージの削除検出
+    # 言語パッケージの削除検出（初期スナップショット比較方式）
     # ========================================
     local new_lang
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # インストール済みの言語パッケージを取得
-    local installed_lang_pkgs
-    installed_lang_pkgs=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-")
+    # 初期スナップショットをロード
+    local initial_lang_pkgs=""
+    if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
+        initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
+    fi
     
-    if [ -n "$installed_lang_pkgs" ]; then
+    if [ -n "$initial_lang_pkgs" ]; then
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
@@ -3484,9 +3486,9 @@ EOF
             
             # 削除対象に追加
             remove_list="${remove_list}${pkg} "
-            echo "[REMOVE] Marked language pack for removal: $pkg" >> "$CONFIG_DIR/debug.log"
+            echo "[REMOVE] Marked language pack for removal: $pkg (was in initial snapshot)" >> "$CONFIG_DIR/debug.log"
         done <<EOF2
-$installed_lang_pkgs
+$initial_lang_pkgs
 EOF2
     fi
     
@@ -4869,7 +4871,8 @@ aios2_main() {
     : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
