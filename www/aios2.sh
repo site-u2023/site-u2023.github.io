@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.0015"
+VERSION="R7.1217.0947"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3275,7 +3275,9 @@ is_customfeed_installed() {
     echo "$result"
 }
 
+# ========================================
 # 削除対象パッケージ検出
+# ========================================
 detect_packages_to_remove() {
     local remove_list=""
     
@@ -3289,8 +3291,14 @@ detect_packages_to_remove() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        is_package_installed "$pkg_id" || continue
+        # インストール済みチェック
+        if [ "$PKG_MGR" = "opkg" ]; then
+            opkg list-installed | grep -q "^${pkg_id} " || continue
+        else
+            apk info | grep -q "^${pkg_id}$" || continue
+        fi
         
+        # 選択済みチェック
         local still_selected=0
         if [ -n "$uid" ]; then
             if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
@@ -3343,7 +3351,7 @@ EOF2
 }
 
 # ========================================
-# 削除リスト展開（言語パッケージを先に追加）
+# 削除リスト展開（言語パッケージ + 依存関係）
 # ========================================
 expand_remove_list() {
     local packages="$1"
@@ -3352,7 +3360,7 @@ expand_remove_list() {
     local result=""
     
     for pkg in $packages; do
-        # 1. 言語パッケージを検索
+        # 1. 言語パッケージ検出
         local base_name=""
         case "$pkg" in
             luci-app-*)   base_name="${pkg#luci-app-}" ;;
@@ -3364,9 +3372,9 @@ expand_remove_list() {
         if [ -n "$base_name" ]; then
             local found_lang=""
             if [ "$PKG_MGR" = "apk" ]; then
-                found_lang=$(apk info 2>/dev/null | grep "^luci-i18n-${base_name}-")
+                found_lang=$(apk info | grep "^luci-i18n-${base_name}-")
             else
-                found_lang=$(opkg list-installed 2>/dev/null | awk '{print $1}' | grep "^luci-i18n-${base_name}-")
+                found_lang=$(opkg list-installed | awk '{print $1}' | grep "^luci-i18n-${base_name}-")
             fi
             if [ -n "$found_lang" ]; then
                 lang_packages="$lang_packages $found_lang"
@@ -3374,27 +3382,28 @@ expand_remove_list() {
             fi
         fi
         
-        # 2. opkg依存パッケージを検索（他に依存されていないもののみ）
+        # 2. OPKG依存パッケージ（opkgのみ）
         if [ "$PKG_MGR" = "opkg" ]; then
             local deps
-            deps=$(opkg depends "$pkg" 2>/dev/null | awk '/^[[:space:]]/ {gsub(/^[[:space:]]+/, ""); print}')
+            deps=$(opkg depends "$pkg" 2>/dev/null | awk '/^[[:space:]]/ {gsub(/^[[:space:]]+/, ""); gsub(/ \(.*\)/, ""); print}')
             
             for dep in $deps; do
-                # システム基本パッケージは除外
+                # システムパッケージ除外
                 case "$dep" in
-                    libc|libgcc*|libubox*|libubus*|libuci*|luci-base|luci-lib-*|luci-compat|rpcd*|uhttpd*|ubus*|uci) continue ;;
+                    libc|libgcc|libubox*|libubus*|libuci*|luci-base|luci-lib-*|luci-compat|rpcd*|uhttpd*|ubus|uci|kernel*) 
+                        continue 
+                        ;;
                 esac
                 
-                # インストールされているか確認
-                if ! opkg list-installed "$dep" >/dev/null 2>&1; then
+                # インストール済みチェック
+                if ! opkg list-installed | grep -q "^${dep} "; then
                     continue
                 fi
                 
-                # 他のパッケージに依存されているか確認
+                # 他のパッケージに依存されているかチェック
                 local dependents
                 dependents=$(opkg whatdepends "$dep" 2>/dev/null | awk '/^[[:space:]].*depends on/ {print $1}')
                 
-                # 削除対象以外に依存されていなければ追加
                 local other_depends=0
                 for dependent in $dependents; do
                     case " $packages " in
@@ -3417,7 +3426,9 @@ expand_remove_list() {
     echo "$lang_packages $result $dep_packages" | tr -s ' ' | sed 's/^ //;s/ $//'
 }
 
+# ========================================
 # 削除スクリプト生成
+# ========================================
 generate_remove_script() {
     local packages_to_remove="$1"
     local output_file="$CONFIG_DIR/remove.sh"
@@ -3429,11 +3440,11 @@ generate_remove_script() {
     
     echo "[DEBUG] Original packages to remove: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
     
-    # 言語パッケージを展開（逆順削除）
+    # 言語パッケージと依存関係を展開
     local expanded_packages
     expanded_packages=$(expand_remove_list "$packages_to_remove")
     
-    echo "[DEBUG] Expanded packages (with lang): $expanded_packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Expanded packages: $expanded_packages" >> "$CONFIG_DIR/debug.log"
     
     local remove_cmd
     remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$expanded_packages")
@@ -3450,6 +3461,7 @@ REMOVE_EOF
     echo "${remove_cmd}" >> "$output_file"
     
     cat >> "$output_file" <<'REMOVE_EOF'
+
 echo ""
 echo "========================================="
 echo "Package removal completed."
