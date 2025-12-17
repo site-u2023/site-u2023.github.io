@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.2321"
+VERSION="R7.1218.0005"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3456,6 +3456,40 @@ detect_packages_to_remove() {
 $_PACKAGE_NAME_CACHE
 EOF
     
+    # ========================================
+    # 言語パッケージの削除検出
+    # ========================================
+    local new_lang
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    # インストール済みの言語パッケージを取得
+    local installed_lang_pkgs
+    installed_lang_pkgs=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-")
+    
+    if [ -n "$installed_lang_pkgs" ]; then
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            # 新しい言語のパッケージはスキップ
+            if [ -n "$new_lang" ] && echo "$pkg" | grep -q -- "-${new_lang}$"; then
+                echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # SELECTED_PACKAGES に含まれているかチェック
+            if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # 削除対象に追加
+            remove_list="${remove_list}${pkg} "
+            echo "[REMOVE] Marked language pack for removal: $pkg" >> "$CONFIG_DIR/debug.log"
+        done <<EOF2
+$installed_lang_pkgs
+EOF2
+    fi
+    
     # カスタムフィード
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
@@ -3476,9 +3510,9 @@ EOF
                         [ -z "$installed_pkg" ] && continue
                         remove_list="${remove_list}${installed_pkg} "
                         echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
-                    done <<EOF2
+                    done <<EOF3
 $installed_pkgs
-EOF2
+EOF3
                 fi
             done
         done
