@@ -43,7 +43,7 @@
     {
       "id": "language-pack",
       "name": "Language Package",
-      "class": "tr-language-package",
+      "class": "tr-tui-language-package",
       "description": "LuCI interface language packages",
       "type": "special",
       "handler": "language_selector",
