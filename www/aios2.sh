@@ -3320,7 +3320,7 @@ update_language_packages() {
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
 
-    # language が未セットなら何もしない（初期状態）
+    # 未選択なら何もしない（初期状態）
     [ -z "$new_lang" ] && return 0
     
     debug_log "new_lang='$new_lang'"
@@ -3339,11 +3339,14 @@ update_language_packages() {
     
     debug_log "old_lang='$old_lang' (detected from device)"
     
-    # 既存言語パックは全削除
-    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
-    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
-    debug_log "Removed all language packages"
-    clear_selection_cache
+    # 全削除
+    if [ -n "$new_lang" ]; then
+        grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+        debug_log "Removed all language packages"
+        clear_selection_cache
+        return 0
+    fi
     
     # 言語が変わっていなければ何もしない
     if [ "$old_lang" = "$new_lang" ]; then
@@ -3355,22 +3358,15 @@ update_language_packages() {
     
     # SELECTED_PACKAGES から LuCI パッケージを抽出
     local selected_luci_packages=""
-    if [ -n "$_ENABLED_PACKAGES" ]; then
-        local patterns pkg p
-        patterns=$(jsonfilter -i "$CONFIG_DIR/setup.json" \
-            -e '@.constants.language_module_patterns[*]' 2>/dev/null)
-
-        for pkg in $_ENABLED_PACKAGES; do
-            for p in $patterns; do
-                case "$pkg" in
-                    ${p}*)
-                        selected_luci_packages="${selected_luci_packages}${pkg}
-"
-                        break
-                        ;;
-                esac
-            done
-        done
+    if [ -f "$SELECTED_PACKAGES" ]; then
+        selected_luci_packages=$(awk -F'=' '
+            /^luci-app-|^luci-proto-|^luci-mod-|^luci-theme-/ {
+                # luci-i18n- は除外
+                if ($1 !~ /^luci-i18n-/) {
+                    print $1
+                }
+            }
+        ' "$SELECTED_PACKAGES")
     fi
     
     debug_log "Selected LuCI packages:"
@@ -3383,12 +3379,12 @@ update_language_packages() {
     
     # 新言語パッケージを追加（en以外）
     if [ "$new_lang" != "en" ]; then
-        # ★ ベースパッケージは常に追加 ★
+        # ベースパッケージは常に追加
         local base_pkg="luci-i18n-base-${new_lang}"
         echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
         debug_log "Added base language package: $base_pkg"
         
-        # ★ 選択されたLuCIパッケージの言語パックを追加 ★
+        # 選択されたLuCIパッケージの言語パックを追加
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
