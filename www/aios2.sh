@@ -3313,7 +3313,7 @@ reset_state_for_next_session() {
     clear_selection_cache
 }
 
-XXXXXXXXXXXXXXXXXXX_update_language_packages() {
+update_language_packages() {
     local new_lang old_lang
     
     debug_log "=== update_language_packages called ==="
@@ -3476,7 +3476,7 @@ EOF
 }
 
 
-update_language_packages() {
+GGGGG_update_language_packages() {
     local new_lang old_lang
 
     debug_log "=== update_language_packages called ==="
