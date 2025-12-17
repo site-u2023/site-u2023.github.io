@@ -898,7 +898,7 @@ show_language_selector() {
     fi
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
-        show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-languages-available')"
         return 1
     fi
     
@@ -908,8 +908,6 @@ show_language_selector() {
     else
         current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
     fi
-
-    show_menu_header "$breadcrumb"
     
     local radio_list=""
     while read -r lang; do
@@ -921,10 +919,10 @@ show_language_selector() {
         radio_list="$radio_list \"$lang\" \"\" $status"
     done < "$cache_file"
     
-    local title selected
-    title=$(translate "tr-tui-language-package")
-    
-    selected=$(eval "$DIALOG --title \"$title\" \
+    local selected
+    selected=$(eval "$DIALOG --title \"$breadcrumb\" \
+        --ok-button \"$(translate 'tr-tui-select')\" \
+        --cancel-button \"$(translate 'tr-tui-back')\" \
         --radiolist \"$(translate 'tr-tui-select-language')\" \
         $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
         $radio_list" 3>&1 1>&2 2>&3)
