@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1452"
+VERSION="R7.1217.1457"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1695,6 +1695,8 @@ EOF
             done
         done
     fi
+
+    initialize_language_packages
     
     echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
