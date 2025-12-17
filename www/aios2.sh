@@ -3319,9 +3319,13 @@ update_language_packages() {
     debug_log "=== update_language_packages called ==="
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+
+    # language が未セットなら何もしない（初期状態）
+    [ -z "$new_lang" ] && return 0
+    
     debug_log "new_lang='$new_lang'"
     
-    # ★ 現在インストール済みのベース言語パックから言語コードを検出 ★
+    # 現在インストール済みのベース言語パックから言語コードを検出
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
     
     local base_lang_pkg
@@ -3335,14 +3339,11 @@ update_language_packages() {
     
     debug_log "old_lang='$old_lang' (detected from device)"
     
-    # 空欄の場合は全削除
-    if [ -z "$new_lang" ]; then
-        grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
-        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
-        debug_log "Removed all language packages"
-        clear_selection_cache
-        return 0
-    fi
+    # 既存言語パックは全削除
+    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+    debug_log "Removed all language packages"
+    clear_selection_cache
     
     # 言語が変わっていなければ何もしない
     if [ "$old_lang" = "$new_lang" ]; then
@@ -3352,17 +3353,24 @@ update_language_packages() {
     
     debug_log "Updating language packages: $old_lang -> $new_lang"
     
-    # ★★★ SELECTED_PACKAGES から LuCI パッケージを抽出 ★★★
+    # SELECTED_PACKAGES から LuCI パッケージを抽出
     local selected_luci_packages=""
-    if [ -f "$SELECTED_PACKAGES" ]; then
-        selected_luci_packages=$(awk -F'=' '
-            /^luci-app-|^luci-proto-|^luci-mod-|^luci-theme-/ {
-                # luci-i18n- は除外
-                if ($1 !~ /^luci-i18n-/) {
-                    print $1
-                }
-            }
-        ' "$SELECTED_PACKAGES")
+    if [ -n "$_ENABLED_PACKAGES" ]; then
+        local patterns pkg p
+        patterns=$(jsonfilter -i "$CONFIG_DIR/setup.json" \
+            -e '@.constants.language_module_patterns[*]' 2>/dev/null)
+
+        for pkg in $_ENABLED_PACKAGES; do
+            for p in $patterns; do
+                case "$pkg" in
+                    ${p}*)
+                        selected_luci_packages="${selected_luci_packages}${pkg}
+"
+                        break
+                        ;;
+                esac
+            done
+        done
     fi
     
     debug_log "Selected LuCI packages:"
