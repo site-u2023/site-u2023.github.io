@@ -9,6 +9,11 @@ TITLE="all in one scripts 2"
 UI_WIDTH="78"
 UI_HEIGHT="0"
 
+DIALOG="whiptail"
+DIALOG_HEIGHT=20
+DIALOG_WIDTH=70
+LIST_HEIGHT=12
+    
 # Return code definitions for hierarchical navigation
 # 0: Stay in current section/context
 # 1: Go back one level (to parent section/category)
