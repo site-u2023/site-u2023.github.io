@@ -3487,7 +3487,7 @@ detect_packages_to_remove() {
 $_PACKAGE_NAME_CACHE
 EOF
     
-# ========================================
+    # ========================================
     # 言語パッケージの削除検出（初期スナップショット比較方式）
     # ========================================
     local new_lang
@@ -3503,8 +3503,8 @@ EOF
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
-            # 新しい言語のパッケージはスキップ（空またはenの場合は全削除）
-            if [ -n "$new_lang" ] && [ "$new_lang" != "en" ] && echo "$pkg" | grep -q -- "-${new_lang}$"; then
+            # 新しい言語のパッケージはスキップ（enの場合は全削除）
+            if [ "$new_lang" != "en" ] && echo "$pkg" | grep -q -- "-${new_lang}$"; then
                 echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
