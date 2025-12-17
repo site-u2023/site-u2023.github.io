@@ -7,6 +7,9 @@
       "updateCommand": "opkg update",
       "upgradeCommand": "opkg upgrade",
       "listInstalledCommand": "opkg list-installed | awk '{print $1}'",
+      "dependsCommand": "opkg depends {package} 2>/dev/null | awk '/^[[:space:]]/ {gsub(/^[[:space:]]+/, \"\"); gsub(/ \\(.*\\)/, \"\"); print}'",
+      "whatDependsCommand": "opkg whatdepends {package} 2>/dev/null | awk '/^[[:space:]].*depends on/ {print $1}'",
+      "systemPackages": ["libc", "libgcc", "libubox", "libubus", "libuci", "luci-base", "luci-lib-", "luci-compat", "rpcd", "uhttpd", "ubus", "uci", "kernel"],
       "options": {
         "ignoreDeps": "--nodeps",
         "forceOverwrite": "--force-overwrite",
@@ -23,6 +26,9 @@
       "updateCommand": "apk update",
       "upgradeCommand": "apk upgrade",
       "listInstalledCommand": "apk info",
+      "dependsCommand": "apk info -R {package} 2>/dev/null | tail -n +2",
+      "whatDependsCommand": "apk info -r {package} 2>/dev/null | tail -n +2",
+      "systemPackages": ["libc", "libgcc", "busybox"],
       "options": {
         "ignoreDeps": "--force-broken-world",
         "forceOverwrite": "--force-overwrite",
