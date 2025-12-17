@@ -1599,9 +1599,12 @@ EOF
         rm -f "$CONFIG_DIR"/temp_*.txt
         rm -f "$CONFIG_DIR"/*_snapshot*.txt
         rm -f "$CONFIG_DIR/execution_plan.sh"
-    
+        rm -f "$SELECTED_PACKAGES"
+        rm -f "$SELECTED_CUSTOM_PACKAGES"
+        
         clear_selection_cache
-
+        : > "$SETUP_VARS"
+        
         unset _CUSTOMSCRIPT_CACHE
         unset _CUSTOMSCRIPT_LOADED
 
