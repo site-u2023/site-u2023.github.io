@@ -3188,6 +3188,10 @@ update_language_packages() {
                 esac
             done
             local lang_pkg="luci-i18n-${module_name}-${new_lang}"
+
+            if ! check_package_available "$lang_pkg" "normal"; then
+                continue
+            fi
             
             # 重複チェック
             if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
@@ -3251,7 +3255,6 @@ track_api_value_changes() {
 initialize_language_packages() {
     debug_log "=== initialize_language_packages called ==="
     
-    # システムにインストール済みのベース言語パックを検出
     local installed_lang
     installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
     
@@ -3262,11 +3265,9 @@ initialize_language_packages() {
     
     debug_log "Detected installed language: $installed_lang"
     
-    # JSONからパターンを取得
     local patterns
     patterns=$(get_language_module_patterns)
     
-    # 選択されたLuCIパッケージの言語パッケージを追加
     if [ -s "$SELECTED_PACKAGES" ]; then
         while read -r cache_line; do
             [ -z "$cache_line" ] && continue
@@ -3274,12 +3275,10 @@ initialize_language_packages() {
             local pkg_id
             pkg_id=$(echo "$cache_line" | cut -d= -f1)
             
-            # luci-i18n- は除外
             case "$pkg_id" in
                 luci-i18n-*) continue ;;
             esac
             
-            # パターンマッチでモジュール名を抽出
             local module_name=""
             for pattern in $patterns; do
                 case "$pkg_id" in
@@ -3292,6 +3291,12 @@ initialize_language_packages() {
             
             if [ -n "$module_name" ]; then
                 local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                
+                # ★ availability check を追加
+                if ! check_package_available "$lang_pkg" "normal"; then
+                    debug_log "Language pack not available: $lang_pkg (skipping)"
+                    continue
+                fi
                 
                 if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && \
                    ! grep -q "=${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
