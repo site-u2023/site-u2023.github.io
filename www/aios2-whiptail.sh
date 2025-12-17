@@ -890,7 +890,7 @@ EOF
 }
 
 show_language_selector() {
-    
+    local breadcrumb="$1"
     local cache_file="$CONFIG_DIR/available_languages.cache"
     
     if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
@@ -947,7 +947,7 @@ package_selection() {
 
     # 言語パック専用セレクター
     if [ "$cat_id" = "language-pack" ]; then
-        show_language_selector
+        show_language_selector "$breadcrumb"
         return $?
     fi
     
