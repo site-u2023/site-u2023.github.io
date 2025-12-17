@@ -3161,14 +3161,14 @@ update_language_packages() {
         return 0
     fi
     
-    # 旧言語パッケージを削除（en以外）
+    # 旧言語パッケージを削除（enには言語パックが存在しないためスキップ）
     if [ -n "$old_lang" ] && [ "$old_lang" != "en" ]; then
         sed -i "/=luci-i18n-.*-${old_lang}=/d" "$SELECTED_PACKAGES"
         sed -i "/=luci-i18n-.*-${old_lang}\$/d" "$SELECTED_PACKAGES"
         echo "[LANG] Removed all packages ending with: -${old_lang}" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # 新言語パッケージを追加（en以外）
+    # 新言語パッケージを追加（enにも言語パックが存在しないためスキップ）
     if [ "$new_lang" != "en" ]; then
         # 1. コアプレフィックス（base, opkg, package-manager, firewall）
         local core_prefixes
