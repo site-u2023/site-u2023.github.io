@@ -844,6 +844,8 @@ package_categories() {
     
     categories=$(get_categories)
     visible_categories=""
+
+    echo "[DEBUG] All categories: $categories" >> "$CONFIG_DIR/debug.log"
     
     while read -r cat_id; do
         is_hidden=$(get_category_hidden "$cat_id")
@@ -853,6 +855,8 @@ package_categories() {
     done <<EOF
 $categories
 EOF
+
+    echo "[DEBUG] Visible categories: $visible_categories" >> "$CONFIG_DIR/debug.log"
     
     while true; do
         menu_items="" 
