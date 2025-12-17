@@ -1414,32 +1414,6 @@ EOF
     done
 }
 
-# 前回確定分の破棄
-reset_state_for_next_session() {
-
-    # 選択パッケージ（ファイル）
-    rm -f "$SELECTED_PACKAGES"
-    rm -f "$SELECTED_CUSTOM_PACKAGES"
-
-    # 設定変数
-    # : > "$SETUP_VARS"
-
-    # 選択キャッシュ
-    unset _SELECTED_PACKAGES_CACHE
-    unset _SELECTED_CUSTOM_CACHE
-    unset _SELECTED_PACKAGES_LOADED
-
-    # カスタムスクリプトキャッシュ
-    unset _CUSTOMSCRIPT_CACHE
-    unset _CUSTOMSCRIPT_LOADED
-
-    # インストール済みを初期選択として再生成
-    initialize_installed_packages
-
-    # キャッシュは未ロード状態に戻す
-    clear_selection_cache
-}
-
 review_and_apply() {
     local need_fetch=0
     
