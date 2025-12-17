@@ -880,6 +880,56 @@ EOF
     done
 }
 
+show_language_selector() {
+    local cache_file="$CONFIG_DIR/available_languages.cache"
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        cache_available_languages
+    fi
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        show_msgbox "" "$(translate 'tr-tui-no-languages-available')"
+        return 1
+    fi
+    
+    local current_lang=""
+    if [ "$PKG_MGR" = "apk" ]; then
+        current_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    else
+        current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
+    fi
+    
+    local radio_list=""
+    while read -r lang; do
+        [ -z "$lang" ] && continue
+        
+        local status="OFF"
+        [ "$lang" = "$current_lang" ] && status="ON"
+        
+        radio_list="$radio_list \"$lang\" \"\" $status"
+    done < "$cache_file"
+    
+    local title selected
+    title=$(translate "tr-tui-language-package")
+    
+    selected=$(eval "$DIALOG --title \"$title\" \
+        --radiolist \"$(translate 'tr-tui-select-language')\" \
+        $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
+        $radio_list" 3>&1 1>&2 2>&3)
+    
+    [ $? -ne 0 ] || [ -z "$selected" ] && return 0
+    [ "$selected" = "$current_lang" ] && return 0
+    
+    local lang_pkg="luci-i18n-base-${selected}"
+    
+    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+        clear_selection_cache
+    fi
+    
+    return 0
+}
+
 package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
