@@ -1695,8 +1695,6 @@ EOF
             done
         done
     fi
-
-    initialize_language_packages
     
     echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
@@ -1830,6 +1828,38 @@ add_package_with_dependencies() {
             # ★ メモリ内で重複チェック
             if [ -n "$enable_var" ] && ! echo "$existing_vars" | grep -q "^${enable_var}="; then
                 echo "${enable_var}='1'" >> "$SETUP_VARS"
+            fi
+            
+            # ★★★ LuCIパッケージの場合のみ言語パック追加 ★★★
+            if [ "$caller" != "custom_feeds" ]; then
+                case "$cached_id" in
+                    luci-app-*|luci-proto-*|luci-mod-*|luci-theme-*)
+                        case "$cached_id" in
+                            luci-i18n-*) ;;
+                            *)
+                                # ベース言語パック検出
+                                local installed_lang=""
+                                if [ "$PKG_MGR" = "apk" ]; then
+                                    installed_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+                                else
+                                    installed_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
+                                fi
+                                
+                                if [ -n "$installed_lang" ]; then
+                                    local module_name
+                                    module_name=$(echo "$cached_id" | sed 's/^luci-app-//;s/^luci-proto-//;s/^luci-mod-//;s/^luci-theme-//')
+                                    local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                                    
+                                    if ! grep -q "^${lang_pkg}=" "$target_file" 2>/dev/null && \
+                                       ! grep -q "=${lang_pkg}=" "$target_file" 2>/dev/null; then
+                                        echo "${lang_pkg}=${lang_pkg}===" >> "$target_file"
+                                        echo "[LANG] Added language package: $lang_pkg for $cached_id" >> "$CONFIG_DIR/debug.log"
+                                    fi
+                                fi
+                                ;;
+                        esac
+                        ;;
+                esac
             fi
         fi
         
