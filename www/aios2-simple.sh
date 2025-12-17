@@ -1403,6 +1403,12 @@ package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
+
+    # 言語パック専用セレクター
+    if [ "$cat_id" = "language-pack" ]; then
+        show_language_selector
+        return $?
+    fi
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" > /dev/null 2>&1
