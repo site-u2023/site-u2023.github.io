@@ -180,6 +180,12 @@
       "luci-i18n-package-manager-",
       "luci-i18n-firewall-"
     ],
+    "language_module_patterns": [
+      "luci-app-",
+      "luci-proto-",
+      "luci-mod-",
+      "luci-theme-"
+    ],
     "export_exclusions": {
       "connection_type": {
         "auto": [
