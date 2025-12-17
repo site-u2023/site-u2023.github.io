@@ -1125,6 +1125,86 @@ cache_package_availability() {
     return 0
 }
 
+# ========================================
+# 言語パッケージキャッシュ生成
+# ========================================
+cache_available_languages() {
+    local cache_file="$CONFIG_DIR/available_languages.cache"
+    local pkg_cache="$CONFIG_DIR/pkg_availability_cache.txt"
+    
+    if [ ! -f "$pkg_cache" ]; then
+        debug_log "Package cache not found, cannot extract languages"
+        return 1
+    fi
+    
+    # luci-i18n-base-* から言語コードを抽出
+    grep "^luci-i18n-base-" "$pkg_cache" | \
+        sed 's/^luci-i18n-base-//' | \
+        sort -u > "$cache_file"
+    
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
+    debug_log "Available languages cached: $count"
+}
+
+# ========================================
+# 言語パック選択UI
+# ========================================
+show_language_selector() {
+    local cache_file="$CONFIG_DIR/available_languages.cache"
+    
+    if [ ! -f "$cache_file" ] || [ ! -s "$cache_file" ]; then
+        show_message "$MSG_ERROR" "$MSG_NO_LANGUAGES_AVAILABLE"
+        return 1
+    fi
+    
+    # 現在インストール済みの言語を取得
+    local current_lang=""
+    if [ "$PKG_MGR" = "apk" ]; then
+        current_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    else
+        current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
+    fi
+    
+    # ラジオボタンリスト生成
+    local radio_list=""
+    local first=1
+    while read -r lang; do
+        [ -z "$lang" ] && continue
+        
+        local status="OFF"
+        if [ "$lang" = "$current_lang" ]; then
+            status="ON"
+        elif [ -z "$current_lang" ] && [ "$first" -eq 1 ]; then
+            # 未インストール時はen(なければ最初)をデフォルト
+            [ "$lang" = "en" ] && status="ON"
+        fi
+        
+        radio_list="$radio_list \"$lang\" \"\" $status"
+        first=0
+    done < "$cache_file"
+    
+    # ダイアログ表示
+    local selected
+    selected=$(eval "$DIALOG --title \"$MSG_LANGUAGE_PACKAGE\" \
+        --radiolist \"$MSG_SELECT_LANGUAGE\" \
+        $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
+        $radio_list" 3>&1 1>&2 2>&3)
+    
+    local ret=$?
+    [ $ret -ne 0 ] && return $ret
+    [ -z "$selected" ] && return 0
+    
+    # 選択された言語パッケージをSELECTED_PACKAGESに追加
+    local lang_pkg="luci-i18n-base-${selected}"
+    
+    if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+        echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+        debug_log "Added language package: $lang_pkg"
+    fi
+    
+    return 0
+}
+
 package_compatible() {
     local pkg_id="$1"
     
