@@ -909,22 +909,15 @@ show_language_selector() {
         current_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
     fi
     
-    [ -z "$current_lang" ] && current_lang="en"
-    
     local radio_list=""
-    
-    # enとキャッシュをマージしてソート
-    {
-        echo "en"
-        cat "$cache_file"
-    } | sort -u | while read -r lang; do
+    while read -r lang; do
         [ -z "$lang" ] && continue
         
         local status="OFF"
         [ "$lang" = "$current_lang" ] && status="ON"
         
         radio_list="$radio_list \"$lang\" \"\" $status"
-    done
+    done < "$cache_file"
     
     local selected
     selected=$(eval "$DIALOG --title \"$breadcrumb\" \
@@ -937,14 +930,6 @@ show_language_selector() {
     [ $? -ne 0 ] || [ -z "$selected" ] && return 0
     [ "$selected" = "$current_lang" ] && return 0
     
-    # en選択時：全言語パック削除（英語はLuCI本体に含まれる）
-    if [ "$selected" = "en" ]; then
-        sed -i '/^luci-i18n-/d' "$SELECTED_PACKAGES"
-        clear_selection_cache
-        return 0
-    fi
-    
-    # 他の言語選択時：base パッケージのみ追加
     local lang_pkg="luci-i18n-base-${selected}"
     
     if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
