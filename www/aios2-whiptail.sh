@@ -1422,7 +1422,7 @@ reset_state_for_next_session() {
     rm -f "$SELECTED_CUSTOM_PACKAGES"
 
     # 設定変数
-    : > "$SETUP_VARS"
+    # : > "$SETUP_VARS"
 
     # 選択キャッシュ
     unset _SELECTED_PACKAGES_CACHE
