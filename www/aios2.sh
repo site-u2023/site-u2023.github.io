@@ -3183,7 +3183,7 @@ XXXXX_update_language_packages() {
     echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-update_language_packages() {
+NG_update_language_packages() {
     local new_lang old_lang
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -3232,6 +3232,59 @@ update_language_packages() {
     fi
     clear_selection_cache
     debug_log "Language package update completed"
+}
+
+update_language_packages() {
+    local new_lang old_lang
+    
+    echo "[DEBUG] === update_language_packages called ===" >> "$CONFIG_DIR/debug.log"
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    # デバイスから実際にインストールされている言語パッケージを取得
+    local installed_lang_pkgs
+    installed_lang_pkgs=$(${PKG_MANAGER} info 2>/dev/null | grep "^luci-i18n-")
+    
+    echo "[DEBUG] Installed language packages from device:" >> "$CONFIG_DIR/debug.log"
+    echo "$installed_lang_pkgs" >> "$CONFIG_DIR/debug.log"
+    
+    # インストール済み言語パックから現在の言語を検出
+    old_lang=$(echo "$installed_lang_pkgs" | head -1 | grep -o '[a-z][a-z]$')
+    [ -z "$old_lang" ] && old_lang="en"
+    
+    echo "[DEBUG] old_lang='$old_lang', new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    if [ -z "$new_lang" ]; then
+        sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
+        sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
+        echo "[LANG] Removed all language packages" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    if [ "$old_lang" = "$new_lang" ]; then
+        echo "[DEBUG] Language unchanged" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # 既存の言語パッケージを全削除
+    sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
+    sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
+    echo "[LANG] Removed all old language packages" >> "$CONFIG_DIR/debug.log"
+    
+    # デバイスの言語パッケージを新言語に置き換え
+    if [ "$new_lang" != "en" ]; then
+        echo "$installed_lang_pkgs" | while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            local base_name=$(echo "$pkg" | sed 's/-[a-z][a-z]$//')
+            local new_pkg="${base_name}-${new_lang}"
+            
+            echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
+            echo "[LANG] Added: $new_pkg" >> "$CONFIG_DIR/debug.log"
+        done
+    fi
+    clear_selection_cache
+    echo "[DEBUG] === update_language_packages finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
 # API値の動的追跡
