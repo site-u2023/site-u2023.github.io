@@ -959,7 +959,7 @@ EOF
         # SETUP_VARSを更新
         sed -i "/^language=/d" "$SETUP_VARS"
         
-echo "language='${selected}'" >> "$SETUP_VARS"
+        echo "language='${selected}'" >> "$SETUP_VARS"
         echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
         
             local lang_pkg="luci-i18n-base-${selected}"
@@ -967,7 +967,6 @@ echo "language='${selected}'" >> "$SETUP_VARS"
                 echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
                 echo "[DEBUG] Added ${lang_pkg} to SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
             fi
-        fi
         
         # ★★★ 言語パッケージを更新（全LuCIパッケージ対応） ★★★
         update_language_packages
