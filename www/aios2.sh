@@ -3320,11 +3320,16 @@ update_language_packages() {
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
 
+    debug_log "old_lang='$old_lang' (detected from device)"
+    
     # 未選択なら何もしない（初期状態）
     [ -z "$new_lang" ] && return 0
-    
+
+    # 言語が変わっていなければ何もしない
+    [ "$old_lang" = "$new_lang" ] && return 0
     debug_log "new_lang='$new_lang'"
-    
+    debug_log "Updating language packages: $old_lang -> $new_lang"
+        
     # 現在インストール済みのベース言語パックから言語コードを検出
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
     
@@ -3336,25 +3341,6 @@ update_language_packages() {
     else
         old_lang="en"
     fi
-    
-    debug_log "old_lang='$old_lang' (detected from device)"
-    
-    # 全削除
-    if [ -n "$new_lang" ]; then
-        grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
-        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
-        debug_log "Removed all language packages"
-        clear_selection_cache
-        return 0
-    fi
-    
-    # 言語が変わっていなければ何もしない
-    if [ "$old_lang" = "$new_lang" ]; then
-        debug_log "Language unchanged: $old_lang"
-        return 0
-    fi
-    
-    debug_log "Updating language packages: $old_lang -> $new_lang"
     
     # SELECTED_PACKAGES から LuCI パッケージを抽出
     local selected_luci_packages=""
