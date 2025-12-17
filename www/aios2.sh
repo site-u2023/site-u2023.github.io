@@ -3199,31 +3199,40 @@ update_language_packages() {
     old_lang=$(echo "$installed_lang_pkgs" | head -1 | sed 's/.*-\([a-z][a-z]\)$/\1/')
     [ -z "$old_lang" ] && old_lang="en"
     
+    # 空欄の場合は全削除
     if [ -z "$new_lang" ]; then
-        sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
-        sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
+        grep -v "luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+        mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+        debug_log "Removed all language packages"
+        clear_selection_cache
         return 0
     fi
     
+    # 言語が変わっていなければ何もしない
     if [ "$old_lang" = "$new_lang" ]; then
+        debug_log "Language unchanged: $old_lang"
         return 0
     fi
     
-    # 既存の言語パッケージを全削除
-    sed -i "/=luci-i18n-.*=/d" "$SELECTED_PACKAGES"
-    sed -i "/=luci-i18n-.*\$/d" "$SELECTED_PACKAGES"
+    debug_log "Updating language packages: $old_lang -> $new_lang"
     
-    # 新言語に置き換え
+    # 既存の言語パッケージを全削除（より確実な方法）
+    grep -v "luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+    
+    # 新言語に置き換え（en以外）
     if [ "$new_lang" != "en" ]; then
         echo "$installed_lang_pkgs" | while read -r pkg; do
             [ -z "$pkg" ] && continue
             local base_name=$(echo "$pkg" | sed 's/-[a-z][a-z]$//')
             local new_pkg="${base_name}-${new_lang}"
             echo "${new_pkg}=${new_pkg}===" >> "$SELECTED_PACKAGES"
+            debug_log "Added language package: $new_pkg"
         done
     fi
 
     clear_selection_cache
+    debug_log "Language package update completed"
 }
 
 # API値の動的追跡
