@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1457"
+VERSION="R7.1217.1635"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -383,6 +383,15 @@ load_package_manager_config() {
     PKG_EXT=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.ext")
 
+    PKG_DEPENDS_CMD=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.dependsCommand")
+
+    PKG_WHATDEPENDS_CMD=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.whatDependsCommand")
+
+    PKG_SYSTEM_PACKAGES=$(jsonfilter -i "$config_json" \
+        -e "@.packageManagers.${PKG_MGR}.systemPackages[*]" 2>/dev/null | xargs)
+        
     PKG_OPTION_IGNORE_DEPS=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.options.ignoreDeps")
 
@@ -1838,12 +1847,8 @@ add_package_with_dependencies() {
                             luci-i18n-*) ;;
                             *)
                                 # ベース言語パック検出
-                                local installed_lang=""
-                                if [ "$PKG_MGR" = "apk" ]; then
-                                    installed_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
-                                else
-                                    installed_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
-                                fi
+                                local installed_lang
+                                installed_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
                                 
                                 if [ -n "$installed_lang" ]; then
                                     local module_name
@@ -3177,12 +3182,8 @@ initialize_language_packages() {
     debug_log "=== initialize_language_packages called ==="
     
     # システムにインストール済みのベース言語パックを検出
-    local installed_lang=""
-    if [ "$PKG_MGR" = "apk" ]; then
-        installed_lang=$(apk info 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
-    else
-        installed_lang=$(opkg list-installed 2>/dev/null | grep "^luci-i18n-base-" | awk '{print $1}' | sed 's/^luci-i18n-base-//' | head -1)
-    fi
+    local installed_lang
+    installed_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
     
     if [ -z "$installed_lang" ]; then
         debug_log "No base language package installed, skipping"
@@ -3383,12 +3384,8 @@ detect_packages_to_remove() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # インストール済みチェック
-        if [ "$PKG_MGR" = "opkg" ]; then
-            opkg list-installed | grep -q "^${pkg_id} " || continue
-        else
-            apk info | grep -q "^${pkg_id}$" || continue
-        fi
+        # インストール済みチェック（キャッシュから）
+        is_package_installed "$pkg_id" || continue
         
         # 選択済みチェック
         local still_selected=0
@@ -3462,39 +3459,43 @@ expand_remove_list() {
         esac
         
         if [ -n "$base_name" ]; then
-            local found_lang=""
-            if [ "$PKG_MGR" = "apk" ]; then
-                found_lang=$(apk info | grep "^luci-i18n-${base_name}-")
-            else
-                found_lang=$(opkg list-installed | awk '{print $1}' | grep "^luci-i18n-${base_name}-")
-            fi
+            local found_lang
+            found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
+            
             if [ -n "$found_lang" ]; then
                 lang_packages="$lang_packages $found_lang"
                 echo "[DEBUG] Found lang package for $pkg: $found_lang" >> "$CONFIG_DIR/debug.log"
             fi
         fi
         
-        # 2. OPKG依存パッケージ（opkgのみ）
+        # 2. 依存パッケージ（opkgのみ、JSONから取得したコマンドを使用）
         if [ "$PKG_MGR" = "opkg" ]; then
+            local deps_cmd depends_cmd
+            deps_cmd=$(expand_template "$PKG_DEPENDS_CMD" "package" "$pkg")
+            
             local deps
-            deps=$(opkg depends "$pkg" 2>/dev/null | awk '/^[[:space:]]/ {gsub(/^[[:space:]]+/, ""); gsub(/ \(.*\)/, ""); print}')
+            deps=$(eval "$deps_cmd" 2>/dev/null)
             
             for dep in $deps; do
-                # システムパッケージ除外
-                case "$dep" in
-                    libc|libgcc|libubox*|libubus*|libuci*|luci-base|luci-lib-*|luci-compat|rpcd*|uhttpd*|ubus|uci|kernel*) 
-                        continue 
-                        ;;
-                esac
+                # システムパッケージ除外（JSONから取得したリスト）
+                local is_system=0
+                for sys_pkg in $PKG_SYSTEM_PACKAGES; do
+                    case "$dep" in
+                        ${sys_pkg}*) is_system=1; break ;;
+                    esac
+                done
+                
+                [ "$is_system" -eq 1 ] && continue
                 
                 # インストール済みチェック
-                if ! opkg list-installed | grep -q "^${dep} "; then
-                    continue
-                fi
+                is_package_installed "$dep" || continue
                 
                 # 他のパッケージに依存されているかチェック
+                local what_depends_cmd
+                what_depends_cmd=$(expand_template "$PKG_WHATDEPENDS_CMD" "package" "$dep")
+                
                 local dependents
-                dependents=$(opkg whatdepends "$dep" 2>/dev/null | awk '/^[[:space:]].*depends on/ {print $1}')
+                dependents=$(eval "$what_depends_cmd" 2>/dev/null)
                 
                 local other_depends=0
                 for dependent in $dependents; do
