@@ -163,7 +163,10 @@
     "tr-tui-decide": "決定",
     "tr-tui-cancel": "キャンセル",
     "tr-tui-refresh": "更新",
-    
+
+    "tr-tui-language-package": "言語パッケージ",
+    "tr-tui-select-language": "LuCIインターフェースの言語を選択",
+    "tr-tui-no-languages-available": "利用可能な言語がありません",
     "tr-tui-view-device-info": "デバイス情報",
     "tr-tui-view-package-list": "設定パッケージ",
     "tr-tui-view-custom-packages": "設定カスタムパッケージ",
