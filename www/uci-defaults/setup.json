@@ -180,6 +180,12 @@
       "luci-i18n-package-manager-",
       "luci-i18n-firewall-"
     ],
+    "language_prefixes": [
+      "luci-i18n-base-",
+      "luci-i18n-opkg-",
+      "luci-i18n-package-manager-",
+      "luci-i18n-firewall-"
+    ],    
     "language_module_patterns": [
       "luci-app-",
       "luci-proto-",
