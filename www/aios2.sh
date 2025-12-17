@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1217.1420"
+VERSION="R7.1217.1452"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -4182,74 +4182,65 @@ generate_lightweight_summary() {
     tr_customscripts=$(translate "tr-tui-summary-customscripts")
     
     {
-        # スナップショットをメモリにロード（1回のみ）
-        local initial_packages=""
-        local initial_custom=""
-        
-        if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
-            initial_packages=$(cat "$CONFIG_DIR/packages_initial_snapshot.txt")
-        fi
-        
-        if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
-            initial_custom=$(cat "$CONFIG_DIR/custom_packages_initial_snapshot.txt")
-        fi
+        # インストール済みキャッシュをロード（1回のみ）
+        [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
         
         # ========================================
-        # パッケージ変更（メモリ内処理のみ）
+        # パッケージ変更（実際のインストール状態と比較）
         # ========================================
         local install_list=""
         local remove_list=""
         
+        # 追加されるパッケージ（未インストール + 選択済み）
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
-            local current_packages
-            current_packages=$(cat "$SELECTED_PACKAGES")
-            
-            # 追加されるパッケージ
             while read -r cache_line; do
                 [ -z "$cache_line" ] && continue
+                
                 local pkg_id uid
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 uid=$(echo "$cache_line" | cut -d= -f3)
                 
-                local found=0
-                if [ -n "$uid" ]; then
-                    echo "$initial_packages" | grep -q "=${uid}=" && found=1
-                else
-                    echo "$initial_packages" | grep -q "^${pkg_id}=" && found=1
-                fi
-                
-                if [ "$found" -eq 0 ]; then
+                # ★★★ 実際のインストール状態をチェック ★★★
+                if ! is_package_installed "$pkg_id"; then
                     install_list="${install_list}install ${pkg_id}
 "
                 fi
-            done <<EOF
-$current_packages
-EOF
-            
-            # 削除されるパッケージ
-            if [ -n "$initial_packages" ]; then
-                while read -r cache_line; do
-                    [ -z "$cache_line" ] && continue
-                    local pkg_id uid
-                    pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                    uid=$(echo "$cache_line" | cut -d= -f3)
-                    
-                    local still_selected=0
-                    if [ -n "$uid" ]; then
-                        echo "$current_packages" | grep -q "=${uid}=" && still_selected=1
-                    else
-                        echo "$current_packages" | grep -q "^${pkg_id}=" && still_selected=1
-                    fi
-                    
-                    if [ "$still_selected" -eq 0 ]; then
-                        remove_list="${remove_list}remove ${pkg_id}
-"
-                    fi
-                done <<INITIAL
-$initial_packages
-INITIAL
-            fi
+            done < "$SELECTED_PACKAGES"
         fi
+        
+        # 削除されるパッケージ（インストール済み + 未選択）
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
+            
+            local pkg_id uid
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            uid=$(echo "$cache_line" | cut -d= -f3)
+            
+            # ★★★ インストール済みチェック ★★★
+            if ! is_package_installed "$pkg_id"; then
+                continue
+            fi
+            
+            # ★★★ 選択済みチェック ★★★
+            local still_selected=0
+            if [ -n "$uid" ]; then
+                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    still_selected=1
+                fi
+            else
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    still_selected=1
+                fi
+            fi
+            
+            if [ "$still_selected" -eq 0 ]; then
+                remove_list="${remove_list}remove ${pkg_id}
+"
+            fi
+        done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
         
         # パッケージ変更がある場合のみ表示
         if [ -n "$install_list" ] || [ -n "$remove_list" ]; then
@@ -4261,41 +4252,55 @@ INITIAL
         fi
         
         # ========================================
-        # カスタムフィード変更
+        # カスタムフィード変更（実際のインストール状態と比較）
         # ========================================
         local custom_install=""
         local custom_remove=""
         
         # 追加されるカスタムフィード
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-            local current_custom
-            current_custom=$(cat "$SELECTED_CUSTOM_PACKAGES")
-            
             while read -r cache_line; do
-                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                [ -z "$cache_line" ] && continue
                 
-                if ! echo "$initial_custom" | grep -q "^${pkg_id}="; then
+                local pkg_id pattern exclude installed_pkgs
+                pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                # ★★★ 実際のインストール状態をチェック ★★★
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                
+                if [ -z "$installed_pkgs" ]; then
                     custom_install="${custom_install}install ${pkg_id}
 "
                 fi
-            done <<EOF
-$current_custom
-EOF
+            done < "$SELECTED_CUSTOM_PACKAGES"
         fi
         
         # 削除されるカスタムフィード
-        if [ -n "$initial_custom" ]; then
-            while read -r cache_line; do
-                [ -z "$cache_line" ] && continue
-                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    custom_remove="${custom_remove}remove ${pkg_id}
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            for cat_id in $(get_customfeed_categories); do
+                for pkg_id in $(get_category_packages "$cat_id"); do
+                    local pattern exclude installed_pkgs
+                    pattern=$(get_customfeed_package_pattern "$pkg_id")
+                    exclude=$(get_customfeed_package_exclude "$pkg_id")
+                    
+                    [ -z "$pattern" ] && continue
+                    
+                    # ★★★ インストール済みチェック ★★★
+                    installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                    
+                    [ -z "$installed_pkgs" ] && continue
+                    
+                    # ★★★ 選択済みチェック ★★★
+                    if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                        custom_remove="${custom_remove}remove ${pkg_id}
 "
-                fi
-            done <<INITIAL_CUSTOM
-$initial_custom
-INITIAL_CUSTOM
+                    fi
+                done
+            done
         fi
         
         # カスタムフィード変更がある場合のみ表示
