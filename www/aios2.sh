@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0010"
+VERSION="R7.1219.0012"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -3672,7 +3672,6 @@ compute_dslite_aftr() {
 #   $1 - URL
 #   $2 - output file ("-" for stdout)
 #   $3 - timeout seconds (default: 10)
-#   $4 - priority (default: -4)
 # Returns:
 #   0 on success, 1 on failure
 # =============================================================================
@@ -3680,27 +3679,33 @@ wget_fallback() {
     local url="$1"
     local output="$2"
     local timeout="${3:-10}"
-    local proto="${4:-4}"
     local wget_opts="-q -T $timeout"
     
-    local alt_proto=6
-    [ "$proto" = "6" ] && alt_proto=4
-
-    # 指定されたプロトコルを優先
-    if wget -"$proto" $wget_opts "$url" 2>/dev/null; then
+    if [ "$output" = "-" ]; then
+        wget_opts="$wget_opts -O-"
+    else
+        wget_opts="$wget_opts -O $output"
+    fi
+    
+    # IPv4優先で試行
+    if wget -4 $wget_opts "$url" 2>/dev/null; then
         return 0
     fi
-    # 失敗時に逆で試行
-    wget -"$alt_proto" $wget_opts "$url" 2>/dev/null
     
-    debug_log "wget fallback also failed: $url"
+    debug_log "wget IPv4 failed, retrying with IPv6: $url"
+    
+    # IPv6フォールバック
+    if wget -6 $wget_opts "$url" 2>/dev/null; then
+        return 0
+    fi
+    
+    debug_log "wget IPv6 fallback also failed: $url"
     return 1
 }
 
 __download_file_core() {
     local url="$1"
     local output_path="$2"
-    local proto="${3:-4}"
     local cache_buster full_url
     local max_retries=3
     local retry=0
