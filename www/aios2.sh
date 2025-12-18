@@ -5208,9 +5208,10 @@ aios2_main() {
         
         echo "Installing whiptail..."
         echo "Updating package lists..."
-        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        # 出力を /dev/null にリダイレクト
+        eval "$PKG_UPDATE_CMD" >/dev/null 2>&1 || echo "Warning: Failed to update package lists"
         
-        if ! install_package whiptail; then
+        if ! install_package whiptail >/dev/null 2>&1; then
             echo "Installation failed. Falling back to simple mode."
             UI_MODE="simple"
         else
@@ -5286,7 +5287,7 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
 
     wait $CACHE_PKG_PID
-    cache_available_languages
+    cache_available_languages >/dev/null 2>&1
 
     # LuCIから言語コードが取得できなかった場合、APIから取得した言語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
