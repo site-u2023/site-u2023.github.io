@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1850"
+VERSION="R7.1218.1856"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
