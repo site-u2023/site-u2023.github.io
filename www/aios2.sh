@@ -4268,8 +4268,8 @@ EOF
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
-            # 新しい言語のパッケージはスキップ（enの場合は全削除）
-            if [ "$new_lang" != "en" ] && echo "$pkg" | grep -q -- "-${new_lang}$"; then
+            # 新しい言語のパッケージはスキップ（それ以外は全削除）
+            if echo "$pkg" | grep -q -- "-${new_lang}$"; then
                 echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
