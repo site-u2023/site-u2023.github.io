@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1136"
+VERSION="R7.1218.1202"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3263,7 +3263,7 @@ EOF
     clear_selection_cache
 }
 
-OK_update_language_packages() {
+update_language_packages() {
     local new_lang old_lang
     
     echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
@@ -3410,7 +3410,7 @@ EOF
     clear_selection_cache
 }
 
-update_language_packages() {
+NG_update_language_packages() {
     local new_lang old_lang
     
     echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
