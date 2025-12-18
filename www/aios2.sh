@@ -3224,6 +3224,7 @@ EOF
             echo "[DEBUG] Checking lang_pkg='$lang_pkg'" >> "$CONFIG_DIR/debug.log"
             
             if ! check_package_available "$lang_pkg" "normal"; then
+                echo "[DEBUG] lang_pkg='$lang_pkg' NOT AVAILABLE (skipped)" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
 
