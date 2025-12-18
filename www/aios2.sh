@@ -3630,7 +3630,7 @@ SCRIPTS
 
 prefetch_templates() {
     # local max_jobs="${DEVICE_CPU_CORES:-2}"
-    local max_jobs=$((DEVICE_CPU_CORES + 1))
+    local max_jobs=$((DEVICE_CPU_CORES * 4))
     local pids=""
     local job_count=0
     
