@@ -674,7 +674,7 @@
           "description": "Password hash tool (extracted from apache)",
           "enableVar": "enable_htpasswd",
           "installOptions": "ignoreDeps",
-          "extractOnly": true,
+          "extractOnly": "true",
           "binaryPath": "/usr/bin/htpasswd"
         }
       ]
