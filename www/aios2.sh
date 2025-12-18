@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0057"
+VERSION="R7.1219.0116"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -24,7 +24,7 @@ debug_log() {
 # 【Package Cache Structure】
 # 
 # 1. _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner
+#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner=extractOnly
 #
 # Field details:
 #   1. id              - Package name for installation
@@ -38,6 +38,7 @@ debug_log() {
 #   9. reboot          - "true" if reboot required, "false" otherwise
 #  10. checked         - "true" if selected by default, "false" otherwise
 #  11. owner           - Package ownership: "system", "auto", "user", or empty
+#  12. extractOnly     - "true" if binary extraction only (skip opkg/apk), "false" otherwise
 #
 # 【Package Ownership (owner field)】
 # Determines package lifecycle and removal policy:
@@ -58,6 +59,20 @@ debug_log() {
 #   * Example: User manually checks luci-app-ttyd in package menu
 #
 # - **empty**: Legacy entries without owner (treated as "user")
+#
+# 【extractOnly Handling】
+# For packages that extract binaries from parent package without full install:
+#
+# - **extractOnly=true**: Binary extraction mode
+#   * Installation check: Uses is_binary_installed() with binaryPath from JSON
+#   * Availability check: Verifies parent package exists in repository
+#   * Removal: Deletes binary file directly (not via opkg/apk)
+#   * Example: htpasswd (extracted from apache package)
+#
+# - **extractOnly=false**: Normal package mode (default)
+#   * Installation check: Uses is_package_installed() via opkg/apk
+#   * Availability check: Package must exist in repository
+#   * Removal: Uses opkg/apk remove command
 #
 # 【Removal Detection Logic】
 # detect_packages_to_remove() behavior:
@@ -100,6 +115,7 @@ debug_log() {
 # **Availability Check**:
 #   - virtual=true: Skip check
 #   - custom_feeds: Skip check
+#   - extractOnly=true: Check parent package availability
 #   - Others: Must exist in repository
 #
 # 【Example Scenarios】
@@ -124,6 +140,13 @@ debug_log() {
 #   - Review screen: shows "install luci-app-vnstat2"
 #   - User unchecks: luci-app-vnstat2
 #   - Review screen: shows "remove luci-app-vnstat2" (owner=user)
+#
+# Scenario 4: extractOnly package (htpasswd)
+#   - User checks: htpasswd (id=apache, uniqueId=htpasswd, extractOnly=true)
+#   - is_binary_installed() checks /usr/bin/htpasswd existence
+#   - If binary exists → marked as owner=system
+#   - If binary missing → available for installation
+#   - Removal: rm -f /usr/bin/htpasswd (not opkg remove)
 #
 # =============================================================================
 
@@ -1795,7 +1818,7 @@ get_package_name() {
             BEGIN { in_deps=0 }
             {
                 id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
-                hidden="false"; virtual="false"; reboot="false"; checked="false";
+                hidden="false"; virtual="false"; reboot="false"; checked="false"; extractOnly="false";
                 
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
@@ -1807,18 +1830,19 @@ get_package_name() {
                     if($i=="virtual" && $(i+2)=="true")virtual="true";
                     if($i=="reboot" && $(i+2)=="true")reboot="true";
                     if($i=="checked" && $(i+2)=="true")checked="true";
+                    if($i=="extractOnly" && $(i+2)=="true")extractOnly="true";
                     if($i=="dependencies") {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
                             if($j=="]") { in_deps=0; break; }
-                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual") 
+                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual" && $j!="extractOnly") 
                                 deps=deps$j",";
                         }
                         sub(/,$/, "", deps);
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" extractOnly
                 }
             }')
         
@@ -1829,7 +1853,7 @@ get_package_name() {
                 BEGIN { in_deps=0 }
                 {
                     id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
-                    hidden="false"; virtual="false"; reboot="false"; checked="false";
+                    hidden="false"; virtual="false"; reboot="false"; checked="false"; extractOnly="false";
                     
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
@@ -1841,18 +1865,19 @@ get_package_name() {
                         if($i=="virtual" && $(i+2)=="true")virtual="true";
                         if($i=="reboot" && $(i+2)=="true")reboot="true";
                         if($i=="checked" && $(i+2)=="true")checked="true";
+                        if($i=="extractOnly" && $(i+2)=="true")extractOnly="true";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
                                 if($j=="]") { in_deps=0; break; }
-                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual")
+                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual" && $j!="extractOnly")
                                     deps=deps$j",";
                             }
                             sub(/,$/, "", deps);
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" extractOnly
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -1936,18 +1961,23 @@ is_package_installed() {
 # =============================================================================
 # Args:
 #   $1 - package id (to look up binaryPath in JSON)
+#   $2 - uniqueId (optional, for packages with uniqueId like htpasswd)
 # Returns:
 #   0 if binary exists, 1 otherwise
 # =============================================================================
 is_binary_installed() {
     local pkg_id="$1"
+    local uid="${2:-}"
     local binary_path
     
-    # JSONからbinaryPathを取得
-    binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].binaryPath" 2>/dev/null | head -1)
+    # uniqueIdがあればuniqueIdで検索（優先）
+    if [ -n "$uid" ]; then
+        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$uid'].binaryPath" 2>/dev/null | head -1)
+    fi
     
+    # uniqueIdで見つからなければidで検索
     if [ -z "$binary_path" ]; then
-        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].binaryPath" 2>/dev/null | head -1)
+        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].binaryPath" 2>/dev/null | head -1)
     fi
     
     [ -z "$binary_path" ] && return 1
@@ -2067,15 +2097,15 @@ initialize_installed_packages() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # extractOnly フラグをチェック
-        extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].extractOnly" 2>/dev/null | head -1)
-        [ -z "$extract_only" ] && extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$uid'].extractOnly" 2>/dev/null | head -1)
+        # キャッシュからextractOnlyを取得（フィールド12）
+        extract_only=$(echo "$cache_line" | cut -d= -f12)
+        [ "$extract_only" != "true" ] && extract_only="false"
         
         local is_installed=0
         
         if [ "$extract_only" = "true" ]; then
-            # extractOnly: バイナリ存在確認
-            is_binary_installed "$pkg_id" && is_installed=1
+            # extractOnly: バイナリ存在確認（uniqueIdを渡す）
+            is_binary_installed "$pkg_id" "$uid" && is_installed=1
         else
             # 通常: opkg/apkで確認
             is_package_installed "$pkg_id" && is_installed=1
@@ -2102,7 +2132,7 @@ initialize_installed_packages() {
                 count=$((count + 1))
                 
                 if [ "$extract_only" = "true" ]; then
-                    echo "[INIT] Found installed binary: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+                    echo "[INIT] Found installed binary: $pkg_id/$uid (owner=system)" >> "$CONFIG_DIR/debug.log"
                 else
                     echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
@@ -4213,14 +4243,14 @@ detect_packages_to_remove() {
             continue
         fi
         
-        # extractOnly フラグをチェック
-        extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].extractOnly" 2>/dev/null | head -1)
-        [ -z "$extract_only" ] && extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$uid'].extractOnly" 2>/dev/null | head -1)
+        # キャッシュからextractOnlyを取得（フィールド12）
+        extract_only=$(echo "$cache_line" | cut -d= -f12)
+        [ "$extract_only" != "true" ] && extract_only="false"
         
         # インストール済みチェック
         local is_installed=0
         if [ "$extract_only" = "true" ]; then
-            is_binary_installed "$pkg_id" && is_installed=1
+            is_binary_installed "$pkg_id" "$uid" && is_installed=1
         else
             is_package_installed "$pkg_id" && is_installed=1
         fi
@@ -4244,7 +4274,7 @@ detect_packages_to_remove() {
             if [ "$extract_only" = "true" ]; then
                 # extractOnlyの場合は uniqueId を使用（バイナリ削除用）
                 [ -n "$uid" ] && remove_list="${remove_list}${uid} " || remove_list="${remove_list}${pkg_id} "
-                echo "[REMOVE] Marked binary for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+                echo "[REMOVE] Marked binary for removal: $pkg_id/$uid (owner=$owner)" >> "$CONFIG_DIR/debug.log"
             else
                 remove_list="${remove_list}${pkg_id} "
                 echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
