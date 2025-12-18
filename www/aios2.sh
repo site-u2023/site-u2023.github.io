@@ -1108,6 +1108,63 @@ wait_for_package_cache() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+
+    wait_for_package_cache
+
+    # custom_feeds は常に利用可能
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    fi
+
+    # キャッシュから virtual フラグを取得
+    local virtual_flag="false"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
+        [ -z "$virtual_flag" ] && virtual_flag="false"
+    fi
+    
+    # virtualパッケージは常に利用可能
+    if [ "$virtual_flag" = "true" ]; then
+        debug_log "Package $pkg_id is virtual, skipping availability check"
+        return 0
+    fi
+
+    # uniqueIdがあれば実際のIDに変換
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        local cached_real_id
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+
+    # availability cacheをメモリにロード（初回のみ）
+    if [ "$_PACKAGE_AVAILABILITY_LOADED" -eq 0 ]; then
+        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+        
+        if [ -f "$cache_file" ]; then
+            _PACKAGE_AVAILABILITY_CACHE=$(cat "$cache_file")
+            _PACKAGE_AVAILABILITY_LOADED=1
+            debug_log "Package availability cache loaded to memory ($(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l) packages)"
+        else
+            _PACKAGE_AVAILABILITY_LOADED=1
+            debug_log "Availability cache not found, allowing all packages"
+            return 0
+        fi
+    fi
+
+    # メモリ内で検索（ディスクI/O不要）
+    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
+        debug_log "Package $real_id found in availability cache"
+        return 0
+    fi
+
+    debug_log "Package $real_id NOT found in availability cache"
+    return 1
+}
+
+XXX_check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
