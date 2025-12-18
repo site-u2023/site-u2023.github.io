@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1721"
+VERSION="R7.1218.1723"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3646,8 +3646,8 @@ reset_state_for_next_session() {
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
 
-    # 言語変数をクリア（内部変数）
-    sed -i "/^language=/d" "$SETUP_VARS"
+    # ★★★ 修正：言語変数は保持する ★★★
+    # sed -i "/^language=/d" "$SETUP_VARS"  # ← この行を削除
 
     # 選択キャッシュ
     unset _SELECTED_PACKAGES_CACHE
@@ -3657,10 +3657,10 @@ reset_state_for_next_session() {
     _SELECTED_CUSTOM_CACHE_LOADED=0
     _INSTALLED_PACKAGES_LOADED=0
     
-    # スナップショットは更新しない（初回のみ保持）
-    # 削除: cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-    # 削除: cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    # 削除: echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # スナップショットを更新（実行完了後の状態を記録）
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
     
     # 生成済み実行スクリプトの削除
     rm -f "$CONFIG_DIR/remove.sh"
