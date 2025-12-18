@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2000"
+VERSION="R7.1218.2132"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1178,7 +1178,7 @@ get_kmods_directory() {
     debug_log "Fetching kmods index from: $index_url"
     
     local kmod_dir
-    kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
+    kmod_dir=$(wget -4 -qO- "$index_url" 2>/dev/null | \
         grep -o 'href="[^/"]\+/"' | \
         sed 's/href="//;s/\/"$//' | \
         grep -v '^\s*$' | \
@@ -1370,7 +1370,7 @@ cache_package_availability() {
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
             # タイムアウト短縮、リトライなし
-            if ! wget -q -T 8 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+            if ! wget -4 -q -T 8 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
