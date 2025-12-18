@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1856"
+VERSION="R7.1218.1903"
 
 MAX_JOBS=$((DEVICE_CPU_CORES + 2))
 
@@ -3702,9 +3702,8 @@ prefetch_templates() {
     # ヘルパー関数：ジョブ数制御
     wait_if_full() {
         if [ "$job_count" -ge "$MAX_JOBS" ]; then
-            wait $pids
-            pids=""
-            job_count=0
+            wait -n
+            job_count=$((job_count - 1))
         fi
     }
     
