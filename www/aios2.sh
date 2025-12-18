@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1750"
+VERSION="R7.1218.1800"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3681,7 +3681,7 @@ reset_state_for_next_session() {
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
 
-    # 修正：全変数をクリア
+    # 設定変数を全てクリア
     : > "$SETUP_VARS"
 
     # 選択キャッシュ
@@ -3695,7 +3695,8 @@ reset_state_for_next_session() {
     # スナップショットファイルを削除
     rm -f "$CONFIG_DIR/packages_initial_snapshot.txt"
     rm -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # ★★★ 言語スナップショットは削除しない（初回のみ作成） ★★★
+    # rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
     
     # 生成済み実行スクリプトの削除
     rm -f "$CONFIG_DIR/remove.sh"
@@ -3708,10 +3709,10 @@ reset_state_for_next_session() {
     # インストール済みを初期選択として再生成
     initialize_installed_packages
     
-    # スナップショットを再作成
+    # スナップショットを再作成（言語以外）
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # ★★★ 言語スナップショットは初回のみ作成（ここでは作らない） ★★★
     
     clear_selection_cache
 }
@@ -4283,7 +4284,7 @@ is_customfeed_installed() {
 # ========================================
 # 削除対象パッケージ検出
 # ========================================
-detect_packages_to_remove() {
+XXX_detect_packages_to_remove() {
     local remove_list=""
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
@@ -4361,6 +4362,120 @@ EOF
         done <<EOF2
 $initial_lang_pkgs
 EOF2
+    fi
+    
+    # カスタムフィード
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        for cat_id in $(get_customfeed_categories); do
+            for pkg_id in $(get_category_packages "$cat_id"); do
+                local pattern exclude
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                local installed_pkgs
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                
+                [ -z "$installed_pkgs" ] && continue
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    while read -r installed_pkg; do
+                        [ -z "$installed_pkg" ] && continue
+                        remove_list="${remove_list}${installed_pkg} "
+                        echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                    done <<EOF3
+$installed_pkgs
+EOF3
+                fi
+            done
+        done
+    fi
+    
+    echo "$remove_list" | xargs
+}
+
+# ========================================
+# 削除対象パッケージ検出
+# ========================================
+detect_packages_to_remove() {
+    local remove_list=""
+    
+    echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
+    
+    # 通常パッケージ
+    while read -r cache_line; do
+        [ -z "$cache_line" ] && continue
+        
+        local pkg_id uid owner
+        pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        uid=$(echo "$cache_line" | cut -d= -f3)
+        owner=$(echo "$cache_line" | cut -d= -f11)
+        
+        # owner=auto または owner=system は除外
+        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
+            echo "[DEBUG] Skipping $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
+        # インストール済みチェック
+        is_package_installed "$pkg_id" || continue
+        
+        # 選択済みチェック
+        local still_selected=0
+        if [ -n "$uid" ]; then
+            if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+               grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                still_selected=1
+            fi
+        else
+            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                still_selected=1
+            fi
+        fi
+        
+        if [ "$still_selected" -eq 0 ]; then
+            remove_list="${remove_list}${pkg_id} "
+            echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+        fi
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
+    
+    # ========================================
+    # 言語パッケージの削除検出（実際のインストール状態から判定）
+    # ========================================
+    local installed_lang
+    installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+    
+    # 初期スナップショットをロード
+    local initial_lang_pkgs=""
+    if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
+        initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
+    fi
+    
+    if [ -n "$initial_lang_pkgs" ]; then
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            # 現在インストール中の言語パッケージはスキップ
+            if [ -n "$installed_lang" ] && echo "$pkg" | grep -q -- "-${installed_lang}$"; then
+                echo "[DEBUG] Keeping language pack: $pkg (matches installed_lang=$installed_lang)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # SELECTED_PACKAGES に含まれているかチェック
+            if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # 削除対象に追加
+            remove_list="${remove_list}${pkg} "
+            echo "[REMOVE] Marked language pack for removal: $pkg (not in current language)" >> "$CONFIG_DIR/debug.log"
+        done <<EOF
+$initial_lang_pkgs
+EOF
     fi
     
     # カスタムフィード
