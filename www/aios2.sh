@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2153"
+VERSION="R7.1218.2013"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1199,7 +1199,106 @@ get_kmods_directory() {
     return 1
 }
 
-# wait -n を使ったシンプルな実装
+XXX_cache_package_availability() {
+    debug_log "Building package availability cache..."
+    debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
+    
+    local version="$OPENWRT_VERSION"
+    local arch="$DEVICE_ARCH"
+    local vendor="$DEVICE_VENDOR"
+    local subtarget="$DEVICE_SUBTARGET"
+    
+    if [ -z "$version" ] || [ -z "$arch" ]; then
+        debug_log "Missing version or arch"
+        return 1
+    fi
+    
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+    : > "$cache_file"
+    
+    # JSONから取得したフィードリスト
+    local feeds="$PKG_FEEDS"
+    
+    # targets追加
+    [ "$PKG_INCLUDE_TARGETS" = "true" ] && feeds="$feeds targets"
+    
+    # kmods追加
+    local kmod_dir
+    if [ "$PKG_INCLUDE_KMODS" = "true" ]; then
+        local kernel_version=$(uname -r)
+        kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
+        [ -n "$kmod_dir" ] && feeds="$feeds kmods"
+    fi
+    
+    local pids=""
+    for feed in $feeds; do
+        (
+            local url temp_file
+            temp_file="$CONFIG_DIR/cache_${feed}.txt"
+            
+            # URL構築
+            if [ "$feed" = "targets" ]; then
+                url=$(expand_template "$PKG_TARGETS_INDEX_URL" \
+                    "version" "$version" \
+                    "vendor" "$vendor" \
+                    "subtarget" "$subtarget")
+            elif [ "$feed" = "kmods" ]; then
+                url=$(expand_template "$PKG_KMODS_INDEX_URL" \
+                    "version" "$version" \
+                    "vendor" "$vendor" \
+                    "subtarget" "$subtarget" \
+                    "kmod" "$kmod_dir")
+            else
+                url=$(expand_template "$PKG_PACKAGE_INDEX_URL" \
+                    "version" "$version" \
+                    "arch" "$arch" \
+                    "feed" "$feed")
+            fi
+            
+            debug_log "Fetching $feed from $url"
+            
+            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
+            wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
+            
+            [ ! -s "$temp_response" ] && exit 1
+            
+            # パッケージ名抽出
+            if echo "$url" | grep -q 'index.json$'; then
+                # APK
+                grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
+            else
+                # OPKG
+                awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
+            fi
+            
+            rm -f "$temp_response"
+            
+            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
+            debug_log "$feed: fetched $count packages"
+        ) >/dev/null 2>&1 &
+        pids="$pids $!"
+    done
+    
+    # pidsが空の場合はwaitをスキップ（空だと全バックグラウンドジョブを待機してしまう）
+    [ -n "$pids" ] && wait $pids
+    
+    # マージ
+    {
+        for feed in $feeds; do
+            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
+            rm -f "$temp_file"
+        done
+        
+        sort -u "$cache_file" -o "$cache_file"
+    } >/dev/null 2>&1
+    
+    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
+    debug_log "Cache built: $count packages total"
+    
+    return 0
+}
+
 cache_package_availability() {
     debug_log "Building package availability cache..."
     debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
@@ -1227,10 +1326,10 @@ cache_package_availability() {
         [ -n "$kmod_dir" ] && feeds="$feeds kmods"
     fi
     
-    [ -z "$feeds" ] && {
+    if [ -z "$feeds" ]; then
         debug_log "No feeds to process"
         return 0
-    }
+    fi
     
     local job_count=0
     
@@ -1273,10 +1372,10 @@ cache_package_availability() {
                 exit 1
             fi
             
-            [ ! -s "$temp_response" ] && {
+            if [ ! -s "$temp_response" ]; then
                 rm -f "$temp_response"
                 exit 1
-            }
+            fi
             
             if echo "$url" | grep -q 'index.json$'; then
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
@@ -1571,8 +1670,6 @@ get_category_hidden() {
     hidden=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].hidden" 2>/dev/null | head -1)
     echo "$hidden"
 }
-
-# get_category_packages を修正
 
 get_category_packages() {
     local cat_id="$1"
@@ -3681,7 +3778,7 @@ __download_file_core() {
     while [ $retry -lt $max_retries ]; do
         echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
         
-        if wget -4 -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
+        if wget -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
             if [ -s "$output_path" ]; then
                 echo "[DEBUG] Download successful: $url" >> "$CONFIG_DIR/debug.log"
                 return 0
