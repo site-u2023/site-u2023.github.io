@@ -1105,7 +1105,7 @@ wait_for_package_cache() {
     fi
 }
 
-check_package_available() {
+XXX_check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
@@ -1145,6 +1145,63 @@ check_package_available() {
     fi
 
     # ファイルから直接検索（echo経由のパイプを避ける）
+    if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
+        debug_log "Package $real_id found in availability cache"
+        return 0
+    fi
+
+    debug_log "Package $real_id NOT found in availability cache"
+    return 1
+}
+
+check_package_available() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
+
+    wait_for_package_cache
+
+    # custom_feeds は常に利用可能
+    if [ "$caller" = "custom_feeds" ]; then
+        return 0
+    fi
+
+    # キャッシュから virtual フラグを取得
+    local virtual_flag="false"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        # 修正: echoを使わず、ヒアドキュメントで処理
+        virtual_flag=$(awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}' <<EOF 2>/dev/null
+$_PACKAGE_NAME_CACHE
+EOF
+)
+        [ -z "$virtual_flag" ] && virtual_flag="false"
+    fi
+    
+    # virtualパッケージは常に利用可能
+    if [ "$virtual_flag" = "true" ]; then
+        debug_log "Package $pkg_id is virtual, skipping availability check"
+        return 0
+    fi
+
+    # uniqueIdがあれば実際のIDに変換
+    local real_id="$pkg_id"
+    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+        # 修正: echoを使わず、ヒアドキュメントで処理
+        local cached_real_id
+        cached_real_id=$(awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}' <<EOF 2>/dev/null
+$_PACKAGE_NAME_CACHE
+EOF
+)
+        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
+    fi
+
+    # キャッシュファイルが存在しなければ許可
+    if [ ! -f "$cache_file" ]; then
+        debug_log "Availability cache not found, allowing all packages"
+        return 0
+    fi
+
+    # ファイルから直接検索
     if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
         debug_log "Package $real_id found in availability cache"
         return 0
