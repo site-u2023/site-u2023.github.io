@@ -1178,7 +1178,7 @@ get_kmods_directory() {
     debug_log "Fetching kmods index from: $index_url"
     
     local kmod_dir
-    kmod_dir=$(wget -4 -qO- "$index_url" 2>/dev/null | \
+    kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
         grep -o 'href="[^/"]\+/"' | \
         sed 's/href="//;s/\/"$//' | \
         grep -v '^\s*$' | \
@@ -1258,7 +1258,7 @@ XXX_cache_package_availability() {
             debug_log "Fetching $feed from $url"
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-            wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
+            wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
             
             [ ! -s "$temp_response" ] && exit 1
             
@@ -1366,7 +1366,7 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            if ! wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+            if ! wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
