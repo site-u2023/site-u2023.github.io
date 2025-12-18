@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1107"
+VERSION="R7.1218.1116"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3292,8 +3292,9 @@ update_language_packages() {
     
     # インストール済み + 選択済み の両方から言語パック対象パッケージを抽出
     local all_luci_packages=""
-    local patterns
-    patterns=$(get_language_exclude_patterns)
+    local exclude_patterns module_patterns
+    exclude_patterns=$(get_language_exclude_patterns)
+    module_patterns=$(get_language_module_patterns)
 
     echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
@@ -3303,7 +3304,7 @@ update_language_packages() {
         
         # 除外パターンマッチング
         local excluded=0
-        for pattern in $patterns; do
+        for pattern in $exclude_patterns; do
             case "$pkg_id" in
                 ${pattern}*)
                     excluded=1
@@ -3333,7 +3334,7 @@ EOF
             
             # 除外パターンマッチング
             local excluded=0
-            for pattern in $patterns; do
+            for pattern in $exclude_patterns; do
                 case "$pkg_id" in
                     ${pattern}*)
                         excluded=1
@@ -3366,7 +3367,26 @@ EOF
         while read -r pkg; do
             [ -z "$pkg" ] && continue
             
-            local lang_pkg="${pkg}-${new_lang}"
+            local lang_pkg
+            local is_luci_module=0
+            
+            # LuCIモジュールパターンに一致するかチェック
+            for pattern in $module_patterns; do
+                case "$pkg" in
+                    ${pattern}*)
+                        # モジュール名を抽出
+                        local module_name="${pkg#$pattern}"
+                        lang_pkg="luci-i18n-${module_name}-${new_lang}"
+                        is_luci_module=1
+                        break
+                        ;;
+                esac
+            done
+            
+            # LuCIモジュールでない場合は通常の言語パック
+            if [ "$is_luci_module" -eq 0 ]; then
+                lang_pkg="${pkg}-${new_lang}"
+            fi
 
             echo "[DEBUG] Checking lang_pkg='$lang_pkg'" >> "$CONFIG_DIR/debug.log"
             
