@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1446"
+VERSION="R7.1218.1453"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -1550,7 +1550,7 @@ get_package_name() {
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                 }
             }')
         
@@ -1584,7 +1584,7 @@ get_package_name() {
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -1696,14 +1696,6 @@ initialize_installed_packages() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # conditional packages は除外
-        case "$pkg_id" in
-            map|ds-lite|coreutils-sha1sum|luci-app-usteer)
-                echo "[INIT] Skipping conditional package: $pkg_id" >> "$CONFIG_DIR/debug.log"
-                continue
-                ;;
-        esac
-        
         if is_package_installed "$pkg_id"; then
             local already_selected=0
             
@@ -1719,16 +1711,18 @@ initialize_installed_packages() {
             fi
             
             if [ "$already_selected" -eq 0 ]; then
-                echo "$cache_line" >> "$SELECTED_PACKAGES"
+                # owner=system として追加
+                local line_with_owner="${cache_line%=*}=system"
+                echo "$line_with_owner" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
-                echo "[INIT] Found installed: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
             fi
         fi
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
     
-    # カスタムフィードパッケージ
+    # カスタムフィード
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
@@ -1743,9 +1737,9 @@ EOF
                 [ -z "$installed_pkgs" ] && continue
                 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_CUSTOM_PACKAGES"
+                    echo "${pkg_id}=${pkg_id}====system" >> "$SELECTED_CUSTOM_PACKAGES"
                     count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
             done
         done
@@ -1851,7 +1845,6 @@ add_package_with_dependencies() {
     # Add main package
     local cache_line
     cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
-    # 見つからなければidで検索
     [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
     
     if [ -n "$cache_line" ]; then
@@ -1859,28 +1852,26 @@ add_package_with_dependencies() {
         cached_id=$(echo "$cache_line" | cut -d= -f1)
         cached_uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # uniqueId を考慮した正確な重複チェック
         local already_exists=0
         if [ -n "$cached_uid" ]; then
-            # uniqueId がある場合：フィールド3 で完全一致
             if echo "$existing_packages" | awk -F= -v uid="$cached_uid" '$3 == uid' | grep -q .; then
                 already_exists=1
             fi
         else
-            # uniqueId がない場合：フィールド1 が一致 & フィールド3 が空
             if echo "$existing_packages" | awk -F= -v id="$cached_id" '$1 == id && $3 == ""' | grep -q .; then
                 already_exists=1
             fi
         fi
         
         if [ "$already_exists" -eq 0 ]; then
-            echo "$cache_line" >> "$target_file"
+            # owner=user として追加
+            local line_with_owner="${cache_line%=*}=user"
+            echo "$line_with_owner" >> "$target_file"
             
             # Handle enableVar
             local enable_var
             enable_var=$(echo "$cache_line" | cut -d= -f5)
             
-            # メモリ内で重複チェック
             if [ -n "$enable_var" ] && ! echo "$existing_vars" | grep -q "^${enable_var}="; then
                 echo "${enable_var}='1'" >> "$SETUP_VARS"
             fi
@@ -2827,8 +2818,8 @@ auto_add_conditional_packages() {
         # パッケージ追加/削除
         if [ "$should_add" -eq 1 ]; then
             if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "${pkg_id}=${pkg_id}===" >> "$SELECTED_PACKAGES"
-                echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})" >> "$CONFIG_DIR/debug.log"
+                echo "${pkg_id}=${pkg_id}====auto" >> "$SELECTED_PACKAGES"
+                echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val}, owner=auto)" >> "$CONFIG_DIR/debug.log"
                 
                 # enableVar追加
                 local enable_var
@@ -3747,11 +3738,18 @@ detect_packages_to_remove() {
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
-        local pkg_id uid
+        local pkg_id uid owner
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
+        owner=$(echo "$cache_line" | cut -d= -f11)
         
-        # インストール済みチェック（キャッシュから）
+        # owner=auto または owner=system は除外
+        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
+            echo "[DEBUG] Skipping $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
+        # インストール済みチェック
         is_package_installed "$pkg_id" || continue
         
         # 選択済みチェック
@@ -3769,7 +3767,7 @@ detect_packages_to_remove() {
         
         if [ "$still_selected" -eq 0 ]; then
             remove_list="${remove_list}${pkg_id} "
-            echo "[REMOVE] Marked for removal: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
         fi
     done <<EOF
 $_PACKAGE_NAME_CACHE
