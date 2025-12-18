@@ -3374,13 +3374,13 @@ EOF
         clear_selection_cache
         return 0
     fi
-    
-    # ベースパッケージを追加（JSON駆動）
+
+    # ベースパッケージを追加（JSON駆動、存在確認済み）
     for prefix in $language_prefixes; do
         local base_pkg="${prefix}${new_lang}"
-        echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
+        check_package_available "$base_pkg" "normal" && echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
     done
-    
+
     # 3. 各パッケージに対して言語パック名を生成
     while read -r pkg; do
         [ -z "$pkg" ] && continue
