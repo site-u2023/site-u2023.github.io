@@ -3107,7 +3107,7 @@ EOF
 }
 
 # 前回確定分の破棄
-reset_state_for_next_session() {
+OK_reset_state_for_next_session() {
     # 選択パッケージ（ファイル）
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
@@ -3126,6 +3126,40 @@ reset_state_for_next_session() {
     # インストール済みを初期選択として再生成
     initialize_installed_packages
 
+    clear_selection_cache
+}
+
+
+# 前回確定分の破棄
+reset_state_for_next_session() {
+    # 選択パッケージ（ファイル）
+    rm -f "$SELECTED_PACKAGES"
+    rm -f "$SELECTED_CUSTOM_PACKAGES"
+
+    # 言語変数をクリア（内部変数）
+    sed -i "/^language=/d" "$SETUP_VARS"
+
+    # 選択キャッシュ
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _INSTALLED_PACKAGES_CACHE
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _INSTALLED_PACKAGES_LOADED=0
+    
+    # スナップショットファイルを削除
+    rm -f "$CONFIG_DIR/packages_initial_snapshot.txt"
+    rm -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
+    # インストール済みを初期選択として再生成
+    initialize_installed_packages
+    
+    # スナップショットを再作成
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
     clear_selection_cache
 }
 
