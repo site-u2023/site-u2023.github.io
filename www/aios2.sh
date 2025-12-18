@@ -2833,9 +2833,9 @@ auto_add_conditional_packages() {
         else
             # disabled の場合も削除対象とする
             local force_remove=0
-            if [ "$when_var" = "connection_type" ] && [ "$current_val" = "disabled" ]; then
+            if [ "$current_val" = "disabled" ]; then
                 force_remove=1
-                echo "[DEBUG] Connection disabled, force removing $pkg_id" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] ${when_var} disabled, force removing $pkg_id" >> "$CONFIG_DIR/debug.log"
             fi
             
             # 削除する前に他の条件でマッチしないか確認
