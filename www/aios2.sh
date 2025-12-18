@@ -4,7 +4,15 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1903"
+VERSION="R7.1218.1921"
+
+DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
+[ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
+if [ "$DEVICE_CPU_CORES" -eq 1 ]; then
+    MAX_JOBS=2
+else
+    MAX_JOBS=$((DEVICE_CPU_CORES * 4))
+fi
     
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -948,16 +956,9 @@ get_extended_device_info() {
     
     reset_detected_conn_type
     
-    # デバイス情報（CPU, CPU cores, Storage, USB）
+    # デバイス情報（CPU, Storage, USB）
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
-    [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
-    if [ "$DEVICE_CPU_CORES" -eq 1 ]; then
-        MAX_JOBS=2
-    else
-        MAX_JOBS=$((DEVICE_CPU_CORES * 4))
-    fi
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
     DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
