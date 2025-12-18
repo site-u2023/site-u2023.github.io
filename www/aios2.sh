@@ -3695,7 +3695,7 @@ fetch_cached_template() {
 
 prefetch_templates() {
     # local max_jobs="${DEVICE_CPU_CORES:-2}"
-    local max_jobs=$((DEVICE_CPU_CORES + 4))
+    local max_jobs=$((DEVICE_CPU_CORES + 2))
     local pids=""
     local job_count=0
     
