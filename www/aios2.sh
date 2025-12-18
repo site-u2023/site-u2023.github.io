@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2013"
+VERSION="R7.1218.2217"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -3678,7 +3678,7 @@ __download_file_core() {
     while [ $retry -lt $max_retries ]; do
         echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
         
-        if wget -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
+        if wget -4 -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
             if [ -s "$output_path" ]; then
                 echo "[DEBUG] Download successful: $url" >> "$CONFIG_DIR/debug.log"
                 return 0
