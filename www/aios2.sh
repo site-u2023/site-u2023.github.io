@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0116"
+VERSION="R7.1219.0128"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -24,7 +24,7 @@ debug_log() {
 # 【Package Cache Structure】
 # 
 # 1. _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner=extractOnly
+#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=extractOnly=owner
 #
 # Field details:
 #   1. id              - Package name for installation
@@ -37,8 +37,8 @@ debug_log() {
 #   8. virtual         - "true" to skip availability check, "false" otherwise
 #   9. reboot          - "true" if reboot required, "false" otherwise
 #  10. checked         - "true" if selected by default, "false" otherwise
-#  11. owner           - Package ownership: "system", "auto", "user", or empty
-#  12. extractOnly     - "true" if binary extraction only (skip opkg/apk), "false" otherwise
+#  11. extractOnly     - "true" if binary extraction only (skip opkg/apk), "false" otherwise
+#  12. owner           - Package ownership: "system", "auto", "user", or empty (runtime added)
 #
 # 【Package Ownership (owner field)】
 # Determines package lifecycle and removal policy:
@@ -83,6 +83,7 @@ debug_log() {
 # 【Cache Loading Strategy】
 # - Built on first access (lazy loading)
 # - Source: postinst.json + customfeeds.json
+# - extractOnly loaded from JSON during cache build
 # - Owner assigned during package addition:
 #   * initialize_installed_packages() → owner=system
 #   * auto_add_conditional_packages() → owner=auto
@@ -142,7 +143,7 @@ debug_log() {
 #   - Review screen: shows "remove luci-app-vnstat2" (owner=user)
 #
 # Scenario 4: extractOnly package (htpasswd)
-#   - User checks: htpasswd (id=apache, uniqueId=htpasswd, extractOnly=true)
+#   - User checks: htpasswd (id=apache, uniqueId=htpasswd-from-apache, extractOnly=true)
 #   - is_binary_installed() checks /usr/bin/htpasswd existence
 #   - If binary exists → marked as owner=system
 #   - If binary missing → available for installation
@@ -1204,9 +1205,8 @@ check_package_available() {
         virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
         [ -z "$virtual_flag" ] && virtual_flag="false"
         
-        # extractOnly チェック（JSONから取得）
-        extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].extractOnly" 2>/dev/null | head -1)
-        [ -z "$extract_only" ] && extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].extractOnly" 2>/dev/null | head -1)
+        # extractOnly はフィールド11
+        extract_only=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $11; exit}')
         [ "$extract_only" != "true" ] && extract_only="false"
     fi
     
@@ -1218,8 +1218,9 @@ check_package_available() {
     
     # extractOnly パッケージはバイナリ存在確認
     if [ "$extract_only" = "true" ]; then
-        local binary_path
-        binary_path=$(get_binary_path "$pkg_id")
+        local uid binary_path
+        uid=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $3; exit}')
+        binary_path=$(get_binary_path "$uid")
         
         if [ -n "$binary_path" ]; then
             # バイナリが既に存在する場合は利用可能
@@ -1842,7 +1843,7 @@ get_package_name() {
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" extractOnly
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" extractOnly "="
                 }
             }')
         
@@ -1877,7 +1878,7 @@ get_package_name() {
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" extractOnly
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" extractOnly "="
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -2097,8 +2098,8 @@ initialize_installed_packages() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
-        # キャッシュからextractOnlyを取得（フィールド12）
-        extract_only=$(echo "$cache_line" | cut -d= -f12)
+        # キャッシュからextractOnlyを取得（フィールド11）
+        extract_only=$(echo "$cache_line" | cut -d= -f11)
         [ "$extract_only" != "true" ] && extract_only="false"
         
         local is_installed=0
@@ -2126,8 +2127,8 @@ initialize_installed_packages() {
             fi
             
             if [ "$already_selected" -eq 0 ]; then
-                # owner=system として追加
-                local line_with_owner="${cache_line%=*}=system"
+                # owner=system として追加（末尾の=をsystemに置換）
+                local line_with_owner="${cache_line%=}system"
                 echo "$line_with_owner" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
                 
@@ -2157,7 +2158,7 @@ EOF
                 [ -z "$installed_pkgs" ] && continue
                 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}====system" >> "$SELECTED_CUSTOM_PACKAGES"
+                    echo "${pkg_id}=${pkg_id}=====system" >> "$SELECTED_CUSTOM_PACKAGES"
                     count=$((count + 1))
                     echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
@@ -4235,7 +4236,9 @@ detect_packages_to_remove() {
         local pkg_id uid owner extract_only
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
-        owner=$(echo "$cache_line" | cut -d= -f11)
+        
+        # ownerをフィールド12から取得
+        owner=$(echo "$cache_line" | cut -d= -f12)
         
         # owner=auto または owner=system は除外
         if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
@@ -4243,8 +4246,8 @@ detect_packages_to_remove() {
             continue
         fi
         
-        # キャッシュからextractOnlyを取得（フィールド12）
-        extract_only=$(echo "$cache_line" | cut -d= -f12)
+        # キャッシュからextractOnlyを取得（フィールド11）
+        extract_only=$(echo "$cache_line" | cut -d= -f11)
         [ "$extract_only" != "true" ] && extract_only="false"
         
         # インストール済みチェック
