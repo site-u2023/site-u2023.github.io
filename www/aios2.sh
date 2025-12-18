@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.0948"
+VERSION="R7.1218.1003"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3231,6 +3231,8 @@ update_language_packages() {
     local all_luci_packages=""
     local patterns
     patterns=$(get_language_module_patterns)
+
+    echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
     # 1. インストール済みパッケージから抽出
     while read -r pkg_id; do
@@ -3254,7 +3256,10 @@ update_language_packages() {
     done <<EOF
 $_INSTALLED_PACKAGES_CACHE
 EOF
-    
+
+    echo "[DEBUG] all_luci_packages count=$(echo \"$all_luci_packages\" | grep -c .)" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] all_luci_packages='$all_luci_packages'" >> "$CONFIG_DIR/debug.log"
+
     # 2. 選択済みパッケージから抽出（重複除外）
     if [ -f "$SELECTED_PACKAGES" ]; then
         while read -r line; do
