@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2334"
+VERSION="R7.1218.2048"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1120,11 +1120,7 @@ check_package_available() {
     # キャッシュから virtual フラグを取得
     local virtual_flag="false"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        # 修正: echoを使わず、ヒアドキュメントで処理
-        virtual_flag=$(awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}' <<EOF 2>/dev/null
-$_PACKAGE_NAME_CACHE
-EOF
-)
+        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
         [ -z "$virtual_flag" ] && virtual_flag="false"
     fi
     
@@ -1137,12 +1133,8 @@ EOF
     # uniqueIdがあれば実際のIDに変換
     local real_id="$pkg_id"
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        # 修正: echoを使わず、ヒアドキュメントで処理
         local cached_real_id
-        cached_real_id=$(awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}' <<EOF 2>/dev/null
-$_PACKAGE_NAME_CACHE
-EOF
-)
+        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
@@ -1152,7 +1144,7 @@ EOF
         return 0
     fi
 
-    # ファイルから直接検索
+    # ファイルから直接検索（echo経由のパイプを避ける）
     if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
         debug_log "Package $real_id found in availability cache"
         return 0
@@ -1649,21 +1641,17 @@ EOF2
     awk -F'|' -v cat="$cat_id" '$1 == cat {print $2}' "$cache_file"
 }
 
-# =============================================================================
-# get_package_checked()
-# =============================================================================
 get_package_checked() {
     local pkg_id="$1"
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
-    # ファイルから直接検索（フィールド10 = checked）
-    awk -F'=' -v pkg="$pkg_id" '
+    # キャッシュから取得（フィールド10 = checked）
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg || $3 == pkg { print $10; exit }
-    ' "$cache_file" 2>/dev/null
+    '
 }
 
 get_language_module_patterns() {
@@ -1693,20 +1681,13 @@ get_language_prefixes() {
     echo "$_LANGUAGE_PREFIXES"
 }
 
-# =============================================================================
-# get_package_name() - キャッシュをファイルに書き込む版
-# =============================================================================
 get_package_name() {
     local pkg_id="$1"
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         echo "[DEBUG] Building package name cache with extended fields..." >> "$CONFIG_DIR/debug.log"
         
-        # ファイルに直接書き込む（変数を使わない）
-        : > "$cache_file"
-        
-        jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '
             BEGIN { in_deps=0 }
             {
@@ -1736,10 +1717,11 @@ get_package_name() {
                 if(id&&name){
                     print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                 }
-            }' >> "$cache_file"
+            }')
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            local custom_cache
+            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '
                 BEGIN { in_deps=0 }
                 {
@@ -1769,49 +1751,41 @@ get_package_name() {
                     if(id&&name){
                         print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                     }
-                }' >> "$cache_file"
+                }')
+            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${custom_cache}"
         fi
         
         _PACKAGE_NAME_LOADED=1
         
-        echo "[DEBUG] Cache built with $(wc -l < "$cache_file" 2>/dev/null) entries" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] Sample entry: $(head -1 "$cache_file" 2>/dev/null)" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Cache built with $(echo "$_PACKAGE_NAME_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Sample entry: $(echo "$_PACKAGE_NAME_CACHE" | head -1)" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # ファイルから直接検索
-    awk -F'=' -v pkg="$pkg_id" '
+    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg || $3 == pkg {
             print $2
             exit
         }
-    ' "$cache_file" 2>/dev/null
+    '
 }
 
-# =============================================================================
-# get_package_enablevar()
-# =============================================================================
 get_package_enablevar() {
     local pkg_id="$1"
     local unique_id="$2"
     local enable_var
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
-    # キャッシュ未ロードなら初期化
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        get_package_name "dummy" >/dev/null 2>&1
-    fi
-    
-    # ファイルから検索（フォーマット: id=name=uniqueId=installOptions=enableVar）
+    # _PACKAGE_NAME_CACHE から検索（フォーマット: id=name=uniqueId=installOptions=enableVar）
     if [ -n "$unique_id" ]; then
         # uniqueId がある場合: id と uniqueId が一致する行のフィールド5（enableVar）を取得
-        enable_var=$(awk -F'=' -v pkg="$pkg_id" -v uid="$unique_id" '
+        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" -v uid="$unique_id" '
             $1 == pkg && $3 == uid { print $5; exit }
-        ' "$cache_file" 2>/dev/null)
+        ')
     else
         # uniqueId がない場合: id が一致し、フィールド3が空の行のフィールド5を取得
-        enable_var=$(awk -F'=' -v pkg="$pkg_id" '
+        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
             $1 == pkg && $3 == "" { print $5; exit }
-        ' "$cache_file" 2>/dev/null)
+        ')
     fi
     
     echo "$enable_var"
@@ -1948,34 +1922,30 @@ is_package_selected() {
 }
 
 # =============================================================================
-# get_package_dependencies()
+# Get dependencies for a package (from cache)
 # =============================================================================
 get_package_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     # キャッシュがロードされていなければロード
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
-    # ファイルから依存関係を取得（フィールド6）
-    local deps=$(awk -F'=' -v pkg="$pkg_id" '$1 == pkg {print $6; exit}' "$cache_file" 2>/dev/null)
+    # キャッシュから依存関係を取得（フィールド6）
+    local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '$1 == pkg {print $6; exit}')
     
     # カンマ区切りを改行に変換
     echo "$deps" | tr ',' '\n' | grep -v '^$'
 }
 
-# =============================================================================
-# is_dependency_required_by_others()
-# =============================================================================
+# Check if a dependency is required by other selected packages
 is_dependency_required_by_others() {
     local dep_id="$1"
     local excluding_pkg_id="$2"
     local caller="${3:-normal}"
     local target_file
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -1993,9 +1963,9 @@ is_dependency_required_by_others() {
         # Skip the package we're excluding
         [ "$current_pkg_id" = "$excluding_pkg_id" ] && continue
         
-        # ファイルから依存関係を取得（フィールド6）
+        # キャッシュから依存関係を取得（フィールド6）
         local deps
-        deps=$(awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}' "$cache_file" 2>/dev/null)
+        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}')
         
         # カンマ区切りの中から dep_id を検索
         echo "$deps" | tr ',' '\n' | grep -qx "$dep_id" && return 0
@@ -2004,14 +1974,11 @@ is_dependency_required_by_others() {
     return 1
 }
 
-# =============================================================================
-# add_package_with_dependencies()
-# =============================================================================
+# Add package and its dependencies
 add_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -2025,8 +1992,8 @@ add_package_with_dependencies() {
     
     # Add main package
     local cache_line
-    cache_line=$(awk -F= -v id="$pkg_id" '$3 == id {print; exit}' "$cache_file" 2>/dev/null)
-    [ -z "$cache_line" ] && cache_line=$(awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}' "$cache_file" 2>/dev/null)
+    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
+    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
     
     if [ -n "$cache_line" ]; then
         local cached_id cached_uid
@@ -2098,7 +2065,7 @@ add_package_with_dependencies() {
             
             # Find dependency in cache (by id or uniqueId)
             local dep_cache_line
-            dep_cache_line=$(awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}' "$cache_file" 2>/dev/null)
+            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
             
             if [ -n "$dep_cache_line" ]; then
                 local dep_real_id dep_uid
@@ -2128,14 +2095,11 @@ DEPS
     fi
 }
 
-# =============================================================================
-# remove_package_with_dependencies()
-# =============================================================================
+# Remove package and orphaned dependencies
 remove_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
-    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -2182,7 +2146,7 @@ ENTRIES
         
         # Find dependency real id
         local dep_cache_line dep_real_id
-        dep_cache_line=$(awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}' "$cache_file" 2>/dev/null)
+        dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
         
         if [ -n "$dep_cache_line" ]; then
             dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
@@ -3702,7 +3666,7 @@ compute_dslite_aftr() {
 }
 
 # =============================================================================
-# wget wrapper with IPv4 -> IPv6 fallback
+# wget wrapper with IPv6 -> IPv4 fallback
 # =============================================================================
 # Args:
 #   $1 - URL
@@ -3723,19 +3687,19 @@ wget_fallback() {
         wget_opts="$wget_opts -O $output"
     fi
     
-    # IPv4優先で試行
-    if wget -4 $wget_opts "$url" 2>/dev/null; then
-        return 0
-    fi
-    
-    debug_log "wget IPv4 failed, retrying with IPv6: $url"
-    
-    # IPv6フォールバック
+    # IPv6優先で試行
     if wget $wget_opts "$url" 2>/dev/null; then
         return 0
     fi
     
-    debug_log "wget IPv6 fallback also failed: $url"
+    debug_log "wget failed, retrying with IPv4: $url"
+    
+    # IPv4フォールバック
+    if wget -4 $wget_opts "$url" 2>/dev/null; then
+        return 0
+    fi
+    
+    debug_log "wget IPv4 fallback also failed: $url"
     return 1
 }
 
@@ -5208,10 +5172,9 @@ aios2_main() {
         
         echo "Installing whiptail..."
         echo "Updating package lists..."
-        # 出力を /dev/null にリダイレクト
-        eval "$PKG_UPDATE_CMD" >/dev/null 2>&1 || echo "Warning: Failed to update package lists"
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
         
-        if ! install_package whiptail >/dev/null 2>&1; then
+        if ! install_package whiptail; then
             echo "Installation failed. Falling back to simple mode."
             UI_MODE="simple"
         else
@@ -5273,10 +5236,10 @@ aios2_main() {
     # ========================================
     # Phase 7: パッケージキャッシュ構築（並列）
     # ========================================
-    ( cache_package_availability >/dev/null 2>&1 ) &
+    cache_package_availability &
     CACHE_PKG_PID=$!
     
-    cache_installed_packages>/dev/null 2>&1 &
+    cache_installed_packages &
     CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
@@ -5287,7 +5250,7 @@ aios2_main() {
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
 
     wait $CACHE_PKG_PID
-    cache_available_languages >/dev/null 2>&1
+    cache_available_languages
 
     # LuCIから言語コードが取得できなかった場合、APIから取得した言語ファイルをダウンロード
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
@@ -5312,7 +5275,7 @@ aios2_main() {
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
     
-    initialize_installed_packages >/dev/null 2>&1
+    initialize_installed_packages
     
     : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
