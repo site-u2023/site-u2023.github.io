@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.0930"
+VERSION="R7.1218.0940"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3084,12 +3084,6 @@ EOF
     echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
 }
 
-# 新規構成開始専用
-reset_all_settings() {
-    # : > "$SETUP_VARS"
-    rm -f "$SETUP_VARS"
-}
-
 # 前回確定分の破棄
 reset_state_for_next_session() {
     # 選択パッケージ（ファイル）
@@ -3102,9 +3096,11 @@ reset_state_for_next_session() {
     # 選択キャッシュ
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
+    unset _INSTALLED_PACKAGES_CACHE
     _SELECTED_PACKAGES_CACHE_LOADED=0
     _SELECTED_CUSTOM_CACHE_LOADED=0
-
+    _INSTALLED_PACKAGES_LOADED=0
+    
     # インストール済みを初期選択として再生成
     initialize_installed_packages
 
@@ -4821,6 +4817,12 @@ show_log() {
     else
         echo "No log file found at $BASE_TMP_DIR/aios2/debug.log"
     fi
+}
+
+# 新規構成開始専用
+reset_all_settings() {
+    # : > "$SETUP_VARS"
+    rm -f "$SETUP_VARS"
 }
 
 aios2_main() {
