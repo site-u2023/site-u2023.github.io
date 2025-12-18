@@ -3695,14 +3695,14 @@ wget_fallback() {
         wget_opts="$wget_opts -O $output"
     fi
     
-    # Try default (IPv6 preferred) first
+    # IPv6優先で試行
     if wget $wget_opts "$url" 2>/dev/null; then
         return 0
     fi
     
     debug_log "wget failed, retrying with IPv4: $url"
     
-    # Fallback to IPv4
+    # IPv4フォールバック
     if wget -4 $wget_opts "$url" 2>/dev/null; then
         return 0
     fi
