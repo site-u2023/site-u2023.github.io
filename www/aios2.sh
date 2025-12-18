@@ -2127,8 +2127,8 @@ initialize_installed_packages() {
             fi
             
             if [ "$already_selected" -eq 0 ]; then
-                # owner=system として追加（末尾の=をsystemに置換）
-                local line_with_owner="${cache_line%=}system"
+                # owner=system として追加（末尾の空フィールドをsystemに置換）
+                local line_with_owner="${cache_line%=*}=system"
                 echo "$line_with_owner" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
                 
