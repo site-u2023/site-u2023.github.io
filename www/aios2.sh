@@ -1178,7 +1178,7 @@ get_kmods_directory() {
     debug_log "Fetching kmods index from: $index_url"
     
     local kmod_dir
-    kmod_dir=$(wget -qO- "$index_url" 2>/dev/null | \
+    kmod_dir=$(wget -4 -qO- "$index_url" 2>/dev/null | \
         grep -o 'href="[^/"]\+/"' | \
         sed 's/href="//;s/\/"$//' | \
         grep -v '^\s*$' | \
