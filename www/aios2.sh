@@ -6,6 +6,8 @@
 
 VERSION="R7.1218.1856"
 
+MAX_JOBS=$((DEVICE_CPU_CORES + 2))
+
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
 debug_log() {
@@ -3694,8 +3696,6 @@ fetch_cached_template() {
 }
 
 prefetch_templates() {
-    # local max_jobs="${DEVICE_CPU_CORES:-2}"
-    local max_jobs=$((DEVICE_CPU_CORES + 2))
     local pids=""
     local job_count=0
     
