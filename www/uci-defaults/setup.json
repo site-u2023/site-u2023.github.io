@@ -192,6 +192,13 @@
       "luci-mod-",
       "luci-theme-"
     ],
+    "language_exclude_patterns": [
+      "kmod-",
+      "lib",
+      "kernel",
+      "base-files",
+      "luci-i18n-"
+    ],    
     "export_exclusions": {
       "connection_type": {
         "auto": [
