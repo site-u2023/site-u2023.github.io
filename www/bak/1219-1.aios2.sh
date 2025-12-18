@@ -8,7 +8,7 @@ VERSION="R7.1218.2048"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
-MAX_JOBS=$((DEVICE_CPU_CORES + 2))
+MAX_JOBS=$((DEVICE_CPU_CORES + 1))
 [ "$MAX_JOBS" -gt 8 ] && MAX_JOBS=8
     
 DEBUG_MODE="${DEBUG_MODE:-0}"
