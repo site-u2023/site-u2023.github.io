@@ -5311,7 +5311,7 @@ aios2_main() {
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
     
-    initialize_installed_packages
+    initialize_installed_packages >/dev/null 2>&1
     
     : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
