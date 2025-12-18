@@ -4522,40 +4522,40 @@ EOF
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
 
     if [ -z "$new_lang" ]; then
-    # 言語設定がない場合は削除対象から除外
-    :
+        # 言語設定がない場合は削除対象から除外
+        :
+    elif
+        # 初期スナップショットをロード
+        local initial_lang_pkgs=""
+        if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
+            initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
+        fi
     
-    # 初期スナップショットをロード
-    local initial_lang_pkgs=""
-    if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
-        initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
-    fi
-    
-    if [ -n "$initial_lang_pkgs" ]; then
-        while read -r pkg; do
-            [ -z "$pkg" ] && continue
+        if [ -n "$initial_lang_pkgs" ]; then
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
             
-            # 新しい言語のパッケージはスキップ（それ以外は全削除）
-            if echo "$pkg" | grep -q -- "-${new_lang}$"; then
-                echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
+                # 新しい言語のパッケージはスキップ（それ以外は全削除）
+                if echo "$pkg" | grep -q -- "-${new_lang}$"; then
+                    echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             
-            # SELECTED_PACKAGES に含まれているかチェック
-            if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
+                # SELECTED_PACKAGES に含まれているかチェック
+                if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
             
-            # 削除対象に追加
-            remove_list="${remove_list}${pkg} "
-            echo "[REMOVE] Marked language pack for removal: $pkg (was in initial snapshot)" >> "$CONFIG_DIR/debug.log"
-        done <<EOF2
+                # 削除対象に追加
+                remove_list="${remove_list}${pkg} "
+                echo "[REMOVE] Marked language pack for removal: $pkg (was in initial snapshot)" >> "$CONFIG_DIR/debug.log"
+            done <<EOF2
 $initial_lang_pkgs
 EOF2
-        fi
-    fi 
-
+        fi 
+    fi
+    
     # カスタムフィード
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
