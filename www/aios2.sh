@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2209"
+VERSION="R7.1218.2013"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1187,7 +1187,7 @@ get_kmods_directory() {
         grep -v '^\.' | \
         grep '^[a-zA-Z0-9._-]\+$' | \
         sort -V | \
-        tail -1) 2>/dev/null
+        tail -1)
     
     if [ -n "$kmod_dir" ]; then
         debug_log "Found kmod directory: $kmod_dir"
@@ -1266,7 +1266,7 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            if ! wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" >/dev/null 2>&1; then
+            if ! wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
@@ -1285,7 +1285,7 @@ cache_package_availability() {
             
             rm -f "$temp_response"
             debug_log "$feed: fetched $(wc -l < "$temp_file") packages"
-        ) >/dev/null 2>&1 &
+        ) &
         job_count=$((job_count + 1))
     done
     
@@ -3678,7 +3678,7 @@ __download_file_core() {
     while [ $retry -lt $max_retries ]; do
         echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
         
-        if wget -4 -q -T 10 -O "$output_path" "$full_url" >/dev/null 2>&1; then
+        if wget -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
             if [ -s "$output_path" ]; then
                 echo "[DEBUG] Download successful: $url" >> "$CONFIG_DIR/debug.log"
                 return 0
@@ -5063,16 +5063,16 @@ aios2_main() {
     # ========================================
     # Phase 2: 必須ファイルを並列ダウンロード
     # ========================================
-    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") >/dev/null 2>&1 &
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
     PKG_MGR_DL_PID=$!
     
-    (download_api_with_retry) >/dev/null 2>&1 &
+    (download_api_with_retry) &
     API_PID=$!
     
-    (download_setup_json) >/dev/null 2>&1 &
+    (download_setup_json) &
     SETUP_PID=$!
     
-    (download_postinst_json) >/dev/null 2>&1 &
+    (download_postinst_json) &
     POSTINST_PID=$!
     
     (download_customfeeds_json >/dev/null 2>&1) &
@@ -5081,7 +5081,7 @@ aios2_main() {
     (download_customscripts_json >/dev/null 2>&1) &
     CUSTOMSCRIPTS_PID=$!
     
-    (prefetch_templates) >/dev/null 2>&1 &
+    (prefetch_templates) &
     TEMPLATES_PID=$!
     
     (download_language_json "en" >/dev/null 2>&1) &
@@ -5193,10 +5193,10 @@ aios2_main() {
     # ========================================
     # Phase 7: パッケージキャッシュ構築（並列）
     # ========================================
-    (cache_package_availability) >/dev/null 2>&1 &
+    cache_package_availability &
     CACHE_PKG_PID=$!
     
-    (cache_installed_packages) >/dev/null 2>&1 &
+    cache_installed_packages &
     CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
