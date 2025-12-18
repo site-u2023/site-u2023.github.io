@@ -3578,7 +3578,7 @@ fetch_cached_template() {
     return $?
 }
 
-OK_prefetch_templates() {
+prefetch_templates() {
     # 全変数を関数の先頭で宣言
     local cat_id template_url tpl_custom
     local script_id script_file script_url template_path
@@ -3628,7 +3628,7 @@ SCRIPTS
     fi
 }
 
-prefetch_templates() {
+TEST_prefetch_templates() {
     # local max_jobs="${DEVICE_CPU_CORES:-2}"
     local max_jobs=$((DEVICE_CPU_CORES + 1))
     local pids=""
@@ -4967,11 +4967,11 @@ show_log() {
 
 # 新規構成開始専用
 reset_all_settings() {
-    # : > "$SETUP_VARS"
+    : > "$SETUP_VARS"
     rm -f "$SETUP_VARS"
 }
 
-XXX_aios2_main() {
+aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     # ヘルパー: 経過時間計測
@@ -5196,7 +5196,7 @@ XXX_aios2_main() {
     echo ""
 }
 
-aios2_main() {
+TEST_aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     # ヘルパー: 経過時間計測
