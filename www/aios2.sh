@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1302"
+VERSION="R7.1218.1330"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -806,9 +806,11 @@ get_extended_device_info() {
     
     reset_detected_conn_type
     
-    # デバイス情報（CPU, Storage, USB）
+    # デバイス情報（CPU, CPU cores, Storage, USB）
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
+    DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
+    [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
     DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
     DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
     DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
@@ -818,6 +820,7 @@ get_extended_device_info() {
     else
         DEVICE_USB="Not available"
     fi
+
 
     # リソース情報（数値、チェック用）
     MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
@@ -3575,7 +3578,7 @@ fetch_cached_template() {
     return $?
 }
 
-prefetch_templates() {
+OK_prefetch_templates() {
     # 全変数を関数の先頭で宣言
     local cat_id template_url tpl_custom
     local script_id script_file script_url template_path
@@ -3620,6 +3623,74 @@ SCRIPTS
     fi
     
     # すべての並列ダウンロードを待機
+    if [ -n "$pids" ]; then
+        wait $pids
+    fi
+}
+
+prefetch_templates() {
+    local max_jobs="${DEVICE_CPU_CORES:-2}"
+    local pids=""
+    local job_count=0
+    
+    # ヘルパー関数：ジョブ数制御
+    wait_if_full() {
+        if [ "$job_count" -ge "$max_jobs" ]; then
+            wait $pids
+            pids=""
+            job_count=0
+        fi
+    }
+    
+    # 基本テンプレート
+    fetch_cached_template "$POSTINST_TEMPLATE_URL" "$TPL_POSTINST" &
+    pids="$pids $!"
+    job_count=$((job_count + 1))
+    wait_if_full
+    
+    fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP" &
+    pids="$pids $!"
+    job_count=$((job_count + 1))
+    wait_if_full
+    
+    # customfeeds のテンプレート
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        while read -r cat_id; do
+            local template_url tpl_custom
+            template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -n "$template_url" ]; then
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                fetch_cached_template "$template_url" "$tpl_custom" &
+                pids="$pids $!"
+                job_count=$((job_count + 1))
+                wait_if_full
+            fi
+        done <<CATEGORIES
+$(get_customfeed_categories)
+CATEGORIES
+    fi
+    
+    # customscripts のテンプレート
+    if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
+        while read -r script_id; do
+            local script_file script_url template_path
+            script_file=$(get_customscript_file "$script_id")
+            [ -z "$script_file" ] && continue
+            
+            script_url="${BASE_URL}/custom-scripts/${script_file}"
+            template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
+            
+            fetch_cached_template "$script_url" "$template_path" &
+            pids="$pids $!"
+            job_count=$((job_count + 1))
+            wait_if_full
+        done <<SCRIPTS
+$(get_customscript_all_scripts)
+SCRIPTS
+    fi
+    
+    # 残りのジョブを待つ
     if [ -n "$pids" ]; then
         wait $pids
     fi
@@ -4899,7 +4970,7 @@ reset_all_settings() {
     rm -f "$SETUP_VARS"
 }
 
-aios2_main() {
+XXX_aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     # ヘルパー: 経過時間計測
@@ -5111,6 +5182,245 @@ aios2_main() {
     # 母国語ファイル完了を待機
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        return 1
+    fi
+    
+    echo ""
+    echo "Thank you for using aios2!"
+    echo ""
+}
+
+aios2_main() {
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
+    
+    # ヘルパー: 経過時間計測
+    elapsed_time() {
+        local current=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
+    }
+    
+    # バナー表示と言語コード取得
+    clear
+    print_banner
+    mkdir -p "$CONFIG_DIR"
+    get_language_code
+    
+    # ========================================
+    # Phase 1: 初期化とconfig.js取得
+    # ========================================
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    init  # キャッシュクリア、ロックファイル作成、config.js読込（ASU_URL設定）
+    
+    # ========================================
+    # Phase 2A: 最優先ファイル（直列）
+    # ========================================
+    echo "Loading configuration..."
+    
+    __download_file_core "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON" || {
+        echo "Fatal: Cannot download package-manager.json"
+        return 1
+    }
+    
+    __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON" || {
+        echo "Fatal: Cannot download API config"
+        return 1
+    }
+    
+    # ========================================
+    # Phase 2B: 必須JSON（並列3個）
+    # ========================================
+    (download_setup_json) &
+    SETUP_PID=$!
+    
+    (download_postinst_json) &
+    POSTINST_PID=$!
+    
+    (download_language_json "en" >/dev/null 2>&1) &
+    LANG_EN_PID=$!
+    
+    # ========================================
+    # Phase 3: パッケージマネージャー設定読込
+    # ========================================
+    if [ -z "$PKG_CHANNEL" ]; then
+        if command -v apk >/dev/null 2>&1; then
+            PKG_CHANNEL="snapshot"
+        else
+            PKG_CHANNEL="release"
+        fi
+    fi
+    
+    load_package_manager_config || {
+        echo "Fatal: Cannot load package manager configuration"
+        return 1
+    }
+    
+    # ========================================
+    # Phase 4: whiptail有無チェック
+    # ========================================
+    WHIPTAIL_AVAILABLE=0
+    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
+    
+    # ========================================
+    # Phase 5: UI選択（ユーザー入力）★先に実行★
+    # ========================================
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # whiptail選択 かつ 未インストールの場合 → インストール
+    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Installing whiptail..."
+        echo "Updating package lists..."
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        
+        if ! install_package whiptail; then
+            echo "Installation failed. Falling back to simple mode."
+            UI_MODE="simple"
+        else
+            echo "Installation successful."
+        fi
+    fi
+    
+    echo "Loading resources..."
+    
+    # ========================================
+    # Phase 6: 必須JSON完了を待機
+    # ========================================
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    [ $SETUP_STATUS -ne 0 ] && {
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $LANG_EN_PID
+    
+    # ========================================
+    # Phase 7: 残りのファイル（並列5個まで）
+    # ========================================
+    (download_customfeeds_json >/dev/null 2>&1) &
+    CF_PID=$!
+    
+    (download_customscripts_json >/dev/null 2>&1) &
+    CS_PID=$!
+    
+    (prefetch_templates) &
+    TPL_PID=$!
+    
+    # 母国語ファイル（enでない場合のみ）
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    # UIモジュールファイル
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    # ========================================
+    # Phase 8: デバイス情報取得
+    # ========================================
+    get_extended_device_info
+
+    # バックグラウンドプロセス用に export
+    export DEVICE_TARGET
+    export OPENWRT_VERSION
+    export ASU_URL
+    export DEVICE_MODEL
+    export DEVICE_ARCH
+    export DEVICE_VENDOR
+    export DEVICE_SUBTARGET
+    export PKG_CHANNEL 
+    
+    echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
+    
+    # ========================================
+    # Phase 9: パッケージキャッシュ構築（並列）
+    # ========================================
+    cache_package_availability &
+    CACHE_PKG_PID=$!
+    
+    cache_installed_packages &
+    CACHE_INSTALLED_PID=$!
+    
+    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
+    
+    # ========================================
+    # Phase 10: 残りのバックグラウンド処理完了を待機
+    # ========================================
+    wait $CF_PID $CS_PID $TPL_PID $UI_DL_PID
+
+    wait $CACHE_PKG_PID
+    cache_available_languages
+
+    # 母国語ファイル完了を待機
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+
+    # LuCIから言語コードが取得できなかった場合、APIから取得した言語ファイルをダウンロード
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
+    fi
+    
+    # 処理時間計測
+    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
+    
+    # simple UIの場合、Yes/No表記を簡略化
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    fi
+
+    # ========================================
+    # Phase 11: インストール済みパッケージ初期化
+    # ========================================
+    wait $CACHE_INSTALLED_PID
+    unset CACHE_INSTALLED_PID
+    
+    initialize_installed_packages
+    
+    : > "$SETUP_VARS"
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
+    # ========================================
+    # Phase 12: UIモジュール起動
+    # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
