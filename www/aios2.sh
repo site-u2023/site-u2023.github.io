@@ -3601,7 +3601,7 @@ EOF
 }
 
 # 前回確定分の破棄
-OK_reset_state_for_next_session() {
+reset_state_for_next_session() {
     # 選択パッケージ（ファイル）
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
@@ -3672,47 +3672,6 @@ XXXXX_reset_state_for_next_session() {
     
     # インストール済みを初期選択として再生成
     initialize_installed_packages
-    
-    clear_selection_cache
-}
-
-reset_state_for_next_session() {
-    # 選択パッケージ（ファイル）
-    rm -f "$SELECTED_PACKAGES"
-    rm -f "$SELECTED_CUSTOM_PACKAGES"
-
-    # 設定変数を全てクリア
-    : > "$SETUP_VARS"
-
-    # 選択キャッシュ
-    unset _SELECTED_PACKAGES_CACHE
-    unset _SELECTED_CUSTOM_CACHE
-    unset _INSTALLED_PACKAGES_CACHE
-    _SELECTED_PACKAGES_CACHE_LOADED=0
-    _SELECTED_CUSTOM_CACHE_LOADED=0
-    _INSTALLED_PACKAGES_LOADED=0
-    
-    # スナップショットファイルを削除
-    rm -f "$CONFIG_DIR/packages_initial_snapshot.txt"
-    rm -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    # ★★★ 言語スナップショットは削除しない（初回のみ作成） ★★★
-    # rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
-    
-    # 生成済み実行スクリプトの削除
-    rm -f "$CONFIG_DIR/remove.sh"
-    rm -f "$CONFIG_DIR/postinst.sh"
-    rm -f "$CONFIG_DIR/setup.sh"
-    rm -f "$CONFIG_DIR"/customfeeds-*.sh
-    rm -f "$CONFIG_DIR"/customscripts-*.sh
-    rm -f "$CONFIG_DIR/execution_plan.sh"
-    
-    # インストール済みを初期選択として再生成
-    initialize_installed_packages
-    
-    # スナップショットを再作成（言語以外）
-    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    # ★★★ 言語スナップショットは初回のみ作成（ここでは作らない） ★★★
     
     clear_selection_cache
 }
@@ -4398,7 +4357,7 @@ EOF3
 # ========================================
 # 削除対象パッケージ検出
 # ========================================
-detect_packages_to_remove() {
+XXXXXXXXXX_detect_packages_to_remove() {
     local remove_list=""
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
@@ -4476,6 +4435,124 @@ EOF
         done <<EOF
 $initial_lang_pkgs
 EOF
+    fi
+    
+    # カスタムフィード
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        for cat_id in $(get_customfeed_categories); do
+            for pkg_id in $(get_category_packages "$cat_id"); do
+                local pattern exclude
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                local installed_pkgs
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                
+                [ -z "$installed_pkgs" ] && continue
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    while read -r installed_pkg; do
+                        [ -z "$installed_pkg" ] && continue
+                        remove_list="${remove_list}${installed_pkg} "
+                        echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                    done <<EOF3
+$installed_pkgs
+EOF3
+                fi
+            done
+        done
+    fi
+    
+    echo "$remove_list" | xargs
+}
+
+# ========================================
+# 削除対象パッケージ検出
+# ========================================
+detect_packages_to_remove() {
+    local remove_list=""
+    
+    echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
+    
+    # 通常パッケージ
+    while read -r cache_line; do
+        [ -z "$cache_line" ] && continue
+        
+        local pkg_id uid owner
+        pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        uid=$(echo "$cache_line" | cut -d= -f3)
+        owner=$(echo "$cache_line" | cut -d= -f11)
+        
+        # owner=auto または owner=system は除外
+        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
+            echo "[DEBUG] Skipping $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
+        
+        # インストール済みチェック
+        is_package_installed "$pkg_id" || continue
+        
+        # 選択済みチェック
+        local still_selected=0
+        if [ -n "$uid" ]; then
+            if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+               grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                still_selected=1
+            fi
+        else
+            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                still_selected=1
+            fi
+        fi
+        
+        if [ "$still_selected" -eq 0 ]; then
+            remove_list="${remove_list}${pkg_id} "
+            echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+        fi
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
+    
+    # ========================================
+    # 言語パッケージの削除検出（初期スナップショット比較方式）
+    # ========================================
+    local new_lang
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+
+    if [ -z "$new_lang" ]; then
+    # 言語設定がない場合は削除対象から除外
+    :
+    
+    # 初期スナップショットをロード
+    local initial_lang_pkgs=""
+    if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
+        initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
+    fi
+    
+    if [ -n "$initial_lang_pkgs" ]; then
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            # 新しい言語のパッケージはスキップ（それ以外は全削除）
+            if echo "$pkg" | grep -q -- "-${new_lang}$"; then
+                echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # SELECTED_PACKAGES に含まれているかチェック
+            if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # 削除対象に追加
+            remove_list="${remove_list}${pkg} "
+            echo "[REMOVE] Marked language pack for removal: $pkg (was in initial snapshot)" >> "$CONFIG_DIR/debug.log"
+        done <<EOF2
+$initial_lang_pkgs
+EOF2
     fi
     
     # カスタムフィード
