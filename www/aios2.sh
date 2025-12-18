@@ -857,7 +857,6 @@ reset_detected_conn_type() {
 download_api_with_retry() {
     echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >> "$CONFIG_DIR/debug.log"
     
-    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
     if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON" 6; then
         echo ""
         echo "ERROR: API error"
