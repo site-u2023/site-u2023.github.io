@@ -1967,7 +1967,7 @@ is_dependency_required_by_others() {
 }
 
 # Add package and its dependencies
-add_package_with_dependencies() {
+XXX_add_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
@@ -2107,8 +2107,129 @@ DEPS
     fi
 }
 
+# Add package and its dependencies
+add_package_with_dependencies() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # ファイル内容を1回だけ読み込む
+    local existing_vars
+    existing_vars=$(cat "$SETUP_VARS" 2>/dev/null || true)
+    
+    # Add main package
+    local cache_line
+    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
+    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
+    
+    if [ -n "$cache_line" ]; then
+        local cached_id cached_uid
+        cached_id=$(echo "$cache_line" | cut -d= -f1)
+        cached_uid=$(echo "$cache_line" | cut -d= -f3)
+        
+        # ヘルパー関数で存在チェック
+        local check_id
+        [ -n "$cached_uid" ] && check_id="$cached_uid" || check_id="$cached_id"
+        
+        if ! pkg_exists "$cached_id" "" "$caller"; then
+            # owner=user として追加
+            local line_with_owner="${cache_line%=*}=user"
+            echo "$line_with_owner" >> "$target_file"
+            debug_log "pkg_add (manual): $cached_id (owner=user)"
+            
+            # Handle enableVar
+            local enable_var
+            enable_var=$(echo "$cache_line" | cut -d= -f5)
+            
+            if [ -n "$enable_var" ] && ! echo "$existing_vars" | grep -q "^${enable_var}="; then
+                echo "${enable_var}='1'" >> "$SETUP_VARS"
+            fi
+            
+            # LuCIパッケージの場合のみ言語パック追加
+            if [ "$caller" != "custom_feeds" ]; then
+                # luci-i18n- は除外
+                case "$cached_id" in
+                    luci-i18n-*) ;;
+                    *)
+                        local patterns module_name=""
+                        patterns=$(get_language_module_patterns)
+                        
+                        # パターンマッチでモジュール名を抽出
+                        for pattern in $patterns; do
+                            case "$cached_id" in
+                                ${pattern}*)
+                                    module_name="${cached_id#$pattern}"
+                                    break
+                                    ;;
+                            esac
+                        done
+                        
+                        if [ -n "$module_name" ]; then
+                            # ベース言語パック検出
+                            local installed_lang
+                            installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+                            
+                            if [ -n "$installed_lang" ]; then
+                                local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                                
+                                if ! pkg_exists "$lang_pkg" "" "$caller"; then
+                                    echo "${lang_pkg}=${lang_pkg}===" >> "$target_file"
+                                    debug_log "[LANG] Added language package: $lang_pkg for $cached_id"
+                                fi
+                            fi
+                        fi
+                        ;;
+                esac
+            fi
+        fi
+        
+        # Add dependencies
+        local deps
+        deps=$(echo "$cache_line" | cut -d= -f6)
+        
+        while read -r dep_id; do
+            [ -z "$dep_id" ] && continue
+            
+            # Find dependency in cache (by id or uniqueId)
+            local dep_cache_line
+            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+            
+            if [ -n "$dep_cache_line" ]; then
+                local dep_real_id dep_uid
+                dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
+                dep_uid=$(echo "$dep_cache_line" | cut -d= -f3)
+                
+                # ヘルパー関数で存在チェック
+                if ! pkg_exists "$dep_real_id" "" "$caller"; then
+                    # 依存パッケージも owner=user として追加
+                    local dep_line_with_owner="${dep_cache_line%=*}=user"
+                    echo "$dep_line_with_owner" >> "$target_file"
+                    debug_log "[DEP] Auto-added dependency: $dep_real_id (required by $pkg_id, owner=user)"
+                    
+                    # Handle enableVar for dependency
+                    local dep_enable_var
+                    dep_enable_var=$(echo "$dep_cache_line" | cut -d= -f5)
+                    
+                    # メモリ内で重複チェック
+                    if [ -n "$dep_enable_var" ] && ! echo "$existing_vars" | grep -q "^${dep_enable_var}="; then
+                        echo "${dep_enable_var}='1'" >> "$SETUP_VARS"
+                    fi
+                fi
+            fi
+        done <<DEPS
+$(echo "$deps" | tr ',' '\n')
+DEPS
+    fi
+}
+
 # Remove package and orphaned dependencies
-remove_package_with_dependencies() {
+XXX_remove_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
@@ -2189,6 +2310,88 @@ DEP_ENTRIES
                 echo "[DEP] Auto-removed orphaned dependency: $dep_real_id (no longer required)" >> "$CONFIG_DIR/debug.log"
             else
                 echo "[DEP] Kept dependency: $dep_real_id (still required by other packages)" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+    done <<DEPS
+$deps
+DEPS
+}
+
+# Remove package and orphaned dependencies
+remove_package_with_dependencies() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Get dependencies before removing
+    local deps
+    deps=$(get_package_dependencies "$pkg_id" "$caller")
+    
+    # Remove main package
+    # Note: uniqueId対応のためawkを使用（pkg_remove()はpkg_idのみ対応）
+    local all_entries
+    # まずuniqueIdで完全一致検索
+    all_entries=$(awk -F= -v id="$pkg_id" '$3 == id' "$target_file" 2>/dev/null)
+    # 見つからなければidで検索（uniqueIdが空の行のみ）
+    [ -z "$all_entries" ] && all_entries=$(awk -F= -v id="$pkg_id" '$1 == id && $3 == ""' "$target_file" 2>/dev/null)
+    
+    while read -r entry; do
+        [ -z "$entry" ] && continue
+        
+        local enable_var
+        enable_var=$(echo "$entry" | cut -d= -f5)
+        
+        if [ -n "$enable_var" ]; then
+            sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+            debug_log "Removed enableVar: $enable_var"
+        fi
+    done <<ENTRIES
+$all_entries
+ENTRIES
+    
+    # 正確な行削除（awk使用、uniqueId対応）
+    awk -F= -v target="$pkg_id" '
+        !(($1 == target && $3 == "") || $3 == target)
+    ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
+    
+    debug_log "pkg_remove (manual): $pkg_id"
+    
+    # Check and remove orphaned dependencies
+    while read -r dep_id; do
+        [ -z "$dep_id" ] && continue
+        
+        # Find dependency real id
+        local dep_cache_line dep_real_id
+        dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+        
+        if [ -n "$dep_cache_line" ]; then
+            dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
+            
+            # Check if this dependency is required by other selected packages
+            if ! is_dependency_required_by_others "$dep_id" "$pkg_id" "$caller"; then
+                # No other parent needs this dependency, safe to remove
+                
+                # enableVar削除
+                local dep_enable_var
+                dep_enable_var=$(echo "$dep_cache_line" | cut -d= -f5)
+                
+                if [ -n "$dep_enable_var" ]; then
+                    sed -i "/^${dep_enable_var}=/d" "$SETUP_VARS"
+                    debug_log "Removed enableVar: $dep_enable_var"
+                fi
+                
+                # ヘルパー関数で削除（ownerフィルタなし = 全owner対象）
+                if pkg_remove "$dep_real_id" "" "$caller"; then
+                    debug_log "[DEP] Auto-removed orphaned dependency: $dep_real_id (no longer required)"
+                fi
+            else
+                debug_log "[DEP] Kept dependency: $dep_real_id (still required by other packages)"
             fi
         fi
     done <<DEPS
