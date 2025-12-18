@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2118"
+VERSION="R7.1218.2121"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1449,7 +1449,6 @@ XXXXX_cache_package_availability() {
     return 0
 }
 
-# wait -n を使ったシンプルな実装
 cache_package_availability() {
     debug_log "Building package availability cache..."
     debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
@@ -1477,10 +1476,10 @@ cache_package_availability() {
         [ -n "$kmod_dir" ] && feeds="$feeds kmods"
     fi
     
-    [ -z "$feeds" ] && {
+    if [ -z "$feeds" ]; then
         debug_log "No feeds to process"
         return 0
-    }
+    fi
     
     local job_count=0
     
@@ -1523,10 +1522,10 @@ cache_package_availability() {
                 exit 1
             fi
             
-            [ ! -s "$temp_response" ] && {
+            if [ ! -s "$temp_response" ]; then
                 rm -f "$temp_response"
                 exit 1
-            }
+            fi
             
             if echo "$url" | grep -q 'index.json$'; then
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
