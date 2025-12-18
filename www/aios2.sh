@@ -5063,16 +5063,16 @@ aios2_main() {
     # ========================================
     # Phase 2: 必須ファイルを並列ダウンロード
     # ========================================
-    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") >/dev/null 2>&1 &
     PKG_MGR_DL_PID=$!
     
-    (download_api_with_retry) &
+    (download_api_with_retry) >/dev/null 2>&1 &
     API_PID=$!
     
-    (download_setup_json) &
+    (download_setup_json) >/dev/null 2>&1 &
     SETUP_PID=$!
     
-    (download_postinst_json) &
+    (download_postinst_json) >/dev/null 2>&1 &
     POSTINST_PID=$!
     
     (download_customfeeds_json >/dev/null 2>&1) &
@@ -5081,7 +5081,7 @@ aios2_main() {
     (download_customscripts_json >/dev/null 2>&1) &
     CUSTOMSCRIPTS_PID=$!
     
-    (prefetch_templates) &
+    (prefetch_templates) >/dev/null 2>&1 &
     TEMPLATES_PID=$!
     
     (download_language_json "en" >/dev/null 2>&1) &
@@ -5193,10 +5193,10 @@ aios2_main() {
     # ========================================
     # Phase 7: パッケージキャッシュ構築（並列）
     # ========================================
-    cache_package_availability &
+    (cache_package_availability) >/dev/null 2>&1 &
     CACHE_PKG_PID=$!
     
-    cache_installed_packages &
+    (cache_installed_packages) >/dev/null 2>&1 &
     CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
