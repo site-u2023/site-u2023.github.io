@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1453"
+VERSION="R7.1218.1527"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -181,6 +181,131 @@ _LANGUAGE_EXCLUDE_PATTERNS=""
 _LANGUAGE_EXCLUDE_PATTERNS_LOADED=0
 _LANGUAGE_PREFIXES=""
 _LANGUAGE_PREFIXES_LOADED=0
+
+# =============================================================================
+# Package Operation Helpers
+# =============================================================================
+# Low-level functions for package list manipulation
+# Centralizes all SELECTED_PACKAGES/SELECTED_CUSTOM_PACKAGES operations
+#
+# Format: pkg_id=pkg_name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner
+# Owner values: system, auto, user, or empty (legacy, treated as user)
+# =============================================================================
+
+# Add package to selection list
+# Args:
+#   $1 - pkg_id (required)
+#   $2 - owner: auto, system, user (default: auto)
+#   $3 - caller: normal, custom_feeds (default: normal)
+# Returns:
+#   0 on success, 1 if already exists
+pkg_add() {
+    local pkg_id="$1"
+    local owner="${2:-auto}"
+    local caller="${3:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Already exists check
+    if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+        debug_log "pkg_add: $pkg_id already exists, skipped"
+        return 1
+    fi
+    
+    echo "${pkg_id}=${pkg_id}====${owner}" >> "$target_file"
+    debug_log "pkg_add: $pkg_id (owner=$owner)"
+    return 0
+}
+
+# Remove package from selection list
+# Args:
+#   $1 - pkg_id (required)
+#   $2 - owner filter: auto, system, user, or empty for all (default: empty)
+#   $3 - caller: normal, custom_feeds (default: normal)
+# Returns:
+#   0 on success, 1 if not found
+pkg_remove() {
+    local pkg_id="$1"
+    local owner="${2:-}"
+    local caller="${3:-normal}"
+    local target_file pattern
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Build pattern based on owner filter
+    if [ -n "$owner" ]; then
+        pattern="^${pkg_id}=.*=${owner}$"
+    else
+        pattern="^${pkg_id}="
+    fi
+    
+    if grep -q "$pattern" "$target_file" 2>/dev/null; then
+        sed -i "/${pattern}/d" "$target_file"
+        debug_log "pkg_remove: $pkg_id (owner=${owner:-any})"
+        return 0
+    fi
+    
+    debug_log "pkg_remove: $pkg_id not found (owner=${owner:-any})"
+    return 1
+}
+
+# Check if package exists in selection list
+# Args:
+#   $1 - pkg_id (required)
+#   $2 - owner filter: auto, system, user, or empty for all (default: empty)
+#   $3 - caller: normal, custom_feeds (default: normal)
+# Returns:
+#   0 if exists, 1 if not found
+pkg_exists() {
+    local pkg_id="$1"
+    local owner="${2:-}"
+    local caller="${3:-normal}"
+    local target_file pattern
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    # Build pattern based on owner filter
+    if [ -n "$owner" ]; then
+        pattern="^${pkg_id}=.*=${owner}$"
+    else
+        pattern="^${pkg_id}="
+    fi
+    
+    grep -q "$pattern" "$target_file" 2>/dev/null
+}
+
+# Get owner of a package
+# Args:
+#   $1 - pkg_id (required)
+#   $2 - caller: normal, custom_feeds (default: normal)
+# Returns:
+#   Prints owner value (system, auto, user, or empty)
+pkg_get_owner() {
+    local pkg_id="$1"
+    local caller="${2:-normal}"
+    local target_file
+    
+    if [ "$caller" = "custom_feeds" ]; then
+        target_file="$SELECTED_CUSTOM_PACKAGES"
+    else
+        target_file="$SELECTED_PACKAGES"
+    fi
+    
+    grep "^${pkg_id}=" "$target_file" 2>/dev/null | head -1 | sed 's/.*=\([^=]*\)$/\1/'
+}
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -2772,136 +2897,7 @@ EOF
     return 1
 }
 
-XXX_auto_add_conditional_packages() {
-    local cat_id="$1"
-    local effective_conn_type
-    
-    echo "[DEBUG] === auto_add_conditional_packages called ===" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    effective_conn_type=$(get_effective_connection_type)
-    echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
-    
-    # 初回のみキャッシュ構築
-    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(
-            # wifi_mode (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|wifi_mode|${when_val}"
-            fi
-            
-            # connection_type (配列)
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
-            
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                echo "$values" | while read -r val; do
-                    [ -z "$val" ] && continue
-                    echo "${pkg_id}|connection_type|${val}"
-                done
-            done
-        )
-        _CONDITIONAL_PACKAGES_LOADED=1
-        echo "[DEBUG] Conditional packages cache built:" >> "$CONFIG_DIR/debug.log"
-        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    # キャッシュから処理
-    while IFS='|' read -r pkg_id when_var expected; do
-        [ -z "$pkg_id" ] && continue
-        
-        echo "[DEBUG] Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
-        
-        # 現在値取得（connection_type の場合は実効値を使用）
-        local current_val
-        if [ "$when_var" = "connection_type" ]; then
-            current_val="$effective_conn_type"
-            echo "[DEBUG] Using effective_conn_type: $current_val" >> "$CONFIG_DIR/debug.log"
-        else
-            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        fi
-        
-        echo "[DEBUG] current_val=$current_val" >> "$CONFIG_DIR/debug.log"
-        
-        # 条件判定
-        local should_add=0
-        if [ "$current_val" = "$expected" ]; then
-            should_add=1
-            echo "[DEBUG] Match found!" >> "$CONFIG_DIR/debug.log"
-        fi
-        
-        # パッケージ追加/削除
-        if [ "$should_add" -eq 1 ]; then
-            if ! grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "${pkg_id}=${pkg_id}====auto" >> "$SELECTED_PACKAGES"
-                echo "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val}, owner=auto)" >> "$CONFIG_DIR/debug.log"
-                
-                # enableVar追加
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Added enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-        else
-            # disabled の場合も削除対象とする
-            local force_remove=0
-            if [ "$current_val" = "disabled" ]; then
-                force_remove=1
-                echo "[DEBUG] ${when_var} disabled, force removing $pkg_id" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            # 削除する前に他の条件でマッチしないか確認
-            local has_other_match=0
-            if [ "$force_remove" -eq 0 ]; then
-                while IFS='|' read -r check_pkg check_var check_val; do
-                    [ "$check_pkg" != "$pkg_id" ] && continue
-                    [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
-                    
-                    local check_current
-                    if [ "$check_var" = "connection_type" ]; then
-                        check_current="$effective_conn_type"
-                    else
-                        check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    fi
-                    
-                    if [ "$check_current" = "$check_val" ]; then
-                        has_other_match=1
-                        echo "[DEBUG] Found other matching condition: ${check_var}=${check_current}" >> "$CONFIG_DIR/debug.log"
-                        break
-                    fi
-                done <<CHECK
-$_CONDITIONAL_PACKAGES_CACHE
-CHECK
-            fi
-            
-            if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    sed -i "/^${pkg_id}=/d" "$SELECTED_PACKAGES"
-                    echo "[AUTO] Removed package: $pkg_id (no matching conditions)" >> "$CONFIG_DIR/debug.log"
-                    
-                    # enableVar削除
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                        echo "[DEBUG] Removed enableVar: $enable_var" >> "$CONFIG_DIR/debug.log"
-                    fi
-                fi
-            fi
-        fi
-    done <<EOF
-$_CONDITIONAL_PACKAGES_CACHE
-EOF
-    
-    echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
-}
-
-auto_add_conditional_packages() {
+XXXXX_auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
@@ -3031,6 +3027,137 @@ $_CONDITIONAL_PACKAGES_CACHE
 EOF
     
     echo "[DEBUG] === auto_add_conditional_packages finished ===" >> "$CONFIG_DIR/debug.log"
+}
+
+auto_add_conditional_packages() {
+    local cat_id="$1"
+    local effective_conn_type
+    
+    debug_log "=== auto_add_conditional_packages called ==="
+    debug_log "cat_id=$cat_id"
+    
+    effective_conn_type=$(get_effective_connection_type)
+    debug_log "Effective connection type: $effective_conn_type"
+    
+    # 初回のみキャッシュ構築
+    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
+        _CONDITIONAL_PACKAGES_CACHE=$(
+            # wifi_mode (文字列)
+            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
+            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
+            if [ -n "$pkg_id" ]; then
+                echo "${pkg_id}|wifi_mode|${when_val}"
+            fi
+            
+            # connection_type (配列)
+            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
+            
+            echo "$pkg_ids" | while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
+                echo "$values" | while read -r val; do
+                    [ -z "$val" ] && continue
+                    echo "${pkg_id}|connection_type|${val}"
+                done
+            done
+        )
+        _CONDITIONAL_PACKAGES_LOADED=1
+        debug_log "Conditional packages cache built:"
+        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    # キャッシュから処理
+    while IFS='|' read -r pkg_id when_var expected; do
+        [ -z "$pkg_id" ] && continue
+        
+        debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
+        
+        # 現在値取得（connection_type の場合は実効値を使用）
+        local current_val
+        if [ "$when_var" = "connection_type" ]; then
+            current_val="$effective_conn_type"
+            debug_log "Using effective_conn_type: $current_val"
+        else
+            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        debug_log "current_val=$current_val"
+        
+        # 条件判定
+        local should_add=0
+        if [ "$current_val" = "$expected" ]; then
+            should_add=1
+            debug_log "Match found!"
+        fi
+        
+        # パッケージ追加/削除
+        if [ "$should_add" -eq 1 ]; then
+            # ヘルパー関数で追加（重複チェック込み）
+            if pkg_add "$pkg_id" "auto"; then
+                debug_log "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})"
+                
+                # enableVar追加
+                local enable_var
+                enable_var=$(get_package_enablevar "$pkg_id" "")
+                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                    echo "${enable_var}='1'" >> "$SETUP_VARS"
+                    debug_log "Added enableVar: $enable_var"
+                fi
+            fi
+        else
+            # disabled の場合も削除対象とする
+            local force_remove=0
+            if [ "$current_val" = "disabled" ]; then
+                force_remove=1
+                debug_log "${when_var} disabled, force removing $pkg_id"
+            fi
+            
+            # 削除する前に他の条件でマッチしないか確認
+            local has_other_match=0
+            if [ "$force_remove" -eq 0 ]; then
+                while IFS='|' read -r check_pkg check_var check_val; do
+                    [ "$check_pkg" != "$pkg_id" ] && continue
+                    [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
+                    
+                    local check_current
+                    if [ "$check_var" = "connection_type" ]; then
+                        check_current="$effective_conn_type"
+                    else
+                        check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    fi
+                    
+                    if [ "$check_current" = "$check_val" ]; then
+                        has_other_match=1
+                        debug_log "Found other matching condition: ${check_var}=${check_current}"
+                        break
+                    fi
+                done <<CHECK
+$_CONDITIONAL_PACKAGES_CACHE
+CHECK
+            fi
+            
+            if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
+                # ヘルパー関数で削除（owner=auto のみ対象）
+                if pkg_remove "$pkg_id" "auto"; then
+                    debug_log "[AUTO] Removed package: $pkg_id (owner=auto, no matching conditions)"
+                    
+                    # enableVar削除
+                    local enable_var
+                    enable_var=$(get_package_enablevar "$pkg_id" "")
+                    if [ -n "$enable_var" ]; then
+                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                        debug_log "Removed enableVar: $enable_var"
+                    fi
+                else
+                    debug_log "Skipped removal: $pkg_id (owner!=auto or not found)"
+                fi
+            fi
+        fi
+    done <<EOF
+$_CONDITIONAL_PACKAGES_CACHE
+EOF
+    
+    debug_log "=== auto_add_conditional_packages finished ==="
 }
 
 get_section_nested_items() {
