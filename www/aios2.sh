@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2048"
+VERSION="R7.1218.2346"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -5239,7 +5239,8 @@ aios2_main() {
     cache_package_availability &
     CACHE_PKG_PID=$!
     
-    cache_installed_packages &
+    # cache_installed_packages &
+    cache_installed_packages>/dev/null 2>&1 &
     CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
