@@ -19,7 +19,7 @@ debug_log() {
 # 【Package Cache Structure】
 # 
 # 1. _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked
+#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner
 #
 # Field details:
 #   1. id              - Package name for installation
@@ -32,28 +32,41 @@ debug_log() {
 #   8. virtual         - "true" to skip availability check, "false" otherwise
 #   9. reboot          - "true" if reboot required, "false" otherwise
 #  10. checked         - "true" if selected by default, "false" otherwise
+#  11. owner           - Package ownership: "system", "auto", "user", or empty
 #
-# 2. _CATEGORY_PACKAGES_CACHE format:
-#   category_id|package_id_or_uniqueId
+# 【Package Ownership (owner field)】
+# Determines package lifecycle and removal policy:
 #
-# Example:
-#   basic-system|luci-app-ttyd
-#   usb-storage|kmod-usb-storage-uas
+# - **system**: Installed before aios2 started (pre-existing packages)
+#   * Added by: initialize_installed_packages()
+#   * Removal policy: NEVER shown in removal list (user did not install)
+#   * Example: Packages already on device at startup
 #
-# 3. Language Package Cache:
-#   - File: available_languages.cache
-#   - Source: Extracted from pkg_availability_cache.txt (luci-i18n-base-* packages)
-#   - Built by: cache_available_languages() after pkg_availability_cache completion
-#   - Used by: show_language_selector() for language pack selection UI
-#   - Format: One language code per line (e.g. "ja", "zh-cn")
+# - **auto**: Automatically added by conditional logic
+#   * Added by: auto_add_conditional_packages()
+#   * Removal policy: NEVER shown in removal list (system manages lifecycle)
+#   * Example: map, ds-lite, luci-app-usteer (based on connection_type/wifi_mode)
+#
+# - **user**: Explicitly selected by user in package selection UI
+#   * Added by: add_package_with_dependencies() via user interaction
+#   * Removal policy: SHOWN in removal list when deselected
+#   * Example: User manually checks luci-app-ttyd in package menu
+#
+# - **empty**: Legacy entries without owner (treated as "user")
+#
+# 【Removal Detection Logic】
+# detect_packages_to_remove() behavior:
+#   1. Skip if owner="system" (pre-existing, user never selected)
+#   2. Skip if owner="auto" (managed by conditional logic)
+#   3. Check if owner="user" (show in removal list when deselected)
 #
 # 【Cache Loading Strategy】
-# - Both caches are built on first access (lazy loading)
+# - Built on first access (lazy loading)
 # - Source: postinst.json + customfeeds.json
-# - After cache build, NO jsonfilter calls for package info
-# - All package queries use grep/awk on cached data
-# - Cache cleared only on init() or explicit clear_selection_cache()
-# - Language cache: Built in aios2_main() after CACHE_PKG_PID completion
+# - Owner assigned during package addition:
+#   * initialize_installed_packages() → owner=system
+#   * auto_add_conditional_packages() → owner=auto
+#   * add_package_with_dependencies() → owner=user
 #
 # 【uniqueId Handling】
 # - If uniqueId exists: ALL checks use uniqueId (NOT id)
@@ -63,45 +76,50 @@ debug_log() {
 #
 # 【Dependency Resolution Order】
 # 1. Check if uniqueId exists
-# 2. If uniqueId exists → search dependent_ids by uniqueId
-# 3. If uniqueId absent → search dependent_ids by id
+# 2. If uniqueId exists → search by uniqueId
+# 3. If uniqueId absent → search by id
 # 4. Dependent package (is_dependent=1) → display with indent
 # 5. Independent package (is_dependent=0) → execute hidden check
 #
 # 【Package Display Rules】
 # 
-# **dependencies Array**: Packages to select together in UI (parent-child relationship)
-#   - NOT related to opkg/apk dependencies
-#   - Used when parent is selected → children are auto-selected
-#   - Children are displayed with indentation under parent
+# **dependencies Array**: UI-level parent-child relationship (NOT opkg/apk deps)
+#   - Parent selected → children auto-selected
+#   - Children displayed with indentation
 # 
 # **hidden Attribute**:
 #   - Independent packages: hidden=true → HIDDEN
-#   - Level 1 dependencies (direct): hidden=true → SHOWN (ignored for UX)
-#   - Level 2+ dependencies (nested): hidden=true → HIDDEN
+#   - Level 1 dependencies: hidden=true → SHOWN (UX override)
+#   - Level 2+ dependencies: hidden=true → HIDDEN
 # 
 # **Availability Check**:
-#   - virtual=true: Skip check (always available)
-#   - custom_feeds: Skip check (always available)
-#   - Others: Must exist in repository (check_package_available)
+#   - virtual=true: Skip check
+#   - custom_feeds: Skip check
+#   - Others: Must exist in repository
 #
-# 【Package Availability Check】
-# check_package_available() verifies package existence in repository:
-# - Builds cache from ALL feeds: base, packages, luci, routing, telephony, community, kmods
-# - Cache stored in memory: _PACKAGE_AVAILABILITY_CACHE
-# - Returns 0 (available) or 1 (not available)
-# - Exceptions:
-#   * virtual=true packages: always return 0 (skip check)
-#   * custom_feeds caller: always return 0 (skip check)
-#   * dependent packages: use caller="dependent" for check
-#   * ALL other packages: MUST pass availability check
+# 【Example Scenarios】
 #
-# 【Package Installation Requirements】
-# postinst.json structure:
-# - **id**: Package name to install (e.g. "apache")
-# - **name**: Display name in UI (e.g. "htpasswd")
-# - **uniqueId**: Internal identifier for distinguishing multiple entries with same id
-#               (e.g. "htpasswd-from-apache")
+# Scenario 1: Fresh device startup
+#   - Device has: luci-app-ttyd (pre-installed)
+#   - aios2 starts → initialize_installed_packages()
+#   - luci-app-ttyd marked as owner=system
+#   - Review screen: empty (user did not select anything)
+#
+# Scenario 2: User selects MAP-E
+#   - User: connection_type=mape
+#   - auto_add_conditional_packages() adds: map (owner=auto)
+#   - Review screen: shows "install map" (new package)
+#   - User changes to: connection_type=disabled
+#   - auto_add_conditional_packages() removes: map
+#   - Review screen: empty (owner=auto never shown in removal)
+#
+# Scenario 3: User selects package manually
+#   - User checks: luci-app-vnstat2 in package menu
+#   - add_package_with_dependencies() adds with owner=user
+#   - Review screen: shows "install luci-app-vnstat2"
+#   - User unchecks: luci-app-vnstat2
+#   - Review screen: shows "remove luci-app-vnstat2" (owner=user)
+#
 # =============================================================================
 
 SCRIPT_NAME=$(basename "$0")
