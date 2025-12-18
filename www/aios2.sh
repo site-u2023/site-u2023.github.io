@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2205"
+VERSION="R7.1218.2209"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1285,7 +1285,7 @@ cache_package_availability() {
             
             rm -f "$temp_response"
             debug_log "$feed: fetched $(wc -l < "$temp_file") packages"
-        ) &
+        ) >/dev/null 2>&1 &
         job_count=$((job_count + 1))
     done
     
