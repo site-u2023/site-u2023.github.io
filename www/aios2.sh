@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.0940"
+VERSION="R7.1218.0948"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -3203,7 +3203,11 @@ EOF
 update_language_packages() {
     local new_lang old_lang
     
+    echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
+    
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
     
     # 未選択なら何もしない（初期状態）
     [ -z "$new_lang" ] && return 0
