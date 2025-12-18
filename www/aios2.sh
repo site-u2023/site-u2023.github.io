@@ -1698,17 +1698,21 @@ EOF2
     awk -F'|' -v cat="$cat_id" '$1 == cat {print $2}' "$cache_file"
 }
 
+# =============================================================================
+# get_package_checked()
+# =============================================================================
 get_package_checked() {
     local pkg_id="$1"
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
-    # キャッシュから取得（フィールド10 = checked）
-    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+    # ファイルから直接検索（フィールド10 = checked）
+    awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg || $3 == pkg { print $10; exit }
-    '
+    ' "$cache_file" 2>/dev/null
 }
 
 get_language_module_patterns() {
@@ -1738,13 +1742,20 @@ get_language_prefixes() {
     echo "$_LANGUAGE_PREFIXES"
 }
 
+# =============================================================================
+# get_package_name() - キャッシュをファイルに書き込む版
+# =============================================================================
 get_package_name() {
     local pkg_id="$1"
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         echo "[DEBUG] Building package name cache with extended fields..." >> "$CONFIG_DIR/debug.log"
         
-        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+        # ファイルに直接書き込む（変数を使わない）
+        : > "$cache_file"
+        
+        jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
             awk -F'"' '
             BEGIN { in_deps=0 }
             {
@@ -1774,11 +1785,10 @@ get_package_name() {
                 if(id&&name){
                     print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                 }
-            }')
+            }' >> "$cache_file"
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '
                 BEGIN { in_deps=0 }
                 {
@@ -1808,41 +1818,49 @@ get_package_name() {
                     if(id&&name){
                         print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                     }
-                }')
-            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
-${custom_cache}"
+                }' >> "$cache_file"
         fi
         
         _PACKAGE_NAME_LOADED=1
         
-        echo "[DEBUG] Cache built with $(echo "$_PACKAGE_NAME_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] Sample entry: $(echo "$_PACKAGE_NAME_CACHE" | head -1)" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Cache built with $(wc -l < "$cache_file" 2>/dev/null) entries" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Sample entry: $(head -1 "$cache_file" 2>/dev/null)" >> "$CONFIG_DIR/debug.log"
     fi
     
-    echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+    # ファイルから直接検索
+    awk -F'=' -v pkg="$pkg_id" '
         $1 == pkg || $3 == pkg {
             print $2
             exit
         }
-    '
+    ' "$cache_file" 2>/dev/null
 }
 
+# =============================================================================
+# get_package_enablevar()
+# =============================================================================
 get_package_enablevar() {
     local pkg_id="$1"
     local unique_id="$2"
     local enable_var
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
-    # _PACKAGE_NAME_CACHE から検索（フォーマット: id=name=uniqueId=installOptions=enableVar）
+    # キャッシュ未ロードなら初期化
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        get_package_name "dummy" >/dev/null 2>&1
+    fi
+    
+    # ファイルから検索（フォーマット: id=name=uniqueId=installOptions=enableVar）
     if [ -n "$unique_id" ]; then
         # uniqueId がある場合: id と uniqueId が一致する行のフィールド5（enableVar）を取得
-        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" -v uid="$unique_id" '
+        enable_var=$(awk -F'=' -v pkg="$pkg_id" -v uid="$unique_id" '
             $1 == pkg && $3 == uid { print $5; exit }
-        ')
+        ' "$cache_file" 2>/dev/null)
     else
         # uniqueId がない場合: id が一致し、フィールド3が空の行のフィールド5を取得
-        enable_var=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
+        enable_var=$(awk -F'=' -v pkg="$pkg_id" '
             $1 == pkg && $3 == "" { print $5; exit }
-        ')
+        ' "$cache_file" 2>/dev/null)
     fi
     
     echo "$enable_var"
@@ -1979,30 +1997,34 @@ is_package_selected() {
 }
 
 # =============================================================================
-# Get dependencies for a package (from cache)
+# get_package_dependencies()
 # =============================================================================
 get_package_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     # キャッシュがロードされていなければロード
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         get_package_name "dummy" >/dev/null 2>&1
     fi
     
-    # キャッシュから依存関係を取得（フィールド6）
-    local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '$1 == pkg {print $6; exit}')
+    # ファイルから依存関係を取得（フィールド6）
+    local deps=$(awk -F'=' -v pkg="$pkg_id" '$1 == pkg {print $6; exit}' "$cache_file" 2>/dev/null)
     
     # カンマ区切りを改行に変換
     echo "$deps" | tr ',' '\n' | grep -v '^$'
 }
 
-# Check if a dependency is required by other selected packages
+# =============================================================================
+# is_dependency_required_by_others()
+# =============================================================================
 is_dependency_required_by_others() {
     local dep_id="$1"
     local excluding_pkg_id="$2"
     local caller="${3:-normal}"
     local target_file
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -2020,9 +2042,9 @@ is_dependency_required_by_others() {
         # Skip the package we're excluding
         [ "$current_pkg_id" = "$excluding_pkg_id" ] && continue
         
-        # キャッシュから依存関係を取得（フィールド6）
+        # ファイルから依存関係を取得（フィールド6）
         local deps
-        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}')
+        deps=$(awk -F'=' -v id="$current_pkg_id" '$1 == id {print $6; exit}' "$cache_file" 2>/dev/null)
         
         # カンマ区切りの中から dep_id を検索
         echo "$deps" | tr ',' '\n' | grep -qx "$dep_id" && return 0
@@ -2031,11 +2053,14 @@ is_dependency_required_by_others() {
     return 1
 }
 
-# Add package and its dependencies
+# =============================================================================
+# add_package_with_dependencies()
+# =============================================================================
 add_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -2049,8 +2074,8 @@ add_package_with_dependencies() {
     
     # Add main package
     local cache_line
-    cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$3 == id {print; exit}')
-    [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}')
+    cache_line=$(awk -F= -v id="$pkg_id" '$3 == id {print; exit}' "$cache_file" 2>/dev/null)
+    [ -z "$cache_line" ] && cache_line=$(awk -F= -v id="$pkg_id" '$1 == id && $3 == "" {print; exit}' "$cache_file" 2>/dev/null)
     
     if [ -n "$cache_line" ]; then
         local cached_id cached_uid
@@ -2122,7 +2147,7 @@ add_package_with_dependencies() {
             
             # Find dependency in cache (by id or uniqueId)
             local dep_cache_line
-            dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+            dep_cache_line=$(awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}' "$cache_file" 2>/dev/null)
             
             if [ -n "$dep_cache_line" ]; then
                 local dep_real_id dep_uid
@@ -2152,11 +2177,14 @@ DEPS
     fi
 }
 
-# Remove package and orphaned dependencies
+# =============================================================================
+# remove_package_with_dependencies()
+# =============================================================================
 remove_package_with_dependencies() {
     local pkg_id="$1"
     local caller="${2:-normal}"
     local target_file
+    local cache_file="$CONFIG_DIR/package_name_cache.txt"
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -2203,7 +2231,7 @@ ENTRIES
         
         # Find dependency real id
         local dep_cache_line dep_real_id
-        dep_cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}')
+        dep_cache_line=$(awk -F= -v dep="$dep_id" '$1 == dep || $3 == dep {print; exit}' "$cache_file" 2>/dev/null)
         
         if [ -n "$dep_cache_line" ]; then
             dep_real_id=$(echo "$dep_cache_line" | cut -d= -f1)
