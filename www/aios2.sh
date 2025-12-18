@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2042"
+VERSION="R7.1218.2048"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1108,6 +1108,7 @@ wait_for_package_cache() {
 check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
 
@@ -1137,23 +1138,14 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
-    # availability cacheをメモリにロード（初回のみ）
-    if [ "$_PACKAGE_AVAILABILITY_LOADED" -eq 0 ]; then
-        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-        
-        if [ -f "$cache_file" ]; then
-            _PACKAGE_AVAILABILITY_CACHE=$(cat "$cache_file")
-            _PACKAGE_AVAILABILITY_LOADED=1
-            debug_log "Package availability cache loaded to memory ($(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l) packages)"
-        else
-            _PACKAGE_AVAILABILITY_LOADED=1
-            debug_log "Availability cache not found, allowing all packages"
-            return 0
-        fi
+    # キャッシュファイルが存在しなければ許可
+    if [ ! -f "$cache_file" ]; then
+        debug_log "Availability cache not found, allowing all packages"
+        return 0
     fi
 
-    # メモリ内で検索（ディスクI/O不要）
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
+    # ファイルから直接検索（echo経由のパイプを避ける）
+    if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
         debug_log "Package $real_id found in availability cache"
         return 0
     fi
