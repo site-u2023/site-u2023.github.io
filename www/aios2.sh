@@ -3701,7 +3701,7 @@ prefetch_templates() {
     
     # ヘルパー関数：ジョブ数制御
     wait_if_full() {
-        if [ "$job_count" -ge "$max_jobs" ]; then
+        if [ "$job_count" -ge "$MAX_JOBS" ]; then
             wait $pids
             pids=""
             job_count=0
