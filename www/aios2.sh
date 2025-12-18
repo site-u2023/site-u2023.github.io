@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2121"
+VERSION="R7.1218.2125"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1516,7 +1516,7 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            if ! wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+            if ! wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
