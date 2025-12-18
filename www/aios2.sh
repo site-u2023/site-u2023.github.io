@@ -11,7 +11,7 @@ DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 if [ "$DEVICE_CPU_CORES" -eq 1 ]; then
     MAX_JOBS=2
 else
-    MAX_JOBS=$((DEVICE_CPU_CORES * 4))
+    MAX_JOBS=$((DEVICE_CPU_CORES + 2))
 fi
     
 DEBUG_MODE="${DEBUG_MODE:-0}"
