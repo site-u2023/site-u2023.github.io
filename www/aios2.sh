@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2141"
+VERSION="R7.1218.2140"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1162,14 +1162,13 @@ check_package_available() {
     return 1
 }
 
-# get_kmods_directory を修正
-
 get_kmods_directory() {
     local version="$1"
     local vendor="$2"
     local subtarget="$3"
     local kernel_version="$4"
     
+    # JSONから取得したURLテンプレートを使用
     local index_url
     index_url=$(expand_template "$PKG_KMODS_INDEX_BASE_URL" \
         "version" "$version" \
@@ -1179,7 +1178,7 @@ get_kmods_directory() {
     debug_log "Fetching kmods index from: $index_url"
     
     local kmod_dir
-    kmod_dir=$(wget_fallback "$index_url" "-" 10 | \
+    kmod_dir=$(wget -4 -qO- "$index_url" 2>/dev/null | \
         grep -o 'href="[^/"]\+/"' | \
         sed 's/href="//;s/\/"$//' | \
         grep -v '^\s*$' | \
@@ -1200,6 +1199,7 @@ get_kmods_directory() {
     return 1
 }
 
+# wait -n を使ったシンプルな実装
 cache_package_availability() {
     debug_log "Building package availability cache..."
     debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
@@ -1217,13 +1217,9 @@ cache_package_availability() {
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     : > "$cache_file"
     
-    # JSONから取得したフィードリスト
     local feeds="$PKG_FEEDS"
-    
-    # targets追加
     [ "$PKG_INCLUDE_TARGETS" = "true" ] && feeds="$feeds targets"
     
-    # kmods追加
     local kmod_dir
     if [ "$PKG_INCLUDE_KMODS" = "true" ]; then
         local kernel_version=$(uname -r)
@@ -1231,12 +1227,11 @@ cache_package_availability() {
         [ -n "$kmod_dir" ] && feeds="$feeds kmods"
     fi
     
-    if [ -z "$feeds" ]; then
+    [ -z "$feeds" ] && {
         debug_log "No feeds to process"
         return 0
-    fi
+    }
     
-    local pids=""
     local job_count=0
     
     for feed in $feeds; do
@@ -1250,7 +1245,6 @@ cache_package_availability() {
             local url temp_file
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
-            # URL構築
             if [ "$feed" = "targets" ]; then
                 url=$(expand_template "$PKG_TARGETS_INDEX_URL" \
                     "version" "$version" \
@@ -1273,8 +1267,8 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            if ! wget_fallback "$url" "$temp_response" 10; then
-                debug_log "$feed: download failed"
+            if ! wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+                debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
             fi
@@ -1284,21 +1278,15 @@ cache_package_availability() {
                 exit 1
             }
             
-            # パッケージ名抽出
             if echo "$url" | grep -q 'index.json$'; then
-                # APK
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
-                # OPKG
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
             rm -f "$temp_response"
-            
-            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            debug_log "$feed: fetched $count packages"
+            debug_log "$feed: fetched $(wc -l < "$temp_file") packages"
         ) &
-        pids="$pids $!"
         job_count=$((job_count + 1))
     done
     
@@ -1313,9 +1301,7 @@ cache_package_availability() {
     done
     
     sort -u "$cache_file" -o "$cache_file"
-    
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    debug_log "Cache built: $count packages total"
+    debug_log "Cache built: $(wc -l < "$cache_file") packages total"
     
     return 0
 }
@@ -3675,44 +3661,6 @@ compute_dslite_aftr() {
     return 1
 }
 
-# =============================================================================
-# wget wrapper with IPv6 -> IPv4 fallback
-# =============================================================================
-# Args:
-#   $1 - URL
-#   $2 - output file ("-" for stdout)
-#   $3 - timeout seconds (default: 10)
-# Returns:
-#   0 on success, 1 on failure
-# =============================================================================
-wget_fallback() {
-    local url="$1"
-    local output="$2"
-    local timeout="${3:-10}"
-    local wget_opts="-q -T $timeout"
-    
-    if [ "$output" = "-" ]; then
-        wget_opts="$wget_opts -O-"
-    else
-        wget_opts="$wget_opts -O $output"
-    fi
-    
-    # Try default (IPv6 preferred) first
-    if wget $wget_opts "$url" 2>/dev/null; then
-        return 0
-    fi
-    
-    debug_log "wget failed, retrying with IPv4: $url"
-    
-    # Fallback to IPv4
-    if wget -4 $wget_opts "$url" 2>/dev/null; then
-        return 0
-    fi
-    
-    debug_log "wget IPv4 fallback also failed: $url"
-    return 1
-}
-
 __download_file_core() {
     local url="$1"
     local output_path="$2"
@@ -3733,13 +3681,15 @@ __download_file_core() {
     while [ $retry -lt $max_retries ]; do
         echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
         
-        if wget_fallback "$full_url" "$output_path" 10; then
+        if wget -4 -q -T 10 -O "$output_path" "$full_url" 2>/dev/null; then
             if [ -s "$output_path" ]; then
                 echo "[DEBUG] Download successful: $url" >> "$CONFIG_DIR/debug.log"
                 return 0
             else
                 echo "[DEBUG] Downloaded file is empty: $url" >> "$CONFIG_DIR/debug.log"
             fi
+        else
+            echo "[DEBUG] wget failed: $url" >> "$CONFIG_DIR/debug.log"
         fi
         
         retry=$((retry + 1))
