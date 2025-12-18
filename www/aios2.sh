@@ -5236,11 +5236,10 @@ aios2_main() {
     # ========================================
     # Phase 7: パッケージキャッシュ構築（並列）
     # ========================================
-    cache_package_availability &
+    ( cache_package_availability >/dev/null 2>&1 ) &
     CACHE_PKG_PID=$!
     
-    # cache_installed_packages &
-    cache_installed_packages>/dev/null 2>&1 &
+    cache_installed_packages &
     CACHE_INSTALLED_PID=$!
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
