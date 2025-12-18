@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.1010"
+VERSION="R7.1218.1023"
 
 DEBUG_MODE="${DEBUG_MODE:-0}"
 
@@ -159,6 +159,10 @@ _INSTALLED_PACKAGES_CACHE=""
 _INSTALLED_PACKAGES_LOADED=0
 _LANGUAGE_MODULE_PATTERNS=""
 _LANGUAGE_MODULE_PATTERNS_LOADED=0
+_LANGUAGE_EXCLUDE_PATTERNS=""
+_LANGUAGE_EXCLUDE_PATTERNS_LOADED=0
+_LANGUAGE_PREFIXES=""
+_LANGUAGE_PREFIXES_LOADED=0
 
 clear_selection_cache() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -1489,6 +1493,24 @@ get_language_module_patterns() {
         echo "[DEBUG] Loaded language_module_patterns: $_LANGUAGE_MODULE_PATTERNS" >> "$CONFIG_DIR/debug.log"
     fi
     echo "$_LANGUAGE_MODULE_PATTERNS"
+}
+
+get_language_exclude_patterns() {
+    if [ "$_LANGUAGE_EXCLUDE_PATTERNS_LOADED" -eq 0 ]; then
+        _LANGUAGE_EXCLUDE_PATTERNS=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_exclude_patterns[*]' 2>/dev/null)
+        _LANGUAGE_EXCLUDE_PATTERNS_LOADED=1
+        echo "[DEBUG] Loaded language_exclude_patterns: $_LANGUAGE_EXCLUDE_PATTERNS" >> "$CONFIG_DIR/debug.log"
+    fi
+    echo "$_LANGUAGE_EXCLUDE_PATTERNS"
+}
+
+get_language_prefixes() {
+    if [ "$_LANGUAGE_PREFIXES_LOADED" -eq 0 ]; then
+        _LANGUAGE_PREFIXES=$(jsonfilter -i "$SETUP_JSON" -e '@.constants.language_prefixes[*]' 2>/dev/null)
+        _LANGUAGE_PREFIXES_LOADED=1
+        echo "[DEBUG] Loaded language_prefixes: $_LANGUAGE_PREFIXES" >> "$CONFIG_DIR/debug.log"
+    fi
+    echo "$_LANGUAGE_PREFIXES"
 }
 
 get_package_name() {
