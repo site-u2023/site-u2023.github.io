@@ -1696,6 +1696,14 @@ initialize_installed_packages() {
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         
+        # conditional packages は除外
+        case "$pkg_id" in
+            map|ds-lite|coreutils-sha1sum|luci-app-usteer)
+                echo "[INIT] Skipping conditional package: $pkg_id" >> "$CONFIG_DIR/debug.log"
+                continue
+                ;;
+        esac
+        
         if is_package_installed "$pkg_id"; then
             local already_selected=0
             
@@ -1720,7 +1728,7 @@ initialize_installed_packages() {
 $_PACKAGE_NAME_CACHE
 EOF
     
-    # ★★★ カスタムフィードパッケージ ★★★
+    # カスタムフィードパッケージ
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
