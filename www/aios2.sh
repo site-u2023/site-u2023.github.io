@@ -3263,7 +3263,7 @@ EOF
     clear_selection_cache
 }
 
-update_language_packages() {
+OK_update_language_packages() {
     local new_lang old_lang
     
     echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
@@ -3405,6 +3405,166 @@ EOF
         fi
     done <<EOF
 $all_packages
+EOF
+    
+    clear_selection_cache
+}
+
+update_language_packages() {
+    local new_lang old_lang
+    
+    echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
+    
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    echo "[DEBUG] new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    [ -z "$new_lang" ] && return 0
+        
+    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+
+    local base_lang_pkg
+    base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
+
+    if [ -n "$base_lang_pkg" ]; then
+        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
+    else
+        old_lang="en"
+    fi
+    
+    echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
+    
+    [ "$old_lang" = "$new_lang" ] && return 0
+    
+    # JSON駆動のパターンを取得
+    local exclude_patterns module_patterns
+    exclude_patterns=$(get_language_exclude_patterns)
+    module_patterns=$(get_language_module_patterns)
+    
+    echo "[DEBUG] Loaded language_exclude_patterns: $exclude_patterns" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Loaded language_module_patterns: $module_patterns" >> "$CONFIG_DIR/debug.log"
+    
+    # 1. ローカルの全パッケージを取得
+    local all_packages=""
+    
+    while read -r pkg_id; do
+        [ -z "$pkg_id" ] && continue
+        
+        # 除外パターンチェック
+        local excluded=0
+        for pattern in $exclude_patterns; do
+            case "$pkg_id" in
+                ${pattern}*)
+                    excluded=1
+                    break
+                    ;;
+            esac
+        done
+        
+        if [ "$excluded" -eq 0 ]; then
+            all_packages="${all_packages}${pkg_id}
+"
+        fi
+    done <<EOF
+$_INSTALLED_PACKAGES_CACHE
+EOF
+
+    # 2. 選択済みからも追加
+    if [ -f "$SELECTED_PACKAGES" ]; then
+        while read -r line; do
+            [ -z "$line" ] && continue
+            local pkg_id
+            pkg_id=$(echo "$line" | cut -d= -f1)
+            
+            local excluded=0
+            for pattern in $exclude_patterns; do
+                case "$pkg_id" in
+                    ${pattern}*)
+                        excluded=1
+                        break
+                        ;;
+            esac
+            done
+            
+            if [ "$excluded" -eq 0 ]; then
+                if ! echo "$all_packages" | grep -qx "$pkg_id"; then
+                    all_packages="${all_packages}${pkg_id}
+"
+                fi
+            fi
+        done < "$SELECTED_PACKAGES"
+    fi
+    
+    echo "[DEBUG] all_packages count=$(echo \"$all_packages\" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] all_packages='$all_packages'" >> "$CONFIG_DIR/debug.log"
+    
+    # 既存の言語パッケージを削除
+    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
+    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+    
+    if [ "$new_lang" = "en" ]; then
+        clear_selection_cache
+        return 0
+    fi
+    
+    # ベースパッケージは常に追加
+    local base_pkg="luci-i18n-base-${new_lang}"
+    echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
+    
+    # 3. リポジトリから言語パック全取得（1回のgrep）
+    local available_lang_packs
+    available_lang_packs=$(grep "^luci-i18n-.*-${new_lang}$" "$CONFIG_DIR/pkg_availability_cache.txt" 2>/dev/null)
+    
+    if [ -z "$available_lang_packs" ]; then
+        echo "[DEBUG] No language packs found for $new_lang" >> "$CONFIG_DIR/debug.log"
+        clear_selection_cache
+        return 0
+    fi
+    
+    echo "[DEBUG] Available language packs: $(echo "$available_lang_packs" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    
+    # 4. 各言語パックから本体パッケージを逆引き
+    while read -r lang_pkg; do
+        [ -z "$lang_pkg" ] && continue
+        [ "$lang_pkg" = "luci-i18n-base-${new_lang}" ] && continue
+        
+        # luci-i18n-XXX-ja から XXX を抽出
+        local module_name="${lang_pkg#luci-i18n-}"
+        module_name="${module_name%-${new_lang}}"
+        
+        echo "[DEBUG] Checking lang_pkg='$lang_pkg', module='$module_name'" >> "$CONFIG_DIR/debug.log"
+        
+        local found=0
+        
+        # module_patterns でマッチ
+        for pattern in $module_patterns; do
+            local candidate="${pattern}${module_name}"
+            if echo "$all_packages" | grep -qx "$candidate"; then
+                if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    echo "[DEBUG] lang_pkg='$lang_pkg' AVAILABLE, added for $candidate" >> "$CONFIG_DIR/debug.log"
+                fi
+                found=1
+                break
+            fi
+        done
+        
+        # マッチしない場合はそのまま
+        if [ "$found" -eq 0 ]; then
+            if echo "$all_packages" | grep -qx "$module_name"; then
+                if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
+                    echo "[DEBUG] lang_pkg='$lang_pkg' AVAILABLE, added for $module_name" >> "$CONFIG_DIR/debug.log"
+                fi
+                found=1
+            fi
+        fi
+        
+        if [ "$found" -eq 0 ]; then
+            echo "[DEBUG] No matching package for $lang_pkg" >> "$CONFIG_DIR/debug.log"
+        fi
+    done <<EOF
+$available_lang_packs
 EOF
     
     clear_selection_cache
