@@ -4553,8 +4553,9 @@ EOF
         done <<EOF2
 $initial_lang_pkgs
 EOF2
-    fi
-    
+        fi
+    fi 
+
     # カスタムフィード
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
