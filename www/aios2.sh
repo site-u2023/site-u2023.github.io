@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0007"
+VERSION="R7.1219.0010"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -857,7 +857,7 @@ reset_detected_conn_type() {
 download_api_with_retry() {
     echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >> "$CONFIG_DIR/debug.log"
     
-    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON" 6; then
+    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
         echo ""
         echo "ERROR: API error"
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
