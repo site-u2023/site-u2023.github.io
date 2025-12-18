@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1218.2138"
+VERSION="R7.1218.2140"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1199,108 +1199,7 @@ get_kmods_directory() {
     return 1
 }
 
-XXX_cache_package_availability() {
-    debug_log "Building package availability cache..."
-    debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
-    
-    local version="$OPENWRT_VERSION"
-    local arch="$DEVICE_ARCH"
-    local vendor="$DEVICE_VENDOR"
-    local subtarget="$DEVICE_SUBTARGET"
-    
-    if [ -z "$version" ] || [ -z "$arch" ]; then
-        debug_log "Missing version or arch"
-        return 1
-    fi
-    
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-    : > "$cache_file"
-    
-    # JSONから取得したフィードリスト
-    local feeds="$PKG_FEEDS"
-    
-    # targets追加
-    [ "$PKG_INCLUDE_TARGETS" = "true" ] && feeds="$feeds targets"
-    
-    # kmods追加
-    local kmod_dir
-    if [ "$PKG_INCLUDE_KMODS" = "true" ]; then
-        local kernel_version=$(uname -r)
-        kmod_dir=$(get_kmods_directory "$version" "$vendor" "$subtarget" "$kernel_version")
-        [ -n "$kmod_dir" ] && feeds="$feeds kmods"
-    fi
-    
-    local pids=""
-    for feed in $feeds; do
-        (
-            local url temp_file
-            temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            
-            # URL構築
-            if [ "$feed" = "targets" ]; then
-                url=$(expand_template "$PKG_TARGETS_INDEX_URL" \
-                    "version" "$version" \
-                    "vendor" "$vendor" \
-                    "subtarget" "$subtarget")
-            elif [ "$feed" = "kmods" ]; then
-                url=$(expand_template "$PKG_KMODS_INDEX_URL" \
-                    "version" "$version" \
-                    "vendor" "$vendor" \
-                    "subtarget" "$subtarget" \
-                    "kmod" "$kmod_dir")
-            else
-                url=$(expand_template "$PKG_PACKAGE_INDEX_URL" \
-                    "version" "$version" \
-                    "arch" "$arch" \
-                    "feed" "$feed")
-            fi
-            
-            debug_log "Fetching $feed from $url"
-            
-            local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
-            wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>>"$CONFIG_DIR/debug.log" || exit 1
-            
-            [ ! -s "$temp_response" ] && exit 1
-            
-            # パッケージ名抽出
-            if echo "$url" | grep -q 'index.json$'; then
-                # APK
-                grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
-            else
-                # OPKG
-                awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
-            fi
-            
-            rm -f "$temp_response"
-            
-            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            debug_log "$feed: fetched $count packages"
-        ) >/dev/null 2>&1 &
-        pids="$pids $!"
-    done
-    
-    # pidsが空の場合はwaitをスキップ（空だと全バックグラウンドジョブを待機してしまう）
-    [ -n "$pids" ] && wait $pids
-    
-    # マージ
-    {
-        for feed in $feeds; do
-            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
-            rm -f "$temp_file"
-        done
-        
-        sort -u "$cache_file" -o "$cache_file"
-    } >/dev/null 2>&1
-    
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    debug_log "Cache built: $count packages total"
-    
-    return 0
-}
-
-# cache_package_availability 関数を修正
-
+# wait -n を使ったシンプルな実装
 cache_package_availability() {
     debug_log "Building package availability cache..."
     debug_log "OPENWRT_VERSION=$OPENWRT_VERSION, DEVICE_ARCH=$DEVICE_ARCH"
@@ -1318,13 +1217,9 @@ cache_package_availability() {
     local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
     : > "$cache_file"
     
-    # JSONから取得したフィードリスト
     local feeds="$PKG_FEEDS"
-    
-    # targets追加
     [ "$PKG_INCLUDE_TARGETS" = "true" ] && feeds="$feeds targets"
     
-    # kmods追加
     local kmod_dir
     if [ "$PKG_INCLUDE_KMODS" = "true" ]; then
         local kernel_version=$(uname -r)
@@ -1332,21 +1227,24 @@ cache_package_availability() {
         [ -n "$kmod_dir" ] && feeds="$feeds kmods"
     fi
     
-    # フィードがない場合は早期リターン
-    if [ -z "$feeds" ]; then
+    [ -z "$feeds" ] && {
         debug_log "No feeds to process"
         return 0
-    fi
+    }
     
-    local pids=""
-    local pid_count=0
+    local job_count=0
     
     for feed in $feeds; do
+        # ジョブ数制限
+        while [ "$job_count" -ge "$MAX_JOBS" ]; do
+            wait -n
+            job_count=$((job_count - 1))
+        done
+        
         (
             local url temp_file
             temp_file="$CONFIG_DIR/cache_${feed}.txt"
             
-            # URL構築
             if [ "$feed" = "targets" ]; then
                 url=$(expand_template "$PKG_TARGETS_INDEX_URL" \
                     "version" "$version" \
@@ -1369,84 +1267,41 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            # タイムアウト短縮、リトライなし
-            if ! wget -4 -q -T 8 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+            if ! wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
             fi
             
             [ ! -s "$temp_response" ] && {
-                debug_log "$feed: empty response"
                 rm -f "$temp_response"
                 exit 1
             }
             
-            # パッケージ名抽出
             if echo "$url" | grep -q 'index.json$'; then
-                # APK
                 grep -o '"[^"]*":' "$temp_response" | grep -v -E '(version|architecture|packages)' | tr -d '":' > "$temp_file"
             else
-                # OPKG
                 awk '/^Package: / {print $2}' "$temp_response" > "$temp_file"
             fi
             
             rm -f "$temp_response"
-            
-            local count=$(wc -l < "$temp_file" 2>/dev/null || echo 0)
-            debug_log "$feed: fetched $count packages"
+            debug_log "$feed: fetched $(wc -l < "$temp_file") packages"
         ) &
-        pids="$pids $!"
-        pid_count=$((pid_count + 1))
+        job_count=$((job_count + 1))
     done
     
-    # タイムアウト付きwait（最大30秒）
-    if [ -n "$pids" ]; then
-        local wait_count=0
-        local max_wait=30
-        
-        while [ $wait_count -lt $max_wait ]; do
-            local all_done=1
-            for pid in $pids; do
-                if kill -0 "$pid" 2>/dev/null; then
-                    all_done=0
-                    break
-                fi
-            done
-            
-            [ "$all_done" -eq 1 ] && break
-            
-            sleep 1
-            wait_count=$((wait_count + 1))
-        done
-        
-        # タイムアウト時は残りのプロセスをkill
-        if [ $wait_count -ge $max_wait ]; then
-            debug_log "Package cache timeout, killing remaining processes"
-            for pid in $pids; do
-                kill "$pid" 2>/dev/null
-            done
-        fi
-        
-        # 全プロセスの終了を確認
-        for pid in $pids; do
-            wait "$pid" 2>/dev/null
-        done
-    fi
+    # 残りのジョブを待機
+    wait
     
     # マージ
-    {
-        for feed in $feeds; do
-            local temp_file="$CONFIG_DIR/cache_${feed}.txt"
-            [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
-            rm -f "$temp_file"
-        done
-        
-        sort -u "$cache_file" -o "$cache_file"
-    } >/dev/null 2>&1
+    for feed in $feeds; do
+        local temp_file="$CONFIG_DIR/cache_${feed}.txt"
+        [ -f "$temp_file" ] && cat "$temp_file" >> "$cache_file"
+        rm -f "$temp_file"
+    done
     
-    local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
-    debug_log "Cache built: $count packages total"
+    sort -u "$cache_file" -o "$cache_file"
+    debug_log "Cache built: $(wc -l < "$cache_file") packages total"
     
     return 0
 }
