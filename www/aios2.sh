@@ -1266,7 +1266,7 @@ cache_package_availability() {
             
             local temp_response="$CONFIG_DIR/feed_${feed}_response.txt"
             
-            if ! wget -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
+            if ! wget -4 -q -T 10 -t 1 -O "$temp_response" "$url" 2>/dev/null; then
                 debug_log "$feed: download failed or timeout"
                 rm -f "$temp_response"
                 exit 1
