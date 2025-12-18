@@ -3275,6 +3275,7 @@ EOF
     
     clear_selection_cache
 }
+
 update_language_packages() {
     local new_lang old_lang
     
@@ -3363,6 +3364,7 @@ EOF
     fi
     
     echo "[DEBUG] all_packages count=$(echo \"$all_packages\" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] all_packages='$all_packages'" >> "$CONFIG_DIR/debug.log"
     
     # 既存の言語パッケージを削除
     grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
@@ -3373,35 +3375,13 @@ EOF
         return 0
     fi
     
-    # ========================================
-    # ベース言語パッケージを優先追加（JSON駆動）
-    # ========================================
-    echo "[DEBUG] Adding base language packages from language_prefixes" >> "$CONFIG_DIR/debug.log"
-    
+    # ベースパッケージを追加（JSON駆動）
     for prefix in $language_prefixes; do
-        # プレフィックスからパッケージ名を抽出（例: "luci-i18n-base-" → "base"）
-        local module_name
-        module_name=$(echo "$prefix" | sed 's/^luci-i18n-//; s/-$//')
         local base_pkg="${prefix}${new_lang}"
-        
-        echo "[DEBUG] Checking base package: $base_pkg (from prefix: $prefix)" >> "$CONFIG_DIR/debug.log"
-        
-        # リポジトリに存在するかチェック
-        if ! check_package_available "$base_pkg" "normal"; then
-            echo "[DEBUG] Base package NOT AVAILABLE: $base_pkg" >> "$CONFIG_DIR/debug.log"
-            continue
-        fi
-        
-        # 重複チェックして追加
-        if ! grep -q "^${base_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
-            echo "[DEBUG] Added base language package: $base_pkg" >> "$CONFIG_DIR/debug.log"
-        fi
+        echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
     done
     
-    # ========================================
-    # モジュール言語パッケージを追加
-    # ========================================
+    # 3. 各パッケージに対して言語パック名を生成
     while read -r pkg; do
         [ -z "$pkg" ] && continue
         
@@ -3426,17 +3406,17 @@ EOF
             lang_pkg_name="luci-i18n-${pkg}-${new_lang}"
         fi
         
-        echo "[DEBUG] Checking module lang_pkg='$lang_pkg_name' for pkg='$pkg'" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Checking lang_pkg='$lang_pkg_name' for pkg='$pkg'" >> "$CONFIG_DIR/debug.log"
         
-        # リポジトリに存在するかチェック
+        # 4. リポジトリに存在するかチェック
         if ! check_package_available "$lang_pkg_name" "normal"; then
-            echo "[DEBUG] Module lang_pkg='$lang_pkg_name' NOT AVAILABLE (skipped)" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] lang_pkg='$lang_pkg_name' NOT AVAILABLE (skipped)" >> "$CONFIG_DIR/debug.log"
             continue
         fi
 
-        echo "[DEBUG] Module lang_pkg='$lang_pkg_name' AVAILABLE, adding" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] lang_pkg='$lang_pkg_name' AVAILABLE, adding" >> "$CONFIG_DIR/debug.log"
         
-        # 重複チェックして追加
+        # 5. 重複チェックして追加
         if ! grep -q "^${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null; then
             echo "${lang_pkg_name}=${lang_pkg_name}===" >> "$SELECTED_PACKAGES"
         fi
