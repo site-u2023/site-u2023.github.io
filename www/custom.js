@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1212.1512) loaded');
+console.log('custom.js (R7.1219.1227) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -4074,25 +4074,48 @@ async function checkAsuServerStatus() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 5000);
         
-        // /overview を使用（空のHTMLで軽量、判定に最適）
         const response = await fetch(config.asu_url + '/overview', {
             method: 'GET',
             signal: controller.signal,
             cache: 'no-store'
         });
         
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            updateAsuStatus('online', response.status);
-            console.log('ASU server is online');
-        } else if (response.status >= 500) {
-            updateAsuStatus('error', response.status);
-            console.warn(`ASU server error: HTTP ${response.status}`);
-        } else {
-            updateAsuStatus('offline', response.status);
-            console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+        if (!response.ok) {
+            clearTimeout(timeoutId);
+            if (response.status >= 500) {
+                updateAsuStatus('error', response.status);
+                console.warn(`ASU server error: HTTP ${response.status}`);
+            } else {
+                updateAsuStatus('offline', response.status);
+                console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+            }
+            return;
         }
+        
+        const versionSelect = document.getElementById('versions');
+        const version = versionSelect?.value || config.versions?.[0];
+        
+        if (version && config.overview_urls?.[version]) {
+            const overview_url = `${config.overview_urls[version]}/.overview.json`;
+            const overviewResponse = await fetch(overview_url, { 
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (overviewResponse.status != 200) {
+                updateAsuStatus('offline', 'Overview JSON unavailable');
+                console.error(`Failed to fetch ${overview_url}`);
+                return;
+            }
+        } else {
+            clearTimeout(timeoutId);
+        }
+        
+        updateAsuStatus('online', response.status);
+        console.log('ASU server is online');
+        
     } catch (error) {
         if (error.name === 'AbortError') {
             updateAsuStatus('offline', 'timeout');
