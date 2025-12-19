@@ -1005,7 +1005,7 @@ XXXXX_package_selection() {
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
-    packages=$(get_category_packages "$cat_id" | awk '!seen[$0]++')
+    packages=$(get_category_packages "$cat_id")
 
     echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
     echo "$packages" >> "$CONFIG_DIR/debug.log"
@@ -1306,7 +1306,7 @@ package_selection() {
     fi
 
     local packages
-    packages=$(get_category_packages "$cat_id" | awk '!seen[$0]++')
+    packages=$(get_category_packages "$cat_id")
 
     echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
     echo "$packages" >> "$CONFIG_DIR/debug.log"
@@ -1335,13 +1335,16 @@ package_selection() {
                 $1 == d || $3 == d { print; exit }
             ')
 
-            echo "$packages" | grep -qx "$did" && continue
-            [ "$did" = "$parent_id" ] && continue
+            if [ -n "$line" ]; then
+                local did uid
+                did=$(echo "$line" | cut -d= -f1)
+                uid=$(echo "$line" | cut -d= -f3)
 
-            if [ -n "$uid" ]; then
-                dependent_ids="${dependent_ids}${did} ${uid} "
-            else
-                dependent_ids="${dependent_ids}${did} "
+                if [ -n "$uid" ]; then
+                    dependent_ids="${dependent_ids}${did} ${uid} "
+                else
+                    dependent_ids="${dependent_ids}${did} "
+                fi
             fi
         done
     done <<EOF
