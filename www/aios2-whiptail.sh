@@ -1583,8 +1583,9 @@ EOF
         else
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
         fi
-        
-        return 0
+    fi
+    
+    return 0
 }
 
 whiptail_main_menu() {
