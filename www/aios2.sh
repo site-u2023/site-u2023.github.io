@@ -221,7 +221,7 @@ pkg_add() {
         return 1
     fi
     
-    echo "${pkg_id}=${pkg_id}====${owner}" >> "$target_file"
+    echo "${pkg_id}=${pkg_id}=========${owner}" >> "$target_file"
     debug_log "pkg_add: $pkg_id (owner=$owner)"
     return 0
 }
