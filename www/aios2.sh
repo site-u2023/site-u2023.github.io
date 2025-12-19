@@ -1720,7 +1720,11 @@ get_package_name() {
                         if($i=="virtual" && $(i+2)=="true")virtual="true";
                         if($i=="reboot" && $(i+2)=="true")reboot="true";
                         if($i=="checked" && $(i+2)=="true")checked="true";
-                        if($i=="isCustomFeed" && $(i+2)=="true")isCustom="1";
+                        if($i=="isCustomFeed") {
+                            next_val = $(i+1);
+                            gsub(/[,}]/, "", next_val);
+                            if(next_val == "true") isCustom="1";
+                        }
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
