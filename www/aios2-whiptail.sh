@@ -902,7 +902,7 @@ show_language_selector() {
         return 1
     fi
     
-    # ★★★ ループ開始（他のパッケージ選択と同じ） ★★★
+    # ループ開始（他のパッケージ選択と同じ）
     while true; do
         # 現在の言語検出
         local current_lang
@@ -946,7 +946,7 @@ EOF
             $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
             $radio_list" 3>&1 1>&2 2>&3)
         
-        # ★★★ キャンセル時はループ終了 ★★★
+        # キャンセル時はループ終了
         [ $? -ne 0 ] || [ -z "$selected" ] && return 0
         
         selected=$(echo "$selected" | tr -d '"')
@@ -968,11 +968,11 @@ EOF
                 echo "[DEBUG] Added ${lang_pkg} to SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
             fi
         
-        # ★★★ 言語パッケージを更新（全LuCIパッケージ対応） ★★★
+        # 言語パッケージを更新（全LuCIパッケージ対応
         update_language_packages
         clear_selection_cache
         
-        # ★★★ ループ継続（画面に戻る） ★★★
+        # ループ継続（画面に戻る）
     done
 }
 
@@ -1070,13 +1070,14 @@ EOF
                 continue
             }
             
-            # ★ キャッシュから全フィールドを取得
+            # キャッシュから全フィールドを取得
             local pkg_name uid real_id hidden_flag virtual_flag
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
-            hidden_flag=$(echo "$entry" | cut -d= -f7)  # ★ hiddenをキャッシュから取得
+            hidden_flag=$(echo "$entry" | cut -d= -f7)
             virtual_flag=$(echo "$entry" | cut -d= -f8)
+            pkg_owner=$(echo "$entry" | cut -d= -f11)
             
             echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
             
@@ -1084,7 +1085,7 @@ EOF
                 package_compatible "$pkg_id" || continue
             fi
 
-            # ★ 依存パッケージ判定（1階層目のみ）
+            # 依存パッケージ判定（1階層目のみ）
             local is_dependent=0
             
             if [ -n "$uid" ]; then
@@ -1101,7 +1102,13 @@ EOF
                 fi
             fi
 
-            # ★ hidden チェック（キャッシュから取得したフラグを使用）
+            # 所有権チェック（ystem または auto は UI に表示しない）
+            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
+                echo "[DEBUG] Package $pkg_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            
+            # hidden チェック（キャッシュから取得したフラグを使用）
             if [ "$is_dependent" -eq 0 ]; then
                 # 独立パッケージ：hidden=true なら非表示
                 if [ "$hidden_flag" = "true" ]; then
