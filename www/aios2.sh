@@ -3299,7 +3299,7 @@ reset_state_for_next_session() {
 
     # 現在の言語設定を再取得
     get_language_code
-    [ -n "$AUTO_LANGUAGE" ] && set_var "language" "$AUTO_LANGUAGE"
+    # [ -n "$AUTO_LANGUAGE" ] && set_var "language" "$AUTO_LANGUAGE"
     
     # 選択キャッシュをリセット
     unset _SELECTED_PACKAGES_CACHE
