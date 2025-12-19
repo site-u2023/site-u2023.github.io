@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1219.1157) loaded');
+console.log('custom.js (R7.1219.1201) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -4253,16 +4253,43 @@ function injectSettingsBar(temp) {
     const fileInput = template.querySelector('#import-file-input');
     
     if (settingsBar && fileInput) {
+        // #alertを確実に最上位に配置するため、settings-barを#alertの後に挿入
         const alertElement = document.getElementById('alert');
         if (alertElement) {
             alertElement.parentNode.insertBefore(settingsBar.cloneNode(true), alertElement.nextSibling);
             console.log('Settings bar injected after #alert');
         } else {
+            // #alertが見つからない場合は従来通りheaderの後に配置
             header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
             console.log('Settings bar injected after header (alert not found)');
         }
         
         document.body.appendChild(fileInput.cloneNode(true));
         setupImportExport();
+        
+        // #alertの表示状態を監視してsettings-barを調整
+        setupAlertObserver();
     }
+}
+
+// #alertが表示された時にsettings-barを下に移動
+function setupAlertObserver() {
+    const alertElement = document.getElementById('alert');
+    const settingsBar = document.getElementById('settings-bar');
+    
+    if (!alertElement || !settingsBar) return;
+    
+    const observer = new MutationObserver(() => {
+        const isAlertVisible = !alertElement.classList.contains('hide');
+        settingsBar.style.marginTop = isAlertVisible ? '2em' : '0';
+    });
+    
+    observer.observe(alertElement, {
+        attributes: true,
+        attributeFilter: ['class']
+    });
+    
+    // 初期状態も確認
+    const isAlertVisible = !alertElement.classList.contains('hide');
+    settingsBar.style.marginTop = isAlertVisible ? '2em' : '0';
 }
