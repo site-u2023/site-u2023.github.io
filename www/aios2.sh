@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.2032"
+VERSION="R7.1219.2109"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1708,6 +1708,7 @@ get_package_name() {
                 {
                     id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
                     hidden="false"; virtual="false"; reboot="false"; checked="false";
+                    isCustom="0";
                     
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
@@ -1719,6 +1720,7 @@ get_package_name() {
                         if($i=="virtual" && $(i+2)=="true")virtual="true";
                         if($i=="reboot" && $(i+2)=="true")reboot="true";
                         if($i=="checked" && $(i+2)=="true")checked="true";
+                        if($i=="isCustomFeed" && $(i+2)=="true")isCustom="1";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
@@ -1730,8 +1732,6 @@ get_package_name() {
                         }
                     }
                     if(id&&name){
-                        isCustom="0";
-                        for(i=1;i<=NF;i++) if($i=="isCustomFeed" && $(i+2)=="true") isCustom="1";
                         print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" isCustom
                     }
                 }')
@@ -1794,7 +1794,8 @@ EOF
         _PACKAGE_NAME_LOADED=1
         
         echo "[DEBUG] Cache built with $(echo "$_PACKAGE_NAME_CACHE" | wc -l) entries" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] Sample entry: $(echo "$_PACKAGE_NAME_CACHE" | head -1)" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Sample cache entries:" >> "$CONFIG_DIR/debug.log"
+        echo "$_PACKAGE_NAME_CACHE" | grep "luci-theme-argon" >> "$CONFIG_DIR/debug.log"
     fi
     
     echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v pkg="$pkg_id" '
