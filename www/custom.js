@@ -4253,18 +4253,16 @@ function injectSettingsBar(temp) {
     const fileInput = template.querySelector('#import-file-input');
     
     if (settingsBar && fileInput) {
-        header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
-        document.body.appendChild(fileInput.cloneNode(true));
-        console.log('Settings bar injected');
-        
-        // #alertを#settings-barの前に移動して、エラーバーが確実に表示されるようにする
         const alertElement = document.getElementById('alert');
-        const injectedSettingsBar = document.getElementById('settings-bar');
-        if (alertElement && injectedSettingsBar) {
-            injectedSettingsBar.parentNode.insertBefore(alertElement, injectedSettingsBar);
-            console.log('Alert element repositioned before settings-bar');
+        if (alertElement) {
+            alertElement.parentNode.insertBefore(settingsBar.cloneNode(true), alertElement.nextSibling);
+            console.log('Settings bar injected after #alert');
+        } else {
+            header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
+            console.log('Settings bar injected after header (alert not found)');
         }
         
+        document.body.appendChild(fileInput.cloneNode(true));
         setupImportExport();
     }
 }
