@@ -1574,7 +1574,7 @@ EOF
         # rebootチェック
         local needs_reboot=$(needs_reboot_check)
         if [ "$needs_reboot" -eq 1 ]; then
-            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-required')\n\n$(translate 'tr-tui-reboot-question')"; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
             fi
         fi
