@@ -1876,41 +1876,41 @@ initialize_installed_packages() {
     local count=0
     
     # 通常パッケージ
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        
-        local pkg_id uid is_custom
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        is_custom=$(echo "$cache_line" | cut -d= -f12)
+    while read -r cache_line; do
+        [ -z "$cache_line" ] && continue
+        
+        local pkg_id uid is_custom
+        pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        uid=$(echo "$cache_line" | cut -d= -f3)
+        is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-        # カスタムフィードとして定義されているパッケージは通常カテゴリから除外
-        [ "$is_custom" = "1" ] && continue
-        
-        if is_package_installed "$pkg_id"; then
-            local already_selected=0
-            
-            if [ -n "$uid" ]; then
-                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            else
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            fi
-            
-            if [ "$already_selected" -eq 0 ]; then
-                # 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
-                local base_fields
-                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-                echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
-                count=$((count + 1))
-                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-    done <<EOF
+        # カスタムフィードとして定義されているパッケージは通常カテゴリから除外
+        [ "$is_custom" = "1" ] && continue
+        
+        if is_package_installed "$pkg_id"; then
+            local already_selected=0
+            
+            if [ -n "$uid" ]; then
+                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    already_selected=1
+                fi
+            else
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    already_selected=1
+                fi
+            fi
+            
+            if [ "$already_selected" -eq 0 ]; then
+                # 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
+                local base_fields
+                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+                echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+                count=$((count + 1))
+                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+    done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
     
