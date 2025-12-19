@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.0104"
+VERSION="R7.1219.2109"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -209,24 +209,20 @@ pkg_add() {
     local owner="${2:-auto}"
     local caller="${3:-normal}"
     local target_file
-    local is_custom_feed="0"  # デフォルトは通常パッケージ（0）
-
+    
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
-        is_custom_feed="1"  # カスタムフィードの場合のみ 1 に設定
     else
         target_file="$SELECTED_PACKAGES"
     fi
-
-    # 既存チェック：pkg_id または uniqueId で重複判定
+    
     if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
         debug_log "pkg_add: $pkg_id already exists, skipped"
         return 1
     fi
-
-    # エントリ追加：owner と isCustomFeed を明示的に設定
-    echo "${pkg_id}=${pkg_id}=========${owner}=${is_custom_feed}" >> "$target_file"
-    debug_log "pkg_add: $pkg_id (owner=$owner, isCustomFeed=$is_custom_feed, caller=$caller)"
+    
+    echo "${pkg_id}=${pkg_id}=========${owner}" >> "$target_file"
+    debug_log "pkg_add: $pkg_id (owner=$owner)"
     return 0
 }
 
@@ -242,14 +238,13 @@ pkg_remove() {
     local owner="${2:-}"
     local caller="${3:-normal}"
     local target_file
-
-    # カスタム優先
-    if grep -q "^${pkg_id}=.*=1$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+    
+    if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
     else
         target_file="$SELECTED_PACKAGES"
     fi
-
+    
     if [ -n "$owner" ]; then
         awk -F= -v target="$pkg_id" -v o="$owner" '
             !(($1 == target && $3 == "") || $3 == target) || $11 != o
@@ -259,9 +254,14 @@ pkg_remove() {
             !(($1 == target && $3 == "") || $3 == target)
         ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
     fi
-
-    debug_log "pkg_remove: $pkg_id from $target_file"
-    return 0
+    
+    if ! awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
+        debug_log "pkg_remove: $pkg_id (owner=${owner:-any})"
+        return 0
+    fi
+    
+    debug_log "pkg_remove: $pkg_id not found (owner=${owner:-any})"
+    return 1
 }
 
 # Check if package exists in selection list
@@ -276,28 +276,22 @@ pkg_exists() {
     local owner="${2:-}"
     local caller="${3:-normal}"
     local target_file
-    local found=1  # デフォルト not found
-
-    # カスタムフィードの場合を優先検索
-    if grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null && \
-       awk -F= '{print $12}' "$SELECTED_CUSTOM_PACKAGES" | grep -q "^${pkg_id}=" | grep -q "1"; then
+    
+    if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
-        found=0
     else
         target_file="$SELECTED_PACKAGES"
     fi
-
+    
     if [ -n "$owner" ]; then
         awk -F= -v target="$pkg_id" -v o="$owner" '
             (($1 == target && $3 == "") || $3 == target) && $11 == o
-        ' "$target_file" | grep -q . && found=0
+        ' "$target_file" | grep -q .
     else
         awk -F= -v target="$pkg_id" '
             ($1 == target && $3 == "") || $3 == target
-        ' "$target_file" | grep -q . && found=0
+        ' "$target_file" | grep -q .
     fi
-
-    return $found
 }
 
 # Get owner of a package
@@ -1871,77 +1865,79 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-    echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        get_package_name "dummy" >/dev/null 2>&1
-    fi
-    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+	echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
+	
+	if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+		get_package_name "dummy" >/dev/null 2>&1
+	fi
+	
+	[ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+	
+	local count=0
+	
+	# 通常パッケージ
+	while read -r cache_line; do
+		[ -z "$cache_line" ] && continue
+		
+		local pkg_id uid is_custom
+		pkg_id=$(echo "$cache_line" | cut -d= -f1)
+		uid=$(echo "$cache_line" | cut -d= -f3)
+		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-    local count=0
-    local processed_tmp="$CONFIG_DIR/processed_custom.tmp"
-    : > "$processed_tmp"  # 初期化
-
-    # === カスタムフィードを先に処理 ===
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        for cat_id in $(get_customfeed_categories); do
-            for pkg_id in $(get_category_packages "$cat_id"); do
-                local pattern exclude installed_pkgs
-                pattern=$(get_customfeed_package_pattern "$pkg_id")
-                exclude=$(get_customfeed_package_exclude "$pkg_id")
-                [ -z "$pattern" ] && continue
-                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                [ -z "$installed_pkgs" ] && continue
-
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
-                    echo "$pkg_id" >> "$processed_tmp"  # 処理済みフラグ
-                    count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-                fi
-            done
-        done
-    fi
-
-    # === 通常パッケージ処理（カスタム処理済みを除外） ===
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        local pkg_id uid is_custom
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        is_custom=$(echo "$cache_line" | cut -d= -f12)
-
-        # カスタム定義または既にカスタムで処理済みならスキップ
-        if [ "$is_custom" = "1" ] || grep -q "^${pkg_id}$" "$processed_tmp"; then
-            continue
-        fi
-
-        if is_package_installed "$pkg_id"; then
-            local already_selected=0
-            if [ -n "$uid" ]; then
-                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "=${uid}$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            else
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            fi
-
-            if [ "$already_selected" -eq 0 ]; then
-                local base_fields
-                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-                echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
-                count=$((count + 1))
-                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-    done <<EOF
+		# カスタムフィードとして定義されているパッケージは通常カテゴリから除外
+		[ "$is_custom" = "1" ] && continue
+		
+		if is_package_installed "$pkg_id"; then
+			local already_selected=0
+			
+			if [ -n "$uid" ]; then
+				if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+				   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+					already_selected=1
+				fi
+			else
+				if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+					already_selected=1
+				fi
+			fi
+			
+			if [ "$already_selected" -eq 0 ]; then
+				# 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
+				local base_fields
+				base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+				echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+				count=$((count + 1))
+				echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+			fi
+		fi
+	done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
-
-    rm -f "$processed_tmp"  # クリーンアップ
-    echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
+	
+	# カスタムフィード
+	if [ -f "$CUSTOMFEEDS_JSON" ]; then
+		for cat_id in $(get_customfeed_categories); do
+			for pkg_id in $(get_category_packages "$cat_id"); do
+				local pattern exclude installed_pkgs
+				pattern=$(get_customfeed_package_pattern "$pkg_id")
+				exclude=$(get_customfeed_package_exclude "$pkg_id")
+				
+				[ -z "$pattern" ] && continue
+				
+				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+				
+				[ -z "$installed_pkgs" ] && continue
+				
+				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
+					count=$((count + 1))
+					echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+				fi
+			done
+		done
+	fi
+	
+	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
 
 is_package_selected() {
