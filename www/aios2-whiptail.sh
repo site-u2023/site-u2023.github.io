@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1217.1112"
+VERSION="R7.1219.1021"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1508,12 +1508,12 @@ EOF
                 fi
             done
         fi
-    
+        
         # ========================================
         # 7. クリーンアップ
         # ========================================
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
-    
+        
         rm -f "$CONFIG_DIR"/script_vars_*.txt
         rm -f "$CONFIG_DIR"/customscripts-*.sh
         rm -f "$CONFIG_DIR"/temp_*.txt
@@ -1526,17 +1526,65 @@ EOF
         
         echo ""
         
-        if [ "$failed_count" -gt 0 ]; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
-
-Warning: $failed_count script(s) failed:
-$failed_scripts"
-        else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+        # ========================================
+        # 8. 完了サマリー生成
+        # ========================================
+        local summary=""
+        local has_changes=0
+        
+        if [ "$HAS_REMOVE" -eq 1 ]; then
+            local remove_count=$(echo "$packages_to_remove" | wc -w)
+            summary="${summary}$(translate 'tr-tui-summary-removed'): ${remove_count}\n"
+            has_changes=1
         fi
-    fi
-    
-    return 0
+        
+        if [ "$HAS_INSTALL" -eq 1 ]; then
+            local install_count=$(echo "$install_packages_content" | grep -c '^' 2>/dev/null || echo 0)
+            summary="${summary}$(translate 'tr-tui-summary-installed'): ${install_count}\n"
+            has_changes=1
+        fi
+        
+        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
+            local feed_count=0
+            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                [ -f "$script" ] || continue
+                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+                feed_count=$((feed_count + 1))
+            done
+            if [ "$feed_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${feed_count}\n"
+                has_changes=1
+            fi
+        fi
+        
+        if [ "$HAS_SETUP" -eq 1 ]; then
+            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
+            if [ "$setup_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-settings'): ${setup_count}\n"
+                has_changes=1
+            fi
+        fi
+        
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            local script_count=$(ls "$CONFIG_DIR"/script_vars_*.txt 2>/dev/null | wc -l)
+            if [ "$script_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-scripts'): ${script_count}\n"
+                has_changes=1
+            fi
+        fi
+        
+        # メッセージ表示
+        if [ "$has_changes" -eq 1 ]; then
+            if [ "$failed_count" -gt 0 ]; then
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}\n$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):\n$failed_scripts"
+            else
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}"
+            fi
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
+        fi
+        
+        return 0
 }
 
 whiptail_main_menu() {
