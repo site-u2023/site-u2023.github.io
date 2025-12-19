@@ -24,20 +24,21 @@ debug_log() {
 # 【Package Cache Structure】
 # 
 # 1. _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner
+#    id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner=isCustomFeed
 #
 # Field details:
-#   1. id              - Package name for installation
-#   2. name            - Display name in UI
-#   3. uniqueId        - Unique identifier (for multiple entries with same id)
-#   4. installOptions  - Installation option key (e.g. "ignoreDeps")
-#   5. enableVar       - Variable name to set in setup.sh when selected
-#   6. dependencies    - Comma-separated list of dependency package ids
-#   7. hidden          - "true" if hidden, "false" otherwise
-#   8. virtual         - "true" to skip availability check, "false" otherwise
-#   9. reboot          - "true" if reboot required, "false" otherwise
-#  10. checked         - "true" if selected by default, "false" otherwise
-#  11. owner           - Package ownership: "system", "auto", "user", or empty
+#    1. id              - Package name for installation
+#    2. name            - Display name in UI
+#    3. uniqueId        - Unique identifier (for multiple entries with same id)
+#    4. installOptions  - Installation option key (e.g. "ignoreDeps")
+#    5. enableVar       - Variable name to set in setup.sh when selected
+#    6. dependencies    - Comma-separated list of dependency package ids
+#    7. hidden          - "true" if hidden, "false" otherwise
+#    8. virtual         - "true" to skip availability check, "false" otherwise
+#    9. reboot          - "true" if reboot required, "false" otherwise
+#   10. checked         - "true" if selected by default, "false" otherwise
+#   11. owner           - Package ownership: "system", "auto", "user", or empty
+#   12. isCustomFeed    - "1" if managed by custom feed, "0" otherwise
 #
 # 【Package Ownership (owner field)】
 # Determines package lifecycle and removal policy:
@@ -1725,7 +1726,7 @@ get_package_name() {
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" "0"
                 }
             }')
         
@@ -1759,7 +1760,9 @@ get_package_name() {
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
+                        isCustom="0";
+                        for(i=1;i<=NF;i++) if($i=="isCustomFeed" && $(i+2)=="true") isCustom="1";
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" isCustom
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -3796,52 +3799,51 @@ detect_packages_to_remove() {
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
     
-    # 通常パッケージ
+    # ----------------------------------------
+    # Phase 1: 通常パッケージ判定
+    # ----------------------------------------
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
-        local pkg_id uid owner
+        local pkg_id uid owner is_custom
         pkg_id=$(echo "$cache_line" | cut -d= -f1)
         uid=$(echo "$cache_line" | cut -d= -f3)
         owner=$(echo "$cache_line" | cut -d= -f11)
+        # キャッシュから12番目のフラグを取得
+        is_custom=$(echo "$cache_line" | cut -d= -f12)
         
-        # owner=auto または owner=system は除外
-        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
-            echo "[DEBUG] Skipping $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+        # カスタムフィード管理下のパッケージなら、Phase 1 では絶対にスキップ
+        if [ "$is_custom" = "1" ]; then
             continue
         fi
         
-        # インストール済みチェック
+        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
+            continue
+        fi
+        
         is_package_installed "$pkg_id" || continue
         
-        # 選択済みチェック
         local still_selected=0
         if [ -n "$uid" ]; then
-            if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-               grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                still_selected=1
-            fi
+            grep -q "=${uid}[=\$]" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
         else
-            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                still_selected=1
-            fi
+            grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
         fi
         
         if [ "$still_selected" -eq 0 ]; then
             remove_list="${remove_list}${pkg_id} "
-            echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
         fi
     done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
     
-    # ========================================
-    # 言語パッケージの削除検出（初期スナップショット比較方式）
-    # ========================================
+    # ----------------------------------------
+    # Phase 2: 言語パッケージの削除検出（初期スナップショット比較方式）
+    # ----------------------------------------
     local new_lang
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
 
-    # ★★★ 修正：new_lang が空なら言語パッケージは削除しない ★★★
+    # new_lang が空なら言語パッケージは削除しない
     if [ -n "$new_lang" ]; then
         # 初期スナップショットをロード
         local initial_lang_pkgs=""
@@ -3874,7 +3876,9 @@ EOF2
         fi
     fi
     
-    # カスタムフィード
+    # ----------------------------------------
+    # Phase 3: カスタムフィード判定
+    # ----------------------------------------
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
@@ -3889,6 +3893,7 @@ EOF2
                 
                 [ -z "$installed_pkgs" ] && continue
                 
+                # キャッシュ(SELECTED_CUSTOM_PACKAGES)に無ければ削除
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     while read -r installed_pkg; do
                         [ -z "$installed_pkg" ] && continue
