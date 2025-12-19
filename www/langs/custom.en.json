@@ -181,7 +181,7 @@
     "tr-tui-postinst-not-found": "postinst.sh file not found",
     "tr-tui-setup-not-found": "setup.sh file not found",
     "tr-tui-apply-confirm-step1": "1. Packages (postinst.sh)",
-    "tr-tui-apply-confirm-step2": "2. Custom feed packages (customfeeds.sh)",
+    "tr-tui-apply-confirm-step2": "2. Custom feeds (customfeeds.sh)",
     "tr-tui-apply-confirm-step3": "3. Apply configuration (setup.sh)",
     "tr-tui-apply-confirm-step4": "4. Custom scripts (customscripts.sh)",
     "tr-tui-apply-confirm-step5": "5. Reboot (confirmation required)",
@@ -195,6 +195,15 @@
     "tr-tui-removing-packages": "Removing packages...",
     "tr-tui-removal-completed": "Package removal completed",
     "tr-tui-package-removal-failed": "Package removal failed",
+    
+    "tr-tui-summary-removed": "Removed",
+    "tr-tui-summary-installed": "Installed",
+    "tr-tui-summary-customfeeds": "Custom Feeds",
+    "tr-tui-summary-settings": "Setting Variables",
+    "tr-tui-summary-scripts": "Custom Scripts",
+    "tr-tui-no-changes-applied": "No changes were applied",
+    "tr-tui-warning": "Warning",
+    "tr-tui-script-failed": "script(s) failed",
     
     "tr-tui-space-toggle": "Space=toggle",
     
@@ -211,7 +220,7 @@
     "tr-tui-isp-info": "ISP Information:",
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
 
-    "tr-tui-custom-feeds": "Custom Feed Packages",
+    "tr-tui-custom-feeds": "Custom Feeds",
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository" ,
     "tr-tui-custom-scripts": "Custom Scripts",
@@ -240,7 +249,7 @@
     "tr-tui-installing-custom-scripts": "Executing custom scripts",
     "tr-tui-no-custom-scripts":  "No scripts selected",
     "tr-tui-summary-packages": "Packages",
-    "tr-tui-summary-customfeeds": "Custom Feed Packages",
+    "tr-tui-summary-customfeeds": "Custom Feeds",
     "tr-tui-summary-variables": "Configuration Variables",
     "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-no-config": "No configuration items",
