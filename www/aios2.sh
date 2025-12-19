@@ -1902,8 +1902,11 @@ initialize_installed_packages() {
             fi
             
             if [ "$already_selected" -eq 0 ]; then
-                # owner=system として追加
-                local line_with_owner="${cache_line%=*}=system"
+                # 11番目のownerをsystemに、12番目のisCustomは0として再構成
+                local base_fields
+                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+                local line_with_owner="${base_fields}=system=0"
+                
                 echo "$line_with_owner" >> "$SELECTED_PACKAGES"
                 count=$((count + 1))
                 echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
