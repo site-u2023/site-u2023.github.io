@@ -2114,6 +2114,33 @@ remove_package_with_dependencies() {
     else
         target_file="$SELECTED_PACKAGES"
     fi
+
+    # 言語パックも削除
+    if [ "$caller" != "custom_feeds" ]; then
+        local patterns=$(get_language_module_patterns)
+        local module_name=""
+        
+        for pattern in $patterns; do
+            case "$pkg_id" in
+                ${pattern}*)
+                    module_name="${pkg_id#$pattern}"
+                    break
+                    ;;
+            esac
+        done
+        
+        if [ -n "$module_name" ]; then
+            # インストール済み言語を検出
+            local installed_lang
+            installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+            
+            if [ -n "$installed_lang" ]; then
+                local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
+                awk -F= -v target="$lang_pkg" '!(($1 == target && $3 == "") || $3 == target)' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
+                debug_log "[LANG] Removed language package: $lang_pkg (parent $pkg_id removed)"
+            fi
+        fi
+    fi
     
     # Get dependencies before removing
     local deps
