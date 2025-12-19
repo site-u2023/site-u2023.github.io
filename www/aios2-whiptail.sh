@@ -1510,24 +1510,7 @@ EOF
         fi
         
         # ========================================
-        # 7. クリーンアップ
-        # ========================================
-        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
-        
-        rm -f "$CONFIG_DIR"/script_vars_*.txt
-        rm -f "$CONFIG_DIR"/customscripts-*.sh
-        rm -f "$CONFIG_DIR"/temp_*.txt
-        rm -f "$CONFIG_DIR"/*_snapshot*.txt
-        rm -f "$CONFIG_DIR/execution_plan.sh"
-
-        reset_state_for_next_session
-        
-        echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
-        
-        echo ""
-        
-        # ========================================
-        # 8. 完了サマリー生成
+        # 7. 完了サマリー生成
         # ========================================
         local summary=""
         local has_changes=0
