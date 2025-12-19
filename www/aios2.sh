@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.001"8
+VERSION="R7.1220.0020"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1875,7 +1875,7 @@ initialize_installed_packages() {
 	
 	local count=0
 
-	# キャッシュを回し、各 pkg_id を既存の存在確認関数に通す
+	# キャッシュ（$_PACKAGE_NAME_CACHE）を一回だけ回す
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
@@ -1884,21 +1884,20 @@ initialize_installed_packages() {
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# パッケージ存在確認関数に通す。結果が真ならリストへ。
+		# 指示通り、既存のパッケージ存在確認関数に pkg_id を通す
 		if is_package_installed "$pkg_id"; then
 			
-			# 12番目のフラグ(is_custom)が1ならカスタムリストへ
+			# 12番目のフラグ(is_custom)が1（カスタムフィード）の場合
 			if [ "$is_custom" = "1" ]; then
 				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
 					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
 					count=$((count + 1))
 				fi
 			
-			# それ以外(0)なら通常リストへ
+			# 12番目のフラグが0（通常パッケージ）の場合
 			else
 				local already_selected=0
 				if [ -n "$uid" ]; then
-					# 重複チェックを行い、無ければ追記
 					if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
 					   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
 						already_selected=1
@@ -1912,6 +1911,7 @@ initialize_installed_packages() {
 				if [ "$already_selected" -eq 0 ]; then
 					local base_fields
 					base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+					# 通常パッケージ用ファイルに書き出し
 					echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
 					count=$((count + 1))
 				fi
@@ -1920,6 +1920,8 @@ initialize_installed_packages() {
 	done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
+	
+	# 重複の元凶だった「後半のカスタムフィード専用ループ」は削除
 	
 	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
