@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.2358"
+VERSION="R7.1219.2359"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1865,7 +1865,7 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-	echo "[DEBUG] Initializing packages..." >> "$CONFIG_DIR/debug.log"
+	echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
 	
 	if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
 		get_package_name "dummy" >/dev/null 2>&1
@@ -1875,7 +1875,7 @@ initialize_installed_packages() {
 	
 	local count=0
 	
-	# キャッシュを1回だけ走査して、インストール済みパッケージの「初期状態」を作る
+	# 通常・カスタム問わず、キャッシュにある全パッケージを1回だけ走査
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
@@ -1884,18 +1884,17 @@ initialize_installed_packages() {
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# すでにシステムにインストールされているパッケージのみをスキャンして
-		# リムーブ用リスト（SELECTED_PACKAGES等）に初期登録する
+		# システムに導入済みか確認
 		if is_package_installed "$pkg_id"; then
 			
-			# 1. カスタムフィード（isCustomFeed=1）
+			# カスタムフィードフラグ(12番目)が1なら専用リストへ
 			if [ "$is_custom" = "1" ]; then
 				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
 					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
 					count=$((count + 1))
 				fi
 			
-			# 2. 通常パッケージ（isCustomFeed=0）
+			# それ以外(0または空)なら通常リストへ
 			else
 				local already_selected=0
 				if [ -n "$uid" ]; then
@@ -1916,7 +1915,7 @@ initialize_installed_packages() {
 $_PACKAGE_NAME_CACHE
 EOF
 	
-	echo "[DEBUG] Initialized $count packages as 'system' (installed)" >> "$CONFIG_DIR/debug.log"
+	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
 
 is_package_selected() {
