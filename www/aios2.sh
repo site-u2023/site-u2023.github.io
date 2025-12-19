@@ -1865,7 +1865,7 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-	echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
+	echo "[DEBUG] Initializing packages..." >> "$CONFIG_DIR/debug.log"
 	
 	if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
 		get_package_name "dummy" >/dev/null 2>&1
@@ -1875,48 +1875,40 @@ initialize_installed_packages() {
 	
 	local count=0
 	
-	# キャッシュ（$_PACKAGE_NAME_CACHE）を回して一括処理
+	# キャッシュを1回だけ走査して、インストール済みパッケージの「初期状態」を作る
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
-		# フィールド定義に基づき取得（12番目がisCustomFeedフラグ）
 		local pkg_id uid is_custom
 		pkg_id=$(echo "$cache_line" | cut -d= -f1)
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# インストール済みパッケージのみを対象とする
+		# すでにシステムにインストールされているパッケージのみをスキャンして
+		# リムーブ用リスト（SELECTED_PACKAGES等）に初期登録する
 		if is_package_installed "$pkg_id"; then
 			
-			# 12番目のフラグが1（カスタムフィード）の場合
+			# 1. カスタムフィード（isCustomFeed=1）
 			if [ "$is_custom" = "1" ]; then
 				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
 					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
 					count=$((count + 1))
-					echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
 				fi
 			
-			# 12番目のフラグが0（通常パッケージ）の場合
+			# 2. 通常パッケージ（isCustomFeed=0）
 			else
 				local already_selected=0
 				if [ -n "$uid" ]; then
-					if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-					   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-						already_selected=1
-					fi
+					grep -q "=${uid}[=\$]" "$SELECTED_PACKAGES" 2>/dev/null && already_selected=1
 				else
-					if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-						already_selected=1
-					fi
+					grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && already_selected=1
 				fi
 				
 				if [ "$already_selected" -eq 0 ]; then
-					# 11番目をsystemに、12番目を0（isCustomFeedなし）として保存
 					local base_fields
 					base_fields=$(echo "$cache_line" | cut -d= -f1-10)
 					echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
 					count=$((count + 1))
-					echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
 				fi
 			fi
 		fi
@@ -1924,7 +1916,7 @@ initialize_installed_packages() {
 $_PACKAGE_NAME_CACHE
 EOF
 	
-	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
+	echo "[DEBUG] Initialized $count packages as 'system' (installed)" >> "$CONFIG_DIR/debug.log"
 }
 
 is_package_selected() {
