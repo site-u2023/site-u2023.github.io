@@ -976,7 +976,7 @@ EOF
     done
 }
 
-package_selection() {
+XXXXX_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -1280,6 +1280,210 @@ EOF
                 show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
             fi
         fi
+    done
+}
+
+package_selection() {
+    local cat_id="$1"
+    local caller="${2:-normal}"
+    local parent_breadcrumb="$3"
+
+    local cat_name breadcrumb
+    cat_name=$(get_category_name "$cat_id")
+    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
+
+    if [ "$cat_id" = "language-pack" ]; then
+        show_language_selector "$breadcrumb"
+        return $?
+    fi
+
+    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+
+    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
+        get_package_name "dummy" > /dev/null 2>&1
+        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
+    fi
+
+    local packages
+    packages=$(get_category_packages "$cat_id")
+
+    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
+    echo "$packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
+
+    # ----------------------------------------
+    # 依存パッケージID取得（1階層目）
+    # ----------------------------------------
+    local dependent_ids=" "
+
+    while read -r parent_id; do
+        [ -z "$parent_id" ] && continue
+
+        local deps
+        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$parent_id" '
+            $1 == id || $3 == id { print $6; exit }
+        ')
+
+        echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
+
+        echo "$deps" | tr ',' '\n' | while read -r dep; do
+            [ -z "$dep" ] && continue
+
+            local line
+            line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v d="$dep" '
+                $1 == d || $3 == d { print; exit }
+            ')
+
+            if [ -n "$line" ]; then
+                local did uid
+                did=$(echo "$line" | cut -d= -f1)
+                uid=$(echo "$line" | cut -d= -f3)
+
+                if [ -n "$uid" ]; then
+                    dependent_ids="${dependent_ids}${did} ${uid} "
+                else
+                    dependent_ids="${dependent_ids}${did} "
+                fi
+            fi
+        done
+    done <<EOF
+$packages
+EOF
+
+    dependent_ids="${dependent_ids} "
+    echo "[DEBUG] Final dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
+
+    # ----------------------------------------
+    # UI ループ
+    # ----------------------------------------
+    while true; do
+        checklist_items=""
+        idx=1
+        display_names=""
+
+        # ★ 追加：表示済み pkg_id 管理
+        local shown_pkg_ids=""
+
+        while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+
+            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
+
+            local entry
+            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '
+                $1 == id || $3 == id { print; exit }
+            ')
+
+            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
+            [ -z "$entry" ] && continue
+
+            local real_id pkg_name uid hidden_flag virtual_flag pkg_owner
+            real_id=$(echo "$entry" | cut -d= -f1)
+            pkg_name=$(echo "$entry" | cut -d= -f2)
+            uid=$(echo "$entry" | cut -d= -f3)
+            hidden_flag=$(echo "$entry" | cut -d= -f7)
+            virtual_flag=$(echo "$entry" | cut -d= -f8)
+            pkg_owner=$(echo "$entry" | cut -d= -f11)
+
+            echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
+
+            # ★ 追加：UI 重複表示防止
+            if echo "$shown_pkg_ids" | grep -qx "$real_id"; then
+                echo "[DEBUG] Skipping duplicate display: $real_id" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+            shown_pkg_ids="${shown_pkg_ids}${real_id}
+"
+
+            # 所有者チェック
+            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
+                echo "[DEBUG] Package $real_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
+
+            # 依存判定
+            local is_dependent=0
+            echo " ${dependent_ids} " | grep -q " ${real_id} " && is_dependent=1
+            [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} " && is_dependent=1
+
+            # hidden 判定
+            if [ "$is_dependent" -eq 0 ] && [ "$hidden_flag" = "true" ]; then
+                continue
+            fi
+
+            # availability 判定
+            local avail_caller="$caller"
+            [ "$is_dependent" -eq 1 ] && avail_caller="dependent"
+
+            if [ "$virtual_flag" != "true" ] && ! check_package_available "$real_id" "$avail_caller"; then
+                continue
+            fi
+
+            local display_name="$pkg_name"
+            [ "$is_dependent" -eq 1 ] && display_name="   $pkg_name"
+
+            display_names="${display_names}${display_name}|${real_id}
+"
+
+            local status="OFF"
+            is_package_selected "$real_id" "$caller" && status="ON"
+
+            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
+            idx=$((idx+1))
+        done <<EOF
+$packages
+EOF
+
+        local tr_space_toggle
+        tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
+        local btn_refresh=$(translate "tr-tui-refresh")
+        local btn_back=$(translate "tr-tui-back")
+
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items") || return 0
+
+        local target_file
+        if [ "$caller" = "custom_feeds" ]; then
+            target_file="$SELECTED_CUSTOM_PACKAGES"
+        else
+            target_file="$SELECTED_PACKAGES"
+        fi
+
+        local old_selection=""
+        while read -r pid; do
+            [ -z "$pid" ] && continue
+            if awk -F= -v t="$pid" '($1==t && $3=="") || $3==t' "$target_file" | grep -q .; then
+                old_selection="${old_selection}${pid}
+"
+            fi
+        done <<EOF
+$packages
+EOF
+
+        local new_selection=""
+        for idx_str in $selected; do
+            local idx_clean pkg_id
+            idx_clean=$(echo "$idx_str" | tr -d '"')
+            pkg_id=$(echo "$display_names" | sed -n "${idx_clean}p" | cut -d'|' -f2)
+            [ -n "$pkg_id" ] && new_selection="${new_selection}${pkg_id}
+"
+        done
+
+        while read -r pid; do
+            [ -z "$pid" ] && continue
+            echo "$old_selection" | grep -qx "$pid" || add_package_with_dependencies "$pid" "$caller"
+        done <<EOF
+$new_selection
+EOF
+
+        while read -r pid; do
+            [ -z "$pid" ] && continue
+            echo "$new_selection" | grep -qx "$pid" || remove_package_with_dependencies "$pid" "$caller"
+        done <<EOF
+$old_selection
+EOF
+
+        clear_selection_cache
     done
 }
 
