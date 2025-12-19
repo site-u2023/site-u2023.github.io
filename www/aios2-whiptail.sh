@@ -1335,16 +1335,13 @@ package_selection() {
                 $1 == d || $3 == d { print; exit }
             ')
 
-            if [ -n "$line" ]; then
-                local did uid
-                did=$(echo "$line" | cut -d= -f1)
-                uid=$(echo "$line" | cut -d= -f3)
+            echo "$packages" | grep -qx "$did" && continue
+            [ "$did" = "$parent_id" ] && continue
 
-                if [ -n "$uid" ]; then
-                    dependent_ids="${dependent_ids}${did} ${uid} "
-                else
-                    dependent_ids="${dependent_ids}${did} "
-                fi
+            if [ -n "$uid" ]; then
+                dependent_ids="${dependent_ids}${did} ${uid} "
+            else
+                dependent_ids="${dependent_ids}${did} "
             fi
         done
     done <<EOF
