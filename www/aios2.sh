@@ -296,10 +296,10 @@ pkg_exists() {
 
 # Get owner of a package
 # Args:
-#   $1 - pkg_id (required)
-#   $2 - caller: normal, custom_feeds (default: normal)
+#    $1 - pkg_id (required)
+#    $2 - caller: normal, custom_feeds (default: normal)
 # Returns:
-#   Prints owner value (system, auto, user, or empty)
+#    Prints owner value from the 11th field (system, auto, user, or empty)
 pkg_get_owner() {
     local pkg_id="$1"
     local caller="${2:-normal}"
@@ -311,7 +311,9 @@ pkg_get_owner() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    grep "^${pkg_id}=" "$target_file" 2>/dev/null | head -1 | sed 's/.*=\([^=]*\)$/\1/'
+    # sedによる末尾一致ではなく、フィールド番号指定(-f11)で取得
+    # これにより、将来的に12番目以降のフィールドがファイルに書き込まれても owner を正しく識別可能
+    grep "^${pkg_id}=" "$target_file" 2>/dev/null | head -1 | cut -d= -f11
 }
 
 clear_selection_cache() {
