@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.1247"
+VERSION="R7.1219.1304"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -215,8 +215,7 @@ pkg_add() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # Already exists check
-    if grep -q "^${pkg_id}=" "$target_file" 2>/dev/null; then
+    if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
         debug_log "pkg_add: $pkg_id already exists, skipped"
         return 1
     fi
@@ -237,7 +236,7 @@ pkg_remove() {
     local pkg_id="$1"
     local owner="${2:-}"
     local caller="${3:-normal}"
-    local target_file pattern
+    local target_file
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -245,15 +244,17 @@ pkg_remove() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # Build pattern based on owner filter
     if [ -n "$owner" ]; then
-        pattern="^${pkg_id}=.*=${owner}$"
+        awk -F= -v target="$pkg_id" -v o="$owner" '
+            !(($1 == target && $3 == "") || $3 == target) || $11 != o
+        ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
     else
-        pattern="^${pkg_id}="
+        awk -F= -v target="$pkg_id" '
+            !(($1 == target && $3 == "") || $3 == target)
+        ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
     fi
     
-    if grep -q "$pattern" "$target_file" 2>/dev/null; then
-        sed -i "/${pattern}/d" "$target_file"
+    if ! awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
         debug_log "pkg_remove: $pkg_id (owner=${owner:-any})"
         return 0
     fi
@@ -273,7 +274,7 @@ pkg_exists() {
     local pkg_id="$1"
     local owner="${2:-}"
     local caller="${3:-normal}"
-    local target_file pattern
+    local target_file
     
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
@@ -281,14 +282,15 @@ pkg_exists() {
         target_file="$SELECTED_PACKAGES"
     fi
     
-    # Build pattern based on owner filter
     if [ -n "$owner" ]; then
-        pattern="^${pkg_id}=.*=${owner}$"
+        awk -F= -v target="$pkg_id" -v o="$owner" '
+            (($1 == target && $3 == "") || $3 == target) && $11 == o
+        ' "$target_file" | grep -q .
     else
-        pattern="^${pkg_id}="
+        awk -F= -v target="$pkg_id" '
+            ($1 == target && $3 == "") || $3 == target
+        ' "$target_file" | grep -q .
     fi
-    
-    grep -q "$pattern" "$target_file" 2>/dev/null
 }
 
 # Get owner of a package
@@ -1873,7 +1875,6 @@ initialize_installed_packages() {
                 # owner=system として追加
                 local line_with_owner="${cache_line%=*}=system"
                 echo "$line_with_owner" >> "$SELECTED_PACKAGES"
-                echo "$line_with_owner" >> "$CONFIG_DIR/installed_snapshot.txt"
                 count=$((count + 1))
                 echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
             fi
@@ -1912,21 +1913,24 @@ is_package_selected() {
     local identifier="$1"
     local caller="${2:-normal}"
     
-    # 初回のみファイルをキャッシュ
     if [ "$caller" = "custom_feeds" ]; then
         if [ "$_SELECTED_CUSTOM_CACHE_LOADED" -eq 0 ]; then
             _SELECTED_CUSTOM_CACHE=$(cat "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || true)
             _SELECTED_CUSTOM_CACHE_LOADED=1
         fi
-        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}=" || \
-        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}\$"
+        # ★ 修正：id または uniqueId でマッチング（awk使用）
+        echo "$_SELECTED_CUSTOM_CACHE" | awk -F= -v target="$identifier" '
+            ($1 == target && $3 == "") || $3 == target
+        ' | grep -q .
     else
         if [ "$_SELECTED_PACKAGES_CACHE_LOADED" -eq 0 ]; then
             _SELECTED_PACKAGES_CACHE=$(cat "$SELECTED_PACKAGES" 2>/dev/null || true)
             _SELECTED_PACKAGES_CACHE_LOADED=1
         fi
-        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}=" || \
-        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}\$"
+        # ★ 修正：id または uniqueId でマッチング（awk使用）
+        echo "$_SELECTED_PACKAGES_CACHE" | awk -F= -v target="$identifier" '
+            ($1 == target && $3 == "") || $3 == target
+        ' | grep -q .
     fi
 }
 
@@ -3887,13 +3891,7 @@ detect_packages_to_remove() {
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
     
-    # スナップショットファイルが存在しない場合は何もしない
-    if [ ! -f "$CONFIG_DIR/installed_snapshot.txt" ]; then
-        echo "[DEBUG] No installed snapshot found" >> "$CONFIG_DIR/debug.log"
-        return 0
-    fi
-    
-    # スナップショットから読み取る（owner情報を含む）
+    # 通常パッケージ
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
@@ -3928,7 +3926,9 @@ detect_packages_to_remove() {
             remove_list="${remove_list}${pkg_id} "
             echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
         fi
-    done < "$CONFIG_DIR/installed_snapshot.txt"
+    done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
     
     # ========================================
     # 言語パッケージの削除検出（初期スナップショット比較方式）
