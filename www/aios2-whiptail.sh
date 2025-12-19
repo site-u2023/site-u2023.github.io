@@ -1405,11 +1405,14 @@ EOF
         clear
         
         echo "Generating installation scripts..."
+        
+        # ★★★ 修正：実行前のサマリーを保存 ★★★
+        local pre_execution_summary="$CONFIG_DIR/pre_execution_summary.txt"
+        cp "$summary_file" "$pre_execution_summary"
+        
         generate_files
         
-        # ========================================
         # 実行計画ファイルを読み込み
-        # ========================================
         local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
         
         if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
@@ -1439,7 +1442,7 @@ EOF
         fi
         
         # ========================================
-        # 2. パッケージマネージャー更新（インストール対象がある場合のみ）
+        # 2. パッケージマネージャー更新
         # ========================================
         update_package_manager
         
@@ -1516,62 +1519,40 @@ EOF
         fi
         
         # ========================================
-        # 7. 完了サマリー生成
+        # 7. 完了サマリー生成（★★★ 修正：実行前のサマリーを使用 ★★★）
         # ========================================
-        local summary=""
-        local has_changes=0
+        local final_message=""
+        
+        # 実行前のサマリーから情報を抽出
+        if [ -f "$pre_execution_summary" ]; then
+            final_message="$(translate 'tr-tui-config-applied')
 
-        if [ "$HAS_REMOVE" -eq 1 ] && [ -n "$packages_to_remove" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
-            summary="${summary}$(echo "$packages_to_remove" | tr ' ' '\n' | sed 's/^/ - /')\n\n"
-            has_changes=1
-        fi
-
-        if [ "$HAS_INSTALL" -eq 1 ] && [ -n "$install_packages_content" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
-            summary="${summary}$(echo "$install_packages_content" | sed 's/^/ - /')\n\n"
-            has_changes=1
-        fi
-        
-        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
-            local feed_count=0
-            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                [ -f "$script" ] || continue
-                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
-                feed_count=$((feed_count + 1))
-            done
-            if [ "$feed_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${feed_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        if [ "$HAS_SETUP" -eq 1 ]; then
-            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
-            if [ "$setup_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-settings'): ${setup_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            local script_count=$(ls "$CONFIG_DIR"/script_vars_*.txt 2>/dev/null | wc -l)
-            if [ "$script_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-scripts'): ${script_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        # メッセージ表示
-        if [ "$has_changes" -eq 1 ]; then
-            if [ "$failed_count" -gt 0 ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}\n$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):\n$failed_scripts"
-            else
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}"
-            fi
+$(cat "$pre_execution_summary")"
         else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
+            # フォールバック：実行計画から構築
+            if [ "$HAS_REMOVE" -eq 1 ] || [ "$HAS_INSTALL" -eq 1 ] || [ "$HAS_CUSTOMFEEDS" -eq 1 ] || [ "$HAS_SETUP" -eq 1 ] || [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+                final_message="$(translate 'tr-tui-config-applied')
+
+"
+                [ "$HAS_REMOVE" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-removed')\n"
+                [ "$HAS_INSTALL" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-installed')\n"
+                [ "$HAS_CUSTOMFEEDS" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-customfeeds')\n"
+                [ "$HAS_SETUP" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-settings')\n"
+                [ "$HAS_CUSTOMSCRIPTS" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-scripts')\n"
+            else
+                final_message="$(translate 'tr-tui-no-changes-applied')"
+            fi
         fi
+        
+        # エラーがあれば追加
+        if [ "$failed_count" -gt 0 ]; then
+            final_message="${final_message}
+
+$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):
+$failed_scripts"
+        fi
+        
+        show_msgbox "$breadcrumb" "$final_message"
     fi
     
     return 0
