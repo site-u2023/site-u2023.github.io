@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1219.1021"
+VERSION="R7.1217.1112"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1335,10 +1335,6 @@ EOF
 }
 
 review_and_apply() {
-
-    echo "[DEBUG] Generating summary at $(date)" >> "$CONFIG_DIR/debug.log"
-    ls -la "$SELECTED_PACKAGES" "$SELECTED_CUSTOM_PACKAGES" >> "$CONFIG_DIR/debug.log" 2>&1
-        
     local need_fetch=0
     
     [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
@@ -1374,8 +1370,6 @@ EOF
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-
-    cache_installed_packages
     
     summary_file=$(generate_config_summary)
     
@@ -1405,14 +1399,11 @@ EOF
         clear
         
         echo "Generating installation scripts..."
-        
-        # 実行前のサマリーを保存
-        local pre_execution_summary="$CONFIG_DIR/pre_execution_summary.txt"
-        cp "$summary_file" "$pre_execution_summary"
-        
         generate_files
         
+        # ========================================
         # 実行計画ファイルを読み込み
+        # ========================================
         local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
         
         if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
@@ -1442,7 +1433,7 @@ EOF
         fi
         
         # ========================================
-        # 2. パッケージマネージャー更新
+        # 2. パッケージマネージャー更新（インストール対象がある場合のみ）
         # ========================================
         update_package_manager
         
@@ -1517,47 +1508,32 @@ EOF
                 fi
             done
         fi
-        
+    
         # ========================================
-        # 7. 完了サマリー生成（実行前のサマリーを使用）
+        # 7. クリーンアップ
         # ========================================
-        local final_message=""
-        
-        # 実行前のサマリーから情報を抽出
-        if [ -f "$pre_execution_summary" ]; then
-            final_message="$(translate 'tr-tui-config-applied')
+        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
+    
+        rm -f "$CONFIG_DIR"/script_vars_*.txt
+        rm -f "$CONFIG_DIR"/customscripts-*.sh
+        rm -f "$CONFIG_DIR"/temp_*.txt
+        rm -f "$CONFIG_DIR"/*_snapshot*.txt
+        rm -f "$CONFIG_DIR/execution_plan.sh"
 
-$(cat "$pre_execution_summary")"
-        else
-            # フォールバック：実行計画から構築
-            if [ "$HAS_REMOVE" -eq 1 ] || [ "$HAS_INSTALL" -eq 1 ] || [ "$HAS_CUSTOMFEEDS" -eq 1 ] || [ "$HAS_SETUP" -eq 1 ] || [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-                final_message="$(translate 'tr-tui-config-applied')
-
-"
-                [ "$HAS_REMOVE" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-removed')\n"
-                [ "$HAS_INSTALL" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-installed')\n"
-                [ "$HAS_CUSTOMFEEDS" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-customfeeds')\n"
-                [ "$HAS_SETUP" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-settings')\n"
-                [ "$HAS_CUSTOMSCRIPTS" -eq 1 ] && final_message="${final_message}$(translate 'tr-tui-summary-scripts')\n"
-            else
-                final_message="$(translate 'tr-tui-no-changes-applied')"
-            fi
-        fi
-        
-        # エラーがあれば追加
-        if [ "$failed_count" -gt 0 ]; then
-            final_message="${final_message}
-
-$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):
-$failed_scripts"
-        fi
-        
-        show_msgbox "$breadcrumb" "$final_message"
-        
-        # 成功後の状態リセット
-        echo "[DEBUG] Resetting state for next session..." >> "$CONFIG_DIR/debug.log"
         reset_state_for_next_session
-        echo "[DEBUG] State reset completed" >> "$CONFIG_DIR/debug.log"
+        
+        echo "[DEBUG] Cleanup completed" >> "$CONFIG_DIR/debug.log"
+        
+        echo ""
+        
+        if [ "$failed_count" -gt 0 ]; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')
+
+Warning: $failed_count script(s) failed:
+$failed_scripts"
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')"
+        fi
     fi
     
     return 0
