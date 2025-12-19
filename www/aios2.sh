@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.1107"
+VERSION="R7.1219.1247"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1873,6 +1873,7 @@ initialize_installed_packages() {
                 # owner=system として追加
                 local line_with_owner="${cache_line%=*}=system"
                 echo "$line_with_owner" >> "$SELECTED_PACKAGES"
+                echo "$line_with_owner" >> "$CONFIG_DIR/installed_snapshot.txt"
                 count=$((count + 1))
                 echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
             fi
@@ -3886,7 +3887,13 @@ detect_packages_to_remove() {
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
     
-    # 通常パッケージ
+    # スナップショットファイルが存在しない場合は何もしない
+    if [ ! -f "$CONFIG_DIR/installed_snapshot.txt" ]; then
+        echo "[DEBUG] No installed snapshot found" >> "$CONFIG_DIR/debug.log"
+        return 0
+    fi
+    
+    # スナップショットから読み取る（owner情報を含む）
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         
@@ -3921,9 +3928,7 @@ detect_packages_to_remove() {
             remove_list="${remove_list}${pkg_id} "
             echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
         fi
-    done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
+    done < "$CONFIG_DIR/installed_snapshot.txt"
     
     # ========================================
     # 言語パッケージの削除検出（初期スナップショット比較方式）
