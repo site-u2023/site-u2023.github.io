@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.2109"
+VERSION="R7.1219.2353"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1875,67 +1875,54 @@ initialize_installed_packages() {
 	
 	local count=0
 	
-	# 通常パッケージ
+	# キャッシュ（$_PACKAGE_NAME_CACHE）を回して一括処理
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
+		# フィールド定義に基づき取得（12番目がisCustomFeedフラグ）
 		local pkg_id uid is_custom
 		pkg_id=$(echo "$cache_line" | cut -d= -f1)
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# カスタムフィードとして定義されているパッケージは通常カテゴリから除外
-		[ "$is_custom" = "1" ] && continue
-		
+		# インストール済みパッケージのみを対象とする
 		if is_package_installed "$pkg_id"; then
-			local already_selected=0
 			
-			if [ -n "$uid" ]; then
-				if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-				   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-					already_selected=1
-				fi
-			else
-				if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-					already_selected=1
-				fi
-			fi
-			
-			if [ "$already_selected" -eq 0 ]; then
-				# 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
-				local base_fields
-				base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-				echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
-				count=$((count + 1))
-				echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-			fi
-		fi
-	done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
-	
-	# カスタムフィード
-	if [ -f "$CUSTOMFEEDS_JSON" ]; then
-		for cat_id in $(get_customfeed_categories); do
-			for pkg_id in $(get_category_packages "$cat_id"); do
-				local pattern exclude installed_pkgs
-				pattern=$(get_customfeed_package_pattern "$pkg_id")
-				exclude=$(get_customfeed_package_exclude "$pkg_id")
-				
-				[ -z "$pattern" ] && continue
-				
-				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-				
-				[ -z "$installed_pkgs" ] && continue
-				
+			# 12番目のフラグが1（カスタムフィード）の場合
+			if [ "$is_custom" = "1" ]; then
 				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
 					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
 					count=$((count + 1))
 					echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
 				fi
-			done
-		done
-	fi
+			
+			# 12番目のフラグが0（通常パッケージ）の場合
+			else
+				local already_selected=0
+				if [ -n "$uid" ]; then
+					if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+					   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+						already_selected=1
+					fi
+				else
+					if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+						already_selected=1
+					fi
+				fi
+				
+				if [ "$already_selected" -eq 0 ]; then
+					# 11番目をsystemに、12番目を0（isCustomFeedなし）として保存
+					local base_fields
+					base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+					echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+					count=$((count + 1))
+					echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+				fi
+			fi
+		fi
+	done <<EOF
+$_PACKAGE_NAME_CACHE
+EOF
 	
 	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
