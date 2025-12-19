@@ -1103,10 +1103,10 @@ EOF
             fi
 
             # 所有権チェック（ystem または auto は UI に表示しない）
-            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
-                echo "[DEBUG] Package $pkg_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
+            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
+                echo "[DEBUG] Package $pkg_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
+                continue
+            fi
             
             # hidden チェック（キャッシュから取得したフラグを使用）
             if [ "$is_dependent" -eq 0 ]; then
