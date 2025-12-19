@@ -1878,9 +1878,10 @@ initialize_installed_packages() {
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
 
     local count=0
-    local custom_processed=""  # メモリ上で処理済みpkg_idを保持
+    local processed_tmp="$CONFIG_DIR/processed_custom.tmp"
+    : > "$processed_tmp"  # 初期化
 
-    # === カスタムフィード処理を優先 ===
+    # === カスタムフィードを先に処理 ===
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
@@ -1892,17 +1893,16 @@ initialize_installed_packages() {
                 [ -z "$installed_pkgs" ] && continue
 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    # owner=system と isCustomFeed=1 を明示的に設定
-                    echo "${pkg_id}=${pkg_id}=========system=1" >> "$SELECTED_CUSTOM_PACKAGES"
-                    custom_processed="${custom_processed}${pkg_id}"$'\n'  # 処理済み記録
+                    echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
+                    echo "$pkg_id" >> "$processed_tmp"  # 処理済みフラグ
                     count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id (owner=system, isCustomFeed=1)" >> "$CONFIG_DIR/debug.log"
+                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
             done
         done
     fi
 
-    # === 通常パッケージ処理 ===
+    # === 通常パッケージ処理（カスタム処理済みを除外） ===
     while read -r cache_line; do
         [ -z "$cache_line" ] && continue
         local pkg_id uid is_custom
@@ -1910,8 +1910,8 @@ initialize_installed_packages() {
         uid=$(echo "$cache_line" | cut -d= -f3)
         is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-        # カスタム定義または既にカスタムで処理済みの場合スキップ（重複登録防止）
-        if [ "$is_custom" = "1" ] || echo "$custom_processed" | grep -q "^${pkg_id}$"; then
+        # カスタム定義または既にカスタムで処理済みならスキップ
+        if [ "$is_custom" = "1" ] || grep -q "^${pkg_id}$" "$processed_tmp"; then
             continue
         fi
 
@@ -1940,6 +1940,7 @@ initialize_installed_packages() {
 $_PACKAGE_NAME_CACHE
 EOF
 
+    rm -f "$processed_tmp"  # クリーンアップ
     echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
 
