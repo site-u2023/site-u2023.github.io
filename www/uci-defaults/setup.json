@@ -190,7 +190,6 @@
       "luci-app-",
       "luci-proto-",
       "luci-mod-",
-      "luci-theme-"
     ],
     "language_exclude_patterns": [
       "kmod-",
