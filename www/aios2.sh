@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0933"
+VERSION="R7.1219.1107"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -3265,6 +3265,10 @@ reset_state_for_next_session() {
     # SETUP_VARS を完全にクリア（前回の設定は全て適用済み）
     : > "$SETUP_VARS"
 
+    # 現在の言語設定を再取得
+    get_language_code
+    [ -n "$AUTO_LANGUAGE" ] && set_var "language" "$AUTO_LANGUAGE"
+    
     # 選択キャッシュをリセット
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
