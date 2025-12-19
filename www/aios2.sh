@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0910"
+VERSION="R7.1219.0933"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1154,55 +1154,6 @@ check_package_available() {
 
     # メモリ内で検索（ディスクI/O不要）
     if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
-        debug_log "Package $real_id found in availability cache"
-        return 0
-    fi
-
-    debug_log "Package $real_id NOT found in availability cache"
-    return 1
-}
-
-XXX_check_package_available() {
-    local pkg_id="$1"
-    local caller="${2:-normal}"
-    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-
-    wait_for_package_cache
-
-    # custom_feeds は常に利用可能
-    if [ "$caller" = "custom_feeds" ]; then
-        return 0
-    fi
-
-    # キャッシュから virtual フラグを取得
-    local virtual_flag="false"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
-        [ -z "$virtual_flag" ] && virtual_flag="false"
-    fi
-    
-    # virtualパッケージは常に利用可能
-    if [ "$virtual_flag" = "true" ]; then
-        debug_log "Package $pkg_id is virtual, skipping availability check"
-        return 0
-    fi
-
-    # uniqueIdがあれば実際のIDに変換
-    local real_id="$pkg_id"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-        local cached_real_id
-        cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-        [ -n "$cached_real_id" ] && real_id="$cached_real_id"
-    fi
-
-    # キャッシュファイルが存在しなければ許可
-    if [ ! -f "$cache_file" ]; then
-        debug_log "Availability cache not found, allowing all packages"
-        return 0
-    fi
-
-    # ファイルから直接検索（echo経由のパイプを避ける）
-    if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
         debug_log "Package $real_id found in availability cache"
         return 0
     fi
@@ -3307,7 +3258,7 @@ EOF
 }
 
 # 前回確定分の破棄
-reset_state_for_next_session() {
+XXX_reset_state_for_next_session() {
     # 選択パッケージ（ファイル）
     rm -f "$SELECTED_PACKAGES"
     rm -f "$SELECTED_CUSTOM_PACKAGES"
@@ -3340,6 +3291,49 @@ reset_state_for_next_session() {
     initialize_installed_packages
     
     # スナップショットを再作成
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
+    clear_selection_cache
+}
+
+reset_state_for_next_session() {
+    # 選択パッケージ（ファイル）を削除
+    rm -f "$SELECTED_PACKAGES"
+    rm -f "$SELECTED_CUSTOM_PACKAGES"
+
+    # SETUP_VARS を完全にクリア（前回の設定は全て適用済み）
+    : > "$SETUP_VARS"
+
+    # 選択キャッシュをリセット
+    unset _SELECTED_PACKAGES_CACHE
+    unset _SELECTED_CUSTOM_CACHE
+    unset _INSTALLED_PACKAGES_CACHE
+    _SELECTED_PACKAGES_CACHE_LOADED=0
+    _SELECTED_CUSTOM_CACHE_LOADED=0
+    _INSTALLED_PACKAGES_LOADED=0
+    
+    # スナップショットファイルを削除（古い基準を破棄）
+    rm -f "$CONFIG_DIR/packages_initial_snapshot.txt"
+    rm -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    
+    # 生成済み実行スクリプトの削除
+    rm -f "$CONFIG_DIR/remove.sh"
+    rm -f "$CONFIG_DIR/postinst.sh"
+    rm -f "$CONFIG_DIR/setup.sh"
+    rm -f "$CONFIG_DIR"/customfeeds-*.sh
+    rm -f "$CONFIG_DIR"/customscripts-*.sh
+    rm -f "$CONFIG_DIR/execution_plan.sh"
+    
+    # apply後の最新インストール状態を取得
+    cache_installed_packages
+    
+    # インストール済みを初期選択として再生成（owner=system）
+    initialize_installed_packages
+    
+    # apply後の状態を新しいスナップショットとして保存
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
     echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
