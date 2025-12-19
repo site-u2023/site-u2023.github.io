@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.0011"
+VERSION="R7.1220.0013"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1875,7 +1875,7 @@ initialize_installed_packages() {
 	
 	local count=0
 
-	# キャッシュ（$_PACKAGE_NAME_CACHE）を1回だけ走査して、フラグで振り分ける
+	# キャッシュを回して、インストールされているものだけを正しいリストに振り分ける
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
@@ -1884,28 +1884,23 @@ initialize_installed_packages() {
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# すでにインストールされているもの（cacheにあるもの）を処理
+		# 1. そもそもシステムに存在するか確認（これを通さないと「ありません」になる）
 		if is_package_installed "$pkg_id"; then
 			
-			# 1. カスタムフィードフラグ(is_custom=1)が立っている場合
+			# 2. キャッシュのフラグ(is_custom=1)を見て振り分け
 			if [ "$is_custom" = "1" ]; then
+				# カスタムフィード側へ
 				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
 					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
 					count=$((count + 1))
 				fi
-			
-			# 2. 通常パッケージ(is_custom=0)の場合
 			else
+				# 通常パッケージ側へ（二重登録を防ぐため、ここでカスタム(1)は絶対に入れない）
 				local already_selected=0
 				if [ -n "$uid" ]; then
-					if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-					   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-						already_selected=1
-					fi
+					grep -q "=${uid}[=\$]" "$SELECTED_PACKAGES" 2>/dev/null && already_selected=1
 				else
-					if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-						already_selected=1
-					fi
+					grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && already_selected=1
 				fi
 				
 				if [ "$already_selected" -eq 0 ]; then
