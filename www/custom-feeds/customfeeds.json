@@ -12,6 +12,7 @@
         {
           "id": "luci-app-log-viewer",
           "pattern": "luci-app-log-viewer",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-app-log-viewer",
           "requiresUpdate": true,
@@ -23,6 +24,7 @@
         {
           "id": "luci-app-cpu-status",
           "pattern": "luci-app-cpu-status",
+          "isCustomFeed": true,
           "exclude": "luci-app-cpu-status-mini",
           "name": "luci-app-cpu-status",
           "requiresUpdate": false,
@@ -34,6 +36,7 @@
         {
           "id": "luci-app-cpu-perf",
           "pattern": "luci-app-cpu-perf",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-app-cpu-perf",
           "requiresUpdate": true,
@@ -45,6 +48,7 @@
         {
           "id": "luci-app-temp-status",
           "pattern": "luci-app-temp-status",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-app-temp-status",
           "requiresUpdate": true,
@@ -56,6 +60,7 @@
         {
           "id": "luci-app-disks-info",
           "pattern": "luci-app-disks-info",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-app-disks-info",
           "requiresUpdate": true,
@@ -67,6 +72,7 @@
         {
           "id": "internet-detector",
           "pattern": "internet-detector_",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "internet-detector",
           "requiresUpdate": true,
@@ -79,6 +85,7 @@
         {
           "id": "luci-app-internet-detector",
           "pattern": "luci-app-internet-detector",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-app-internet-detector",
           "requiresUpdate": false,
@@ -90,6 +97,7 @@
         {
           "id": "internet-detector-mod-modem",
           "pattern": "internet-detector-mod-modem",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "internet-detector-mod-modem",
           "requiresUpdate": true,
@@ -102,6 +110,7 @@
         {
           "id": "internet-detector-mod-email",
           "pattern": "internet-detector-mod-email",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "internet-detector-mod-email",
           "requiresUpdate": true,
@@ -125,6 +134,7 @@
         {
           "id": "luci-theme-argon",
           "pattern": "luci-theme-argon",
+          "isCustomFeed": true,
           "exclude": "",
           "name": "luci-theme-argon",
           "requiresUpdate": true,
