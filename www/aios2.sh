@@ -4,11 +4,11 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.0144"
+VERSION="R7.1219.0910"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
-MAX_JOBS=$((DEVICE_CPU_CORES + 2))
+MAX_JOBS=$((DEVICE_CPU_CORES + 1))
 [ "$MAX_JOBS" -gt 8 ] && MAX_JOBS=8
     
 DEBUG_MODE="${DEBUG_MODE:-0}"
@@ -24,7 +24,7 @@ debug_log() {
 # 【Package Cache Structure】
 # 
 # 1. _PACKAGE_NAME_CACHE format:
-#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=extractOnly=owner
+#   id=name=uniqueId=installOptions=enableVar=dependencies=hidden=virtual=reboot=checked=owner
 #
 # Field details:
 #   1. id              - Package name for installation
@@ -37,8 +37,7 @@ debug_log() {
 #   8. virtual         - "true" to skip availability check, "false" otherwise
 #   9. reboot          - "true" if reboot required, "false" otherwise
 #  10. checked         - "true" if selected by default, "false" otherwise
-#  11. extractOnly     - "true" if binary extraction only (skip opkg/apk), "false" otherwise
-#  12. owner           - Package ownership: "system", "auto", "user", or empty (runtime added)
+#  11. owner           - Package ownership: "system", "auto", "user", or empty
 #
 # 【Package Ownership (owner field)】
 # Determines package lifecycle and removal policy:
@@ -60,20 +59,6 @@ debug_log() {
 #
 # - **empty**: Legacy entries without owner (treated as "user")
 #
-# 【extractOnly Handling】
-# For packages that extract binaries from parent package without full install:
-#
-# - **extractOnly=true**: Binary extraction mode
-#   * Installation check: Uses is_binary_installed() with binaryPath from JSON
-#   * Availability check: Verifies parent package exists in repository
-#   * Removal: Deletes binary file directly (not via opkg/apk)
-#   * Example: htpasswd (extracted from apache package)
-#
-# - **extractOnly=false**: Normal package mode (default)
-#   * Installation check: Uses is_package_installed() via opkg/apk
-#   * Availability check: Package must exist in repository
-#   * Removal: Uses opkg/apk remove command
-#
 # 【Removal Detection Logic】
 # detect_packages_to_remove() behavior:
 #   1. Skip if owner="system" (pre-existing, user never selected)
@@ -83,7 +68,6 @@ debug_log() {
 # 【Cache Loading Strategy】
 # - Built on first access (lazy loading)
 # - Source: postinst.json + customfeeds.json
-# - extractOnly loaded from JSON during cache build
 # - Owner assigned during package addition:
 #   * initialize_installed_packages() → owner=system
 #   * auto_add_conditional_packages() → owner=auto
@@ -116,7 +100,6 @@ debug_log() {
 # **Availability Check**:
 #   - virtual=true: Skip check
 #   - custom_feeds: Skip check
-#   - extractOnly=true: Check parent package availability
 #   - Others: Must exist in repository
 #
 # 【Example Scenarios】
@@ -141,13 +124,6 @@ debug_log() {
 #   - Review screen: shows "install luci-app-vnstat2"
 #   - User unchecks: luci-app-vnstat2
 #   - Review screen: shows "remove luci-app-vnstat2" (owner=user)
-#
-# Scenario 4: extractOnly package (htpasswd)
-#   - User checks: htpasswd (id=apache, uniqueId=htpasswd-from-apache, extractOnly=true)
-#   - is_binary_installed() checks /usr/bin/htpasswd existence
-#   - If binary exists → marked as owner=system
-#   - If binary missing → available for installation
-#   - Removal: rm -f /usr/bin/htpasswd (not opkg remove)
 #
 # =============================================================================
 
@@ -1129,7 +1105,7 @@ wait_for_package_cache() {
     fi
 }
 
-XXX_check_package_available() {
+check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
 
@@ -1186,9 +1162,10 @@ XXX_check_package_available() {
     return 1
 }
 
-check_package_available() {
+XXX_check_package_available() {
     local pkg_id="$1"
     local caller="${2:-normal}"
+    local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
 
     wait_for_package_cache
 
@@ -1197,55 +1174,17 @@ check_package_available() {
         return 0
     fi
 
-    # キャッシュから virtual/extractOnly フラグを取得
+    # キャッシュから virtual フラグを取得
     local virtual_flag="false"
-    local extract_only="false"
-    
     if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
         virtual_flag=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $8; exit}')
         [ -z "$virtual_flag" ] && virtual_flag="false"
-        
-        # extractOnly はフィールド11
-        extract_only=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $11; exit}')
-        [ "$extract_only" != "true" ] && extract_only="false"
     fi
     
     # virtualパッケージは常に利用可能
     if [ "$virtual_flag" = "true" ]; then
         debug_log "Package $pkg_id is virtual, skipping availability check"
         return 0
-    fi
-    
-    # extractOnly パッケージはバイナリ存在確認
-    if [ "$extract_only" = "true" ]; then
-        local uid binary_path
-        uid=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '($1 == id || $3 == id) {print $3; exit}')
-        binary_path=$(get_binary_path "$uid")
-        
-        if [ -n "$binary_path" ]; then
-            # バイナリが既に存在する場合は利用可能
-            if [ -f "$binary_path" ] && [ -x "$binary_path" ]; then
-                debug_log "Package $pkg_id: binary already exists at $binary_path"
-                return 0
-            fi
-            
-            # バイナリが存在しない場合、親パッケージ（apache）の存在確認
-            local real_id="$pkg_id"
-            if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-                local cached_real_id
-                cached_real_id=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v uid="$pkg_id" '$3 == uid {print $1; exit}')
-                [ -n "$cached_real_id" ] && real_id="$cached_real_id"
-            fi
-            
-            # 親パッケージの利用可能性をチェック
-            if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
-                debug_log "Package $pkg_id: parent package $real_id is available"
-                return 0
-            fi
-            
-            debug_log "Package $pkg_id: parent package $real_id NOT available"
-            return 1
-        fi
     fi
 
     # uniqueIdがあれば実際のIDに変換
@@ -1256,23 +1195,14 @@ check_package_available() {
         [ -n "$cached_real_id" ] && real_id="$cached_real_id"
     fi
 
-    # availability cacheをメモリにロード（初回のみ）
-    if [ "$_PACKAGE_AVAILABILITY_LOADED" -eq 0 ]; then
-        local cache_file="$CONFIG_DIR/pkg_availability_cache.txt"
-        
-        if [ -f "$cache_file" ]; then
-            _PACKAGE_AVAILABILITY_CACHE=$(cat "$cache_file")
-            _PACKAGE_AVAILABILITY_LOADED=1
-            debug_log "Package availability cache loaded to memory ($(echo "$_PACKAGE_AVAILABILITY_CACHE" | wc -l) packages)"
-        else
-            _PACKAGE_AVAILABILITY_LOADED=1
-            debug_log "Availability cache not found, allowing all packages"
-            return 0
-        fi
+    # キャッシュファイルが存在しなければ許可
+    if [ ! -f "$cache_file" ]; then
+        debug_log "Availability cache not found, allowing all packages"
+        return 0
     fi
 
-    # メモリ内で検索（ディスクI/O不要）
-    if echo "$_PACKAGE_AVAILABILITY_CACHE" | grep -qx "$real_id"; then
+    # ファイルから直接検索（echo経由のパイプを避ける）
+    if grep -qFx "$real_id" "$cache_file" 2>/dev/null; then
         debug_log "Package $real_id found in availability cache"
         return 0
     fi
@@ -1819,7 +1749,7 @@ get_package_name() {
             BEGIN { in_deps=0 }
             {
                 id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
-                hidden="false"; virtual="false"; reboot="false"; checked="false"; extractOnly="false";
+                hidden="false"; virtual="false"; reboot="false"; checked="false";
                 
                 for(i=1;i<=NF;i++){
                     if($i=="id")id=$(i+2);
@@ -1831,19 +1761,18 @@ get_package_name() {
                     if($i=="virtual" && $(i+2)=="true")virtual="true";
                     if($i=="reboot" && $(i+2)=="true")reboot="true";
                     if($i=="checked" && $(i+2)=="true")checked="true";
-                    if($i=="extractOnly" && $(i+2)=="true")extractOnly="true";
                     if($i=="dependencies") {
                         in_deps=1;
                         for(j=i+2;j<=NF;j++){
                             if($j=="]") { in_deps=0; break; }
-                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual" && $j!="extractOnly") 
+                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual") 
                                 deps=deps$j",";
                         }
                         sub(/,$/, "", deps);
                     }
                 }
                 if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" extractOnly "="
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                 }
             }')
         
@@ -1854,7 +1783,7 @@ get_package_name() {
                 BEGIN { in_deps=0 }
                 {
                     id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
-                    hidden="false"; virtual="false"; reboot="false"; checked="false"; extractOnly="false";
+                    hidden="false"; virtual="false"; reboot="false"; checked="false";
                     
                     for(i=1;i<=NF;i++){
                         if($i=="id")id=$(i+2);
@@ -1866,19 +1795,18 @@ get_package_name() {
                         if($i=="virtual" && $(i+2)=="true")virtual="true";
                         if($i=="reboot" && $(i+2)=="true")reboot="true";
                         if($i=="checked" && $(i+2)=="true")checked="true";
-                        if($i=="extractOnly" && $(i+2)=="true")extractOnly="true";
                         if($i=="dependencies") {
                             in_deps=1;
                             for(j=i+2;j<=NF;j++){
                                 if($j=="]") { in_deps=0; break; }
-                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual" && $j!="extractOnly")
+                                if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual")
                                     deps=deps$j",";
                             }
                             sub(/,$/, "", deps);
                         }
                     }
                     if(id&&name){
-                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" extractOnly "="
+                        print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" ""
                     }
                 }')
             _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
@@ -1957,58 +1885,7 @@ is_package_installed() {
     echo "$_INSTALLED_PACKAGES_CACHE" | grep -qx "$pkg_id"
 }
 
-# =============================================================================
-# Check if a binary file exists (for extract-only packages like htpasswd)
-# =============================================================================
-# Args:
-#   $1 - package id (to look up binaryPath in JSON)
-#   $2 - uniqueId (optional, for packages with uniqueId like htpasswd)
-# Returns:
-#   0 if binary exists, 1 otherwise
-# =============================================================================
-is_binary_installed() {
-    local pkg_id="$1"
-    local uid="${2:-}"
-    local binary_path
-    
-    # uniqueIdがあればuniqueIdで検索（優先）
-    if [ -n "$uid" ]; then
-        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$uid'].binaryPath" 2>/dev/null | head -1)
-    fi
-    
-    # uniqueIdで見つからなければidで検索
-    if [ -z "$binary_path" ]; then
-        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].binaryPath" 2>/dev/null | head -1)
-    fi
-    
-    [ -z "$binary_path" ] && return 1
-    
-    # バイナリの存在確認
-    [ -f "$binary_path" ] && [ -x "$binary_path" ]
-}
-
-# =============================================================================
-# Get binary path from JSON for a package
-# =============================================================================
-# Args:
-#   $1 - package id
-# Returns:
-#   Prints binary path if found
-# =============================================================================
-get_binary_path() {
-    local pkg_id="$1"
-    local binary_path
-    
-    binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].binaryPath" 2>/dev/null | head -1)
-    
-    if [ -z "$binary_path" ]; then
-        binary_path=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg_id'].binaryPath" 2>/dev/null | head -1)
-    fi
-    
-    echo "$binary_path"
-}
-
-XXX_initialize_installed_packages() {
+initialize_installed_packages() {
     echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
     
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
@@ -2069,96 +1946,6 @@ EOF
                 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                     echo "${pkg_id}=${pkg_id}====system" >> "$SELECTED_CUSTOM_PACKAGES"
-                    count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-                fi
-            done
-        done
-    fi
-    
-    echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
-}
-
-initialize_installed_packages() {
-    echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
-    
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        get_package_name "dummy" >/dev/null 2>&1
-    fi
-    
-    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
-    
-    local count=0
-    
-    # 通常パッケージ + extractOnly パッケージ
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        
-        local pkg_id uid extract_only
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        
-        # キャッシュからextractOnlyを取得（フィールド11）
-        extract_only=$(echo "$cache_line" | cut -d= -f11)
-        [ "$extract_only" != "true" ] && extract_only="false"
-        
-        local is_installed=0
-        
-        if [ "$extract_only" = "true" ]; then
-            # extractOnly: バイナリ存在確認（uniqueIdを渡す）
-            is_binary_installed "$pkg_id" "$uid" && is_installed=1
-        else
-            # 通常: opkg/apkで確認
-            is_package_installed "$pkg_id" && is_installed=1
-        fi
-        
-        if [ "$is_installed" -eq 1 ]; then
-            local already_selected=0
-            
-            if [ -n "$uid" ]; then
-                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            else
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            fi
-            
-            if [ "$already_selected" -eq 0 ]; then
-                # owner=system として追加（末尾の空フィールドをsystemに置換）
-                local line_with_owner="${cache_line%=*}=system"
-                echo "$line_with_owner" >> "$SELECTED_PACKAGES"
-                count=$((count + 1))
-                
-                if [ "$extract_only" = "true" ]; then
-                    echo "[INIT] Found installed binary: $pkg_id/$uid (owner=system)" >> "$CONFIG_DIR/debug.log"
-                else
-                    echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-        fi
-    done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
-    
-    # カスタムフィード（変更なし）
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        for cat_id in $(get_customfeed_categories); do
-            for pkg_id in $(get_category_packages "$cat_id"); do
-                local pattern exclude installed_pkgs
-                pattern=$(get_customfeed_package_pattern "$pkg_id")
-                exclude=$(get_customfeed_package_exclude "$pkg_id")
-                
-                [ -z "$pattern" ] && continue
-                
-                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                
-                [ -z "$installed_pkgs" ] && continue
-                
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}=====system" >> "$SELECTED_CUSTOM_PACKAGES"
                     count=$((count + 1))
                     echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
@@ -4110,7 +3897,7 @@ is_customfeed_installed() {
 # ========================================
 # 削除対象パッケージ検出
 # ========================================
-XXX_detect_packages_to_remove() {
+detect_packages_to_remove() {
     local remove_list=""
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
@@ -4224,132 +4011,6 @@ EOF3
     echo "$remove_list" | xargs
 }
 
-detect_packages_to_remove() {
-    local remove_list=""
-    
-    echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
-    
-    # 通常パッケージ + extractOnly パッケージ
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        
-        local pkg_id uid owner extract_only
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        
-        # ownerをフィールド12から取得
-        owner=$(echo "$cache_line" | cut -d= -f12)
-        
-        # owner=auto または owner=system は除外
-        if [ "$owner" = "auto" ] || [ "$owner" = "system" ]; then
-            echo "[DEBUG] Skipping $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
-            continue
-        fi
-        
-        # キャッシュからextractOnlyを取得（フィールド11）
-        extract_only=$(echo "$cache_line" | cut -d= -f11)
-        [ "$extract_only" != "true" ] && extract_only="false"
-        
-        # インストール済みチェック
-        local is_installed=0
-        if [ "$extract_only" = "true" ]; then
-            is_binary_installed "$pkg_id" "$uid" && is_installed=1
-        else
-            is_package_installed "$pkg_id" && is_installed=1
-        fi
-        
-        [ "$is_installed" -eq 0 ] && continue
-        
-        # 選択済みチェック
-        local still_selected=0
-        if [ -n "$uid" ]; then
-            if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-               grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                still_selected=1
-            fi
-        else
-            if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                still_selected=1
-            fi
-        fi
-        
-        if [ "$still_selected" -eq 0 ]; then
-            if [ "$extract_only" = "true" ]; then
-                # extractOnlyの場合は uniqueId を使用（バイナリ削除用）
-                [ -n "$uid" ] && remove_list="${remove_list}${uid} " || remove_list="${remove_list}${pkg_id} "
-                echo "[REMOVE] Marked binary for removal: $pkg_id/$uid (owner=$owner)" >> "$CONFIG_DIR/debug.log"
-            else
-                remove_list="${remove_list}${pkg_id} "
-                echo "[REMOVE] Marked for removal: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-    done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
-    
-    # 言語パッケージの削除検出（変更なし）
-    local new_lang
-    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-
-    if [ -n "$new_lang" ]; then
-        local initial_lang_pkgs=""
-        if [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
-            initial_lang_pkgs=$(cat "$CONFIG_DIR/lang_packages_initial_snapshot.txt")
-        fi
-        
-        if [ -n "$initial_lang_pkgs" ]; then
-            while read -r pkg; do
-                [ -z "$pkg" ] && continue
-                
-                if echo "$pkg" | grep -q -- "-${new_lang}$"; then
-                    echo "[DEBUG] Keeping language pack: $pkg (matches new_lang=$new_lang)" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-                
-                if grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    echo "[DEBUG] Keeping language pack: $pkg (in SELECTED_PACKAGES)" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-                
-                remove_list="${remove_list}${pkg} "
-                echo "[REMOVE] Marked language pack for removal: $pkg (not for $new_lang)" >> "$CONFIG_DIR/debug.log"
-            done <<EOF2
-$initial_lang_pkgs
-EOF2
-        fi
-    fi
-    
-    # カスタムフィード（変更なし）
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        for cat_id in $(get_customfeed_categories); do
-            for pkg_id in $(get_category_packages "$cat_id"); do
-                local pattern exclude
-                pattern=$(get_customfeed_package_pattern "$pkg_id")
-                exclude=$(get_customfeed_package_exclude "$pkg_id")
-                
-                [ -z "$pattern" ] && continue
-                
-                local installed_pkgs
-                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                
-                [ -z "$installed_pkgs" ] && continue
-                
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    while read -r installed_pkg; do
-                        [ -z "$installed_pkg" ] && continue
-                        remove_list="${remove_list}${installed_pkg} "
-                        echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
-                    done <<EOF3
-$installed_pkgs
-EOF3
-                fi
-            done
-        done
-    fi
-    
-    echo "$remove_list" | xargs
-}
-
 # ========================================
 # 削除リスト展開（言語パッケージ + 依存関係）
 # ========================================
@@ -4433,7 +4094,7 @@ expand_remove_list() {
 # ========================================
 # 削除スクリプト生成
 # ========================================
-XXX_generate_remove_script() {
+generate_remove_script() {
     local packages_to_remove="$1"
     local output_file="$CONFIG_DIR/remove.sh"
     
@@ -4466,92 +4127,6 @@ REMOVE_EOF
     
     cat >> "$output_file" <<'REMOVE_EOF'
 
-echo ""
-echo "========================================="
-echo "Package removal completed."
-echo "========================================="
-REMOVE_EOF
-    
-    chmod +x "$output_file"
-    echo "[DEBUG] Remove script generated: $output_file" >> "$CONFIG_DIR/debug.log"
-}
-
-generate_remove_script() {
-    local packages_to_remove="$1"
-    local output_file="$CONFIG_DIR/remove.sh"
-    
-    [ -z "$packages_to_remove" ] && {
-        echo "[DEBUG] No packages to remove" >> "$CONFIG_DIR/debug.log"
-        return 0
-    }
-    
-    echo "[DEBUG] Original packages to remove: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
-    
-    # 通常パッケージと extractOnly を分離
-    local regular_pkgs=""
-    local binary_pkgs=""
-    
-    for pkg in $packages_to_remove; do
-        # extractOnly チェック
-        local extract_only
-        extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.id='$pkg'].extractOnly" 2>/dev/null | head -1)
-        [ -z "$extract_only" ] && extract_only=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[*].packages[@.uniqueId='$pkg'].extractOnly" 2>/dev/null | head -1)
-        
-        if [ "$extract_only" = "true" ]; then
-            binary_pkgs="${binary_pkgs}${pkg} "
-        else
-            regular_pkgs="${regular_pkgs}${pkg} "
-        fi
-    done
-    
-    # 言語パッケージと依存関係を展開（通常パッケージのみ）
-    local expanded_packages=""
-    if [ -n "$regular_pkgs" ]; then
-        expanded_packages=$(expand_remove_list "$regular_pkgs")
-    fi
-    
-    echo "[DEBUG] Expanded regular packages: $expanded_packages" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Binary packages: $binary_pkgs" >> "$CONFIG_DIR/debug.log"
-    
-    cat > "$output_file" <<'REMOVE_EOF'
-#!/bin/sh
-# Auto-generated package removal script
-echo "========================================="
-echo "Removing unselected packages..."
-echo "========================================="
-echo ""
-REMOVE_EOF
-    
-    # 通常パッケージの削除
-    if [ -n "$expanded_packages" ]; then
-        local remove_cmd
-        remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$expanded_packages")
-        echo "${remove_cmd}" >> "$output_file"
-        echo "" >> "$output_file"
-    fi
-    
-    # extractOnly パッケージの削除（バイナリ削除）
-    if [ -n "$binary_pkgs" ]; then
-        echo "# Remove extracted binaries" >> "$output_file"
-        
-        for pkg in $binary_pkgs; do
-            local binary_path
-            binary_path=$(get_binary_path "$pkg")
-            
-            if [ -n "$binary_path" ]; then
-                cat >> "$output_file" <<BINARY_EOF
-if [ -f "$binary_path" ]; then
-    rm -f "$binary_path"
-    echo "Removed binary: $binary_path"
-fi
-BINARY_EOF
-            fi
-        done
-        
-        echo "" >> "$output_file"
-    fi
-    
-    cat >> "$output_file" <<'REMOVE_EOF'
 echo ""
 echo "========================================="
 echo "Package removal completed."
