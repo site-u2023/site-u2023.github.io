@@ -3047,8 +3047,11 @@ CHECK
     done <<EOF
 $_CONDITIONAL_PACKAGES_CACHE
 EOF
-    
+
     debug_log "=== auto_add_conditional_packages finished ==="
+
+    # 言語設定が変更されている場合、言語パックを更新
+    update_language_packages
 }
 
 get_section_nested_items() {
