@@ -1566,6 +1566,18 @@ EOF
         else
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
         fi
+        
+        # apply後のクリーンアップ処理
+        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
+        reset_state_for_next_session
+        
+        # rebootチェック
+        local needs_reboot=$(needs_reboot_check)
+        if [ "$needs_reboot" -eq 1 ]; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-required')\n\n$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+        fi
     fi
     
     return 0
