@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1219.1201) loaded');
+console.log('custom.js (R7.1219.1204) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -4081,18 +4081,44 @@ async function checkAsuServerStatus() {
             cache: 'no-store'
         });
         
-        clearTimeout(timeoutId);
-        
-        if (response.ok) {
-            updateAsuStatus('online', response.status);
-            console.log('ASU server is online');
-        } else if (response.status >= 500) {
-            updateAsuStatus('error', response.status);
-            console.warn(`ASU server error: HTTP ${response.status}`);
-        } else {
-            updateAsuStatus('offline', response.status);
-            console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+        if (!response.ok) {
+            clearTimeout(timeoutId);
+            if (response.status >= 500) {
+                updateAsuStatus('error', response.status);
+                console.warn(`ASU server error: HTTP ${response.status}`);
+            } else {
+                updateAsuStatus('offline', response.status);
+                console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+            }
+            return;
         }
+        
+        // .overview.jsonもチェック（公式と同じロジック）
+        const versionSelect = document.getElementById('versions');
+        const version = versionSelect?.value || config.versions?.[0];
+        
+        if (version && config.overview_urls?.[version]) {
+            const overview_url = `${config.overview_urls[version]}/.overview.json`;
+            const overviewResponse = await fetch(overview_url, { 
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (overviewResponse.status != 200) {
+                updateAsuStatus('offline', 'Overview JSON unavailable');
+                console.error(`Failed to fetch ${overview_url}`);
+                return;
+            }
+        } else {
+            clearTimeout(timeoutId);
+        }
+        
+        // 両方成功
+        updateAsuStatus('online', response.status);
+        console.log('ASU server is online');
+        
     } catch (error) {
         if (error.name === 'AbortError') {
             updateAsuStatus('offline', 'timeout');
@@ -4253,43 +4279,10 @@ function injectSettingsBar(temp) {
     const fileInput = template.querySelector('#import-file-input');
     
     if (settingsBar && fileInput) {
-        // #alertを確実に最上位に配置するため、settings-barを#alertの後に挿入
-        const alertElement = document.getElementById('alert');
-        if (alertElement) {
-            alertElement.parentNode.insertBefore(settingsBar.cloneNode(true), alertElement.nextSibling);
-            console.log('Settings bar injected after #alert');
-        } else {
-            // #alertが見つからない場合は従来通りheaderの後に配置
-            header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
-            console.log('Settings bar injected after header (alert not found)');
-        }
-        
+        header.insertAdjacentElement('afterend', settingsBar.cloneNode(true));
         document.body.appendChild(fileInput.cloneNode(true));
-        setupImportExport();
+        console.log('Settings bar injected');
         
-        // #alertの表示状態を監視してsettings-barを調整
-        setupAlertObserver();
+        setupImportExport();
     }
-}
-
-// #alertが表示された時にsettings-barを下に移動
-function setupAlertObserver() {
-    const alertElement = document.getElementById('alert');
-    const settingsBar = document.getElementById('settings-bar');
-    
-    if (!alertElement || !settingsBar) return;
-    
-    const observer = new MutationObserver(() => {
-        const isAlertVisible = !alertElement.classList.contains('hide');
-        settingsBar.style.marginTop = isAlertVisible ? '2em' : '0';
-    });
-    
-    observer.observe(alertElement, {
-        attributes: true,
-        attributeFilter: ['class']
-    });
-    
-    // 初期状態も確認
-    const isAlertVisible = !alertElement.classList.contains('hide');
-    settingsBar.style.marginTop = isAlertVisible ? '2em' : '0';
 }
