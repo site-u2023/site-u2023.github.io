@@ -1406,7 +1406,7 @@ EOF
         
         echo "Generating installation scripts..."
         
-        # ★★★ 修正：実行前のサマリーを保存 ★★★
+        # 実行前のサマリーを保存
         local pre_execution_summary="$CONFIG_DIR/pre_execution_summary.txt"
         cp "$summary_file" "$pre_execution_summary"
         
@@ -1519,7 +1519,7 @@ EOF
         fi
         
         # ========================================
-        # 7. 完了サマリー生成（★★★ 修正：実行前のサマリーを使用 ★★★）
+        # 7. 完了サマリー生成（実行前のサマリーを使用）
         # ========================================
         local final_message=""
         
@@ -1552,8 +1552,12 @@ $(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed')
 $failed_scripts"
         fi
         
-        show_msgbox "$breadcrumb" "$final_message"
-    fi
+    show_msgbox "$breadcrumb" "$final_message"
+    
+    # 成功後の状態リセット
+    echo "[DEBUG] Resetting state for next session..." >> "$CONFIG_DIR/debug.log"
+    reset_state_for_next_session
+    echo "[DEBUG] State reset completed" >> "$CONFIG_DIR/debug.log"
     
     return 0
 }
