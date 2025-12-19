@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.0048"
+VERSION="R7.1220.0104"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -242,13 +242,14 @@ pkg_remove() {
     local owner="${2:-}"
     local caller="${3:-normal}"
     local target_file
-    
-    if [ "$caller" = "custom_feeds" ]; then
+
+    # カスタム優先
+    if grep -q "^${pkg_id}=.*=1$" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
     else
         target_file="$SELECTED_PACKAGES"
     fi
-    
+
     if [ -n "$owner" ]; then
         awk -F= -v target="$pkg_id" -v o="$owner" '
             !(($1 == target && $3 == "") || $3 == target) || $11 != o
@@ -258,14 +259,9 @@ pkg_remove() {
             !(($1 == target && $3 == "") || $3 == target)
         ' "$target_file" > "$target_file.tmp" && mv "$target_file.tmp" "$target_file"
     fi
-    
-    if ! awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
-        debug_log "pkg_remove: $pkg_id (owner=${owner:-any})"
-        return 0
-    fi
-    
-    debug_log "pkg_remove: $pkg_id not found (owner=${owner:-any})"
-    return 1
+
+    debug_log "pkg_remove: $pkg_id from $target_file"
+    return 0
 }
 
 # Check if package exists in selection list
@@ -280,22 +276,28 @@ pkg_exists() {
     local owner="${2:-}"
     local caller="${3:-normal}"
     local target_file
-    
-    if [ "$caller" = "custom_feeds" ]; then
+    local found=1  # デフォルト not found
+
+    # カスタムフィードの場合を優先検索
+    if grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null && \
+       awk -F= '{print $12}' "$SELECTED_CUSTOM_PACKAGES" | grep -q "^${pkg_id}=" | grep -q "1"; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
+        found=0
     else
         target_file="$SELECTED_PACKAGES"
     fi
-    
+
     if [ -n "$owner" ]; then
         awk -F= -v target="$pkg_id" -v o="$owner" '
             (($1 == target && $3 == "") || $3 == target) && $11 == o
-        ' "$target_file" | grep -q .
+        ' "$target_file" | grep -q . && found=0
     else
         awk -F= -v target="$pkg_id" '
             ($1 == target && $3 == "") || $3 == target
-        ' "$target_file" | grep -q .
+        ' "$target_file" | grep -q . && found=0
     fi
+
+    return $found
 }
 
 # Get owner of a package
