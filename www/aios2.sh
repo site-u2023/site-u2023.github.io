@@ -209,20 +209,24 @@ pkg_add() {
     local owner="${2:-auto}"
     local caller="${3:-normal}"
     local target_file
-    
+    local is_custom_feed="0"  # デフォルトは通常パッケージ（0）
+
     if [ "$caller" = "custom_feeds" ]; then
         target_file="$SELECTED_CUSTOM_PACKAGES"
+        is_custom_feed="1"  # カスタムフィードの場合のみ 1 に設定
     else
         target_file="$SELECTED_PACKAGES"
     fi
-    
+
+    # 既存チェック：pkg_id または uniqueId で重複判定
     if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
         debug_log "pkg_add: $pkg_id already exists, skipped"
         return 1
     fi
-    
-    echo "${pkg_id}=${pkg_id}=========${owner}" >> "$target_file"
-    debug_log "pkg_add: $pkg_id (owner=$owner)"
+
+    # エントリ追加：owner と isCustomFeed を明示的に設定
+    echo "${pkg_id}=${pkg_id}=========${owner}=${is_custom_feed}" >> "$target_file"
+    debug_log "pkg_add: $pkg_id (owner=$owner, isCustomFeed=$is_custom_feed, caller=$caller)"
     return 0
 }
 
@@ -1872,9 +1876,9 @@ initialize_installed_packages() {
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
 
     local count=0
-    local custom_processed=""  # 変数で処理済みpkg_idを保持（メモリ上）
+    local custom_processed=""  # メモリ上で処理済みpkg_idを保持
 
-    # === カスタムフィード処理（先）===
+    # === カスタムフィード処理を優先 ===
     if [ -f "$CUSTOMFEEDS_JSON" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
@@ -1886,10 +1890,11 @@ initialize_installed_packages() {
                 [ -z "$installed_pkgs" ] && continue
 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
-                    custom_processed="${custom_processed}${pkg_id}"$'\n'  # 記録
+                    # owner=system と isCustomFeed=1 を明示的に設定
+                    echo "${pkg_id}=${pkg_id}=========system=1" >> "$SELECTED_CUSTOM_PACKAGES"
+                    custom_processed="${custom_processed}${pkg_id}"$'\n'  # 処理済み記録
                     count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+                    echo "[INIT] Found installed custom: $pkg_id (owner=system, isCustomFeed=1)" >> "$CONFIG_DIR/debug.log"
                 fi
             done
         done
@@ -1903,12 +1908,11 @@ initialize_installed_packages() {
         uid=$(echo "$cache_line" | cut -d= -f3)
         is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-        # 既存のスキップ + カスタムで処理済みなら完全にスキップ
+        # カスタム定義または既にカスタムで処理済みの場合スキップ（重複登録防止）
         if [ "$is_custom" = "1" ] || echo "$custom_processed" | grep -q "^${pkg_id}$"; then
             continue
         fi
 
-        # 以下、既存ロジックそのまま
         if is_package_installed "$pkg_id"; then
             local already_selected=0
             if [ -n "$uid" ]; then
