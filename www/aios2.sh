@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.1247"
+VERSION="R7.1219.1302"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1912,21 +1912,24 @@ is_package_selected() {
     local identifier="$1"
     local caller="${2:-normal}"
     
-    # 初回のみファイルをキャッシュ
     if [ "$caller" = "custom_feeds" ]; then
         if [ "$_SELECTED_CUSTOM_CACHE_LOADED" -eq 0 ]; then
             _SELECTED_CUSTOM_CACHE=$(cat "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null || true)
             _SELECTED_CUSTOM_CACHE_LOADED=1
         fi
-        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}=" || \
-        echo "$_SELECTED_CUSTOM_CACHE" | grep -q "=${identifier}\$"
+        # ★ 修正：id または uniqueId でマッチング（awk使用）
+        echo "$_SELECTED_CUSTOM_CACHE" | awk -F= -v target="$identifier" '
+            ($1 == target && $3 == "") || $3 == target
+        ' | grep -q .
     else
         if [ "$_SELECTED_PACKAGES_CACHE_LOADED" -eq 0 ]; then
             _SELECTED_PACKAGES_CACHE=$(cat "$SELECTED_PACKAGES" 2>/dev/null || true)
             _SELECTED_PACKAGES_CACHE_LOADED=1
         fi
-        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}=" || \
-        echo "$_SELECTED_PACKAGES_CACHE" | grep -q "=${identifier}\$"
+        # ★ 修正：id または uniqueId でマッチング（awk使用）
+        echo "$_SELECTED_PACKAGES_CACHE" | awk -F= -v target="$identifier" '
+            ($1 == target && $3 == "") || $3 == target
+        ' | grep -q .
     fi
 }
 
