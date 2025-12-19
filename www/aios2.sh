@@ -1888,31 +1888,29 @@ initialize_installed_packages() {
         [ "$is_custom" = "1" ] && continue
         
         if is_package_installed "$pkg_id"; then
-            local already_selected=0
-            
-            if [ -n "$uid" ]; then
-                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            else
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            fi
-            
-            if [ "$already_selected" -eq 0 ]; then
-                # 11番目のownerをsystemに、12番目のisCustomは0として再構成
-                local base_fields
-                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-                local line_with_owner="${base_fields}=system=0"
-                
-                echo "$line_with_owner" >> "$SELECTED_PACKAGES"
-                count=$((count + 1))
-                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-    done <<EOF
+            local already_selected=0
+            
+            if [ -n "$uid" ]; then
+                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+                   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    already_selected=1
+                fi
+            else
+                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+                    already_selected=1
+                fi
+            fi
+            
+            if [ "$already_selected" -eq 0 ]; then
+                # 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
+                local base_fields
+                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+                echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+                count=$((count + 1))
+                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+    done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
     
