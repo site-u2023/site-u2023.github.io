@@ -1335,6 +1335,10 @@ EOF
 }
 
 review_and_apply() {
+
+    echo "[DEBUG] Generating summary at $(date)" >> "$CONFIG_DIR/debug.log"
+    ls -la "$SELECTED_PACKAGES" "$SELECTED_CUSTOM_PACKAGES" >> "$CONFIG_DIR/debug.log" 2>&1
+        
     local need_fetch=0
     
     [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
@@ -1370,6 +1374,8 @@ EOF
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+
+    cache_installed_packages
     
     summary_file=$(generate_config_summary)
     
