@@ -1700,41 +1700,9 @@ get_package_name() {
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
         echo "[DEBUG] Building package name cache with extended fields..." >> "$CONFIG_DIR/debug.log"
         
-        _PACKAGE_NAME_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
-            awk -F'"' '
-            BEGIN { in_deps=0 }
-            {
-                id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
-                hidden="false"; virtual="false"; reboot="false"; checked="false";
-                
-                for(i=1;i<=NF;i++){
-                    if($i=="id")id=$(i+2);
-                    if($i=="name")name=$(i+2);
-                    if($i=="uniqueId")uniqueId=$(i+2);
-                    if($i=="installOptions")installOptions=$(i+2);
-                    if($i=="enableVar")enableVar=$(i+2);
-                    if($i=="hidden" && $(i+2)=="true")hidden="true";
-                    if($i=="virtual" && $(i+2)=="true")virtual="true";
-                    if($i=="reboot" && $(i+2)=="true")reboot="true";
-                    if($i=="checked" && $(i+2)=="true")checked="true";
-                    if($i=="dependencies") {
-                        in_deps=1;
-                        for(j=i+2;j<=NF;j++){
-                            if($j=="]") { in_deps=0; break; }
-                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual") 
-                                deps=deps$j",";
-                        }
-                        sub(/,$/, "", deps);
-                    }
-                }
-                if(id&&name){
-                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" "0"
-                }
-            }')
-        
+        # カスタムフィードを先に読み込む
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            local custom_cache
-            custom_cache=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            _PACKAGE_NAME_CACHE=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
                 awk -F'"' '
                 BEGIN { in_deps=0 }
                 {
@@ -1767,8 +1735,60 @@ get_package_name() {
                         print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" isCustom
                     }
                 }')
-            _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
-${custom_cache}"
+        else
+            _PACKAGE_NAME_CACHE=""
+        fi
+        
+        # 通常パッケージを後から追加（重複チェック付き）
+        local normal_cache
+        normal_cache=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+            awk -F'"' '
+            BEGIN { in_deps=0 }
+            {
+                id=""; name=""; uniqueId=""; installOptions=""; enableVar=""; deps="";
+                hidden="false"; virtual="false"; reboot="false"; checked="false";
+                
+                for(i=1;i<=NF;i++){
+                    if($i=="id")id=$(i+2);
+                    if($i=="name")name=$(i+2);
+                    if($i=="uniqueId")uniqueId=$(i+2);
+                    if($i=="installOptions")installOptions=$(i+2);
+                    if($i=="enableVar")enableVar=$(i+2);
+                    if($i=="hidden" && $(i+2)=="true")hidden="true";
+                    if($i=="virtual" && $(i+2)=="true")virtual="true";
+                    if($i=="reboot" && $(i+2)=="true")reboot="true";
+                    if($i=="checked" && $(i+2)=="true")checked="true";
+                    if($i=="dependencies") {
+                        in_deps=1;
+                        for(j=i+2;j<=NF;j++){
+                            if($j=="]") { in_deps=0; break; }
+                            if($j ~ /^[a-z0-9_-]+$/ && $j!="hidden" && $j!="checked" && $j!="reboot" && $j!="virtual") 
+                                deps=deps$j",";
+                        }
+                        sub(/,$/, "", deps);
+                    }
+                }
+                if(id&&name){
+                    print id "=" name "=" uniqueId "=" installOptions "=" enableVar "=" deps "=" hidden "=" virtual "=" reboot "=" checked "=" "" "=" "0"
+                }
+            }')
+        
+        # 重複チェックしてマージ
+        if [ -n "$normal_cache" ]; then
+            while read -r normal_line; do
+                [ -z "$normal_line" ] && continue
+                
+                local normal_id
+                normal_id=$(echo "$normal_line" | cut -d= -f1)
+                
+                # カスタムフィードキャッシュに既に存在するかチェック
+                if ! echo "$_PACKAGE_NAME_CACHE" | grep -q "^${normal_id}="; then
+                    _PACKAGE_NAME_CACHE="${_PACKAGE_NAME_CACHE}
+${normal_line}"
+                fi
+            done <<EOF
+$normal_cache
+EOF
         fi
         
         _PACKAGE_NAME_LOADED=1
