@@ -1875,28 +1875,7 @@ initialize_installed_packages() {
 	
 	local count=0
 
-	# 1. カスタムフィードを先に走査（優先登録）
-	if [ -f "$CUSTOMFEEDS_JSON" ]; then
-		for cat_id in $(get_customfeed_categories); do
-			for pkg_id in $(get_category_packages "$cat_id"); do
-				local pattern exclude installed_pkgs
-				pattern=$(get_customfeed_package_pattern "$pkg_id")
-				exclude=$(get_customfeed_package_exclude "$pkg_id")
-				
-				[ -z "$pattern" ] && continue
-				
-				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-				[ -z "$installed_pkgs" ] && continue
-				
-				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
-					count=$((count + 1))
-				fi
-			done
-		done
-	fi
-	
-	# 2. 通常パッケージを走査
+	# キャッシュ（$_PACKAGE_NAME_CACHE）を1回だけ走査して、フラグで振り分ける
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
@@ -1905,27 +1884,36 @@ initialize_installed_packages() {
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# カスタムフィードフラグ(is_custom=1)が立っていたら、通常ループからは抜ける（continue）
-		[ "$is_custom" = "1" ] && continue
-		
+		# すでにインストールされているもの（cacheにあるもの）を処理
 		if is_package_installed "$pkg_id"; then
-			local already_selected=0
-			if [ -n "$uid" ]; then
-				if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-				   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
-					already_selected=1
-				fi
-			else
-				if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-					already_selected=1
-				fi
-			fi
 			
-			if [ "$already_selected" -eq 0 ]; then
-				local base_fields
-				base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-				echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
-				count=$((count + 1))
+			# 1. カスタムフィードフラグ(is_custom=1)が立っている場合
+			if [ "$is_custom" = "1" ]; then
+				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
+					count=$((count + 1))
+				fi
+			
+			# 2. 通常パッケージ(is_custom=0)の場合
+			else
+				local already_selected=0
+				if [ -n "$uid" ]; then
+					if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+					   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+						already_selected=1
+					fi
+				else
+					if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+						already_selected=1
+					fi
+				fi
+				
+				if [ "$already_selected" -eq 0 ]; then
+					local base_fields
+					base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+					echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+					count=$((count + 1))
+				fi
 			fi
 		fi
 	done <<EOF
