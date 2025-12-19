@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.0003"
+VERSION="R7.1220.0005"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -1874,8 +1874,29 @@ initialize_installed_packages() {
 	[ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
 	
 	local count=0
+
+	# 1. カスタムフィードを先に走査（優先登録）
+	if [ -f "$CUSTOMFEEDS_JSON" ]; then
+		for cat_id in $(get_customfeed_categories); do
+			for pkg_id in $(get_category_packages "$cat_id"); do
+				local pattern exclude installed_pkgs
+				pattern=$(get_customfeed_package_pattern "$pkg_id")
+				exclude=$(get_customfeed_package_exclude "$pkg_id")
+				
+				[ -z "$pattern" ] && continue
+				
+				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+				[ -z "$installed_pkgs" ] && continue
+				
+				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
+					count=$((count + 1))
+				fi
+			done
+		done
+	fi
 	
-	# 通常パッケージの走査
+	# 2. 通常パッケージを走査
 	while read -r cache_line; do
 		[ -z "$cache_line" ] && continue
 		
@@ -1884,8 +1905,7 @@ initialize_installed_packages() {
 		uid=$(echo "$cache_line" | cut -d= -f3)
 		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-		# 【修正点】12番目のフラグが1（カスタム）の場合は、ここでは処理せず飛ばす
-		# これにより、後半のカスタムフィード専用処理との重複（多重表示）を防ぐ
+		# カスタムフィードフラグ(is_custom=1)が立っていたら、通常ループからは抜ける（continue）
 		[ "$is_custom" = "1" ] && continue
 		
 		if is_package_installed "$pkg_id"; then
@@ -1911,28 +1931,6 @@ initialize_installed_packages() {
 	done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
-	
-	# カスタムフィードの走査（元々あった必要な処理を復元）
-	if [ -f "$CUSTOMFEEDS_JSON" ]; then
-		for cat_id in $(get_customfeed_categories); do
-			for pkg_id in $(get_category_packages "$cat_id"); do
-				local pattern exclude installed_pkgs
-				pattern=$(get_customfeed_package_pattern "$pkg_id")
-				exclude=$(get_customfeed_package_exclude "$pkg_id")
-				
-				[ -z "$pattern" ] && continue
-				
-				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-				
-				[ -z "$installed_pkgs" ] && continue
-				
-				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
-					count=$((count + 1))
-				fi
-			done
-		done
-	fi
 	
 	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
