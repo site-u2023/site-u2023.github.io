@@ -60,6 +60,13 @@
   }
 }
 
+/* ===== Alert Banner (公式エラー表示) ===== */
+/* settings-barよりも上に確実に表示されるようにz-indexを調整 */
+/* DOM順序で#settings-barの前に配置されるため、position: absoluteのまま維持 */
+#alert {
+  z-index: 1002 !important;
+}
+
 /* ===== Settings Import/Export Bar ===== */
 #settings-bar {
   width: 100%;
