@@ -3049,9 +3049,6 @@ $_CONDITIONAL_PACKAGES_CACHE
 EOF
 
     debug_log "=== auto_add_conditional_packages finished ==="
-
-    # 言語設定が変更されている場合、言語パックを更新
-    update_language_packages
 }
 
 get_section_nested_items() {
@@ -3488,102 +3485,6 @@ $all_packages
 EOF
     
     clear_selection_cache
-}
-
-initialize_language_packages() {
-    debug_log "=== initialize_language_packages called ==="
-    
-    local installed_lang
-    installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
-    
-    if [ -z "$installed_lang" ]; then
-        debug_log "No base language package installed, skipping"
-        return 0
-    fi
-    
-    debug_log "Detected installed language: $installed_lang"
-    
-    # JSON駆動のパターンを取得
-    local exclude_patterns module_patterns
-    exclude_patterns=$(get_language_exclude_patterns)
-    module_patterns=$(get_language_module_patterns)
-    
-    debug_log "Loaded language_exclude_patterns: $exclude_patterns"
-    debug_log "Loaded language_module_patterns: $module_patterns"
-    
-    # 1. 選択済みパッケージを取得（除外適用）
-    if [ ! -s "$SELECTED_PACKAGES" ]; then
-        debug_log "No selected packages"
-        return 0
-    fi
-    
-    local filtered_packages=""
-    while read -r line; do
-        [ -z "$line" ] && continue
-        local pkg_id
-        pkg_id=$(echo "$line" | cut -d= -f1)
-        
-        local excluded=0
-        for pattern in $exclude_patterns; do
-            case "$pkg_id" in
-                ${pattern}*)
-                    excluded=1
-                    break
-                    ;;
-            esac
-        done
-        
-        if [ "$excluded" -eq 0 ]; then
-            filtered_packages="${filtered_packages}${pkg_id}
-"
-        fi
-    done < "$SELECTED_PACKAGES"
-    
-    debug_log "Filtered packages: $(echo "$filtered_packages" | wc -l)"
-    
-    # 2. 各パッケージに対して言語パック名を生成
-    while read -r pkg; do
-        [ -z "$pkg" ] && continue
-        
-        local lang_pkg_name=""
-        local matched=0
-        
-        # module_patterns にマッチするか確認
-        for pattern in $module_patterns; do
-            case "$pkg" in
-                ${pattern}*)
-                    local module_name="${pkg#$pattern}"
-                    lang_pkg_name="luci-i18n-${module_name}-${installed_lang}"
-                    matched=1
-                    break
-                    ;;
-            esac
-        done
-        
-        # マッチしない場合はそのまま
-        if [ "$matched" -eq 0 ]; then
-            lang_pkg_name="luci-i18n-${pkg}-${installed_lang}"
-        fi
-        
-        debug_log "Checking lang_pkg='$lang_pkg_name' for pkg='$pkg'"
-        
-        # 3. リポジトリに存在するかチェック
-        if ! check_package_available "$lang_pkg_name" "normal"; then
-            debug_log "Language pack not available: $lang_pkg_name (skipping)"
-            continue
-        fi
-        
-        # 4. 重複チェックして追加
-        if ! grep -q "^${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null && \
-           ! grep -q "=${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${lang_pkg_name}=${lang_pkg_name}===" >> "$SELECTED_PACKAGES"
-            debug_log "Added LuCI language package: $lang_pkg_name for $pkg"
-        fi
-    done <<EOF
-$filtered_packages
-EOF
-    
-    debug_log "=== initialize_language_packages finished ==="
 }
 
 # API値の動的追跡
