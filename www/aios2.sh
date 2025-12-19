@@ -5231,8 +5231,9 @@ aios2_main() {
     : > "$SETUP_VARS"
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
-    
+    # echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+        
     # ========================================
     # Phase 10: UIモジュール起動
     # ========================================
