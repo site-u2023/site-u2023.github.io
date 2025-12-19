@@ -3331,7 +3331,8 @@ reset_state_for_next_session() {
     # apply後の状態を新しいスナップショットとして保存
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
     
     clear_selection_cache
 }
