@@ -1865,79 +1865,79 @@ is_package_installed() {
 }
 
 initialize_installed_packages() {
-    echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        get_package_name "dummy" >/dev/null 2>&1
-    fi
-    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+	echo "[DEBUG] Initializing from installed packages..." >> "$CONFIG_DIR/debug.log"
+	
+	if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
+		get_package_name "dummy" >/dev/null 2>&1
+	fi
+	
+	[ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+	
+	local count=0
+	
+	# 通常パッケージ
+	while read -r cache_line; do
+		[ -z "$cache_line" ] && continue
+		
+		local pkg_id uid is_custom
+		pkg_id=$(echo "$cache_line" | cut -d= -f1)
+		uid=$(echo "$cache_line" | cut -d= -f3)
+		is_custom=$(echo "$cache_line" | cut -d= -f12)
 
-    local count=0
-
-    # === 一時キャッシュ作成：カスタムフィードエントリを除外（引き算） ===
-    local normal_cache=""
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        local is_custom=$(echo "$cache_line" | cut -d= -f12)
-        # isCustomFeed=1 のエントリをスキップ（引き算）
-        [ "$is_custom" = "1" ] && continue
-        normal_cache="${normal_cache}${cache_line}"$'\n'
-    done <<EOF
+		# カスタムフィードとして定義されているパッケージは通常カテゴリから除外
+		[ "$is_custom" = "1" ] && continue
+		
+		if is_package_installed "$pkg_id"; then
+			local already_selected=0
+			
+			if [ -n "$uid" ]; then
+				if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
+				   grep -q "=${uid}\$" "$SELECTED_PACKAGES" 2>/dev/null; then
+					already_selected=1
+				fi
+			else
+				if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
+					already_selected=1
+				fi
+			fi
+			
+			if [ "$already_selected" -eq 0 ]; then
+				# 11番目のownerをsystemに書き換え、12番目のisCustomFeedは0を維持
+				local base_fields
+				base_fields=$(echo "$cache_line" | cut -d= -f1-10)
+				echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
+				count=$((count + 1))
+				echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+			fi
+		fi
+	done <<EOF
 $_PACKAGE_NAME_CACHE
 EOF
-
-    # === カスタムフィード処理（従来通り） ===
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
-        for cat_id in $(get_customfeed_categories); do
-            for pkg_id in $(get_category_packages "$cat_id"); do
-                local pattern exclude installed_pkgs
-                pattern=$(get_customfeed_package_pattern "$pkg_id")
-                exclude=$(get_customfeed_package_exclude "$pkg_id")
-                [ -z "$pattern" ] && continue
-                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                [ -z "$installed_pkgs" ] && continue
-
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
-                    count=$((count + 1))
-                    echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-                fi
-            done
-        done
-    fi
-
-    # === 通常パッケージ処理（除外済みキャッシュを使用） ===
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        local pkg_id uid
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-
-        if is_package_installed "$pkg_id"; then
-            local already_selected=0
-            if [ -n "$uid" ]; then
-                if grep -q "=${uid}=" "$SELECTED_PACKAGES" 2>/dev/null || \
-                   grep -q "=${uid}$" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            else
-                if grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    already_selected=1
-                fi
-            fi
-
-            if [ "$already_selected" -eq 0 ]; then
-                local base_fields
-                base_fields=$(echo "$cache_line" | cut -d= -f1-10)
-                echo "${base_fields}=system=0" >> "$SELECTED_PACKAGES"
-                count=$((count + 1))
-                echo "[INIT] Found installed: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-    done <<EOF
-$normal_cache
-EOF
-
-    echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
+	
+	# カスタムフィード
+	if [ -f "$CUSTOMFEEDS_JSON" ]; then
+		for cat_id in $(get_customfeed_categories); do
+			for pkg_id in $(get_category_packages "$cat_id"); do
+				local pattern exclude installed_pkgs
+				pattern=$(get_customfeed_package_pattern "$pkg_id")
+				exclude=$(get_customfeed_package_exclude "$pkg_id")
+				
+				[ -z "$pattern" ] && continue
+				
+				installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+				
+				[ -z "$installed_pkgs" ] && continue
+				
+				if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+					echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
+					count=$((count + 1))
+					echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
+				fi
+			done
+		done
+	fi
+	
+	echo "[DEBUG] Initialized from $count installed packages" >> "$CONFIG_DIR/debug.log"
 }
 
 is_package_selected() {
@@ -4634,7 +4634,6 @@ generate_config_summary() {
     tr_customscripts=$(translate "tr-tui-summary-customscripts")
     
     {
-        # インストール済みキャッシュをロード（1回のみ）
         [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
         
         # ========================================
@@ -4647,9 +4646,41 @@ generate_config_summary() {
         local install_list=""
         local remove_list=""
         
+        # ★★★ 追加：カスタムフィードパッケージリストを事前構築 ★★★
+        local custom_feed_pkgs=""
+        if [ -f "$CUSTOMFEEDS_JSON" ]; then
+            for cat_id in $(get_customfeed_categories); do
+                for pkg_id in $(get_category_packages "$cat_id"); do
+                    local pattern exclude installed_pkgs
+                    pattern=$(get_customfeed_package_pattern "$pkg_id")
+                    exclude=$(get_customfeed_package_exclude "$pkg_id")
+                    
+                    [ -z "$pattern" ] && continue
+                    
+                    installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                    
+                    if [ -n "$installed_pkgs" ]; then
+                        while read -r installed_pkg; do
+                            [ -z "$installed_pkg" ] && continue
+                            custom_feed_pkgs="${custom_feed_pkgs}${installed_pkg}
+"
+                        done <<EOF
+$installed_pkgs
+EOF
+                    fi
+                done
+            done
+        fi
+        
         # 削除リストを構築（detect_packages_to_remove の結果を使用）
+        # ★★★ 修正：カスタムフィードパッケージを除外 ★★★
         if [ -n "$packages_to_remove" ]; then
             for pkg in $packages_to_remove; do
+                # カスタムフィード管理下のパッケージは除外
+                if echo "$custom_feed_pkgs" | grep -qx "$pkg"; then
+                    echo "[DEBUG] Skipping $pkg from package section (custom feed)" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
                 remove_list="${remove_list}remove ${pkg}
 "
             done
@@ -4664,7 +4695,6 @@ generate_config_summary() {
                 pkg_id=$(echo "$cache_line" | cut -d= -f1)
                 uid=$(echo "$cache_line" | cut -d= -f3)
                 
-                # 実際のインストール状態をチェック
                 if ! is_package_installed "$pkg_id"; then
                     install_list="${install_list}install ${pkg_id}
 "
@@ -4697,12 +4727,10 @@ generate_config_summary() {
                     
                     [ -z "$pattern" ] && continue
                     
-                    # インストール済みチェック
                     installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
                     
                     [ -z "$installed_pkgs" ] && continue
                     
-                    # 選択済みチェック
                     if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
                         custom_remove="${custom_remove}remove ${pkg_id}
 "
@@ -4723,7 +4751,6 @@ generate_config_summary() {
                 
                 [ -z "$pattern" ] && continue
                 
-                # 実際のインストール状態をチェック
                 installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
                 
                 if [ -z "$installed_pkgs" ]; then
@@ -4742,9 +4769,9 @@ generate_config_summary() {
             has_content=1
         fi
         
-        # ========================================
+        # （以下同じ...）
+        
         # 設定変数
-        # ========================================
         if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
             printf "🟡 %s\n\n" "$tr_variables"
             cat "$SETUP_VARS"
@@ -4752,9 +4779,7 @@ generate_config_summary() {
             has_content=1
         fi
         
-        # ========================================
         # カスタムスクリプト
-        # ========================================
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
