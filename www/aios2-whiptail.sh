@@ -1552,12 +1552,13 @@ $(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed')
 $failed_scripts"
         fi
         
-    show_msgbox "$breadcrumb" "$final_message"
-    
-    # 成功後の状態リセット
-    echo "[DEBUG] Resetting state for next session..." >> "$CONFIG_DIR/debug.log"
-    reset_state_for_next_session
-    echo "[DEBUG] State reset completed" >> "$CONFIG_DIR/debug.log"
+        show_msgbox "$breadcrumb" "$final_message"
+        
+        # 成功後の状態リセット
+        echo "[DEBUG] Resetting state for next session..." >> "$CONFIG_DIR/debug.log"
+        reset_state_for_next_session
+        echo "[DEBUG] State reset completed" >> "$CONFIG_DIR/debug.log"
+    fi
     
     return 0
 }
