@@ -1514,16 +1514,16 @@ EOF
         # ========================================
         local summary=""
         local has_changes=0
-        
-        if [ "$HAS_REMOVE" -eq 1 ]; then
-            local remove_count=$(echo "$packages_to_remove" | wc -w)
-            summary="${summary}$(translate 'tr-tui-summary-removed'): ${remove_count}\n"
+
+        if [ "$HAS_REMOVE" -eq 1 ] && [ -n "$packages_to_remove" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
+            summary="${summary}$(echo "$packages_to_remove" | tr ' ' '\n' | sed 's/^/ - /')\n\n"
             has_changes=1
         fi
-        
-        if [ "$HAS_INSTALL" -eq 1 ]; then
-            local install_count=$(echo "$install_packages_content" | grep -c '^' 2>/dev/null || echo 0)
-            summary="${summary}$(translate 'tr-tui-summary-installed'): ${install_count}\n"
+
+        if [ "$HAS_INSTALL" -eq 1 ] && [ -n "$install_packages_content" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
+            summary="${summary}$(echo "$install_packages_content" | sed 's/^/ - /')\n\n"
             has_changes=1
         fi
         
