@@ -1876,14 +1876,18 @@ initialize_installed_packages() {
     local count=0
     
     # 通常パッケージ
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        
-        local pkg_id uid
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        
-        if is_package_installed "$pkg_id"; then
+    while read -r cache_line; do
+        [ -z "$cache_line" ] && continue
+        
+        local pkg_id uid is_custom
+        pkg_id=$(echo "$cache_line" | cut -d= -f1)
+        uid=$(echo "$cache_line" | cut -d= -f3)
+        is_custom=$(echo "$cache_line" | cut -d= -f12)
+
+        # カスタムフィードとして定義されているパッケージは通常カテゴリから除外
+        [ "$is_custom" = "1" ] && continue
+        
+        if is_package_installed "$pkg_id"; then
             local already_selected=0
             
             if [ -n "$uid" ]; then
