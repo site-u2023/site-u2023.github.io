@@ -1924,7 +1924,7 @@ EOF
                 [ -z "$installed_pkgs" ] && continue
                 
                 if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    echo "${pkg_id}=${pkg_id}====system" >> "$SELECTED_CUSTOM_PACKAGES"
+                    echo "${pkg_id}=${pkg_id}=====false=false=false=false=system" >> "$SELECTED_CUSTOM_PACKAGES"
                     count=$((count + 1))
                     echo "[INIT] Found installed custom: $pkg_id (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
