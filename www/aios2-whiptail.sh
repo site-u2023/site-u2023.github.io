@@ -1005,7 +1005,7 @@ XXXXX_package_selection() {
     cat_name=$(get_category_name "$cat_id")
     breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
-    packages=$(get_category_packages "$cat_id")
+    packages=$(get_category_packages "$cat_id" | awk '!seen[$0]++')
 
     echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
     echo "$packages" >> "$CONFIG_DIR/debug.log"
@@ -1306,7 +1306,7 @@ package_selection() {
     fi
 
     local packages
-    packages=$(get_category_packages "$cat_id")
+    packages=$(get_category_packages "$cat_id" | awk '!seen[$0]++')
 
     echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
     echo "$packages" >> "$CONFIG_DIR/debug.log"
