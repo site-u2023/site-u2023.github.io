@@ -454,6 +454,8 @@ EOF
                 continue
             fi
             
+            # ★ ファイル保存は一切しない。次の画面に遷移するだけ。
+            
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
