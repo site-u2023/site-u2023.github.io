@@ -1639,7 +1639,8 @@ package_selection() {
 
         echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
 
-        echo "$deps" | tr ',' '\n' | while read -r dep; do
+        # パイプを使わずにループさせることで、dependent_ids の変更を保持する
+        for dep in $(echo "$deps" | tr ',' ' '); do
             [ -z "$dep" ] && continue
 
             local line
