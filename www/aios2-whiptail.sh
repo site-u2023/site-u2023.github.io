@@ -330,9 +330,9 @@ custom_script_options_ui() {
         local radio_items i option_id option_label choice selected_option
         local current_selection=""
         
-        # 現在の選択を取得（SELECTED_OPTION から）
+        # ★ INSTALL_MODE から現在選択を取得
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+            current_selection=$(grep "^INSTALL_MODE=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
         
         radio_items=""
@@ -361,17 +361,8 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更された場合のみ処理
+            # ★ 選択が変更された場合のみ envVars を書き込む
             if [ "$selected_option" != "$current_selection" ]; then
-                # ★ STEP 1: SELECTED_OPTION を保存（UI状態追跡用）
-                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                    sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
-                    echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                else
-                    echo "SELECTED_OPTION='$selected_option'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                fi
-                
-                # ★ STEP 2: envVars を書き込む（INSTALL_MODE等）
                 write_option_envvars "$script_id" "$selected_option"
             fi
             
