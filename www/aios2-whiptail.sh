@@ -330,9 +330,33 @@ custom_script_options_ui() {
         local radio_items i option_id option_label choice selected_option
         local current_selection=""
         
-        # 現在の選択を取得
+        # envVarsから現在の選択を取得（例：INSTALL_MODE）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+            # JSONから主要なenvVar変数名を取得して、その値から逆引き
+            # 簡易的にファイル全体を見て、どのoptionが選ばれているか判定
+            local all_envvars=$(cat "$CONFIG_DIR/script_vars_${script_id}.txt")
+            
+            while read -r opt_id; do
+                [ -z "$opt_id" ] && continue
+                local opt_envvars=$(get_customscript_option_envvars "$script_id" "$opt_id")
+                
+                # このoptionのenvVarsが全てファイルに存在するかチェック
+                local match=1
+                echo "$opt_envvars" | while IFS='=' read -r key val; do
+                    [ -z "$key" ] && continue
+                    if ! grep -q "^${key}='${val}'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                        match=0
+                        break
+                    fi
+                done
+                
+                if [ "$match" -eq 1 ]; then
+                    current_selection="$opt_id"
+                    break
+                fi
+            done <<EOF
+$filtered_options
+EOF
         fi
         
         radio_items=""
@@ -361,14 +385,10 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更された場合のみ SELECTED_OPTION を保存（CONFIRMED は触らない）
+            # 選択が変更された場合
             if [ "$selected_option" != "$current_selection" ]; then
-                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                    sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
-                    echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                else
-                    echo "SELECTED_OPTION='$selected_option'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                fi
+                # envVarsを書き込む
+                write_option_envvars "$script_id" "$selected_option"
             fi
             
             local requires_confirmation
@@ -407,7 +427,7 @@ custom_script_confirm_ui() {
         local confirmed="OFF"
         local default_state="OFF"
         
-        # ファイルから読み込んで設定（優先）
+        # CONFIRMED状態のみ読み込み
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
@@ -434,22 +454,18 @@ custom_script_confirm_ui() {
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
             if [ "$new_confirmed" = "$default_state" ]; then
-                # デフォルト状態に戻す → ファイル削除
+                # デフォルト状態に戻す
                 rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "[DEBUG] Removed script_vars_${script_id}.txt (back to default)" >> "$CONFIG_DIR/debug.log"
             else
-                # デフォルトと違う状態 → ファイル作成
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                # envVarsを書き込む
+                write_option_envvars "$script_id" "$option_id"
                 
+                # CONFIRMED状態を追記
                 if [ "$new_confirmed" = "OFF" ]; then
                     echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 else
                     echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
-                
-                write_option_envvars "$script_id" "$option_id"
-                echo "[DEBUG] Saved script_vars_${script_id}.txt (changed from default)" >> "$CONFIG_DIR/debug.log"
             fi
         fi
         
