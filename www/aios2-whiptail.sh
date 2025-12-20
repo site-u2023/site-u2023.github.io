@@ -453,17 +453,14 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 既存のCONFIRMEDを保存
-            local saved_confirmed=""
-            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                saved_confirmed=$(grep "^CONFIRMED=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null)
+            if [ "$selected_option" = "$current_selection" ]; then
+                # 同じオプションを再選択 → ファイルはそのままで次の画面へ
+                :
+            else
+                # 違うオプションに変更 → CONFIRMEDをクリア（新規扱い）
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             fi
-            
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            
-            # CONFIRMEDがあれば復元
-            [ -n "$saved_confirmed" ] && echo "$saved_confirmed" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
