@@ -392,9 +392,11 @@ EOF
     done
 }
 
+# =============================================================================
+# Custom Script Options UI
+# SELECTED_OPTIONを保存して次画面（confirm/input）に遷移
+# =============================================================================
 custom_script_options_ui() {
-# この関数内では一切ファイル保存しない
-
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
@@ -454,7 +456,8 @@ EOF
                 continue
             fi
             
-            # ★ ファイル保存は一切しない。次の画面に遷移するだけ。
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
