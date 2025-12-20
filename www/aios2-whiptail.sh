@@ -323,10 +323,14 @@ custom_script_confirm_ui() {
                 confirmed="OFF"
             fi
         else
-            # ファイルが存在しない場合のみ、インストール状態から初期値を設定
+            # ファイルが存在しない場合のみ、option_id に応じて初期値を設定
             case "$script_id" in
                 adguardhome)
-                    is_adguardhome_installed && confirmed="ON"
+                    # インストールオプションの場合のみ、インストール状態を確認
+                    if [ "$option_id" != "remove" ]; then
+                        is_adguardhome_installed && confirmed="ON"
+                    fi
+                    # removeオプションの場合は常にOFF（デフォルトで削除しない）
                     ;;
             esac
         fi
@@ -347,18 +351,18 @@ custom_script_confirm_ui() {
         fi
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            
             if [ "$new_confirmed" = "OFF" ]; then
-                echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "[DEBUG] Set CONFIRMED='0' in script_vars_${script_id}.txt" >> "$CONFIG_DIR/debug.log"
+                # チェックOFFの場合はファイルを削除（設定をクリア）
+                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "[DEBUG] Removed script_vars_${script_id}.txt (unchecked)" >> "$CONFIG_DIR/debug.log"
             else
+                # チェックONの場合のみファイルを作成
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "[DEBUG] Set CONFIRMED='1' in script_vars_${script_id}.txt" >> "$CONFIG_DIR/debug.log"
+                write_option_envvars "$script_id" "$option_id"
+                echo "[DEBUG] Created script_vars_${script_id}.txt (checked)" >> "$CONFIG_DIR/debug.log"
             fi
-            
-            write_option_envvars "$script_id" "$option_id"
         fi
         
         if [ "$skip_inputs" != "true" ]; then
