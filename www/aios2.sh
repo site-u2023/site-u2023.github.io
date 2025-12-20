@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.1100"
+VERSION="R7.1220.2000"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
