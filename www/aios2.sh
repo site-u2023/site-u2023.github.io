@@ -4577,7 +4577,7 @@ PLAN_EOF
     echo "[PLAN] Execution plan generated: $plan_file" >> "$CONFIG_DIR/debug.log"
 }
 
-XXXXX_generate_config_summary() {
+XXXXXXXXXX_generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary_light.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
     local has_content=0
@@ -4594,13 +4594,11 @@ XXXXX_generate_config_summary() {
         # パッケージ変更（削除 + 追加）
         # ========================================
         
-        # ★★★ 削除対象パッケージを検出 ★★★
         local packages_to_remove=$(detect_packages_to_remove)
         
         local install_list=""
         local remove_list=""
         
-        # ★★★ 追加：カスタムフィードパッケージリストを事前構築 ★★★
         local custom_feed_pkgs=""
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             for cat_id in $(get_customfeed_categories); do
@@ -4626,11 +4624,8 @@ EOF
             done
         fi
         
-        # 削除リストを構築（detect_packages_to_remove の結果を使用）
-        # ★★★ 修正：カスタムフィードパッケージを除外 ★★★
         if [ -n "$packages_to_remove" ]; then
             for pkg in $packages_to_remove; do
-                # カスタムフィード管理下のパッケージは除外
                 if echo "$custom_feed_pkgs" | grep -qx "$pkg"; then
                     echo "[DEBUG] Skipping $pkg from package section (custom feed)" >> "$CONFIG_DIR/debug.log"
                     continue
@@ -4640,7 +4635,6 @@ EOF
             done
         fi
         
-        # 追加リストを構築（未インストール + 選択済み）
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             while read -r cache_line; do
                 [ -z "$cache_line" ] && continue
@@ -4656,7 +4650,6 @@ EOF
             done < "$SELECTED_PACKAGES"
         fi
         
-        # パッケージ変更がある場合のみ表示（削除を先に表示）
         if [ -n "$remove_list" ] || [ -n "$install_list" ]; then
             printf "🔵 %s\n\n" "$tr_packages"
             [ -n "$remove_list" ] && echo "$remove_list"
@@ -4671,7 +4664,6 @@ EOF
         local custom_install=""
         local custom_remove=""
         
-        # カスタムフィードの削除対象
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             for cat_id in $(get_customfeed_categories); do
                 for pkg_id in $(get_category_packages "$cat_id"); do
@@ -4693,7 +4685,6 @@ EOF
             done
         fi
         
-        # カスタムフィードの追加対象
         if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
             while read -r cache_line; do
                 [ -z "$cache_line" ] && continue
@@ -4714,7 +4705,6 @@ EOF
             done < "$SELECTED_CUSTOM_PACKAGES"
         fi
         
-        # カスタムフィード変更がある場合のみ表示（削除を先に表示）
         if [ -n "$custom_remove" ] || [ -n "$custom_install" ]; then
             printf "🟢 %s\n\n" "$tr_customfeeds"
             [ -n "$custom_remove" ] && echo "$custom_remove"
@@ -4722,8 +4712,6 @@ EOF
             echo ""
             has_content=1
         fi
-        
-        # （以下同じ...）
         
         # 設定変数
         if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
@@ -4737,12 +4725,21 @@ EOF
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
-            local script_id script_name
+            local script_id script_name confirmed_status action_label
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             script_name=$(get_customscript_name "$script_id")
             [ -z "$script_name" ] && script_name="$script_id"
             
-            printf "🔴 %s: %s\n\n" "$tr_customscripts" "$script_name"
+            # CONFIRMED の値を確認
+            if grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null; then
+                action_label="install"
+            elif grep -q "^CONFIRMED='0'$" "$var_file" 2>/dev/null; then
+                action_label="remove"
+            else
+                action_label="install"
+            fi
+            
+            printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
             cat "$var_file"
             echo ""
             has_content=1
@@ -4919,7 +4916,7 @@ EOF
             fi
             
             printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
-            cat "$var_file"
+            grep -Ev "^(SELECTED_OPTION|CONFIRMED)=" "$var_file"
             echo ""
             has_content=1
         done
