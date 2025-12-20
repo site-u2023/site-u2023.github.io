@@ -5294,18 +5294,20 @@ aios2_main() {
     mkdir -p "$CONFIG_DIR"
     get_language_code
     
+    # ========================================
+    # UI選択（フォアグラウンド）
+    # ========================================
     WHIPTAIL_AVAILABLE=0
     command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
     
     UI_START=$(cut -d' ' -f1 /proc/uptime)
-    (
-        select_ui_mode
-        echo "$UI_MODE" > "$CONFIG_DIR/.ui_mode"
-        UI_END=$(cut -d' ' -f1 /proc/uptime)
-        awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}" > "$CONFIG_DIR/.ui_duration"
-    ) &
-    UI_SELECT_PID=$!
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
+    # ========================================
+    # 並列ダウンロード開始
+    # ========================================
     if ! check_network_connectivity; then
         echo "Error: Network connectivity check failed"
         printf "Press [Enter] to exit. "
@@ -5348,10 +5350,6 @@ aios2_main() {
         [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
-    
-    wait $UI_SELECT_PID
-    UI_MODE=$(cat "$CONFIG_DIR/.ui_mode" 2>/dev/null)
-    UI_DURATION=$(cat "$CONFIG_DIR/.ui_duration" 2>/dev/null)
     
     wait $SETUP_PID
     SETUP_STATUS=$?
