@@ -344,17 +344,21 @@ custom_script_confirm_ui() {
         
         [ $? -ne 0 ] && return 0
         
-        # ★ チェックOFF
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-        # ★ チェックON（ファイル削除せず保存）
         else
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
-        [ "$skip_inputs" != "true" ] && return 0
+        # install時: CONFIRMED='1'の場合のみ次へ進む
+        if [ "$skip_inputs" != "true" ]; then
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                return 0
+            fi
+        fi
+        # remove時: ループ継続
     done
 }
 
