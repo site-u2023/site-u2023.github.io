@@ -321,15 +321,19 @@ custom_script_confirm_ui() {
                 ;;
         esac
         
+        # 初期値をデフォルトにセット
+        local initial_confirmed="$confirmed"
+        
+        # ファイルから読み込んで上書き
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
+                initial_confirmed="ON"
             elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="OFF"
+                initial_confirmed="OFF"
             fi
         fi
-        
-        local initial_confirmed="$confirmed"
         
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
