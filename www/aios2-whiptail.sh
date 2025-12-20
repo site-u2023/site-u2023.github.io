@@ -1274,12 +1274,6 @@ EOF
         echo "language='${selected}'" >> "$SETUP_VARS"
         echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
         
-            local lang_pkg="luci-i18n-base-${selected}"
-            if ! grep -q "^${lang_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                echo "${lang_pkg}=${lang_pkg}===" >> "$SELECTED_PACKAGES"
-                echo "[DEBUG] Added ${lang_pkg} to SELECTED_PACKAGES" >> "$CONFIG_DIR/debug.log"
-            fi
-        
         # 言語パッケージを更新（全LuCIパッケージ対応
         update_language_packages
         clear_selection_cache
