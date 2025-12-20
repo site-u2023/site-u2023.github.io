@@ -336,18 +336,15 @@ custom_script_confirm_ui() {
                 ;;
         esac
         
-        # 初期値を保存
-        local previous_confirmed="$confirmed"
-        
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
-                previous_confirmed="ON"
             elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="OFF"
-                previous_confirmed="OFF"
             fi
         fi
+        
+        local initial_confirmed="$confirmed"
         
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
@@ -361,8 +358,8 @@ custom_script_confirm_ui() {
             new_confirmed="ON"
         fi
         
-        # チェック状態が変わった場合のみ書き込む
-        if [ "$new_confirmed" != "$previous_confirmed" ]; then
+        # 変化があった場合のみ書き込む
+        if [ "$new_confirmed" != "$initial_confirmed" ]; then
             if [ "$new_confirmed" = "OFF" ]; then
                 sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
                 echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
