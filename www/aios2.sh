@@ -5094,7 +5094,7 @@ show_log() {
     fi
 }
 
-aios2_main() {
+XXXXX_aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
@@ -5252,6 +5252,185 @@ aios2_main() {
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID $INIT_PKG_PID
+
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
+    fi
+    
+    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
+    
+    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
+    fi
+    
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+    
+    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
+        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
+        aios2_${UI_MODE}_main
+    else
+        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        return 1
+    fi
+    
+    echo ""
+    echo "Thank you for using aios2!"
+    echo ""
+}
+
+aios2_main() {
+    START_TIME=$(cut -d' ' -f1 /proc/uptime)
+    
+    elapsed_time() {
+        local current=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $current - $START_TIME}"
+    }
+    
+    clear
+    print_banner
+    mkdir -p "$CONFIG_DIR"
+    get_language_code
+    
+    WHIPTAIL_AVAILABLE=0
+    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
+    
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    (
+        select_ui_mode
+        echo "$UI_MODE" > "$CONFIG_DIR/.ui_mode"
+        UI_END=$(cut -d' ' -f1 /proc/uptime)
+        awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}" > "$CONFIG_DIR/.ui_duration"
+    ) &
+    UI_SELECT_PID=$!
+    
+    if ! check_network_connectivity; then
+        echo "Error: Network connectivity check failed"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
+    __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
+        echo "Error: Failed to download config.js"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    init
+    
+    (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
+    PKG_MGR_DL_PID=$!
+    
+    (download_api_with_retry) &
+    API_PID=$!
+    
+    (download_setup_json) &
+    SETUP_PID=$!
+    
+    (download_postinst_json) &
+    POSTINST_PID=$!
+    
+    (download_customfeeds_json >/dev/null 2>&1) &
+    CUSTOMFEEDS_PID=$!
+    
+    (download_customscripts_json >/dev/null 2>&1) &
+    CUSTOMSCRIPTS_PID=$!
+    
+    (prefetch_templates) &
+    TEMPLATES_PID=$!
+    
+    (
+        [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
+        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
+    ) &
+    UI_DL_PID=$!
+    
+    wait $UI_SELECT_PID
+    UI_MODE=$(cat "$CONFIG_DIR/.ui_mode" 2>/dev/null)
+    UI_DURATION=$(cat "$CONFIG_DIR/.ui_duration" 2>/dev/null)
+    
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    [ $SETUP_STATUS -ne 0 ] && {
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+
+    wait $API_PID
+    
+    get_extended_device_info
+
+    export DEVICE_TARGET OPENWRT_VERSION ASU_URL DEVICE_MODEL DEVICE_ARCH DEVICE_VENDOR DEVICE_SUBTARGET PKG_CHANNEL
+    
+    (download_language_json "en" >/dev/null 2>&1) &
+    LANG_EN_PID=$!
+    
+    NATIVE_LANG_PID=""
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        (download_language_json "${AUTO_LANGUAGE}") &
+        NATIVE_LANG_PID=$!
+    fi
+    
+    ( cache_package_availability >/dev/null 2>&1 ) &
+    CACHE_PKG_PID=$!
+    
+    (
+        cache_installed_packages
+        wait $CACHE_PKG_PID
+        cache_available_languages
+        initialize_installed_packages
+        
+        : > "$SETUP_VARS"
+        cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+        cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+        : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    ) &
+    INIT_PKG_PID=$!
+    
+    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
+    
+    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Waiting for package manager configuration..."
+        wait $PKG_MGR_DL_PID
+        
+        load_package_manager_config || {
+            echo "Failed to load package manager config"
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
+        }
+        
+        echo "Installing whiptail..."
+        echo "Updating package lists..."
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        
+        if ! install_package whiptail; then
+            echo "Installation failed. Falling back to simple mode."
+            UI_MODE="simple"
+        else
+            echo "Installation successful."
+        fi
+    fi
+    
+    TIME_BEFORE_UI=$(elapsed_time)
+    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
+    
+    wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
