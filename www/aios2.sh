@@ -2548,13 +2548,38 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
-    # SELECTED_OPTION と CONFIRMED を保持（存在する場合）
+    # ★ STEP 1: 新しい envVars のキー一覧を取得
+    local new_keys=""
+    new_keys=$(echo "$env_json" | \
+        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
+        sed 's/^"//; s/"$//' | \
+        cut -d: -f1 | \
+        tr -d '"' | \
+        sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+    
+    echo "[DEBUG] write_option_envvars: new_keys=$new_keys" >> "$CONFIG_DIR/debug.log"
+    
+    # ★ STEP 2: SELECTED_OPTION と CONFIRMED を保持（存在する場合）
     : > "$temp_file"
     if [ -f "$vars_file" ]; then
         grep -E "^(SELECTED_OPTION|CONFIRMED)=" "$vars_file" >> "$temp_file" 2>/dev/null || true
     fi
     
-    # envVars を追加
+    # ★ STEP 3: 古い envVars キーを削除（vars_file から該当行を除外）
+    if [ -f "$vars_file" ]; then
+        while read -r key; do
+            [ -z "$key" ] && continue
+            # SELECTED_OPTION と CONFIRMED 以外を削除対象に
+            case "$key" in
+                SELECTED_OPTION|CONFIRMED) continue ;;
+            esac
+            sed -i "/^${key}=/d" "$temp_file" 2>/dev/null || true
+        done <<KEYS
+$new_keys
+KEYS
+    fi
+    
+    # ★ STEP 4: 新しい envVars を追加
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
@@ -2562,13 +2587,11 @@ write_option_envvars() {
             key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             if [ -n "$key" ] && [ -n "$value" ]; then
-                # temp_file 内の重複を削除
-                sed -i "/^${key}=/d" "$temp_file" 2>/dev/null
                 echo "${key}='${value}'" >> "$temp_file"
             fi
         done
     
-    # temp_file を vars_file に上書き
+    # ★ STEP 5: temp_file を vars_file に上書き
     mv "$temp_file" "$vars_file"
     
     echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
