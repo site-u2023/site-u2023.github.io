@@ -436,13 +436,25 @@ custom_script_confirm_ui() {
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
             if [ "$new_confirmed" = "$default_state" ]; then
-                # デフォルト状態に戻す
+                # デフォルト状態に戻す = ファイル削除
                 rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
             else
-                # envVarsを書き込む
+                # ★ 1. SELECTED_OPTION を保存
+                local saved_option=""
+                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                    saved_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+                fi
+                
+                # ★ 2. ファイルクリア
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
+                # ★ 3. SELECTED_OPTION を書き戻す
+                [ -n "$saved_option" ] && echo "SELECTED_OPTION='$saved_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
+                # ★ 4. envVars を追記
                 write_option_envvars "$script_id" "$option_id"
                 
-                # CONFIRMED状態を追記
+                # ★ 5. CONFIRMED を追記
                 if [ "$new_confirmed" = "OFF" ]; then
                     echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 else
