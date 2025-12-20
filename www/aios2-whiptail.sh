@@ -283,22 +283,25 @@ $filtered_options
 EOF
         
         choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
-            --ok-button \"$(translate 'tr-tui-select')\" \
+            --ok-button \"$(translate 'tr-tui-refresh')\" \
             --cancel-button \"$(translate 'tr-tui-back')\" \
             --radiolist \"\" \
-            $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
+            $UI_HEIGHT $UI_WIDTH 0 \
             $radio_items" 3>&1 1>&2 2>&3) || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更された場合のみ処理
-            if [ "$selected_option" != "$current_selection" ]; then
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
+            # 選択が変更されていない場合はループを続ける
+            if [ "$selected_option" = "$current_selection" ]; then
+                continue
             fi
+            
+            # 選択が変更された場合のみ処理
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            write_option_envvars "$script_id" "$selected_option"
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
