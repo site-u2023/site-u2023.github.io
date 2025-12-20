@@ -330,33 +330,9 @@ custom_script_options_ui() {
         local radio_items i option_id option_label choice selected_option
         local current_selection=""
         
-        # envVarsから現在の選択を取得（例：INSTALL_MODE）
+        # 現在の選択を取得
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            # JSONから主要なenvVar変数名を取得して、その値から逆引き
-            # 簡易的にファイル全体を見て、どのoptionが選ばれているか判定
-            local all_envvars=$(cat "$CONFIG_DIR/script_vars_${script_id}.txt")
-            
-            while read -r opt_id; do
-                [ -z "$opt_id" ] && continue
-                local opt_envvars=$(get_customscript_option_envvars "$script_id" "$opt_id")
-                
-                # このoptionのenvVarsが全てファイルに存在するかチェック
-                local match=1
-                echo "$opt_envvars" | while IFS='=' read -r key val; do
-                    [ -z "$key" ] && continue
-                    if ! grep -q "^${key}='${val}'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                        match=0
-                        break
-                    fi
-                done
-                
-                if [ "$match" -eq 1 ]; then
-                    current_selection="$opt_id"
-                    break
-                fi
-            done <<EOF
-$filtered_options
-EOF
+            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
         
         radio_items=""
@@ -385,9 +361,16 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更された場合
+            # 選択が変更された場合のみ SELECTED_OPTION を保存（CONFIRMED は触らない）
             if [ "$selected_option" != "$current_selection" ]; then
-                # envVarsを書き込む
+                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                    sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
+                    echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                else
+                    echo "SELECTED_OPTION='$selected_option'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                fi
+                
+                # ★★★ envVars を書き込む ★★★
                 write_option_envvars "$script_id" "$selected_option"
             fi
             
