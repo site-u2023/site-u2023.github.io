@@ -1836,6 +1836,9 @@ cache_installed_packages() {
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Installed packages cache built: $count packages" >> "$CONFIG_DIR/debug.log"
+
+    _INSTALLED_PACKAGES_CACHE=$(cat "$cache_file")
+    _INSTALLED_PACKAGES_LOADED=1
 }
 
 is_package_installed() {
