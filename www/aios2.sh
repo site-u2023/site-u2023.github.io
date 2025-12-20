@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1219.2109"
+VERSION="R7.1220.0921"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -3953,33 +3953,43 @@ detect_packages_to_remove() {
     # ----------------------------------------
     # Phase 1: 通常パッケージ判定
     # ----------------------------------------
-    while read -r cache_line; do
-        [ -z "$cache_line" ] && continue
-        
-        local pkg_id uid owner is_custom
-        pkg_id=$(echo "$cache_line" | cut -d= -f1)
-        uid=$(echo "$cache_line" | cut -d= -f3)
-        owner=$(echo "$cache_line" | cut -d= -f11)
-        is_custom=$(echo "$cache_line" | cut -d= -f12)
-        
-        # custom feed 管理下は Phase 1 で除外
-        [ "$is_custom" = "1" ] && continue
-        
-        [ "$owner" = "auto" ] || [ "$owner" = "system" ] && continue
-        
-        is_package_installed "$pkg_id" || continue
-        
-        local still_selected=0
-        if [ -n "$uid" ]; then
-            grep -q "=${uid}[=\$]" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
-        else
-            grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
-        fi
-        
-        [ "$still_selected" -eq 0 ] && add_remove_pkg "$pkg_id"
-    done <<EOF
-$_PACKAGE_NAME_CACHE
-EOF
+    # ★修正：SELECTED_PACKAGES ファイルから直接読み込む
+    if [ -f "$SELECTED_PACKAGES" ]; then
+        while read -r selected_line; do
+            [ -z "$selected_line" ] && continue
+            
+            local pkg_id uid owner is_custom
+            pkg_id=$(echo "$selected_line" | cut -d= -f1)
+            uid=$(echo "$selected_line" | cut -d= -f3)
+            owner=$(echo "$selected_line" | cut -d= -f11)
+            is_custom=$(echo "$selected_line" | cut -d= -f12)
+            
+            echo "[DEBUG] Checking: pkg=$pkg_id, owner=$owner, is_custom=$is_custom" >> "$CONFIG_DIR/debug.log"
+            
+            # custom feed 管理下は Phase 1 で除外
+            [ "$is_custom" = "1" ] && continue
+            
+            # owner=auto/system は削除対象外
+            [ "$owner" = "auto" ] && continue
+            [ "$owner" = "system" ] && continue
+            
+            # インストール済みチェック
+            is_package_installed "$pkg_id" || continue
+            
+            # 現在も選択されているかチェック（スナップショットと比較）
+            local still_selected=0
+            if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+                if [ -n "$uid" ]; then
+                    grep -q "=${uid}[=\$]" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null && still_selected=1
+                else
+                    grep -q "^${pkg_id}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null && still_selected=1
+                fi
+            fi
+            
+            # スナップショットに無ければ削除対象
+            [ "$still_selected" -eq 0 ] && add_remove_pkg "$pkg_id"
+        done < "$SELECTED_PACKAGES"
+    fi
 
     # ----------------------------------------
     # Phase 2: 言語パッケージ削除
@@ -4002,7 +4012,7 @@ EOF
     # ----------------------------------------
     # Phase 3: カスタムフィード判定
     # ----------------------------------------
-    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+    if [ -f "$CUSTOMFEEDS_JSON" ] && [ -f "$SELECTED_CUSTOM_PACKAGES" ]; then
         for cat_id in $(get_customfeed_categories); do
             for pkg_id in $(get_category_packages "$cat_id"); do
                 local pattern exclude
@@ -4015,100 +4025,23 @@ EOF
                 installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
                 [ -z "$installed_pkgs" ] && continue
                 
-                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                    while read -r installed_pkg; do
-                        [ -z "$installed_pkg" ] && continue
-                        add_remove_pkg "$installed_pkg"
-                        echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
-                    done <<EOF
+                # スナップショットと比較
+                if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
+                    if ! grep -q "^${pkg_id}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
+                        while read -r installed_pkg; do
+                            [ -z "$installed_pkg" ] && continue
+                            add_remove_pkg "$installed_pkg"
+                            echo "[REMOVE] Marked custom feed for removal: $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                        done <<EOF
 $installed_pkgs
 EOF
+                    fi
                 fi
             done
         done
     fi
 
     echo "$remove_list" | xargs
-}
-
-# ========================================
-# 削除リスト展開（言語パッケージ + 依存関係）
-# ========================================
-expand_remove_list() {
-    local packages="$1"
-    local lang_packages=""
-    local dep_packages=""
-    local result=""
-    
-    for pkg in $packages; do
-        # 1. 言語パッケージ検出
-        local base_name=""
-        case "$pkg" in
-            luci-app-*)   base_name="${pkg#luci-app-}" ;;
-            luci-proto-*) base_name="${pkg#luci-proto-}" ;;
-            luci-theme-*) base_name="${pkg#luci-theme-}" ;;
-            luci-mod-*)   base_name="${pkg#luci-mod-}" ;;
-        esac
-        
-        if [ -n "$base_name" ]; then
-            local found_lang
-            found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
-            
-            if [ -n "$found_lang" ]; then
-                lang_packages="$lang_packages $found_lang"
-                echo "[DEBUG] Found lang package for $pkg: $found_lang" >> "$CONFIG_DIR/debug.log"
-            fi
-        fi
-        
-        # 2. 依存パッケージ（opkgのみ、JSONから取得したコマンドを使用）
-        if [ "$PKG_MGR" = "opkg" ]; then
-            local deps_cmd depends_cmd
-            deps_cmd=$(expand_template "$PKG_DEPENDS_CMD" "package" "$pkg")
-            
-            local deps
-            deps=$(eval "$deps_cmd" 2>/dev/null)
-            
-            for dep in $deps; do
-                # システムパッケージ除外（JSONから取得したリスト）
-                local is_system=0
-                for sys_pkg in $PKG_SYSTEM_PACKAGES; do
-                    case "$dep" in
-                        ${sys_pkg}*) is_system=1; break ;;
-                    esac
-                done
-                
-                [ "$is_system" -eq 1 ] && continue
-                
-                # インストール済みチェック
-                is_package_installed "$dep" || continue
-                
-                # 他のパッケージに依存されているかチェック
-                local what_depends_cmd
-                what_depends_cmd=$(expand_template "$PKG_WHATDEPENDS_CMD" "package" "$dep")
-                
-                local dependents
-                dependents=$(eval "$what_depends_cmd" 2>/dev/null)
-                
-                local other_depends=0
-                for dependent in $dependents; do
-                    case " $packages " in
-                        *" $dependent "*) ;;
-                        *) other_depends=1; break ;;
-                    esac
-                done
-                
-                if [ "$other_depends" -eq 0 ]; then
-                    dep_packages="$dep_packages $dep"
-                    echo "[DEBUG] Found removable dependency for $pkg: $dep" >> "$CONFIG_DIR/debug.log"
-                fi
-            done
-        fi
-        
-        result="$result $pkg"
-    done
-    
-    # 順序: 言語パッケージ → 本体 → 依存パッケージ
-    echo "$lang_packages $result $dep_packages" | tr -s ' ' | sed 's/^ //;s/ $//'
 }
 
 # ========================================
