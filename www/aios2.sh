@@ -5386,34 +5386,8 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    (
-        wait $API_PID
-        get_extended_device_info
-        export DEVICE_TARGET
-        export OPENWRT_VERSION
-        export ASU_URL
-        export DEVICE_MODEL
-        export DEVICE_ARCH
-        export DEVICE_VENDOR
-        export DEVICE_SUBTARGET
-        export PKG_CHANNEL
-        
-        cache_package_availability >/dev/null 2>&1
-        cache_available_languages
-    ) &
-    DEVICE_INFO_PID=$!
-    
-    (
-        cache_installed_packages
-        wait $DEVICE_INFO_PID
-        initialize_installed_packages
-        
-        : > "$SETUP_VARS"
-        cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-        cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-        : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
-    ) &
-    INIT_PKG_PID=$!
+    (cache_installed_packages) &
+    CACHE_INSTALLED_PID=$!
     
     WHIPTAIL_AVAILABLE=0
     command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
@@ -5464,7 +5438,45 @@ aios2_main() {
         return 1
     }
 
-    wait $UI_DL_PID $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $DEVICE_INFO_PID $INIT_PKG_PID
+    wait $API_PID
+    
+    get_extended_device_info
+
+    export DEVICE_TARGET
+    export OPENWRT_VERSION
+    export ASU_URL
+    export DEVICE_MODEL
+    export DEVICE_ARCH
+    export DEVICE_VENDOR
+    export DEVICE_SUBTARGET
+    export PKG_CHANNEL 
+    
+    echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
+    
+    ( cache_package_availability >/dev/null 2>&1 ) &
+    CACHE_PKG_PID=$!
+    
+    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
+    
+    wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
+
+    wait $CACHE_PKG_PID
+    cache_available_languages
+
+    wait $CACHE_INSTALLED_PID
+    
+    initialize_installed_packages
+    
+    : > "$SETUP_VARS"
+    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
