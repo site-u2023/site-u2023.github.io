@@ -374,7 +374,7 @@ print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     printf "\033[37m         Vr.%s\033[0m\n" "$VERSION"
-	printf "\033[1;31m         $MESSAGE\033[0m\n"
+	printf "\033[1;31m       $MESSAGE\033[0m\n"
     printf "\n"
     printf "\033[1;35mThis script is used at your own risk\033[0m\n"
 	printf "\n"
