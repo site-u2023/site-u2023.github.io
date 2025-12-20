@@ -315,30 +315,41 @@ custom_script_confirm_ui() {
     local option_id="$2"
     local breadcrumb="$3"
     
-    local option_label
-    option_label=$(get_customscript_option_label "$script_id" "$option_id")
-    local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${option_label}"
+    # ★ ラベルはスクリプト名（アプリ名）
+    local script_name
+    script_name=$(get_customscript_name "$script_id")
+    local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
     while true; do
+        # ★ デフォルト状態 = インストール状態を反映
         local confirmed="OFF"
+        
+        # インストール済みかチェック
+        case "$script_id" in
+            adguardhome)
+                is_adguardhome_installed && confirmed="ON"
+                ;;
+        esac
+        
+        # ★ 保存状態があれば優先
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
+            elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="OFF"
             fi
         fi
         
         local selected
-        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${option_label}\" $confirmed")
+        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
         [ $? -ne 0 ] && return 0
         
-        # ★ 修正：CONFIRMED だけ削除（ファイルは保持）
+        # チェック状態を保存
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            continue
-        fi
-        
-        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        else
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
