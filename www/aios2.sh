@@ -2865,7 +2865,6 @@ collect_script_inputs() {
 check_script_requirements() {
     local script_id="$1"
     
-    # JSONからリソース要件を取得
     local min_mem rec_mem min_flash rec_flash
     min_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.minMemory" 2>/dev/null)
     rec_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.recommendedMemory" 2>/dev/null)
@@ -2873,10 +2872,8 @@ check_script_requirements() {
     rec_flash=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.recommendedFlash" 2>/dev/null)
     
     local msg="$(translate 'tr-tui-customscript-resource-check')
-$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB
-$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB
-  $(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB"
+$(translate 'tr-tui-customscript-memory'): ${MEM_FREE_MB}MB ($(translate 'tr-tui-customscript-minimum'): ${min_mem}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_mem}MB)
+$(translate 'tr-tui-customscript-storage'): ${FLASH_FREE_MB}MB ($(translate 'tr-tui-customscript-minimum'): ${min_flash}MB / $(translate 'tr-tui-customscript-recommended'): ${rec_flash}MB)"
     
     if [ "$MEM_FREE_MB" -lt "$min_mem" ] || [ "$FLASH_FREE_MB" -lt "$min_flash" ]; then
         msg="${msg}
