@@ -440,7 +440,15 @@ EOF
     done
 }
 
-# 確認用単独チェックボックスUI（完全汎用）
+# =============================================================================
+# Custom Script Confirmation UI
+# =============================================================================
+# チェックボックスの初期状態：
+# * インストール済み → ファイルなし → チェックON（実態反映）
+# * 未インストール → ファイルなし → チェックOFF（実態反映）
+# * ファイルあり（CONFIRMED='1'） → チェックON
+# * ファイルあり（CONFIRMED='0'） → チェックOFF
+# =============================================================================
 custom_script_confirm_ui() {
     local script_id="$1"
     local option_id="$2"
@@ -453,19 +461,24 @@ custom_script_confirm_ui() {
     local skip_inputs
     skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
     
+    # インストール状態を検出して実態を設定
+    local default_state="OFF"
+    case "$script_id" in
+        adguardhome)
+            is_adguardhome_installed && default_state="ON"
+            ;;
+    esac
+    
     while true; do
-        local confirmed="OFF"
-        local default_state="OFF"
+        local confirmed="$default_state"
         
-        # CONFIRMED状態のみ読み込み
+        # ファイルがあればその値で上書き
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
             elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="OFF"
             fi
-        else
-            confirmed="$default_state"
         fi
         
         local initial_confirmed="$confirmed"
@@ -484,25 +497,19 @@ custom_script_confirm_ui() {
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
             if [ "$new_confirmed" = "$default_state" ]; then
-                # デフォルト状態に戻す = ファイル削除
                 rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
             else
-                # ★ 1. SELECTED_OPTION を保存
                 local saved_option=""
                 if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                     saved_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
                 fi
                 
-                # ★ 2. ファイルクリア
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 
-                # ★ 3. SELECTED_OPTION を書き戻す
                 [ -n "$saved_option" ] && echo "SELECTED_OPTION='$saved_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 
-                # ★ 4. envVars を追記
                 write_option_envvars "$script_id" "$option_id"
                 
-                # ★ 5. CONFIRMED を追記
                 if [ "$new_confirmed" = "OFF" ]; then
                     echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 else
