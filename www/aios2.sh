@@ -5,7 +5,7 @@
 # Common Functions (UI-independent)
 
 VERSION="R7.1220.0930"
-echo -e "\033[1;31m[Under Maintenance]\033[0m"
+MEMOS="[Under Maintenance]"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -376,7 +376,8 @@ print_banner_unicode() {
     printf       "\033[37m         Vr.%s\033[0m\n" "$VERSION"
     printf "\n"
     printf "\033[1;35mThis script is used at your own risk\033[0m\n"
-    printf "\n"
+	printf "\033[1;31m$MEMOS\033[0m"
+	printf "\n"
 }
 
 banner_supported() {
