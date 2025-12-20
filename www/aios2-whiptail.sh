@@ -292,14 +292,19 @@ EOF
                 write_option_envvars "$script_id" "$selected_option"
             fi
             
-            # ★ 確認チェックボックス（先）
+            # 確認チェックボックス（先）
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+                
+                # CONFIRMED='1' でない場合は入力フィールドに進まない
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
+                fi
             fi
             
-            # ★ 入力フィールド（後）
+            # 入力フィールド（後）
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
@@ -319,18 +324,17 @@ custom_script_confirm_ui() {
     script_name=$(get_customscript_name "$script_id")
     local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
-    local skip_inputs
-    skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
-    
     while true; do
         local confirmed="OFF"
         
+        # adguardhome特殊処理
         case "$script_id" in
             adguardhome)
                 is_adguardhome_installed && confirmed="ON"
                 ;;
         esac
         
+        # ファイルから状態を読み込み（上書き）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
@@ -342,8 +346,10 @@ custom_script_confirm_ui() {
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
+        # 戻るボタン
         [ $? -ne 0 ] && return 0
         
+        # チェック状態を保存
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
@@ -352,13 +358,12 @@ custom_script_confirm_ui() {
             echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
-        # install時: CONFIRMED='1'の場合のみ次へ進む
-        if [ "$skip_inputs" != "true" ]; then
-            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                return 0
-            fi
+        # CONFIRMED='1' の場合のみ次へ進む（return 0）
+        if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+            return 0
         fi
-        # remove時: ループ継続
+        
+        # CONFIRMED='0' の場合はループ継続
     done
 }
 
