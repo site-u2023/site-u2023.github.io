@@ -312,33 +312,29 @@ custom_script_confirm_ui() {
     option_label=$(get_customscript_option_label "$script_id" "$option_id")
     local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${option_label}"
     
-    # 現在の確認状態を取得
-    local confirmed="OFF"
-    if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-        if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-            confirmed="ON"
-        fi
-    fi
-    
-    # ループ開始（更新ボタンで戻る）
     while true; do
+        local confirmed="OFF"
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="ON"
+            fi
+        fi
+        
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${option_label}\" $confirmed")
         
-        # キャンセル時はループ終了
         [ $? -ne 0 ] && return 0
         
-        # 選択なし = 取り消し
+        # ★ 修正：CONFIRMED だけ削除（ファイルは保持）
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            confirmed="OFF"
             continue
         fi
         
-        # 選択あり = 確認済みとしてマーク
-        sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-        echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-        confirmed="ON"
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        fi
     done
 }
 
@@ -1798,7 +1794,12 @@ EOF
                 script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
                 
                 [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
-                
+
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    echo "[INFO] Skipping $script_id (not confirmed)" >> "$CONFIG_DIR/debug.log"
+                    continue
+                fi
+
                 sh "$script"
                 if [ $? -ne 0 ]; then
                     failed_count=$((failed_count + 1))
