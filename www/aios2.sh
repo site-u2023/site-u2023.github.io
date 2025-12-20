@@ -43,30 +43,20 @@ debug_log() {
 #   12. isCustomFeed    - "1" if managed by custom feed, "0" otherwise
 #
 # 【Package Ownership (owner field)】
-# Determines package lifecycle and removal policy:
 #
 # - **system**: Installed before aios2 started (pre-existing packages)
 #   * Added by: initialize_installed_packages()
-#   * Removal policy: NEVER shown in removal list (user did not install)
 #   * Example: Packages already on device at startup
 #
 # - **auto**: Automatically added by conditional logic
 #   * Added by: auto_add_conditional_packages()
-#   * Removal policy: NEVER shown in removal list (system manages lifecycle)
 #   * Example: map, ds-lite, luci-app-usteer (based on connection_type/wifi_mode)
 #
 # - **user**: Explicitly selected by user in package selection UI
 #   * Added by: add_package_with_dependencies() via user interaction
-#   * Removal policy: SHOWN in removal list when deselected
 #   * Example: User manually checks luci-app-ttyd in package menu
 #
 # - **empty**: Legacy entries without owner (treated as "user")
-#
-# 【Removal Detection Logic】
-# detect_packages_to_remove() behavior:
-#   1. Skip if owner="system" (pre-existing, user never selected)
-#   2. Skip if owner="auto" (managed by conditional logic)
-#   3. Check if owner="user" (show in removal list when deselected)
 #
 # 【Cache Loading Strategy】
 # - Built on first access (lazy loading)
@@ -111,22 +101,17 @@ debug_log() {
 #   - Device has: luci-app-ttyd (pre-installed)
 #   - aios2 starts → initialize_installed_packages()
 #   - luci-app-ttyd marked as owner=system
-#   - Review screen: empty (user did not select anything)
 #
 # Scenario 2: User selects MAP-E
 #   - User: connection_type=mape
 #   - auto_add_conditional_packages() adds: map (owner=auto)
-#   - Review screen: shows "install map" (new package)
 #   - User changes to: connection_type=disabled
 #   - auto_add_conditional_packages() removes: map
-#   - Review screen: empty (owner=auto never shown in removal)
 #
 # Scenario 3: User selects package manually
 #   - User checks: luci-app-vnstat2 in package menu
 #   - add_package_with_dependencies() adds with owner=user
-#   - Review screen: shows "install luci-app-vnstat2"
 #   - User unchecks: luci-app-vnstat2
-#   - Review screen: shows "remove luci-app-vnstat2" (owner=user)
 #
 # =============================================================================
 
