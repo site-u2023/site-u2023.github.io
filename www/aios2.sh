@@ -6,7 +6,7 @@
 
 VERSION="R7.1220.1100"
 MESSAGE="[Under Maintenance]"
-SHOW_MESSAGE="MESSAGE"
+SHOW_MESSAGE="VERSION"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
