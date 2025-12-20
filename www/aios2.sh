@@ -2474,6 +2474,14 @@ get_customscript_option_skip_inputs() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].skipInputs" 2>/dev/null | head -1
 }
 
+get_customscript_option_requires_confirmation() {
+    local script_id="$1"
+    local option_id="$2"
+    
+    jsonfilter -i "$CUSTOMSCRIPTS_JSON" \
+        -e "@.scripts[@.id='$script_id'].options[@.id='$option_id'].requiresConfirmation" 2>/dev/null
+}
+
 # =============================================================================
 # Write Option Environment Variables (JSON-driven, no hardcoding)
 # =============================================================================
