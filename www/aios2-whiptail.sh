@@ -329,7 +329,6 @@ custom_script_confirm_ui() {
     
     while true; do
         local confirmed="OFF"
-        local had_previous_value=0
         
         case "$script_id" in
             adguardhome)
@@ -337,14 +336,16 @@ custom_script_confirm_ui() {
                 ;;
         esac
         
+        # 初期値を保存
+        local previous_confirmed="$confirmed"
+        
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            if grep -q "^CONFIRMED=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                had_previous_value=1
-                if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    confirmed="ON"
-                else
-                    confirmed="OFF"
-                fi
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="ON"
+                previous_confirmed="ON"
+            elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="OFF"
+                previous_confirmed="OFF"
             fi
         fi
         
@@ -353,9 +354,16 @@ custom_script_confirm_ui() {
         
         [ $? -ne 0 ] && return 0
         
-        # 以前に値があった場合のみ更新
-        if [ "$had_previous_value" -eq 1 ]; then
-            if [ -z "$selected" ]; then
+        local new_confirmed
+        if [ -z "$selected" ]; then
+            new_confirmed="OFF"
+        else
+            new_confirmed="ON"
+        fi
+        
+        # チェック状態が変わった場合のみ書き込む
+        if [ "$new_confirmed" != "$previous_confirmed" ]; then
+            if [ "$new_confirmed" = "OFF" ]; then
                 sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
                 echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             else
