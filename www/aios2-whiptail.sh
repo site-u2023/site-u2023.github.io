@@ -314,6 +314,14 @@ custom_script_confirm_ui() {
     
     while true; do
         local confirmed="OFF"
+        local default_state="OFF"
+        
+        # デフォルト状態を判定
+        case "$script_id" in
+            adguardhome)
+                is_adguardhome_installed && default_state="ON"
+                ;;
+        esac
         
         # ファイルから読み込んで設定（優先）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
@@ -323,19 +331,9 @@ custom_script_confirm_ui() {
                 confirmed="OFF"
             fi
         else
-            # ファイルが存在しない場合のみ、option_id に応じて初期値を設定
-            case "$script_id" in
-                adguardhome)
-                    # インストールオプションの場合のみ、インストール状態を確認
-                    if [ "$option_id" != "remove" ]; then
-                        is_adguardhome_installed && confirmed="ON"
-                    fi
-                    # removeオプションの場合は常にOFF（デフォルトで削除しない）
-                    ;;
-            esac
+            confirmed="$default_state"
         fi
         
-        # 初期値をデフォルトにセット
         local initial_confirmed="$confirmed"
         
         local selected
@@ -351,17 +349,23 @@ custom_script_confirm_ui() {
         fi
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
-            if [ "$new_confirmed" = "OFF" ]; then
-                # チェックOFFの場合はファイルを削除（設定をクリア）
+            if [ "$new_confirmed" = "$default_state" ]; then
+                # デフォルト状態に戻す → ファイル削除
                 rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "[DEBUG] Removed script_vars_${script_id}.txt (unchecked)" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] Removed script_vars_${script_id}.txt (back to default)" >> "$CONFIG_DIR/debug.log"
             else
-                # チェックONの場合のみファイルを作成
+                # デフォルトと違う状態 → ファイル作成
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                
+                if [ "$new_confirmed" = "OFF" ]; then
+                    echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                else
+                    echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                fi
+                
                 write_option_envvars "$script_id" "$option_id"
-                echo "[DEBUG] Created script_vars_${script_id}.txt (checked)" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] Saved script_vars_${script_id}.txt (changed from default)" >> "$CONFIG_DIR/debug.log"
             fi
         fi
         
