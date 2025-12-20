@@ -1609,20 +1609,13 @@ package_selection() {
         return $?
     fi
 
-    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-
+    # キャッシュのロード確認
     if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
         get_package_name "dummy" > /dev/null 2>&1
-        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
     fi
 
     local packages
     packages=$(get_category_packages "$cat_id")
-
-    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
-    echo "$packages" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
 
     # ----------------------------------------
     # 依存パッケージID取得（1階層目）
@@ -1636,8 +1629,6 @@ package_selection() {
         deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$parent_id" '
             $1 == id || $3 == id { print $6; exit }
         ')
-
-        echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
 
         # パイプを使わずにループさせることで、dependent_ids の変更を保持する
         for dep in $(echo "$deps" | tr ',' ' '); do
@@ -1665,30 +1656,24 @@ $packages
 EOF
 
     dependent_ids="${dependent_ids} "
-    echo "[DEBUG] Final dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
 
     # ----------------------------------------
     # UI ループ
     # ----------------------------------------
     while true; do
-        checklist_items=""
-        idx=1
-        display_names=""
-
-        # ★ 追加：表示済み pkg_id 管理
+        local checklist_items=""
+        local idx=1
+        local display_names=""
         local shown_pkg_ids=""
 
         while read -r pkg_id; do
             [ -z "$pkg_id" ] && continue
-
-            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
 
             local entry
             entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '
                 $1 == id || $3 == id { print; exit }
             ')
 
-            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
             [ -z "$entry" ] && continue
 
             local real_id pkg_name uid hidden_flag virtual_flag pkg_owner
@@ -1699,28 +1684,24 @@ EOF
             virtual_flag=$(echo "$entry" | cut -d= -f8)
             pkg_owner=$(echo "$entry" | cut -d= -f11)
 
-            echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
-
-            # ★ 追加：UI 重複表示防止
+            # UI 重複表示防止
             if echo "$shown_pkg_ids" | grep -qx "$real_id"; then
-                echo "[DEBUG] Skipping duplicate display: $real_id" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
             shown_pkg_ids="${shown_pkg_ids}${real_id}
 "
 
-            # 所有者チェック
+            # 所有者チェック（system/auto は非表示）
             if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
-                echo "[DEBUG] Package $real_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
 
-            # 依存判定
+            # 依存判定（ここでスペースを入れるか決める）
             local is_dependent=0
             echo " ${dependent_ids} " | grep -q " ${real_id} " && is_dependent=1
             [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} " && is_dependent=1
 
-            # hidden 判定
+            # hidden 判定（依存関係にあるものは強制表示、独立したものはJSONに従う）
             if [ "$is_dependent" -eq 0 ] && [ "$hidden_flag" = "true" ]; then
                 continue
             fi
@@ -1748,19 +1729,22 @@ EOF
 $packages
 EOF
 
+        if [ -z "$checklist_items" ]; then
+            show_msgbox "$breadcrumb" "$(translate "tr-tui-no-items")"
+            return 0
+        fi
+
         local tr_space_toggle
         tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
         local btn_refresh=$(translate "tr-tui-refresh")
         local btn_back=$(translate "tr-tui-back")
 
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items") || return 0
+        local selected
+        selected=$(eval "whiptail --title \"$TITLE\" --backtitle \"$breadcrumb\" --checklist \"$tr_space_toggle\" $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT $checklist_items --ok-button \"$btn_refresh\" --cancel-button \"$btn_back\" 3>&1 1>&2 2>&3") || return 0
 
+        # --- 選択内容の更新処理 ---
         local target_file
-        if [ "$caller" = "custom_feeds" ]; then
-            target_file="$SELECTED_CUSTOM_PACKAGES"
-        else
-            target_file="$SELECTED_PACKAGES"
-        fi
+        [ "$caller" = "custom_feeds" ] && target_file="$SELECTED_CUSTOM_PACKAGES" || target_file="$SELECTED_PACKAGES"
 
         local old_selection=""
         while read -r pid; do
@@ -1782,6 +1766,7 @@ EOF
 "
         done
 
+        # 追加・削除の実行
         while read -r pid; do
             [ -z "$pid" ] && continue
             echo "$old_selection" | grep -qx "$pid" || add_package_with_dependencies "$pid" "$caller"
