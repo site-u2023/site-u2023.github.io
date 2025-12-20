@@ -2534,9 +2534,7 @@ write_option_envvars() {
     local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     local idx=0
     local opt_ids opt_id env_json
-    local temp_file="${vars_file}.tmp"
     
-    # オプションのインデックスを取得
     opt_ids=$(get_customscript_options "$script_id")
     for opt_id in $opt_ids; do
         if [ "$opt_id" = "$option_id" ]; then
@@ -2545,33 +2543,18 @@ write_option_envvars() {
         idx=$((idx+1))
     done
     
-    # envVars JSON を取得
     env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
     
     [ -z "$env_json" ] && return 0
     
-    # ★ SELECTED_OPTION だけ保持（CONFIRMED は不要）
-    : > "$temp_file"
-    if [ -f "$vars_file" ]; then
-        grep "^SELECTED_OPTION=" "$vars_file" >> "$temp_file" 2>/dev/null || true
-    fi
-    
-    # 新しい envVars を追加
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
         while IFS=: read -r key value; do
             key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-            if [ -n "$key" ] && [ -n "$value" ]; then
-                echo "${key}='${value}'" >> "$temp_file"
-            fi
+            [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$vars_file"
         done
-    
-    # 上書き
-    mv "$temp_file" "$vars_file"
-    
-    echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
 }
 
 get_customscript_inputs() {
