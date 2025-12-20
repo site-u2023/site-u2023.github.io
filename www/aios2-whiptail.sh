@@ -292,14 +292,19 @@ EOF
                 write_option_envvars "$script_id" "$selected_option"
             fi
             
-            # ★ 確認チェックボックス（先）
+            # 確認チェックボックス（先）
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+                
+                # CONFIRMED='1' でない場合はループに戻る
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
+                fi
             fi
             
-            # ★ 入力フィールド（後）
+            # 入力フィールド（後）
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
