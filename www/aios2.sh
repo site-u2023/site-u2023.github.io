@@ -2548,7 +2548,7 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
-    # ★ STEP 1: 新しい envVars のキー一覧を取得
+    # ★ 新しい envVars のキー一覧を取得
     local new_keys=""
     new_keys=$(echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
@@ -2557,29 +2557,28 @@ write_option_envvars() {
         tr -d '"' | \
         sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
-    echo "[DEBUG] write_option_envvars: new_keys=$new_keys" >> "$CONFIG_DIR/debug.log"
-    
-    # ★ STEP 2: SELECTED_OPTION と CONFIRMED を保持（存在する場合）
+    # ★ CONFIRMED のみ保持
     : > "$temp_file"
     if [ -f "$vars_file" ]; then
-        grep -E "^(SELECTED_OPTION|CONFIRMED)=" "$vars_file" >> "$temp_file" 2>/dev/null || true
+        grep "^CONFIRMED=" "$vars_file" >> "$temp_file" 2>/dev/null || true
     fi
     
-    # ★ STEP 3: 古い envVars キーを削除（vars_file から該当行を除外）
+    # ★ 古い envVars キーを削除（新しいキーと重複しない変数は保持）
     if [ -f "$vars_file" ]; then
         while read -r key; do
             [ -z "$key" ] && continue
-            # SELECTED_OPTION と CONFIRMED 以外を削除対象に
             case "$key" in
-                SELECTED_OPTION|CONFIRMED) continue ;;
+                CONFIRMED) continue ;;
             esac
-            sed -i "/^${key}=/d" "$temp_file" 2>/dev/null || true
+            if ! echo "$new_keys" | grep -qx "$key"; then
+                grep "^${key}=" "$vars_file" >> "$temp_file" 2>/dev/null || true
+            fi
         done <<KEYS
-$new_keys
+$(grep -v "^#\|^$" "$vars_file" 2>/dev/null | cut -d= -f1)
 KEYS
     fi
     
-    # ★ STEP 4: 新しい envVars を追加
+    # ★ 新しい envVars を追加
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
@@ -2591,12 +2590,7 @@ KEYS
             fi
         done
     
-    # ★ STEP 5: temp_file を vars_file に上書き
     mv "$temp_file" "$vars_file"
-    
-    echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
-    [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
 }
 
 get_customscript_inputs() {
