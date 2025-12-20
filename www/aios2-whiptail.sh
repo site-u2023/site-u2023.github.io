@@ -394,7 +394,8 @@ EOF
 
 # =============================================================================
 # Custom Script Options UI
-# SELECTED_OPTIONを保存して次画面（confirm/input）に遷移
+# Saves SELECTED_OPTION and transitions to confirmation or input screen
+# Uses radiolist (not checklist) because options are mutually exclusive
 # =============================================================================
 custom_script_options_ui() {
     local script_id="$1"
