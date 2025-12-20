@@ -2536,6 +2536,7 @@ write_option_envvars() {
     local opt_ids opt_id env_json
     local temp_file="${vars_file}.tmp"
     
+    # オプションのインデックスを取得
     opt_ids=$(get_customscript_options "$script_id")
     for opt_id in $opt_ids; do
         if [ "$opt_id" = "$option_id" ]; then
@@ -2544,11 +2545,12 @@ write_option_envvars() {
         idx=$((idx+1))
     done
     
+    # envVars JSON を取得
     env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
     
     [ -z "$env_json" ] && return 0
     
-    # ★ 新しい envVars のキー一覧を取得
+    # ★ 新しい envVars のキー一覧を抽出
     local new_keys=""
     new_keys=$(echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
@@ -2557,28 +2559,15 @@ write_option_envvars() {
         tr -d '"' | \
         sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
     
-    # ★ CONFIRMED のみ保持
+    echo "[DEBUG] write_option_envvars: new_keys=$new_keys" >> "$CONFIG_DIR/debug.log"
+    
+    # ★ STEP 1: CONFIRMED だけ保持
     : > "$temp_file"
     if [ -f "$vars_file" ]; then
         grep "^CONFIRMED=" "$vars_file" >> "$temp_file" 2>/dev/null || true
     fi
     
-    # ★ 古い envVars キーを削除（新しいキーと重複しない変数は保持）
-    if [ -f "$vars_file" ]; then
-        while read -r key; do
-            [ -z "$key" ] && continue
-            case "$key" in
-                CONFIRMED) continue ;;
-            esac
-            if ! echo "$new_keys" | grep -qx "$key"; then
-                grep "^${key}=" "$vars_file" >> "$temp_file" 2>/dev/null || true
-            fi
-        done <<KEYS
-$(grep -v "^#\|^$" "$vars_file" 2>/dev/null | cut -d= -f1)
-KEYS
-    fi
-    
-    # ★ 新しい envVars を追加
+    # ★ STEP 2: 新しい envVars を追加（重複なし）
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
@@ -2590,7 +2579,12 @@ KEYS
             fi
         done
     
+    # ★ STEP 3: 上書き
     mv "$temp_file" "$vars_file"
+    
+    echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
+    [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
 }
 
 get_customscript_inputs() {
