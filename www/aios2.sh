@@ -2490,7 +2490,7 @@ get_customscript_option_requires_confirmation() {
 #   $1 - script_id
 #   $2 - option_id
 # =============================================================================
-write_option_envvars() {
+XXX_write_option_envvars() {
     local script_id="$1"
     local option_id="$2"
     local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
@@ -2521,6 +2521,43 @@ write_option_envvars() {
             key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             [ -n "$key" ] && [ -n "$value" ] && echo "${key}='${value}'" >> "$vars_file"
+        done
+    
+    echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
+    [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
+}
+
+write_option_envvars() {
+    local script_id="$1"
+    local option_id="$2"
+    local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
+    local idx=0
+    local opt_ids opt_id env_json
+    
+    opt_ids=$(get_customscript_options "$script_id")
+    for opt_id in $opt_ids; do
+        if [ "$opt_id" = "$option_id" ]; then
+            break
+        fi
+        idx=$((idx+1))
+    done
+    
+    env_json=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].options[$idx].envVars" 2>/dev/null | head -1)
+    
+    [ -z "$env_json" ] && return 0
+    
+    echo "$env_json" | \
+        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
+        sed 's/^"//; s/"$//' | \
+        while IFS=: read -r key value; do
+            key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
+            if [ -n "$key" ] && [ -n "$value" ]; then
+                # 既存の行を削除してから追記
+                sed -i "/^${key}=/d" "$vars_file" 2>/dev/null
+                echo "${key}='${value}'" >> "$vars_file"
+            fi
         done
     
     echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
