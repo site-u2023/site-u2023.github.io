@@ -319,6 +319,10 @@ custom_script_confirm_ui() {
     script_name=$(get_customscript_name "$script_id")
     local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
+    # ★ skipInputsで次の処理を判定
+    local skip_inputs
+    skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
+    
     while true; do
         local confirmed="OFF"
         
@@ -337,8 +341,8 @@ custom_script_confirm_ui() {
         fi
         
         local selected
-        # ★ 「更新」→「選択」に変更
-        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
+        # ★ ボタンは「更新」で統一
+        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
         [ $? -ne 0 ] && return 0
         
@@ -349,8 +353,8 @@ custom_script_confirm_ui() {
             rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
-        # ★ 選択ボタンが押されたので関数を抜ける
-        return 0
+        # ★ install時は入力フィールドへ、remove時はループ継続
+        [ "$skip_inputs" != "true" ] && return 0
     done
 }
 
