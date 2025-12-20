@@ -261,11 +261,7 @@ custom_script_options_ui() {
     local filtered_options="$3"
     
     while true; do
-        local menu_items i option_id option_label choice selected_option current_option
-        
-        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-        fi
+        local menu_items i option_id option_label choice selected_option
         
         menu_items=""
         i=1
@@ -283,12 +279,6 @@ EOF
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-            
-            if [ "$selected_option" != "$current_option" ]; then
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                # write_option_envvars を削除
-            fi
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
@@ -353,17 +343,16 @@ custom_script_confirm_ui() {
             new_confirmed="ON"
         fi
         
-        # 状態が変わった場合のみ書き込む + write_option_envvars を実行
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            
             if [ "$new_confirmed" = "OFF" ]; then
-                sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
                 echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             else
-                sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
                 echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             fi
             
-            # ★ 状態が変わった場合のみ write_option_envvars を実行
             write_option_envvars "$script_id" "$option_id"
         fi
         
