@@ -315,23 +315,19 @@ custom_script_confirm_ui() {
     local option_id="$2"
     local breadcrumb="$3"
     
-    # ★ ラベルはスクリプト名（アプリ名）
     local script_name
     script_name=$(get_customscript_name "$script_id")
     local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
     while true; do
-        # ★ デフォルト状態 = インストール状態を反映
         local confirmed="OFF"
         
-        # インストール済みかチェック
         case "$script_id" in
             adguardhome)
                 is_adguardhome_installed && confirmed="ON"
                 ;;
         esac
         
-        # ★ 保存状態があれば優先
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
@@ -345,13 +341,13 @@ custom_script_confirm_ui() {
         
         [ $? -ne 0 ] && return 0
         
-        # チェック状態を保存
+        # ★ チェックOFF → 削除セット保存
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         else
-            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            # ★ チェックON → ファイル削除（初期化）
+            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
     done
 }
