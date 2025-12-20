@@ -2550,10 +2550,9 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
-    # CONFIRMED と SELECTED_OPTION を保持
+    # ★ SELECTED_OPTION だけ保持（CONFIRMED は不要）
     : > "$temp_file"
     if [ -f "$vars_file" ]; then
-        grep "^CONFIRMED=" "$vars_file" >> "$temp_file" 2>/dev/null || true
         grep "^SELECTED_OPTION=" "$vars_file" >> "$temp_file" 2>/dev/null || true
     fi
     
@@ -2573,7 +2572,6 @@ write_option_envvars() {
     mv "$temp_file" "$vars_file"
     
     echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
-    [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
 }
 
 get_customscript_inputs() {
