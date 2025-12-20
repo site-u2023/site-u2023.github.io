@@ -359,9 +359,17 @@ custom_script_confirm_ui() {
                 write_option_envvars "$script_id" "$option_id"
                 echo "[DEBUG] Created script_vars_${script_id}.txt (checked)" >> "$CONFIG_DIR/debug.log"
             fi
+            # 変更があった場合は次のループへ（画面を更新）
+            continue
         fi
         
+        # 変更がない場合（更新ボタンを押しただけ）
         if [ "$skip_inputs" != "true" ]; then
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                return 0
+            fi
+        else
+            # skip_inputs=true の場合は、CONFIRMED='1' なら次へ進む
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 return 0
             fi
