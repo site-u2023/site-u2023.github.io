@@ -275,25 +275,23 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
-        # ★ メニュー形式（変更なし）
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # ★ 現在選択されているオプションを取得
+            # ★ 現在のオプションを取得
             local current_option
             if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                 current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
             fi
             
-            # ★ オプションが変わった場合のみ初期化
+            # ★ オプションが変わった時だけ初期化
             if [ "$selected_option" != "$current_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 write_option_envvars "$script_id" "$selected_option"
                 
-                # 入力フィールド
                 local skip_inputs
                 skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
                 if [ "$skip_inputs" != "true" ]; then
@@ -301,7 +299,7 @@ EOF
                 fi
             fi
             
-            # ★ 確認チェックボックス（同じオプション再選択時も表示）
+            # 確認チェックボックス
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
