@@ -263,6 +263,7 @@ custom_script_options_ui() {
     while true; do
         local checklist_items option_id option_label idx selected current_option
         
+        # 現在の選択状態を取得
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
@@ -270,6 +271,7 @@ custom_script_options_ui() {
         checklist_items=""
         idx=1
         
+        # オプションリストを構築
         while read -r option_id; do
             [ -z "$option_id" ] && continue
             
@@ -284,27 +286,84 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
+        # チェックリスト表示
         selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" $checklist_items") || return 0
         
+        # 選択なし = 無効化
         if [ -z "$selected" ]; then
             rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
             continue
         fi
         
+        # 選択されたオプションを取得
         local selected_idx selected_option
         selected_idx=$(echo "$selected" | tr -d '"' | head -1)
         selected_option=$(echo "$filtered_options" | sed -n "${selected_idx}p")
         
         if [ -n "$selected_option" ]; then
+            # 設定ファイルを初期化
             : > "$CONFIG_DIR/script_vars_${script_id}.txt"
             echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             write_option_envvars "$script_id" "$selected_option"
             
+            # ★ 汎用処理: JSONから動的に判定
+            
+            # 1. 入力フィールドが必要か確認
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             
-            [ "$skip_inputs" != "true" ] && collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            if [ "$skip_inputs" != "true" ]; then
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            fi
+            
+            # 2. 確認チェックボックスが必要か確認
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
+            
+            if [ "$requires_confirmation" = "true" ]; then
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+            fi
         fi
+    done
+}
+
+# 確認用単独チェックボックスUI（完全汎用）
+custom_script_confirm_ui() {
+    local script_id="$1"
+    local option_id="$2"
+    local breadcrumb="$3"
+    
+    local option_label
+    option_label=$(get_customscript_option_label "$script_id" "$option_id")
+    local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${option_label}"
+    
+    # 現在の確認状態を取得
+    local confirmed="OFF"
+    if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+        if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+            confirmed="ON"
+        fi
+    fi
+    
+    # ループ開始（更新ボタンで戻る）
+    while true; do
+        local selected
+        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${option_label}\" $confirmed")
+        
+        # キャンセル時はループ終了
+        [ $? -ne 0 ] && return 0
+        
+        # 選択なし = 取り消し
+        if [ -z "$selected" ]; then
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            confirmed="OFF"
+            continue
+        fi
+        
+        # 選択あり = 確認済みとしてマーク
+        sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+        echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        confirmed="ON"
     done
 }
 
