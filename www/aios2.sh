@@ -5333,9 +5333,26 @@ aios2_main() {
     mkdir -p "$CONFIG_DIR"
     get_language_code
     
+    # ========================================
+    # Phase 1: UI選択（最初）
+    # ========================================
+    WHIPTAIL_AVAILABLE=0
+    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
+    
+    UI_START=$(cut -d' ' -f1 /proc/uptime)
+    select_ui_mode
+    UI_END=$(cut -d' ' -f1 /proc/uptime)
+    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
+    
+    # whiptailインストールフラグ
+    NEED_WHIPTAIL_INSTALL=0
+    [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ] && NEED_WHIPTAIL_INSTALL=1
+    
+    # ========================================
+    # Phase 2: ネットワークチェックと初期化
+    # ========================================
     if ! check_network_connectivity; then
         echo "Error: Network connectivity check failed"
-        echo "Please check your internet connection"
         printf "Press [Enter] to exit. "
         read -r _
         return 1
@@ -5350,6 +5367,30 @@ aios2_main() {
     
     init
     
+    # whiptailインストール処理
+    if [ "$NEED_WHIPTAIL_INSTALL" -eq 1 ]; then
+        load_package_manager_config || {
+            echo "Failed to load package manager config"
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
+        }
+        
+        echo "Installing whiptail..."
+        echo "Updating package lists..."
+        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        
+        if ! install_package whiptail; then
+            echo "Installation failed. Falling back to simple mode."
+            UI_MODE="simple"
+        else
+            echo "Installation successful."
+        fi
+    fi
+    
+    # ========================================
+    # Phase 3: 並列ダウンロード開始
+    # ========================================
     (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
     PKG_MGR_DL_PID=$!
     
@@ -5386,6 +5427,9 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
+    # ========================================
+    # Phase 4: 必須JSON完了待機
+    # ========================================
     wait $SETUP_PID
     SETUP_STATUS=$?
     [ $SETUP_STATUS -ne 0 ] && {
@@ -5406,25 +5450,21 @@ aios2_main() {
 
     wait $API_PID
     
+    # ========================================
+    # Phase 5: デバイス情報取得
+    # ========================================
     get_extended_device_info
 
-    export DEVICE_TARGET
-    export OPENWRT_VERSION
-    export ASU_URL
-    export DEVICE_MODEL
-    export DEVICE_ARCH
-    export DEVICE_VENDOR
-    export DEVICE_SUBTARGET
-    export PKG_CHANNEL 
+    export DEVICE_TARGET OPENWRT_VERSION ASU_URL DEVICE_MODEL DEVICE_ARCH DEVICE_VENDOR DEVICE_SUBTARGET PKG_CHANNEL
     
     echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
+    # ========================================
+    # Phase 6: パッケージキャッシュ構築
+    # ========================================
     ( cache_package_availability >/dev/null 2>&1 ) &
     CACHE_PKG_PID=$!
     
@@ -5441,51 +5481,14 @@ aios2_main() {
     ) &
     INIT_PKG_PID=$!
     
-    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
-    
-    WHIPTAIL_AVAILABLE=0
-    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
-    
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
-        echo "Waiting for package manager configuration..."
-        wait $PKG_MGR_DL_PID
-        
-        load_package_manager_config || {
-            echo "Failed to load package manager config"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-        
-        echo "Installing whiptail..."
-        echo "Updating package lists..."
-        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
-        
-        if ! install_package whiptail; then
-            echo "Installation failed. Falling back to simple mode."
-            UI_MODE="simple"
-        else
-            echo "Installation successful."
-        fi
-    fi
-    
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
+    # ========================================
+    # Phase 7: 残りのバックグラウンド処理完了待機
+    # ========================================
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID $INIT_PKG_PID
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
     fi
-    
-    CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
-    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
-    debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
     
     if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
@@ -5494,6 +5497,9 @@ aios2_main() {
     
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
+    # ========================================
+    # Phase 8: UIモジュール起動
+    # ========================================
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
         . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
         aios2_${UI_MODE}_main
