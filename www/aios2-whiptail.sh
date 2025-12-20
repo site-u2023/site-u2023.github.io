@@ -339,13 +339,6 @@ custom_script_confirm_ui() {
         local confirmed="OFF"
         local default_state="OFF"
         
-        # デフォルト状態を判定
-        case "$script_id" in
-            adguardhome)
-                is_adguardhome_installed && default_state="ON"
-                ;;
-        esac
-        
         # ファイルから読み込んで設定（優先）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
