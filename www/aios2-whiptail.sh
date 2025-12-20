@@ -412,29 +412,34 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            write_option_envvars "$script_id" "$selected_option"
-            
-            local requires_confirmation
+            # ★ ファイル書き込みを削除！確認画面に遷移するだけ
+            local requires_confirmation skip_inputs
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
-            if [ "$requires_confirmation" = "true" ]; then
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
-            fi
-            
-            local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-            if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            
+            if [ "$requires_confirmation" = "true" ]; then
+                # ★ selected_optionを渡して確認画面へ
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+            elif [ "$skip_inputs" != "true" ]; then
+                # ★ 入力が必要な場合
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                write_option_envvars "$script_id" "$selected_option"
+                
+                if collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"; then
+                    return 0
+                fi
+            else
+                # ★ 入力不要な場合
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                write_option_envvars "$script_id" "$selected_option"
+                return 0
             fi
         fi
     done
