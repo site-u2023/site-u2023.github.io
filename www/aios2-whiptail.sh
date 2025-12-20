@@ -347,29 +347,21 @@ custom_script_confirm_ui() {
         fi
         
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            
             if [ "$new_confirmed" = "OFF" ]; then
-                # チェックOFFの場合はファイルを削除（設定をクリア）
-                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "[DEBUG] Removed script_vars_${script_id}.txt (unchecked)" >> "$CONFIG_DIR/debug.log"
+                echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "[DEBUG] Set CONFIRMED='0' in script_vars_${script_id}.txt" >> "$CONFIG_DIR/debug.log"
             else
-                # チェックONの場合のみファイルを作成
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$option_id"
-                echo "[DEBUG] Created script_vars_${script_id}.txt (checked)" >> "$CONFIG_DIR/debug.log"
+                echo "[DEBUG] Set CONFIRMED='1' in script_vars_${script_id}.txt" >> "$CONFIG_DIR/debug.log"
             fi
-            # 変更があった場合は次のループへ（画面を更新）
-            continue
+            
+            write_option_envvars "$script_id" "$option_id"
         fi
         
-        # 変更がない場合（更新ボタンを押しただけ）
         if [ "$skip_inputs" != "true" ]; then
-            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                return 0
-            fi
-        else
-            # skip_inputs=true の場合は、CONFIRMED='1' なら次へ進む
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 return 0
             fi
