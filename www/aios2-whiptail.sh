@@ -263,7 +263,6 @@ custom_script_options_ui() {
     while true; do
         local menu_items i option_id option_label choice selected_option current_option
         
-        # 現在のオプションを取得
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
@@ -285,26 +284,22 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # オプションが変わった時だけ初期化
             if [ "$selected_option" != "$current_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
+                # write_option_envvars を削除
             fi
             
-            # 確認チェックボックス（先）
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
                 
-                # CONFIRMED='1' でない場合はループに戻る
                 if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                     continue
                 fi
             fi
             
-            # 入力フィールド（後）
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
@@ -358,7 +353,7 @@ custom_script_confirm_ui() {
             new_confirmed="ON"
         fi
         
-        # 変化があった場合のみ書き込む
+        # 状態が変わった場合のみ書き込む + write_option_envvars を実行
         if [ "$new_confirmed" != "$initial_confirmed" ]; then
             if [ "$new_confirmed" = "OFF" ]; then
                 sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
@@ -367,6 +362,9 @@ custom_script_confirm_ui() {
                 sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
                 echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             fi
+            
+            # ★ 状態が変わった場合のみ write_option_envvars を実行
+            write_option_envvars "$script_id" "$option_id"
         fi
         
         if [ "$skip_inputs" != "true" ]; then
