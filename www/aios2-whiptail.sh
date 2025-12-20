@@ -2104,7 +2104,7 @@ EOF
     return 0
 }
 
-review_and_apply() {
+ZZZZZZZZZZ_review_and_apply() {
     local need_fetch=0
     
     [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
@@ -2294,6 +2294,262 @@ EOF
             fi
         fi
         
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                [ -f "$var_file" ] || continue
+                
+                local script_id script_name selected_option option_label
+                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                script_name=$(get_customscript_name "$script_id")
+                
+                selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+                
+                if [ -n "$selected_option" ]; then
+                    option_label=$(get_customscript_option_label "$script_id" "$selected_option")
+                    summary="${summary}$(translate 'tr-tui-summary-scripts'): ${script_name} (${option_label})\n"
+                    has_changes=1
+                fi
+            done
+        fi
+        
+        if [ "$has_changes" -eq 1 ]; then
+            if [ "$failed_count" -gt 0 ]; then
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}\n$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):\n$failed_scripts"
+            else
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}"
+            fi
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
+        fi
+        
+        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
+        reset_state_for_next_session
+        
+        local needs_reboot=$(needs_reboot_check)
+        if [ "$needs_reboot" -eq 1 ]; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+        fi
+    fi
+    
+    return 0
+}
+
+review_and_apply() {
+    local need_fetch=0
+    
+    [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
+    [ ! -f "$TPL_SETUP" ] || [ ! -s "$TPL_SETUP" ] && need_fetch=1
+    
+    if [ -f "$CUSTOMFEEDS_JSON" ] && [ "$need_fetch" -eq 0 ]; then
+        while read -r cat_id; do
+            local template_url tpl_custom
+            template_url=$(get_customfeed_template_url "$cat_id")
+            
+            if [ -n "$template_url" ]; then
+                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
+                if [ ! -f "$tpl_custom" ] || [ ! -s "$tpl_custom" ]; then
+                    need_fetch=1
+                    break
+                fi
+            fi
+        done <<EOF
+$(get_customfeed_categories)
+EOF
+    fi
+    
+    if [ "$need_fetch" -eq 1 ]; then
+        echo "[DEBUG] Fetching missing templates..." >> "$CONFIG_DIR/debug.log"
+        prefetch_templates
+    else
+        echo "[DEBUG] All templates already cached" >> "$CONFIG_DIR/debug.log"
+    fi
+    
+    local tr_main_menu tr_review breadcrumb
+    local summary_file summary_content confirm_msg
+    
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_review=$(translate "tr-tui-review-configuration")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
+    
+    summary_file=$(generate_config_summary)
+    
+    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
+        echo "Error: Failed to generate summary"
+        return 1
+    fi
+    
+    if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
+        return 0
+    fi
+    
+    summary_content=$(cat "$summary_file")
+    
+    confirm_msg="${summary_content}
+
+🟣 $(translate 'tr-tui-apply-confirm-question')"
+    
+    if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
+        echo "$(translate 'tr-tui-creating-backup')"
+        if ! create_backup "before_apply"; then
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+            return 1
+        fi
+        
+        clear
+        
+        echo "Generating installation scripts..."
+        generate_files
+        
+        local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
+        
+        if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
+            . "$CONFIG_DIR/execution_plan.sh"
+        else
+            echo "[ERROR] Execution plan not found" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        local failed_count=0
+        local failed_scripts=""
+        
+        # 削除対象パッケージを事前に取得
+        local packages_to_remove=""
+        if [ "$HAS_REMOVE" -eq 1 ]; then
+            packages_to_remove=$(detect_packages_to_remove)
+        fi
+        
+        # インストール対象パッケージを事前に取得
+        local packages_to_install=""
+        if [ "$HAS_INSTALL" -eq 1 ] && [ -f "$CONFIG_DIR/postinst.sh" ]; then
+            packages_to_install=$(grep '^INSTALL_CMD=' "$CONFIG_DIR/postinst.sh" 2>/dev/null | cut -d'"' -f2 | sed 's/.*apk add //;s/.*opkg install //' | tr ' ' '\n' | grep -v '^-' | grep -v '^$')
+        fi
+        
+        if [ "$HAS_REMOVE" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-removing-packages')"
+            
+            sh "$CONFIG_DIR/remove.sh"
+            
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}remove.sh "
+            else
+                echo "$(translate 'tr-tui-removal-completed')"
+            fi
+        fi
+        
+        update_package_manager
+        
+        if [ "$HAS_INSTALL" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-installing-packages')"
+            sh "$CONFIG_DIR/postinst.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}postinst.sh "
+            fi
+        fi
+        
+        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-installing-custom-packages')"
+            
+            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                [ -f "$script" ] || continue
+                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+                
+                local packages_value
+                packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
+                [ -z "$packages_value" ] && continue
+                
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
+            done
+        fi
+        
+        if [ "$HAS_SETUP" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-applying-config')"
+            sh "$CONFIG_DIR/setup.sh"
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}setup.sh "
+            fi
+        fi
+        
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-installing-custom-scripts')"
+            
+            for script in "$CONFIG_DIR"/customscripts-*.sh; do
+                [ -f "$script" ] || continue
+                
+                local script_id
+                script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
+                
+                [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
+
+                sh "$script"
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
+            done
+        fi
+        
+        local summary=""
+        local has_changes=0
+        
+        # 削除パッケージリスト表示
+        if [ -n "$packages_to_remove" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
+            for pkg in $packages_to_remove; do
+                summary="${summary}  - ${pkg}\n"
+            done
+            summary="${summary}\n"
+            has_changes=1
+        fi
+        
+        # インストールパッケージリスト表示
+        if [ -n "$packages_to_install" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                summary="${summary}  - ${pkg}\n"
+            done <<PKGS
+$packages_to_install
+PKGS
+            summary="${summary}\n"
+            has_changes=1
+        fi
+        
+        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
+            local feed_count=0
+            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
+                [ -f "$script" ] || continue
+                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
+                feed_count=$((feed_count + 1))
+            done
+            if [ "$feed_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${feed_count}\n"
+                has_changes=1
+            fi
+        fi
+        
+        if [ "$HAS_SETUP" -eq 1 ]; then
+            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
+            if [ "$setup_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-settings'): ${setup_count}\n"
+                has_changes=1
+            fi
+        fi
+        
+        # カスタムスクリプト表示
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
                 [ -f "$var_file" ] || continue
