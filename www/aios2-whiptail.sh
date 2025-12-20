@@ -275,24 +275,33 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
-        # ★ メニュー形式（従来通り）
+        # ★ メニュー形式（変更なし）
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            write_option_envvars "$script_id" "$selected_option"
-            
-            # 入力フィールド
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-            if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            # ★ 現在選択されているオプションを取得
+            local current_option
+            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
             fi
             
-            # ★ 確認チェックボックス（必要な場合のみ）
+            # ★ オプションが変わった場合のみ初期化
+            if [ "$selected_option" != "$current_option" ]; then
+                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                write_option_envvars "$script_id" "$selected_option"
+                
+                # 入力フィールド
+                local skip_inputs
+                skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+                if [ "$skip_inputs" != "true" ]; then
+                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+                fi
+            fi
+            
+            # ★ 確認チェックボックス（同じオプション再選択時も表示）
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
