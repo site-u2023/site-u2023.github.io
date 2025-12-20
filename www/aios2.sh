@@ -3410,8 +3410,6 @@ update_language_packages() {
     echo "[DEBUG] new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
     
     [ -z "$new_lang" ] && return 0
-        
-    [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
 
     if [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; then
         cache_installed_packages
