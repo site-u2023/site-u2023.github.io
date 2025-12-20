@@ -4026,9 +4026,6 @@ detect_packages_to_remove() {
             # custom feed 管理下は Phase 1 で除外
             [ "$is_custom" = "1" ] && continue
             
-            # owner=auto のみ削除対象外
-            [ "$owner" = "auto" ] && continue
-            
             # インストール済みチェック
             is_package_installed "$pkg_id" || continue
             
