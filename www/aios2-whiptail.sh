@@ -330,7 +330,7 @@ custom_script_options_ui() {
         local radio_items i option_id option_label choice selected_option
         local current_selection=""
         
-        # 現在の選択を取得
+        # 現在の選択を取得（SELECTED_OPTION から）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
@@ -361,8 +361,9 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更された場合のみ SELECTED_OPTION を保存（CONFIRMED は触らない）
+            # 選択が変更された場合のみ処理
             if [ "$selected_option" != "$current_selection" ]; then
+                # ★ STEP 1: SELECTED_OPTION を保存（UI状態追跡用）
                 if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
                     sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
                     echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
@@ -370,7 +371,7 @@ EOF
                     echo "SELECTED_OPTION='$selected_option'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 fi
                 
-                # ★★★ envVars を書き込む ★★★
+                # ★ STEP 2: envVars を書き込む（INSTALL_MODE等）
                 write_option_envvars "$script_id" "$selected_option"
             fi
             
@@ -1742,7 +1743,14 @@ EOF
             script_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
             
             if [ -f "$CONFIG_DIR/script_vars_${selected_script}.txt" ]; then
-                show_textbox "$script_breadcrumb" "$CONFIG_DIR/script_vars_${selected_script}.txt"
+                # ★ SELECTED_OPTION を除外して一時ファイルに出力
+                local temp_display="$CONFIG_DIR/temp_display_${selected_script}.txt"
+                grep -v "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${selected_script}.txt" > "$temp_display"
+                
+                show_textbox "$script_breadcrumb" "$temp_display"
+                
+                # 一時ファイル削除
+                rm -f "$temp_display"
             else
                 show_msgbox "$script_breadcrumb" "No variables configured"
             fi
