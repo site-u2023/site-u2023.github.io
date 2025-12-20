@@ -398,48 +398,61 @@ custom_script_options_ui() {
     local filtered_options="$3"
     
     while true; do
-        local menu_items i option_id option_label choice selected_option
+        local radio_items i option_id option_label choice selected_option
+        local current_selection=""
         
-        menu_items=""
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        radio_items=""
         i=1
         
         while read -r option_id; do
             [ -z "$option_id" ] && continue
             option_label=$(get_customscript_option_label "$script_id" "$option_id")
-            menu_items="$menu_items $i \"$option_label\""
+            
+            local status="OFF"
+            [ "$option_id" = "$current_selection" ] && status="ON"
+            
+            radio_items="$radio_items \"$i\" \"$option_label\" $status"
             i=$((i+1))
         done <<EOF
 $filtered_options
 EOF
         
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
+        choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
+            --ok-button \"$(translate 'tr-tui-select')\" \
+            --cancel-button \"$(translate 'tr-tui-back')\" \
+            --radiolist \"\" \
+            $UI_HEIGHT $UI_WIDTH 0 \
+            $radio_items" 3>&1 1>&2 2>&3) || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # ★ ファイル書き込みを削除！確認画面に遷移するだけ
-            local requires_confirmation skip_inputs
-            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$selected_option" = "$current_selection" ]; then
+                continue
+            fi
             
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            write_option_envvars "$script_id" "$selected_option"
+            
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
-                # ★ selected_optionを渡して確認画面へ
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-            elif [ "$skip_inputs" != "true" ]; then
-                # ★ 入力が必要な場合
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
                 
-                if collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"; then
-                    return 0
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
                 fi
-            else
-                # ★ 入力不要な場合
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
-                return 0
+            fi
+            
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$skip_inputs" != "true" ]; then
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
             fi
         fi
     done
