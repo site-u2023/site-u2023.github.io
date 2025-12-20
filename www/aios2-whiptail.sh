@@ -252,7 +252,7 @@ EOF
     done
 }
 
-custom_script_options_ui() {
+ZZZZZ_custom_script_options_ui() {
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
@@ -300,8 +300,75 @@ EOF
             # 選択が変更された場合のみ処理
             : > "$CONFIG_DIR/script_vars_${script_id}.txt"
             echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            write_option_envvars "$script_id" "$selected_option"
+            
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
+            if [ "$requires_confirmation" = "true" ]; then
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+                
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
+                fi
+            fi
+            
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$skip_inputs" != "true" ]; then
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            fi
+        fi
+    done
+}
+
+custom_script_options_ui() {
+    local script_id="$1"
+    local breadcrumb="$2"
+    local filtered_options="$3"
+    
+    while true; do
+        local radio_items i option_id option_label choice selected_option
+        local current_selection=""
+        
+        # 現在の選択を取得
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        radio_items=""
+        i=1
+        
+        while read -r option_id; do
+            [ -z "$option_id" ] && continue
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
+            
+            local status="OFF"
+            [ "$option_id" = "$current_selection" ] && status="ON"
+            
+            radio_items="$radio_items \"$i\" \"$option_label\" $status"
+            i=$((i+1))
+        done <<EOF
+$filtered_options
+EOF
+        
+        choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
+            --ok-button \"$(translate 'tr-tui-select')\" \
+            --cancel-button \"$(translate 'tr-tui-back')\" \
+            --radiolist \"\" \
+            $UI_HEIGHT $UI_WIDTH 0 \
+            $radio_items" 3>&1 1>&2 2>&3) || return 0
+        
+        if [ -n "$choice" ]; then
+            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
+            
+            # 選択が変更された場合のみ SELECTED_OPTION を保存（CONFIRMED は触らない）
+            if [ "$selected_option" != "$current_selection" ]; then
+                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                    sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
+                    echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                else
+                    echo "SELECTED_OPTION='$selected_option'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
+                fi
+            fi
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
