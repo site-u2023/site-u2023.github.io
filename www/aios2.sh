@@ -2534,6 +2534,7 @@ write_option_envvars() {
     local vars_file="$CONFIG_DIR/script_vars_${script_id}.txt"
     local idx=0
     local opt_ids opt_id env_json
+    local temp_file="${vars_file}.tmp"
     
     opt_ids=$(get_customscript_options "$script_id")
     for opt_id in $opt_ids; do
@@ -2547,6 +2548,13 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
+    # SELECTED_OPTION と CONFIRMED を保持（存在する場合）
+    : > "$temp_file"
+    if [ -f "$vars_file" ]; then
+        grep -E "^(SELECTED_OPTION|CONFIRMED)=" "$vars_file" >> "$temp_file" 2>/dev/null || true
+    fi
+    
+    # envVars を追加
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
@@ -2554,11 +2562,14 @@ write_option_envvars() {
             key=$(echo "$key" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             value=$(echo "$value" | tr -d '"' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
             if [ -n "$key" ] && [ -n "$value" ]; then
-                # 既存の行を削除してから追記
-                sed -i "/^${key}=/d" "$vars_file" 2>/dev/null
-                echo "${key}='${value}'" >> "$vars_file"
+                # temp_file 内の重複を削除
+                sed -i "/^${key}=/d" "$temp_file" 2>/dev/null
+                echo "${key}='${value}'" >> "$temp_file"
             fi
         done
+    
+    # temp_file を vars_file に上書き
+    mv "$temp_file" "$vars_file"
     
     echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
