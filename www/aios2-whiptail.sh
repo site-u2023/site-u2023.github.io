@@ -319,7 +319,6 @@ custom_script_confirm_ui() {
     script_name=$(get_customscript_name "$script_id")
     local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
     
-    # ★ skipInputsで次の処理を判定
     local skip_inputs
     skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
     
@@ -341,19 +340,20 @@ custom_script_confirm_ui() {
         fi
         
         local selected
-        # ★ ボタンは「更新」で統一
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
         [ $? -ne 0 ] && return 0
         
+        # ★ チェックOFF
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        # ★ チェックON（ファイル削除せず保存）
         else
-            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
-        # ★ install時は入力フィールドへ、remove時はループ継続
         [ "$skip_inputs" != "true" ] && return 0
     done
 }
