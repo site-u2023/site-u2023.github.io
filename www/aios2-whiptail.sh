@@ -178,7 +178,7 @@ EOF
     done
 }
 
-XXX_custom_scripts_selection_ui() {
+custom_scripts_selection_ui() {
     local breadcrumb="$1"
     local all_scripts="$2"
     local menu_items i script_id script_name choice selected_script
@@ -208,74 +208,7 @@ EOF
     done
 }
 
-custom_scripts_selection_ui() {
-    local breadcrumb="$1"
-    local all_scripts="$2"
-    
-    while true; do
-        local checklist_items script_id script_name options option_id option_label idx
-        local display_map selected
-        
-        checklist_items=""
-        display_map=""
-        idx=1
-        
-        while read -r script_id; do
-            script_name=$(get_customscript_name "$script_id")
-            options=$(filter_script_options "$script_id" "$(get_customscript_options "$script_id")")
-            
-            while read -r option_id; do
-                [ -z "$option_id" ] && continue
-                
-                option_label=$(get_customscript_option_label "$script_id" "$option_id")
-                
-                local status="OFF"
-                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                    local current_option
-                    current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-                    [ "$current_option" = "$option_id" ] && status="ON"
-                fi
-                
-                checklist_items="$checklist_items \"$idx\" \"${script_name}: ${option_label}\" $status"
-                display_map="${display_map}${idx}|${script_id}|${option_id}
-"
-                idx=$((idx+1))
-            done <<EOF
-$options
-EOF
-        done <<EOF2
-$all_scripts
-EOF2
-        
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" $checklist_items") || return 0
-        
-        for script_id in $all_scripts; do
-            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-        done
-        
-        for idx_str in $selected; do
-            local idx_clean line script_id option_id
-            idx_clean=$(echo "$idx_str" | tr -d '"')
-            line=$(echo "$display_map" | grep "^${idx_clean}|")
-            
-            [ -n "$line" ] || continue
-            
-            script_id=$(echo "$line" | cut -d'|' -f2)
-            option_id=$(echo "$line" | cut -d'|' -f3)
-            
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$option_id'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            write_option_envvars "$script_id" "$option_id"
-            
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
-            
-            [ "$skip_inputs" != "true" ] && collect_script_inputs "$script_id" "$breadcrumb" "$option_id"
-        done
-    done
-}
-
-custom_script_options_ui() {
+XXX_custom_script_options_ui() {
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
@@ -318,6 +251,59 @@ EOF
                 fi
                 return 0
             fi
+        fi
+    done
+}
+
+custom_script_options_ui() {
+    local script_id="$1"
+    local breadcrumb="$2"
+    local filtered_options="$3"
+    
+    while true; do
+        local checklist_items option_id option_label idx selected current_option
+        
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        checklist_items=""
+        idx=1
+        
+        while read -r option_id; do
+            [ -z "$option_id" ] && continue
+            
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
+            
+            local status="OFF"
+            [ "$option_id" = "$current_option" ] && status="ON"
+            
+            checklist_items="$checklist_items \"$idx\" \"${option_label}\" $status"
+            idx=$((idx+1))
+        done <<EOF
+$filtered_options
+EOF
+        
+        selected=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" $checklist_items") || return 0
+        
+        if [ -z "$selected" ]; then
+            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+            continue
+        fi
+        
+        local selected_idx selected_option
+        selected_idx=$(echo "$selected" | tr -d '"' | head -1)
+        selected_option=$(echo "$filtered_options" | sed -n "${selected_idx}p")
+        
+        if [ -n "$selected_option" ]; then
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            write_option_envvars "$script_id" "$selected_option"
+            
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            
+            [ "$skip_inputs" != "true" ] && collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
         fi
     done
 }
