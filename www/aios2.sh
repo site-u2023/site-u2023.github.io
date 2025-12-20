@@ -4028,13 +4028,7 @@ detect_packages_to_remove() {
             
             # owner=auto/system は削除対象外
             [ "$owner" = "auto" ] && continue
-			# owner=system でも「現在未選択」なら削除対象にする
-            if [ "$owner" = "system" ]; then
-    			if [ "$selected" = "false" ]; then
-        			packages_to_remove="$packages_to_remove $pkg_id"
-    			fi
-    			continue
-			fi
+            [ "$owner" = "system" ] && continue
             
             # インストール済みチェック
             is_package_installed "$pkg_id" || continue
