@@ -321,7 +321,7 @@ EOF
     done
 }
 
-custom_script_options_ui() {
+XXXXXXXXXX_custom_script_options_ui() {
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
@@ -371,6 +371,54 @@ EOF
             echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             
             # ★ 3. envVars があれば追記
+            write_option_envvars "$script_id" "$selected_option"
+            
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
+            if [ "$requires_confirmation" = "true" ]; then
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+                
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
+                fi
+            fi
+            
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$skip_inputs" != "true" ]; then
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            fi
+        fi
+    done
+}
+
+custom_script_options_ui() {
+    local script_id="$1"
+    local breadcrumb="$2"
+    local filtered_options="$3"
+    
+    while true; do
+        local menu_items i option_id option_label choice selected_option
+        
+        menu_items=""
+        i=1
+        
+        while read -r option_id; do
+            [ -z "$option_id" ] && continue
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
+            menu_items="$menu_items $i \"$option_label\""
+            i=$((i+1))
+        done <<EOF
+$filtered_options
+EOF
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
+        
+        if [ -n "$choice" ]; then
+            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
+            
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             write_option_envvars "$script_id" "$selected_option"
             
             local requires_confirmation
