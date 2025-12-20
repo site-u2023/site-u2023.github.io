@@ -393,11 +393,13 @@ EOF
 }
 
 custom_script_options_ui() {
+# この関数内では一切ファイル保存しない
+
     local script_id="$1"
     local breadcrumb="$2"
     local filtered_options="$3"
     
-    # インストール状態を確認
+    # インストール状態確認
     local installed=0
     case "$script_id" in
         adguardhome)
@@ -405,91 +407,72 @@ custom_script_options_ui() {
             ;;
     esac
     
-    # インストール済み → セレクター（リムーブ）
-    if [ "$installed" -eq 1 ]; then
-        while true; do
-            local menu_items i option_id option_label choice selected_option
+    while true; do
+        local radio_items i option_id option_label choice selected_option
+        local current_selection=""
+        
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        radio_items=""
+        i=1
+        
+        while read -r option_id; do
+            [ -z "$option_id" ] && continue
+            option_label=$(get_customscript_option_label "$script_id" "$option_id")
             
-            menu_items=""
-            i=1
+            local status="OFF"
+            [ "$option_id" = "$current_selection" ] && status="ON"
             
-            while read -r option_id; do
-                [ -z "$option_id" ] && continue
-                option_label=$(get_customscript_option_label "$script_id" "$option_id")
-                menu_items="$menu_items $i \"$option_label\""
-                i=$((i+1))
-            done <<EOF
+            radio_items="$radio_items \"$i\" \"$option_label\" $status"
+            i=$((i+1))
+        done <<EOF
 $filtered_options
 EOF
-            
-            choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
-            
-            if [ -n "$choice" ]; then
-                selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-                
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
-                
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
-            fi
-        done
-    # 未インストール → ラジオボタン（インストール）
-    else
-        while true; do
-            local radio_items i option_id option_label choice selected_option
-            local current_selection=""
-            
-            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-            fi
-            
-            radio_items=""
-            i=1
-            
-            while read -r option_id; do
-                [ -z "$option_id" ] && continue
-                option_label=$(get_customscript_option_label "$script_id" "$option_id")
-                
-                local status="OFF"
-                [ "$option_id" = "$current_selection" ] && status="ON"
-                
-                radio_items="$radio_items \"$i\" \"$option_label\" $status"
-                i=$((i+1))
-            done <<EOF
-$filtered_options
-EOF
-            
+        
+        # UI切り替え
+        if [ "$installed" -eq 1 ]; then
+            # リムーブ → セレクター
+            choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $(echo $radio_items | sed 's/ \"OFF\"//g; s/ \"ON\"//g')") || return 0
+        else
+            # インストール → ラジオボタン
             choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
                 --ok-button \"$(translate 'tr-tui-select')\" \
                 --cancel-button \"$(translate 'tr-tui-back')\" \
                 --radiolist \"\" \
                 $UI_HEIGHT $UI_WIDTH 0 \
                 $radio_items" 3>&1 1>&2 2>&3) || return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            if [ -n "$choice" ]; then
-                selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
+            if [ "$selected_option" = "$current_selection" ]; then
+                continue
+            fi
+            
+            # ★ ファイル保存は一切しない。次の画面に遷移するだけ。
+            
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
+            if [ "$requires_confirmation" = "true" ]; then
+                # リムーブ → チェックボックス画面へ（保存は画面内で）
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
                 
-                if [ "$selected_option" = "$current_selection" ]; then
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                     continue
                 fi
-                
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                write_option_envvars "$script_id" "$selected_option"
-                
-                local skip_inputs
-                skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-                if [ "$skip_inputs" != "true" ]; then
-                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-                fi
             fi
-        done
-    fi
+            
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$skip_inputs" != "true" ]; then
+                # インストール → 入力画面へ（保存は画面内で）
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            fi
+        fi
+    done
 }
 
 # =============================================================================
