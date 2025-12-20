@@ -321,7 +321,6 @@ EOF
     done
 }
 
-# 確認用単独チェックボックスUI（完全汎用）
 custom_script_options_ui() {
     local script_id="$1"
     local breadcrumb="$2"
@@ -365,14 +364,89 @@ EOF
             # ★ 選択が変更された場合のみ envVars を書き込む
             if [ "$selected_option" != "$current_selection" ]; then
                 write_option_envvars "$script_id" "$selected_option"
-                # ★ CONFIRMED='1' を追加
-                echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            fi
+            
+            local requires_confirmation
+            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
+            if [ "$requires_confirmation" = "true" ]; then
+                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+                
+                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    continue
+                fi
             fi
             
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
                 collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+            fi
+        fi
+    done
+}
+
+# 確認用単独チェックボックスUI（完全汎用）
+custom_script_confirm_ui() {
+    local script_id="$1"
+    local option_id="$2"
+    local breadcrumb="$3"
+    
+    local script_name
+    script_name=$(get_customscript_name "$script_id")
+    local item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${script_name}"
+    
+    local skip_inputs
+    skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
+    
+    while true; do
+        local confirmed="OFF"
+        local default_state="OFF"
+        
+        # CONFIRMED状態のみ読み込み
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="ON"
+            elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                confirmed="OFF"
+            fi
+        else
+            confirmed="$default_state"
+        fi
+        
+        local initial_confirmed="$confirmed"
+        
+        local selected
+        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
+        
+        [ $? -ne 0 ] && return 0
+        
+        local new_confirmed
+        if [ -z "$selected" ]; then
+            new_confirmed="OFF"
+        else
+            new_confirmed="ON"
+        fi
+        
+        if [ "$new_confirmed" != "$initial_confirmed" ]; then
+            if [ "$new_confirmed" = "$default_state" ]; then
+                # デフォルト状態に戻す
+                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+            else
+                # envVarsを書き込む
+                write_option_envvars "$script_id" "$option_id"
+                
+                # CONFIRMED状態を追記
+                if [ "$new_confirmed" = "OFF" ]; then
+                    echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                else
+                    echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+                fi
+            fi
+        fi
+        
+        if [ "$skip_inputs" != "true" ]; then
+            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                return 0
             fi
         fi
     done
@@ -1675,7 +1749,7 @@ EOF
     done
 }
 
-XXX_review_and_apply() {
+review_and_apply() {
     local need_fetch=0
     
     [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
@@ -1863,256 +1937,6 @@ EOF
                     echo "[INFO] Skipping $script_id (not confirmed)" >> "$CONFIG_DIR/debug.log"
                     continue
                 fi
-
-                sh "$script"
-                if [ $? -ne 0 ]; then
-                    failed_count=$((failed_count + 1))
-                    failed_scripts="${failed_scripts}$(basename "$script") "
-                fi
-            done
-        fi
-        
-        # ========================================
-        # 7. 完了サマリー生成
-        # ========================================
-        local summary=""
-        local has_changes=0
-        
-        if [ "$HAS_REMOVE" -eq 1 ]; then
-            local remove_count=$(echo "$packages_to_remove" | wc -w)
-            summary="${summary}$(translate 'tr-tui-summary-removed'): ${remove_count}\n"
-            has_changes=1
-        fi
-        
-        if [ "$HAS_INSTALL" -eq 1 ]; then
-            local install_count=$(echo "$install_packages_content" | grep -c '^' 2>/dev/null || echo 0)
-            summary="${summary}$(translate 'tr-tui-summary-installed'): ${install_count}\n"
-            has_changes=1
-        fi
-        
-        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
-            local feed_count=0
-            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                [ -f "$script" ] || continue
-                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
-                feed_count=$((feed_count + 1))
-            done
-            if [ "$feed_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${feed_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        if [ "$HAS_SETUP" -eq 1 ]; then
-            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
-            if [ "$setup_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-settings'): ${setup_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            local script_count=$(ls "$CONFIG_DIR"/script_vars_*.txt 2>/dev/null | wc -l)
-            if [ "$script_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-scripts'): ${script_count}\n"
-                has_changes=1
-            fi
-        fi
-        
-        # メッセージ表示
-        if [ "$has_changes" -eq 1 ]; then
-            if [ "$failed_count" -gt 0 ]; then
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}\n$(translate 'tr-tui-warning'): $failed_count $(translate 'tr-tui-script-failed'):\n$failed_scripts"
-            else
-                show_msgbox "$breadcrumb" "$(translate 'tr-tui-config-applied')\n\n${summary}"
-            fi
-        else
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-changes-applied')"
-        fi
-        
-        # apply後のクリーンアップ処理
-        echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
-        reset_state_for_next_session
-        
-        # rebootチェック
-        local needs_reboot=$(needs_reboot_check)
-        if [ "$needs_reboot" -eq 1 ]; then
-            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
-                reboot
-            fi
-        fi
-    fi
-    
-    return 0
-}
-
-review_and_apply() {
-    local need_fetch=0
-    
-    [ ! -f "$TPL_POSTINST" ] || [ ! -s "$TPL_POSTINST" ] && need_fetch=1
-    [ ! -f "$TPL_SETUP" ] || [ ! -s "$TPL_SETUP" ] && need_fetch=1
-    
-    if [ -f "$CUSTOMFEEDS_JSON" ] && [ "$need_fetch" -eq 0 ]; then
-        while read -r cat_id; do
-            local template_url tpl_custom
-            template_url=$(get_customfeed_template_url "$cat_id")
-            
-            if [ -n "$template_url" ]; then
-                tpl_custom="$CONFIG_DIR/tpl_custom_${cat_id}.sh"
-                if [ ! -f "$tpl_custom" ] || [ ! -s "$tpl_custom" ]; then
-                    need_fetch=1
-                    break
-                fi
-            fi
-        done <<EOF
-$(get_customfeed_categories)
-EOF
-    fi
-    
-    if [ "$need_fetch" -eq 1 ]; then
-        echo "[DEBUG] Fetching missing templates..." >> "$CONFIG_DIR/debug.log"
-        prefetch_templates
-    else
-        echo "[DEBUG] All templates already cached" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    local tr_main_menu tr_review breadcrumb
-    local summary_file summary_content confirm_msg
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_review=$(translate "tr-tui-review-configuration")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-    
-    # ★ 確認ダイアログの直前でサマリー生成
-    summary_file=$(generate_config_summary)
-    
-    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
-        echo "Error: Failed to generate summary"
-        return 1
-    fi
-    
-    if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
-        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
-        return 0
-    fi
-    
-    summary_content=$(cat "$summary_file")
-    
-    confirm_msg="${summary_content}
-
-🟣 $(translate 'tr-tui-apply-confirm-question')"
-    
-    if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
-        echo "$(translate 'tr-tui-creating-backup')"
-        if ! create_backup "before_apply"; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
-            return 1
-        fi
-        
-        clear
-        
-        echo "Generating installation scripts..."
-        generate_files
-        
-        # ========================================
-        # 実行計画ファイルを読み込み
-        # ========================================
-        local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
-        
-        if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
-            . "$CONFIG_DIR/execution_plan.sh"
-        else
-            echo "[ERROR] Execution plan not found" >> "$CONFIG_DIR/debug.log"
-        fi
-        
-        local failed_count=0
-        local failed_scripts=""
-        
-        # ========================================
-        # 1. パッケージ削除
-        # ========================================
-        if [ "$HAS_REMOVE" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-removing-packages')"
-            
-            sh "$CONFIG_DIR/remove.sh"
-            
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}remove.sh "
-            else
-                echo "$(translate 'tr-tui-removal-completed')"
-            fi
-        fi
-        
-        # ========================================
-        # 2. パッケージマネージャー更新（インストール対象がある場合のみ）
-        # ========================================
-        update_package_manager
-        
-        # ========================================
-        # 3. パッケージインストール
-        # ========================================
-        if [ "$HAS_INSTALL" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-installing-packages')"
-            sh "$CONFIG_DIR/postinst.sh"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}postinst.sh "
-            fi
-        fi
-        
-        # ========================================
-        # 4. カスタムフィードパッケージインストール
-        # ========================================
-        if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-installing-custom-packages')"
-            
-            for script in "$CONFIG_DIR"/customfeeds-*.sh; do
-                [ -f "$script" ] || continue
-                [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
-                
-                local packages_value
-                packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
-                [ -z "$packages_value" ] && continue
-                
-                sh "$script"
-                if [ $? -ne 0 ]; then
-                    failed_count=$((failed_count + 1))
-                    failed_scripts="${failed_scripts}$(basename "$script") "
-                fi
-            done
-        fi
-        
-        # ========================================
-        # 5. システム設定適用
-        # ========================================
-        if [ "$HAS_SETUP" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-applying-config')"
-            sh "$CONFIG_DIR/setup.sh"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}setup.sh "
-            fi
-        fi
-        
-        # ========================================
-        # 6. カスタムスクリプト実行
-        # ========================================
-        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-installing-custom-scripts')"
-            
-            for script in "$CONFIG_DIR"/customscripts-*.sh; do
-                [ -f "$script" ] || continue
-                
-                local script_id
-                script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
-                
-                [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
 
                 sh "$script"
                 if [ $? -ne 0 ]; then
