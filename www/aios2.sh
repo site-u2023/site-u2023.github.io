@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.0930"
+VERSION="R7.1220.1100"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="MESSAGE"
 
@@ -5386,6 +5386,35 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
+    (
+        wait $API_PID
+        get_extended_device_info
+        export DEVICE_TARGET
+        export OPENWRT_VERSION
+        export ASU_URL
+        export DEVICE_MODEL
+        export DEVICE_ARCH
+        export DEVICE_VENDOR
+        export DEVICE_SUBTARGET
+        export PKG_CHANNEL
+        
+        cache_package_availability >/dev/null 2>&1
+        cache_available_languages
+    ) &
+    DEVICE_INFO_PID=$!
+    
+    (
+        cache_installed_packages
+        wait $DEVICE_INFO_PID
+        initialize_installed_packages
+        
+        : > "$SETUP_VARS"
+        cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
+        cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+        : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    ) &
+    INIT_PKG_PID=$!
+    
     WHIPTAIL_AVAILABLE=0
     command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
     
@@ -5417,9 +5446,6 @@ aios2_main() {
         fi
     fi
     
-    TIME_BEFORE_UI=$(elapsed_time)
-    echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
-    
     wait $SETUP_PID
     SETUP_STATUS=$?
     [ $SETUP_STATUS -ne 0 ] && {
@@ -5438,39 +5464,7 @@ aios2_main() {
         return 1
     }
 
-    wait $API_PID $UI_DL_PID
-    
-    get_extended_device_info
-
-    export DEVICE_TARGET
-    export OPENWRT_VERSION
-    export ASU_URL
-    export DEVICE_MODEL
-    export DEVICE_ARCH
-    export DEVICE_VENDOR
-    export DEVICE_SUBTARGET
-    export PKG_CHANNEL 
-    
-    echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_VENDOR='$DEVICE_VENDOR'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_SUBTARGET='$DEVICE_SUBTARGET'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   DEVICE_TARGET='$DEVICE_TARGET'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
-    
-    ( cache_package_availability >/dev/null 2>&1 ) &
-    CACHE_PKG_PID=$!
-    
-    cache_installed_packages &
-    CACHE_INSTALLED_PID=$!
-    
-    echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
-    
-    wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
-
-    wait $CACHE_PKG_PID
-    cache_available_languages
+    wait $UI_DL_PID $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $DEVICE_INFO_PID $INIT_PKG_PID
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
@@ -5484,17 +5478,7 @@ aios2_main() {
         sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
-
-    wait $CACHE_INSTALLED_PID
-    unset CACHE_INSTALLED_PID
     
-    initialize_installed_packages
-    
-    : > "$SETUP_VARS"
-    cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
-    cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
-        
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
