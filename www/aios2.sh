@@ -4091,6 +4091,131 @@ EOF
     echo "$remove_list" | xargs
 }
 
+# ========================================
+# 削除リスト展開（言語パッケージ + 依存関係）
+# ========================================
+expand_remove_list() {
+    local packages="$1"
+    local lang_packages=""
+    local dep_packages=""
+    local result=""
+    
+    for pkg in $packages; do
+        # 1. 言語パッケージ検出
+        local base_name=""
+        case "$pkg" in
+            luci-app-*)   base_name="${pkg#luci-app-}" ;;
+            luci-proto-*) base_name="${pkg#luci-proto-}" ;;
+            luci-theme-*) base_name="${pkg#luci-theme-}" ;;
+            luci-mod-*)   base_name="${pkg#luci-mod-}" ;;
+        esac
+        
+        if [ -n "$base_name" ]; then
+            local found_lang
+            found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
+            
+            if [ -n "$found_lang" ]; then
+                lang_packages="$lang_packages $found_lang"
+                echo "[DEBUG] Found lang package for $pkg: $found_lang" >> "$CONFIG_DIR/debug.log"
+            fi
+        fi
+        
+        # 2. 依存パッケージ（opkgのみ、JSONから取得したコマンドを使用）
+        if [ "$PKG_MGR" = "opkg" ]; then
+            local deps_cmd depends_cmd
+            deps_cmd=$(expand_template "$PKG_DEPENDS_CMD" "package" "$pkg")
+            
+            local deps
+            deps=$(eval "$deps_cmd" 2>/dev/null)
+            
+            for dep in $deps; do
+                # システムパッケージ除外（JSONから取得したリスト）
+                local is_system=0
+                for sys_pkg in $PKG_SYSTEM_PACKAGES; do
+                    case "$dep" in
+                        ${sys_pkg}*) is_system=1; break ;;
+                    esac
+                done
+                
+                [ "$is_system" -eq 1 ] && continue
+                
+                # インストール済みチェック
+                is_package_installed "$dep" || continue
+                
+                # 他のパッケージに依存されているかチェック
+                local what_depends_cmd
+                what_depends_cmd=$(expand_template "$PKG_WHATDEPENDS_CMD" "package" "$dep")
+                
+                local dependents
+                dependents=$(eval "$what_depends_cmd" 2>/dev/null)
+                
+                local other_depends=0
+                for dependent in $dependents; do
+                    case " $packages " in
+                        *" $dependent "*) ;;
+                        *) other_depends=1; break ;;
+                    esac
+                done
+                
+                if [ "$other_depends" -eq 0 ]; then
+                    dep_packages="$dep_packages $dep"
+                    echo "[DEBUG] Found removable dependency for $pkg: $dep" >> "$CONFIG_DIR/debug.log"
+                fi
+            done
+        fi
+        
+        result="$result $pkg"
+    done
+    
+    # 順序: 言語パッケージ → 本体 → 依存パッケージ
+    echo "$lang_packages $result $dep_packages" | tr -s ' ' | sed 's/^ //;s/ $//'
+}
+
+# ========================================
+# 削除スクリプト生成
+# ========================================
+generate_remove_script() {
+    local packages_to_remove="$1"
+    local output_file="$CONFIG_DIR/remove.sh"
+    
+    [ -z "$packages_to_remove" ] && {
+        echo "[DEBUG] No packages to remove" >> "$CONFIG_DIR/debug.log"
+        return 0
+    }
+    
+    echo "[DEBUG] Original packages to remove: $packages_to_remove" >> "$CONFIG_DIR/debug.log"
+    
+    # 言語パッケージと依存関係を展開
+    local expanded_packages
+    expanded_packages=$(expand_remove_list "$packages_to_remove")
+    
+    echo "[DEBUG] Expanded packages: $expanded_packages" >> "$CONFIG_DIR/debug.log"
+    
+    local remove_cmd
+    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$expanded_packages")
+    
+    cat > "$output_file" <<'REMOVE_EOF'
+#!/bin/sh
+# Auto-generated package removal script
+echo "========================================="
+echo "Removing unselected packages..."
+echo "========================================="
+echo ""
+REMOVE_EOF
+    
+    echo "${remove_cmd}" >> "$output_file"
+    
+    cat >> "$output_file" <<'REMOVE_EOF'
+echo ""
+echo "========================================="
+echo "Package removal completed."
+echo "========================================="
+REMOVE_EOF
+    
+    chmod +x "$output_file"
+    echo "[DEBUG] Remove script generated: $output_file" >> "$CONFIG_DIR/debug.log"
+}
+
 generate_files() {
     local pkgs selected_pkgs cat_id template_url api_url download_url pkg_id pattern
     local tpl_custom enable_var
