@@ -441,7 +441,7 @@ EOF
             # リムーブ → セレクター
             choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
         else
-            # インストール → ラジオボタン
+            # インストール → ラジオボタン（排他式）
             choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
                 --ok-button \"$(translate 'tr-tui-select')\" \
                 --cancel-button \"$(translate 'tr-tui-back')\" \
@@ -452,10 +452,6 @@ EOF
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-            
-            if [ "$selected_option" = "$current_selection" ]; then
-                continue
-            fi
             
             : > "$CONFIG_DIR/script_vars_${script_id}.txt"
             echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
