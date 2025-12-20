@@ -324,7 +324,6 @@ custom_script_confirm_ui() {
     
     while true; do
         local confirmed="OFF"
-        local previous_state=""
         
         case "$script_id" in
             adguardhome)
@@ -335,10 +334,8 @@ custom_script_confirm_ui() {
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
-                previous_state="1"
             elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="OFF"
-                previous_state="0"
             fi
         fi
         
@@ -347,24 +344,21 @@ custom_script_confirm_ui() {
         
         [ $? -ne 0 ] && return 0
         
-        local new_state
         if [ -z "$selected" ]; then
-            new_state="0"
-        else
-            new_state="1"
-        fi
-        
-        # previous_state が空でない場合のみ書き込む（初回表示は何もしない）
-        if [ -n "$previous_state" ] && [ "$new_state" != "$previous_state" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            echo "CONFIRMED='${new_state}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        else
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
+        # ★ install時: CONFIRMED='1'の場合のみ次へ進む
         if [ "$skip_inputs" != "true" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 return 0
             fi
         fi
+        # ★ remove時: ループ継続
     done
 }
 
