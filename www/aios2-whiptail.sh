@@ -330,7 +330,6 @@ custom_script_options_ui() {
         local radio_items i option_id option_label choice selected_option
         local current_selection=""
         
-        # SELECTED_OPTION から現在選択を取得
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
         fi
@@ -361,17 +360,18 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # 選択が変更されていない場合はループを続ける
             if [ "$selected_option" = "$current_selection" ]; then
                 continue
             fi
             
-            # envVars を書き込む（CONFIRMED + SELECTED_OPTION 保持）
-            write_option_envvars "$script_id" "$selected_option"
+            # ★ 1. ファイルをクリア
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
             
-            # SELECTED_OPTION を更新
-            sed -i "/^SELECTED_OPTION=/d" "$CONFIG_DIR/script_vars_${script_id}.txt"
+            # ★ 2. SELECTED_OPTION を書き込む
             echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            
+            # ★ 3. envVars があれば追記
+            write_option_envvars "$script_id" "$selected_option"
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
