@@ -378,7 +378,7 @@ print_banner_unicode() {
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
     if [ "$SHOW_MESSAGE" = "MESSAGE" ]; then
-		printf "\033[1;31m       $MESSAGE\033[0m\n"
+		printf "\033[33m       $MESSAGE\033[0m\n"
     else
         printf "\033[37m         Vr.$VERSION\033[0m\n"
     fi
