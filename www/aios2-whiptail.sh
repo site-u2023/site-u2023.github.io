@@ -408,7 +408,7 @@ custom_script_options_ui() {
     esac
     
     while true; do
-        local radio_items i option_id option_label choice selected_option
+        local radio_items menu_items i option_id option_label choice selected_option
         local current_selection=""
         
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
@@ -416,6 +416,7 @@ custom_script_options_ui() {
         fi
         
         radio_items=""
+        menu_items=""
         i=1
         
         while read -r option_id; do
@@ -426,6 +427,7 @@ custom_script_options_ui() {
             [ "$option_id" = "$current_selection" ] && status="ON"
             
             radio_items="$radio_items \"$i\" \"$option_label\" $status"
+            menu_items="$menu_items $i \"$option_label\""
             i=$((i+1))
         done <<EOF
 $filtered_options
@@ -434,7 +436,7 @@ EOF
         # UI切り替え
         if [ "$installed" -eq 1 ]; then
             # リムーブ → セレクター
-            choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $(echo $radio_items | sed 's/ \"OFF\"//g; s/ \"ON\"//g')") || return 0
+            choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
         else
             # インストール → ラジオボタン
             choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
@@ -452,12 +454,9 @@ EOF
                 continue
             fi
             
-            # ★ ファイル保存は一切しない。次の画面に遷移するだけ。
-            
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
-                # リムーブ → チェックボックス画面へ（保存は画面内で）
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
                 
                 if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
@@ -468,7 +467,6 @@ EOF
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
-                # インストール → 入力画面へ（保存は画面内で）
                 collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
             fi
         fi
