@@ -261,7 +261,12 @@ custom_script_options_ui() {
     local filtered_options="$3"
     
     while true; do
-        local menu_items i option_id option_label choice selected_option
+        local menu_items i option_id option_label choice selected_option current_option
+        
+        # 現在のオプションを取得
+        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+            current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
+        fi
         
         menu_items=""
         i=1
@@ -280,30 +285,25 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # ★ 現在のオプションを取得
-            local current_option
-            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                current_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-            fi
-            
-            # ★ オプションが変わった時だけ初期化
+            # オプションが変わった時だけ初期化
             if [ "$selected_option" != "$current_option" ]; then
                 : > "$CONFIG_DIR/script_vars_${script_id}.txt"
                 echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
                 write_option_envvars "$script_id" "$selected_option"
-                
-                local skip_inputs
-                skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-                if [ "$skip_inputs" != "true" ]; then
-                    collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-                fi
             fi
             
-            # 確認チェックボックス
+            # ★ 確認チェックボックス（先）
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
+            fi
+            
+            # ★ 入力フィールド（後）
+            local skip_inputs
+            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
+            if [ "$skip_inputs" != "true" ]; then
+                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
             fi
         fi
     done
