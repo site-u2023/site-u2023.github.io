@@ -2832,7 +2832,9 @@ collect_script_inputs() {
             break
         done
         
-        echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+		sed -i "/^${input_envvar}=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+		echo "${input_envvar}=\"${value}\"" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+
     done
     
     return 0
