@@ -2547,6 +2547,7 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
+    # ★ 追記モード
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
