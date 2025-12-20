@@ -4026,9 +4026,8 @@ detect_packages_to_remove() {
             # custom feed 管理下は Phase 1 で除外
             [ "$is_custom" = "1" ] && continue
             
-            # owner=auto/system は削除対象外
+            # owner=auto のみ削除対象外
             [ "$owner" = "auto" ] && continue
-            [ "$owner" = "system" ] && continue
             
             # インストール済みチェック
             is_package_installed "$pkg_id" || continue
@@ -4081,9 +4080,8 @@ detect_packages_to_remove() {
             pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
             owner=$(echo "$snapshot_line" | cut -d= -f11)
             
-            # owner=auto/system は削除対象外
+            # owner=auto のみ削除対象外
             [ "$owner" = "auto" ] && continue
-            [ "$owner" = "system" ] && continue
             
             local pattern exclude
             pattern=$(get_customfeed_package_pattern "$pkg_id")
