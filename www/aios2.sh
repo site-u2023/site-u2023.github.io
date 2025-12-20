@@ -3369,7 +3369,8 @@ reset_state_for_next_session() {
     rm -f "$CONFIG_DIR"/customfeeds-*.sh
     rm -f "$CONFIG_DIR"/customscripts-*.sh
     rm -f "$CONFIG_DIR/execution_plan.sh"
-    
+    rm -f "$CONFIG_DIR"/script_vars_*.txt
+
     # apply後の最新インストール状態を取得
     cache_installed_packages
     
