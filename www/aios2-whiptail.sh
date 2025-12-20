@@ -324,6 +324,7 @@ custom_script_confirm_ui() {
     
     while true; do
         local confirmed="OFF"
+        local had_previous_value=0
         
         case "$script_id" in
             adguardhome)
@@ -332,10 +333,13 @@ custom_script_confirm_ui() {
         esac
         
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                confirmed="ON"
-            elif grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                confirmed="OFF"
+            if grep -q "^CONFIRMED=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                had_previous_value=1
+                if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+                    confirmed="ON"
+                else
+                    confirmed="OFF"
+                fi
             fi
         fi
         
@@ -344,21 +348,22 @@ custom_script_confirm_ui() {
         
         [ $? -ne 0 ] && return 0
         
-        if [ -z "$selected" ]; then
-            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-        else
-            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
-            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        # 以前に値があった場合のみ更新
+        if [ "$had_previous_value" -eq 1 ]; then
+            if [ -z "$selected" ]; then
+                sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+                echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            else
+                sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+                echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            fi
         fi
         
-        # ★ install時: CONFIRMED='1'の場合のみ次へ進む
         if [ "$skip_inputs" != "true" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 return 0
             fi
         fi
-        # ★ remove時: ループ継続
     done
 }
 
