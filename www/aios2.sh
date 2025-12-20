@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1220.2000"
+VERSION="R7.1221.0014"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -2550,24 +2550,14 @@ write_option_envvars() {
     
     [ -z "$env_json" ] && return 0
     
-    # ★ 新しい envVars のキー一覧を抽出
-    local new_keys=""
-    new_keys=$(echo "$env_json" | \
-        sed 's/^{//; s/}$//; s/","/"\n"/g' | \
-        sed 's/^"//; s/"$//' | \
-        cut -d: -f1 | \
-        tr -d '"' | \
-        sed 's/^[[:space:]]*//;s/[[:space:]]*$//')
-    
-    echo "[DEBUG] write_option_envvars: new_keys=$new_keys" >> "$CONFIG_DIR/debug.log"
-    
-    # ★ STEP 1: CONFIRMED だけ保持
+    # CONFIRMED と SELECTED_OPTION を保持
     : > "$temp_file"
     if [ -f "$vars_file" ]; then
         grep "^CONFIRMED=" "$vars_file" >> "$temp_file" 2>/dev/null || true
+        grep "^SELECTED_OPTION=" "$vars_file" >> "$temp_file" 2>/dev/null || true
     fi
     
-    # ★ STEP 2: 新しい envVars を追加（重複なし）
+    # 新しい envVars を追加
     echo "$env_json" | \
         sed 's/^{//; s/}$//; s/","/"\n"/g' | \
         sed 's/^"//; s/"$//' | \
@@ -2579,11 +2569,10 @@ write_option_envvars() {
             fi
         done
     
-    # ★ STEP 3: 上書き
+    # 上書き
     mv "$temp_file" "$vars_file"
     
     echo "[DEBUG] write_option_envvars: script=$script_id option=$option_id" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] envVars JSON: $env_json" >> "$CONFIG_DIR/debug.log"
     [ -f "$vars_file" ] && echo "[DEBUG] vars_file content: $(cat "$vars_file")" >> "$CONFIG_DIR/debug.log"
 }
 
