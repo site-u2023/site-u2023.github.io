@@ -331,6 +331,7 @@ custom_script_confirm_ui() {
                 ;;
         esac
         
+        # ★ ファイルから状態を読み込んで上書き（これが元々あった）
         if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
             if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
                 confirmed="ON"
@@ -339,6 +340,7 @@ custom_script_confirm_ui() {
             fi
         fi
         
+        # ★ ここでチェック状態が正しく表示されるはず
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
