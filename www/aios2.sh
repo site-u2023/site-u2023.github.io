@@ -3433,6 +3433,23 @@ update_language_packages() {
     
     [ "$old_lang" = "$new_lang" ] && return 0
     
+    # ★ 既存の言語パッケージを直接削除
+    echo "[DEBUG] Removing old language packages for lang=$old_lang" >> "$CONFIG_DIR/debug.log"
+    
+    while read -r installed_pkg; do
+        [ -z "$installed_pkg" ] && continue
+        
+        case "$installed_pkg" in
+            luci-i18n-*-${old_lang})
+                grep -v "^${installed_pkg}=" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp" 2>/dev/null || touch "$SELECTED_PACKAGES.tmp"
+                mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
+                echo "[DEBUG] Removed from SELECTED_PACKAGES: $installed_pkg" >> "$CONFIG_DIR/debug.log"
+                ;;
+        esac
+    done <<EOF
+$_INSTALLED_PACKAGES_CACHE
+EOF
+    
     # JSON駆動のパターンを取得
     local exclude_patterns module_patterns language_prefixes
     exclude_patterns=$(get_language_exclude_patterns)
@@ -3495,18 +3512,13 @@ EOF
     fi
     
     echo "[DEBUG] all_packages count=$(echo \"$all_packages\" | wc -l)" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] all_packages='$all_packages'" >> "$CONFIG_DIR/debug.log"
-    
-    # 既存の言語パッケージを削除
-    grep -v "^luci-i18n-" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp"
-    mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
     
     if [ "$new_lang" = "en" ]; then
         clear_selection_cache
         return 0
     fi
 
-    # ベースパッケージを追加（JSON駆動、存在確認済み）
+    # ベースパッケージを追加
     for prefix in $language_prefixes; do
         local base_pkg="${prefix}${new_lang}"
         check_package_available "$base_pkg" "normal" && echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
