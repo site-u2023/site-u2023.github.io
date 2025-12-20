@@ -1836,9 +1836,6 @@ cache_installed_packages() {
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     echo "[DEBUG] Installed packages cache built: $count packages" >> "$CONFIG_DIR/debug.log"
-
-    _INSTALLED_PACKAGES_CACHE=$(cat "$cache_file")
-    _INSTALLED_PACKAGES_LOADED=1
 }
 
 is_package_installed() {
@@ -3415,6 +3412,15 @@ update_language_packages() {
     [ -z "$new_lang" ] && return 0
         
     [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
+
+    if [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; then
+        cache_installed_packages
+        local cache_file="$CONFIG_DIR/installed_packages_cache.txt"
+        if [ -f "$cache_file" ]; then
+            _INSTALLED_PACKAGES_CACHE=$(cat "$cache_file")
+            _INSTALLED_PACKAGES_LOADED=1
+        fi
+    fi
 
     local base_lang_pkg
     base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
