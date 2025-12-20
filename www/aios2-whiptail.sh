@@ -2235,9 +2235,23 @@ EOF
         fi
         
         # 6. カスタムスクリプト実行
+        local script_install_count=0
+        local script_remove_count=0
+        
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-custom-scripts')"
+            
+            # 実行前にカウントを保存
+            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                [ -f "$var_file" ] || continue
+                
+                if grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null; then
+                    script_install_count=$((script_install_count + 1))
+                elif grep -q "^CONFIRMED='0'$" "$var_file" 2>/dev/null; then
+                    script_remove_count=$((script_remove_count + 1))
+                fi
+            done
             
             for script in "$CONFIG_DIR"/customscripts-*.sh; do
                 [ -f "$script" ] || continue
@@ -2293,21 +2307,8 @@ EOF
         fi
         
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            local install_count=0
-            local remove_count=0
-            
-            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                [ -f "$var_file" ] || continue
-                
-                if grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null; then
-                    install_count=$((install_count + 1))
-                elif grep -q "^CONFIRMED='0'$" "$var_file" 2>/dev/null; then
-                    remove_count=$((remove_count + 1))
-                fi
-            done
-            
-            if [ "$install_count" -gt 0 ] || [ "$remove_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-scripts'): install=${install_count}, remove=${remove_count}\n"
+            if [ "$script_install_count" -gt 0 ] || [ "$script_remove_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-scripts'): install=${script_install_count}, remove=${script_remove_count}\n"
                 has_changes=1
             fi
         fi
