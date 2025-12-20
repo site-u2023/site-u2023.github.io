@@ -6,6 +6,7 @@
 
 VERSION="R7.1220.0930"
 MESSAGE="[Under Maintenance]"
+SHOW_MESSAGE="MESSAGE"
 
 DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 [ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
@@ -365,6 +366,9 @@ TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
 TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
 
 print_banner_unicode() {
+	local="show_message"
+	show_message="MESSAGE"
+	
     printf "\n"
     printf       "\033[35m       ██ █\033[0m\n"
     printf       "\033[34m ████  ███   ████   █████\033[0m  \033[37m█████\033[0m\n"
@@ -373,8 +377,11 @@ print_banner_unicode() {
     printf "\033[38;5;208m██  ██  ██  ██  ██      ██\033[0m\033[37m ██\033[0m\n"
     printf       "\033[31m █████ ████  ████  ██████\033[0m  \033[37m██████\033[0m\n"
     printf "\n"
-    printf "\033[37m         Vr.%s\033[0m\n" "$VERSION"
-	printf "\033[1;31m       $MESSAGE\033[0m\n"
+    if [ "$SHOW_MESSAGE" = "MESSAGE" ]; then
+		printf "\033[1;31m       $MESSAGE\033[0m\n"
+    else
+        printf "\033[37m         Vr.$VERSION\033[0m\n"
+    fi
     printf "\n"
     printf "\033[1;35mThis script is used at your own risk\033[0m\n"
 	printf "\n"
@@ -3687,11 +3694,18 @@ wget_fallback() {
     return 1
 }
 
+check_network_connectivity() {
+    if wget_fallback "${BOOTSTRAP_URL}/config.js" "/dev/null" 5; then
+        return 0
+    fi
+    return 1
+}
+
 __download_file_core() {
     local url="$1"
     local output_path="$2"
     local cache_buster full_url
-    local max_retries=3
+    local max_retries=0
     local retry=0
     
     if echo "$url" | grep -q '?'; then
@@ -3704,8 +3718,12 @@ __download_file_core() {
     
     echo "[DEBUG] Downloading: $url" >> "$CONFIG_DIR/debug.log"
     
-    while [ $retry -lt $max_retries ]; do
-        echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
+    while [ $max_retries -eq 0 ] || [ $retry -lt $max_retries ]; do
+        if [ $max_retries -eq 0 ]; then
+            echo "[DEBUG] Attempt $((retry + 1)): $url" >> "$CONFIG_DIR/debug.log"
+        else
+            echo "[DEBUG] Attempt $((retry + 1))/$max_retries: $url" >> "$CONFIG_DIR/debug.log"
+        fi
         
         if wget_fallback "$full_url" "$output_path" 10; then
             if [ -s "$output_path" ]; then
@@ -3717,7 +3735,7 @@ __download_file_core() {
         fi
         
         retry=$((retry + 1))
-        [ $retry -lt $max_retries ] && sleep 1
+        [ $max_retries -eq 0 ] || [ $retry -lt $max_retries ] && sleep 1
     done
     
     echo "[ERROR] Failed to download after $max_retries attempts: $url" >> "$CONFIG_DIR/debug.log"
@@ -5315,9 +5333,14 @@ aios2_main() {
     mkdir -p "$CONFIG_DIR"
     get_language_code
     
-    # ========================================
-    # Phase 1: 初期化とconfig.js取得
-    # ========================================
+    if ! check_network_connectivity; then
+        echo "Error: Network connectivity check failed"
+        echo "Please check your internet connection"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
+    
     __download_file_core "${BOOTSTRAP_URL}/config.js" "$CONFIG_DIR/config.js" || {
         echo "Error: Failed to download config.js"
         printf "Press [Enter] to exit. "
@@ -5327,9 +5350,6 @@ aios2_main() {
     
     init
     
-    # ========================================
-    # Phase 2: 必須ファイルを並列ダウンロード（BG）
-    # ========================================
     (download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON") &
     PKG_MGR_DL_PID=$!
     
@@ -5366,33 +5386,17 @@ aios2_main() {
     ) &
     UI_DL_PID=$!
     
-    # ========================================
-    # Phase 3: whiptail有無チェック
-    # ========================================
     WHIPTAIL_AVAILABLE=0
     command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
     
-    # ========================================
-    # Phase 4: UI選択（ユーザー入力）
-    # ========================================
     UI_START=$(cut -d' ' -f1 /proc/uptime)
     select_ui_mode
     UI_END=$(cut -d' ' -f1 /proc/uptime)
     UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
     
-    # ========================================
-    # Phase 5: ダウンロード完了確認 & 失敗時再試行
-    # ========================================
-    
-    # whiptail選択時のインストール処理
     if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+        echo "Waiting for package manager configuration..."
         wait $PKG_MGR_DL_PID
-        PKG_MGR_DL_PID=""
-        
-        # 失敗していたら再ダウンロード
-        if [ ! -f "$PACKAGE_MANAGER_JSON" ] || [ ! -s "$PACKAGE_MANAGER_JSON" ]; then
-            download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON"
-        fi
         
         load_package_manager_config || {
             echo "Failed to load package manager config"
@@ -5413,69 +5417,29 @@ aios2_main() {
         fi
     fi
     
-    # 必須ファイルの完了確認と再試行
-    [ -n "$PKG_MGR_DL_PID" ] && wait $PKG_MGR_DL_PID
-    if [ ! -f "$PACKAGE_MANAGER_JSON" ] || [ ! -s "$PACKAGE_MANAGER_JSON" ]; then
-        download_file_with_cache "$PACKAGE_MANAGER_CONFIG_URL" "$PACKAGE_MANAGER_JSON" || {
-            echo "Failed to download package-manager.json"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
-    wait $SETUP_PID
-    if [ ! -f "$SETUP_JSON" ] || [ ! -s "$SETUP_JSON" ]; then
-        download_setup_json || {
-            echo "Cannot continue without setup.json"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
-    wait $POSTINST_PID
-    if [ ! -f "$PACKAGES_JSON" ] || [ ! -s "$PACKAGES_JSON" ]; then
-        download_postinst_json || {
-            echo "Cannot continue without postinst.json"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
-    wait $API_PID
-    if [ ! -f "$AUTO_CONFIG_JSON" ] || [ ! -s "$AUTO_CONFIG_JSON" ]; then
-        download_api_with_retry || {
-            echo "Cannot continue without API data"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
-    wait $UI_DL_PID
-    if [ ! -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ] || [ ! -s "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
-        local ui_url
-        if [ "$UI_MODE" = "whiptail" ]; then
-            ui_url="$WHIPTAIL_UI_URL"
-        else
-            ui_url="$SIMPLE_UI_URL"
-        fi
-        __download_file_core "$ui_url" "$CONFIG_DIR/aios2-${UI_MODE}.sh" || {
-            echo "Cannot continue without UI module"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-    fi
-    
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-    # ========================================
-    # Phase 6: デバイス情報取得
-    # ========================================
+    wait $SETUP_PID
+    SETUP_STATUS=$?
+    [ $SETUP_STATUS -ne 0 ] && {
+        echo "Cannot continue without setup.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    wait $POSTINST_PID
+    POSTINST_STATUS=$?
+    [ $POSTINST_STATUS -ne 0 ] && {
+        echo "Cannot continue without postinst.json"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+
+    wait $API_PID $UI_DL_PID
+    
     get_extended_device_info
 
     export DEVICE_TARGET
@@ -5495,9 +5459,6 @@ aios2_main() {
     echo "[DEBUG]   OPENWRT_VERSION='$OPENWRT_VERSION'" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   ASU_URL='$ASU_URL'" >> "$CONFIG_DIR/debug.log"
     
-    # ========================================
-    # Phase 7: パッケージキャッシュ構築
-    # ========================================
     ( cache_package_availability >/dev/null 2>&1 ) &
     CACHE_PKG_PID=$!
     
@@ -5506,9 +5467,6 @@ aios2_main() {
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
     
-    # ========================================
-    # Phase 8: 残りのバックグラウンド処理完了を待機
-    # ========================================
     wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID
 
     wait $CACHE_PKG_PID
@@ -5527,9 +5485,6 @@ aios2_main() {
         sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
     fi
 
-    # ========================================
-    # Phase 9: インストール済みパッケージ初期化
-    # ========================================
     wait $CACHE_INSTALLED_PID
     unset CACHE_INSTALLED_PID
     
@@ -5540,9 +5495,6 @@ aios2_main() {
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
     : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
         
-    # ========================================
-    # Phase 10: UIモジュール起動
-    # ========================================
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
     if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
