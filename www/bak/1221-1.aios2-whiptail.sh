@@ -1288,7 +1288,7 @@ EOF
     done
 }
 
-XXXXX_package_selection() {
+package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
@@ -1595,7 +1595,7 @@ EOF
     done
 }
 
-package_selection() {
+XXX_NG_package_selection() {
     local cat_id="$1"
     local caller="${2:-normal}"
     local parent_breadcrumb="$3"
