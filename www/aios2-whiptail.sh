@@ -337,18 +337,20 @@ custom_script_confirm_ui() {
         fi
         
         local selected
-        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
+        # ★ 「更新」→「選択」に変更
+        selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
         [ $? -ne 0 ] && return 0
         
-        # ★ チェックOFF → 削除セット保存
         if [ -z "$selected" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         else
-            # ★ チェックON → ファイル削除（初期化）
             rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
+        
+        # ★ 選択ボタンが押されたので関数を抜ける
+        return 0
     done
 }
 
