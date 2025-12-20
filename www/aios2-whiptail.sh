@@ -178,7 +178,7 @@ EOF
     done
 }
 
-custom_scripts_selection_ui() {
+XXX_custom_scripts_selection_ui() {
     local breadcrumb="$1"
     local all_scripts="$2"
     local menu_items i script_id script_name choice selected_script
@@ -204,6 +204,53 @@ EOF
         if [ -n "$choice" ]; then
             selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
             custom_script_options "$selected_script" "$breadcrumb"
+        fi
+    done
+}
+
+custom_scripts_selection_ui() {
+    local breadcrumb="$1"
+    local all_scripts="$2"
+    
+    while true; do
+        local menu_items i script_id script_name status_mark choice selected_script
+        
+        menu_items=""
+        i=1
+        
+        while read -r script_id; do
+            script_name=$(get_customscript_name "$script_id")
+            
+            # 選択済みかチェック
+            if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
+                status_mark="[✓] "
+            else
+                status_mark="[ ] "
+            fi
+            
+            menu_items="$menu_items $i \"${status_mark}${script_name}\""
+            i=$((i+1))
+        done <<EOF
+$all_scripts
+EOF
+        
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+        
+        if ! [ $? -eq 0 ]; then
+            return 0
+        fi
+        
+        if [ -n "$choice" ]; then
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
+            
+            # トグル動作
+            if [ -f "$CONFIG_DIR/script_vars_${selected_script}.txt" ]; then
+                # 選択済み → 削除
+                rm -f "$CONFIG_DIR/script_vars_${selected_script}.txt"
+            else
+                # 未選択 → オプション選択へ
+                custom_script_options "$selected_script" "$breadcrumb"
+            fi
         fi
     done
 }
