@@ -229,6 +229,7 @@ $filtered_options
 EOF
         
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
+        choice=$(eval "radiolist \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
