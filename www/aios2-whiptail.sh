@@ -1786,6 +1786,23 @@ EOF
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
+    # ★ ここから generate_config_summary() を削除
+    # summary_file=$(generate_config_summary)  # ← 削除
+    
+    # if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then  # ← 削除
+    #     echo "Error: Failed to generate summary"  # ← 削除
+    #     return 1  # ← 削除
+    # fi  # ← 削除
+    
+    # if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then  # ← 削除
+    #     show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"  # ← 削除
+    #     return 0  # ← 削除
+    # fi  # ← 削除
+    
+    # summary_content=$(cat "$summary_file")  # ← 削除
+    # ★ ここまで削除
+    
+    # ★ 確認ダイアログの直前でサマリー生成
     summary_file=$(generate_config_summary)
     
     if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
