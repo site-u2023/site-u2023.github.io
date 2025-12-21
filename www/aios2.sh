@@ -3518,9 +3518,9 @@ XXXXX_reset_state_for_next_session() {
 }
 
 reset_state_for_next_session() {
-    # 選択パッケージ（ファイル）を削除
-    rm -f "$SELECTED_PACKAGES"
-    rm -f "$SELECTED_CUSTOM_PACKAGES"
+    # 選択パッケージ（ファイル）をクリア（削除ではなく空にする）
+    : > "$SELECTED_PACKAGES"
+    : > "$SELECTED_CUSTOM_PACKAGES"
     
     # SETUP_VARS を完全にクリア（前回の設定は全て適用済み）
     : > "$SETUP_VARS"
@@ -3535,12 +3535,12 @@ reset_state_for_next_session() {
     _SELECTED_CUSTOM_CACHE_LOADED=0
     _INSTALLED_PACKAGES_LOADED=0
     
-    # スナップショットファイルを削除（古い基準を破棄）
-    rm -f "$CONFIG_DIR/packages_initial_snapshot.txt"
-    rm -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    rm -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # スナップショットファイルをクリア（後でcpで上書き）
+    : > "$CONFIG_DIR/packages_initial_snapshot.txt"
+    : > "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
     
-    # 生成済み実行スクリプトの削除
+    # 生成済み実行スクリプトの削除（一時ファイル）
     rm -f "$CONFIG_DIR/remove.sh"
     rm -f "$CONFIG_DIR/postinst.sh"
     rm -f "$CONFIG_DIR/setup.sh"
@@ -3552,10 +3552,6 @@ reset_state_for_next_session() {
     # apply後の最新インストール状態を取得
     cache_installed_packages
     
-    # 空ファイルを事前作成（確実に存在させる）
-    : > "$SELECTED_PACKAGES"
-    : > "$SELECTED_CUSTOM_PACKAGES"
-    
     # インストール済みを初期選択として再生成（owner=system）
     initialize_installed_packages
     
@@ -3563,7 +3559,7 @@ reset_state_for_next_session() {
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
     : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
-    
+	
     clear_selection_cache
 }
 
