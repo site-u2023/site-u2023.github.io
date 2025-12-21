@@ -2292,6 +2292,21 @@ PKGS
             has_changes=1
         fi
         
+        # カスタムフィード削除
+        if [ -f "$CONFIG_DIR/custom_feed_remove_list.txt" ]; then
+            local custom_removed
+            custom_removed=$(cat "$CONFIG_DIR/custom_feed_remove_list.txt" | xargs)
+            if [ -n "$custom_removed" ]; then
+                summary="${summary}$(translate 'tr-tui-summary-customfeeds')（削除）:\n"
+                for pkg in $custom_removed; do
+                    summary="${summary}  - ${pkg}\n"
+                done
+                summary="${summary}\n"
+                has_changes=1
+            fi
+        fi
+        
+        # カスタムフィードインストール
         if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
             for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                 [ -f "$script" ] || continue
@@ -2301,13 +2316,16 @@ PKGS
                 packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
                 
                 if [ -n "$packages_value" ]; then
+                    summary="${summary}$(translate 'tr-tui-summary-customfeeds')（インストール）:\n"
                     while read -r pkg_pattern; do
                         [ -z "$pkg_pattern" ] && continue
-                        summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${pkg_pattern}\n"
+                        summary="${summary}  - ${pkg_pattern}\n"
                     done <<PKGS
 $(echo "$packages_value" | tr ' ' '\n')
 PKGS
+                    summary="${summary}\n"
                     has_changes=1
+                    break
                 fi
             done
         fi
