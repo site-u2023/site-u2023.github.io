@@ -4136,13 +4136,12 @@ detect_packages_to_remove() {
         while read -r snapshot_line; do
             [ -z "$snapshot_line" ] && continue
             
-            local pkg_id uid owner is_custom
+            local pkg_id uid is_custom
             pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
             uid=$(echo "$snapshot_line" | cut -d= -f3)
-            owner=$(echo "$snapshot_line" | cut -d= -f11)
             is_custom=$(echo "$snapshot_line" | cut -d= -f12)
             
-            echo "[DEBUG] Snapshot check: pkg=$pkg_id, owner=$owner, is_custom=$is_custom" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] Snapshot check: pkg=$pkg_id, is_custom=$is_custom" >> "$CONFIG_DIR/debug.log"
             
             # custom feed 管理下は Phase 1 で除外
             [ "$is_custom" = "1" ] && continue
@@ -4161,7 +4160,7 @@ detect_packages_to_remove() {
             # 現在選択されていなければ削除対象
             if [ "$still_selected" -eq 0 ]; then
                 add_remove_pkg "$pkg_id"
-                echo "[REMOVE] User deselected: $pkg_id (owner=$owner)" >> "$CONFIG_DIR/debug.log"
+                echo "[REMOVE] User deselected: $pkg_id" >> "$CONFIG_DIR/debug.log"
             fi
         done < "$CONFIG_DIR/packages_initial_snapshot.txt"
     fi
@@ -4194,13 +4193,8 @@ detect_packages_to_remove() {
         while read -r snapshot_line; do
             [ -z "$snapshot_line" ] && continue
             
-            local pkg_id owner
+            local pkg_id
             pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
-            owner=$(echo "$snapshot_line" | cut -d= -f11)
-            
-            # owner=auto または owner=system は削除対象外
-            [ "$owner" = "auto" ] && continue
-            [ "$owner" = "system" ] && continue
             
             local pattern exclude
             pattern=$(get_customfeed_package_pattern "$pkg_id")
@@ -4217,7 +4211,7 @@ detect_packages_to_remove() {
                 while read -r installed_pkg; do
                     [ -z "$installed_pkg" ] && continue
                     add_remove_pkg "$installed_pkg"
-                    echo "[REMOVE] Custom feed deselected: $installed_pkg (pkg_id=$pkg_id, owner=$owner)" >> "$CONFIG_DIR/debug.log"
+                    echo "[REMOVE] Custom feed deselected: $installed_pkg (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
                 done <<EOF
 $installed_pkgs
 EOF
