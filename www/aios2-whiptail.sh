@@ -1553,12 +1553,9 @@ package_selection() {
         echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
     fi
 
-    local cat_name breadcrumb checklist_items
+    local checklist_items
     local pkg_name status idx selected target_file idx_str idx_clean
     local packages
-    
-    cat_name=$(get_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
     
     packages=$(get_category_packages "$cat_id")
 
@@ -1627,7 +1624,7 @@ EOF
             }
             
             # キャッシュから全フィールドを取得
-            local pkg_name uid real_id hidden_flag virtual_flag
+            local pkg_name uid real_id hidden_flag virtual_flag pkg_owner
             pkg_name=$(echo "$entry" | cut -d= -f2)
             uid=$(echo "$entry" | cut -d= -f3)
             real_id=$(echo "$entry" | cut -d= -f1)
