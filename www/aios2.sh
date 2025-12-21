@@ -4198,8 +4198,9 @@ detect_packages_to_remove() {
             pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
             owner=$(echo "$snapshot_line" | cut -d= -f11)
             
-            # owner=auto のみ削除対象外
+            # owner=auto または owner=system は削除対象外
             [ "$owner" = "auto" ] && continue
+            [ "$owner" = "system" ] && continue
             
             local pattern exclude
             pattern=$(get_customfeed_package_pattern "$pkg_id")
