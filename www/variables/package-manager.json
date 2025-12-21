@@ -46,10 +46,10 @@
         "kmodsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/Packages"
       },
       "apk": {
-        "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages.manifest",
-        "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/Packages.manifest",
+        "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/index.json",
+        "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/index.json",
         "kmodsIndexBaseUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
-        "kmodsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/Packages.manifest"
+        "kmodsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json"
       }
     },
     "snapshot": {
