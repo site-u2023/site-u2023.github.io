@@ -2015,7 +2015,7 @@ EOF
         case "$installed_pkg" in
             luci-i18n-*)
                 if ! grep -q "^${installed_pkg}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-                    echo "${installed_pkg}=${installed_pkg}==========system=0" >> "$SELECTED_PACKAGES"
+                    echo "${installed_pkg}=${installed_pkg}=====false=false=false=false=system=0" >> "$SELECTED_PACKAGES"
                     count=$((count + 1))
                     echo "[INIT] Found installed language: $installed_pkg (owner=system)" >> "$CONFIG_DIR/debug.log"
                 fi
