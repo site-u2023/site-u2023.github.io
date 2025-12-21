@@ -353,9 +353,13 @@ function cacheFrequentlyUsedElements() {
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
-window.updateImages = function(version, mobj) {
+window.updateImages = async function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-
+    
+    if (!state.packageManager?.config) {
+        await loadPackageManagerConfig();
+    }
+    
     const oldArch = state.device.arch;
     const oldVersion = state.device.version;
     const oldDeviceId = state.device.id;
@@ -4284,8 +4288,6 @@ async function initializeCustomFeatures(asuSection, temp) {
         console.log('Already initialized, skipping');
         return;
     }
-
-    await loadPackageManagerConfig();
     
     injectSettingsBar(temp);
   
