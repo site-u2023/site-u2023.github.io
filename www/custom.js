@@ -137,8 +137,73 @@ const state = {
         textarea: null,
         sizeBreakdown: null,
         packageLoadingIndicator: null
+    },
+
+    packageManager: {
+        config: null,
+        activeManager: null,
+        activeChannel: null
     }
 };
+
+// ==================== パッケージマネージャー設定 ====================
+async function loadPackageManagerConfig() {
+    try {
+        const url = config.package_manager_config_path;
+        const response = await fetch(url + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        state.packageManager = state.packageManager || {};
+        state.packageManager.config = await response.json();
+        console.log('Package manager config loaded:', state.packageManager.config);
+        return state.packageManager.config;
+    } catch (err) {
+        console.error('Failed to load package-manager.json:', err);
+        return null;
+    }
+}
+
+function determinePackageManager(version) {
+    if (!state.packageManager?.config) {
+        throw new Error('Package manager config not loaded');
+    }
+    if (!version) {
+        throw new Error('Version not specified');
+    }
+    
+    const isSnapshot = version.includes('SNAPSHOT');
+    const channel = isSnapshot ? 'snapshot' : 'release';
+    const channelConfig = state.packageManager.config.channels[channel];
+    
+    for (const [managerName, managerInfo] of Object.entries(state.packageManager.config.packageManagers)) {
+        const threshold = channelConfig[managerName]?.versionThreshold;
+        
+        if (!threshold) continue;
+        
+        if (isSnapshot) {
+            return managerName;
+        }
+        
+        const versionNum = version.match(/^[\d.]+/)?.[0];
+        if (!versionNum) {
+            throw new Error('Invalid version format');
+        }
+        
+        if (versionNum >= threshold) {
+            return managerName;
+        }
+    }
+    
+    throw new Error(`No package manager found for version ${version} in channel ${channel}`);
+}
+
+function applyUrlTemplate(template, vars) {
+    let result = template;
+    for (const [key, value] of Object.entries(vars)) {
+        result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
+    }
+    return result;
+}
 
 // ==================== ユーティリティ ====================
 const UI = {
@@ -192,59 +257,20 @@ const CustomUtils = {
     },
   
     buildKmodsUrl: async function(version, vendor, isSnapshot) {
-        if (!version || !vendor) {
-            throw new Error(`Missing required parameters for kmods URL: version=${version}, vendor=${vendor}`);
-        }
-    
         const subtarget = this.getSubtarget();
         if (!subtarget) {
             throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
-        }    
-    
-        const cacheKey = `${version}|${vendor}|${isSnapshot ? 'S' : 'R'}`;
-    
-        if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
-            const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
-            return searchTpl
-                .replace('{version}', version)
-                .replace('{vendor}', vendor)
-                .replace('{subtarget}', subtarget)
-                .replace('{kmod}', state.cache.kmods.token);
         }
-    
-        const indexTpl = isSnapshot ? config.kmods_apk_index_url : config.kmods_opkg_index_url;
-        const indexUrl = indexTpl
-            .replace('{version}', version)
-            .replace('{vendor}', vendor)
-            .replace('{subtarget}', subtarget);
         
-        const resp = await fetch(indexUrl, { cache: 'no-store' });
-        if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status} for ${indexUrl}`); 
-        const html = await resp.text();
-
-        let matches = [...html.matchAll(/href="([^/]+)\//g)].map(m => m[1]);
-        matches = matches.filter(token =>
-            token &&
-            typeof token === 'string' &&
-            !/^\s*$/.test(token) &&
-            !token.startsWith('#') &&
-            !token.startsWith('?') &&
-            !token.startsWith('.') &&
-            /^[\w.-]+$/.test(token)
-        );
-
-        if (!matches.length) throw new Error("kmods token not found");
-    
-        matches.sort();
-        state.cache.kmods.token = matches[matches.length - 1];
-        state.cache.kmods.key = cacheKey;
-    
-        const searchTpl = isSnapshot ? config.kmods_apk_search_url : config.kmods_opkg_search_url;
-        return searchTpl
-            .replace('{version}', version)
-            .replace('{vendor}', vendor)
-            .replace('{subtarget}', subtarget)
-            .replace('{kmod}', state.cache.kmods.token);
+        const deviceInfo = {
+            version,
+            arch: state.device.arch,
+            vendor,
+            subtarget,
+            isSnapshot
+        };
+        
+        return await buildPackageUrl('kmods', deviceInfo);
     },
     
     inCidr: function(ipv6, cidr) {
@@ -2647,31 +2673,65 @@ document.addEventListener('click', function(e) {
 });
 
 async function buildPackageUrl(feed, deviceInfo) {
-    const { version, arch, vendor, subtarget, isSnapshot } = deviceInfo;
+    const { version, arch, vendor, subtarget } = deviceInfo;
+    
+    if (!state.packageManager.config) {
+        await loadPackageManagerConfig();
+    }
+    
+    const packageManager = determinePackageManager(version);
+    const channel = version.includes('SNAPSHOT') ? 'snapshot' : 'release';
+    
+    state.packageManager.activeManager = packageManager;
+    state.packageManager.activeChannel = channel;
+    
+    const channelConfig = state.packageManager.config.channels[channel][packageManager];
+    
+    if (!channelConfig) {
+        throw new Error(`Channel config not found: ${channel}/${packageManager}`);
+    }
+    
+    const vars = { version, arch, vendor, subtarget, feed };
     
     if (feed === 'kmods') {
         if (!vendor || !subtarget) {
             throw new Error('Missing vendor or subtarget for kmods');
         }
-        return await CustomUtils.buildKmodsUrl(version, vendor, isSnapshot);
-    }
-    
-    if (feed === 'target') {
+        
+        const cacheKey = `${version}|${vendor}|${channel === 'snapshot' ? 'S' : 'R'}`;
+        
+        if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
+            vars.kmod = state.cache.kmods.token;
+            return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
+        }
+        
+        const indexUrl = applyUrlTemplate(channelConfig.kmodsIndexBaseUrl, vars);
+        const resp = await fetch(indexUrl, { cache: 'no-store' });
+        if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
+        
+        const html = await resp.text();
+        const matches = [...html.matchAll(/href="([^/]+)\//g)]
+            .map(m => m[1])
+            .filter(t => t && /^[\w.-]+$/.test(t) && !t.startsWith('.'));
+        
+        if (!matches.length) throw new Error("kmods token not found");
+        
+        matches.sort();
+        state.cache.kmods.token = matches[matches.length - 1];
+        state.cache.kmods.key = cacheKey;
+        
+        vars.kmod = state.cache.kmods.token;
+        return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
+        
+    } else if (feed === 'target') {
         if (!vendor || !subtarget) {
             throw new Error('Missing vendor or subtarget for target packages');
         }
-        const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
-        return template
-            .replace('{version}', version)
-            .replace('{arch}', arch)
-            .replace('{feed}', `../../targets/${vendor}/${subtarget}/packages`);
+        return applyUrlTemplate(channelConfig.targetsIndexUrl, vars);
+        
+    } else {
+        return applyUrlTemplate(channelConfig.packageIndexUrl, vars);
     }
-    
-    const template = isSnapshot ? config.apk_search_url : config.opkg_search_url;
-    return template
-        .replace('{version}', version)
-        .replace('{arch}', arch)
-        .replace('{feed}', feed);
 }
 
 function guessFeedForPackage(pkgName) {
@@ -3040,11 +3100,17 @@ function addTooltip(element, descriptionSource) {
 
 async function fetchFeedSet(feed, deviceInfo) {
     const url = await buildPackageUrl(feed, deviceInfo);
-    const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+    
+    if (!state.packageManager.activeManager) {
+        throw new Error('Package manager not determined');
+    }
+    
+    const packageManager = state.packageManager.activeManager;
+    
     const resp = await fetch(url, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
-    if (isSnapshot) {
+    if (packageManager === 'apk') {
         const data = await resp.json();
         const names = new Set();
         
@@ -3056,19 +3122,30 @@ async function fetchFeedSet(feed, deviceInfo) {
                         const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
                         state.cache.packageDescriptions.set(descKey, pkg.desc);
                     }
+                    if (pkg.size) {
+                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
+                        state.cache.packageSizes.set(sizeKey, parseInt(pkg.size));
+                    }
                 }
             });
         } else if (data.packages && typeof data.packages === 'object') {
-            Object.entries(data.packages).forEach(([name, pkg]) => {
+            Object.entries(data.packages).forEach(([name, info]) => {
                 names.add(name);
-                if (pkg && pkg.desc) {
+                if (info && typeof info === 'object') {
                     const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                    state.cache.packageDescriptions.set(descKey, pkg.desc);
+                    if (info.desc) {
+                        state.cache.packageDescriptions.set(descKey, info.desc);
+                    }
+                    if (info.size) {
+                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
+                        state.cache.packageSizes.set(sizeKey, parseInt(info.size));
+                    }
                 }
             });
         }
         
         return names;
+        
     } else {
         const text = await resp.text();
         const lines = text.split('\n');
@@ -4200,6 +4277,8 @@ async function initializeCustomFeatures(asuSection, temp) {
             console.log('Extended build info displayed');
         }
     }
+
+    await loadPackageManagerConfig();
 
     await Promise.all([
         loadSetupConfig(),
