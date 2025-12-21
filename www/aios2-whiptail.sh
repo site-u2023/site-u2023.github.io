@@ -2293,16 +2293,23 @@ PKGS
         fi
         
         if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
-            local feed_count=0
             for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                 [ -f "$script" ] || continue
                 [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
-                feed_count=$((feed_count + 1))
+                
+                local packages_value
+                packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
+                
+                if [ -n "$packages_value" ]; then
+                    while read -r pkg_pattern; do
+                        [ -z "$pkg_pattern" ] && continue
+                        summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${pkg_pattern}\n"
+                    done <<PKGS
+$(echo "$packages_value" | tr ' ' '\n')
+PKGS
+                    has_changes=1
+                fi
             done
-            if [ "$feed_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-customfeeds'): ${feed_count}\n"
-                has_changes=1
-            fi
         fi
         
         if [ "$HAS_SETUP" -eq 1 ]; then
