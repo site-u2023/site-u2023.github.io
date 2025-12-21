@@ -48,19 +48,13 @@ const dsliteRulesData = {
     },
     {
       aftrType: "xpass",
-      ipv6PrefixRanges: [
-        "2001:e30:1c1e::/48", 
-        "2001:e30:1c1f::/48"
-      ],
+      ipv6PrefixRanges: null,
       aftrAddresses: null,
       aftrFqdn: "dgw.xpass.jp"
     },
     {
       aftrType: "v6connect",
-      ipv6PrefixRanges: [
-        "2404:8e00::/32",
-        "2404:8e01::/32"
-      ],
+      ipv6PrefixRanges: null,
       aftrAddresses: null,
       aftrFqdn: "dslite.v6connect.net"
     }
@@ -709,18 +703,18 @@ function checkDSLiteRule(ipv6) {
   if (!ipv6) return null;
 
   for (const rule of dsliteRulesData.aftrRules) {
+    // ipv6PrefixRangesが無い場合はスキップ
+    if (!rule.ipv6PrefixRanges) continue;
+    
     for (const range of rule.ipv6PrefixRanges) {
       const [prefix, lenStr] = range.split('/');
       const len = parseInt(lenStr, 10);
 
       if (checkIPv6InRangeJS(ipv6, prefix, len)) {
         const jurisdiction = determineJurisdiction(ipv6);
-        
-        // IPv6アドレスの決定（aftrAddressesがnullならnull）
         const aftrIpv6Address = (rule.aftrAddresses && jurisdiction)
           ? rule.aftrAddresses[jurisdiction]
           : null;
-
         return {
           aftrType: rule.aftrType,
           jurisdiction: jurisdiction,
@@ -732,7 +726,6 @@ function checkDSLiteRule(ipv6) {
       }
     }
   }
-
   return null;
 }
 
