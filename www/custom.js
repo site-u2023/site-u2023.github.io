@@ -1098,7 +1098,7 @@ function getConnectionTypeFromApi(apiInfo) {
         return 'mape';
     }
     
-    if (apiInfo.aftr?.aftrAddress) {
+    if (apiInfo.aftr?.aftrAddress) { 
         return 'dslite';
     }
     
@@ -1892,17 +1892,6 @@ async function fetchAndDisplayIspInfo() {
         
         console.log('ISP info fetched:', apiInfo);
         
-        // ★ DS-Lite情報のデバッグログ
-        if (apiInfo.aftr) {
-            console.log('[DS-Lite] Configuration:', {
-                type: apiInfo.aftr.aftrType,
-                jurisdiction: apiInfo.aftr.jurisdiction,
-                ipv6: apiInfo.aftr.aftrIpv6Address,
-                fqdn: apiInfo.aftr.aftrFqdn,
-                address: apiInfo.aftr.aftrAddress
-            });
-        }
-        
         displayIspInfo(apiInfo);
         updateAutoConnectionInfo(apiInfo);
         CustomUtils.setGuaPrefixIfAvailable();
@@ -1980,27 +1969,21 @@ function updateAutoConnectionInfo(apiInfo) {
         if (apiInfo.aftr?.aftrType) {
             infoText += `<strong>Service Type:</strong> ${apiInfo.aftr.aftrType}<br>`;
         }
-        
         if (apiInfo.aftr?.jurisdiction) {
             const regionClass = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
             infoText += `<strong>Region:</strong> <span class="${regionClass}"></span><br>`;
+        }
+        
+        if (apiInfo.aftr?.peeraddr) {
+            infoText += `<strong>FQDN:</strong> ${apiInfo.aftr.peeraddr}<br>`;
         }
         
         infoText += `<hr>`;
         infoText += `<strong>UCI Configuration:</strong><br>`;
         infoText += `<code>`;
         
-        if (apiInfo.aftr?.aftrAddress) {
-            infoText += `option peeraddr '${apiInfo.aftr.aftrAddress}'<br>`;
-        }
-        
-        if (apiInfo.aftr?.aftrIpv6Address) {
-            infoText += `<br><em># IPv6 Address</em><br>`;
-            infoText += `# ${apiInfo.aftr.aftrIpv6Address}<br>`;
-        }
-        if (apiInfo.aftr?.aftrFqdn) {
-            infoText += `<br><em># FQDN</em><br>`;
-            infoText += `# ${apiInfo.aftr.aftrFqdn}<br>`;
+        if (apiInfo.aftr?.peeraddr) {
+            infoText += `option peeraddr '${apiInfo.aftr.peeraddr}'<br>`;
         }
         
         infoText += `</code>`;
