@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1222.0005) loaded');
+console.log('custom.js (R7.1222.0032) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -175,31 +175,33 @@ function determinePackageManager(version) {
     const channel = isSnapshot ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
     
-    const versionNum = version.match(/^[\d.]+/)?.[0];
-    
     let bestManager = null;
-    let highestThreshold = '';
-    let fallbackManager = null;
+    let highestThreshold = '0.0';
     
-    for (const [managerName] of Object.entries(state.packageManager.config.packageManagers)) {
+    for (const [managerName, managerInfo] of Object.entries(state.packageManager.config.packageManagers)) {
         const threshold = channelConfig[managerName]?.versionThreshold;
         
-        if (threshold === undefined) continue;
+        if (!threshold) continue;
         
-        if (threshold === '') {
-            fallbackManager = managerName;
-            continue;
-        }
-        
-        if (!versionNum) continue;
-        
-        if (versionNum >= threshold && (!highestThreshold || threshold > highestThreshold)) {
-            highestThreshold = threshold;
-            bestManager = managerName;
+        if (isSnapshot) {
+            // SNAPSHOTは最も高いthresholdを持つものを選択
+            if (threshold > highestThreshold) {
+                highestThreshold = threshold;
+                bestManager = managerName;
+            }
+        } else {
+            const versionNum = version.match(/^[\d.]+/)?.[0];
+            if (!versionNum) {
+                throw new Error('Invalid version format');
+            }
+            
+            // バージョンがthreshold以上で、かつより高いthresholdなら更新
+            if (versionNum >= threshold && threshold > highestThreshold) {
+                highestThreshold = threshold;
+                bestManager = managerName;
+            }
         }
     }
-    
-    if (!bestManager) bestManager = fallbackManager;
     
     if (!bestManager) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
@@ -353,13 +355,9 @@ function cacheFrequentlyUsedElements() {
 // ==================== 初期化処理 ====================
 const originalUpdateImages = window.updateImages;
 
-window.updateImages = async function(version, mobj) {
+window.updateImages = function(version, mobj) {
     if (originalUpdateImages) originalUpdateImages(version, mobj);
-    
-    if (!state.packageManager?.config) {
-        await loadPackageManagerConfig();
-    }
-    
+
     const oldArch = state.device.arch;
     const oldVersion = state.device.version;
     const oldDeviceId = state.device.id;
@@ -1607,25 +1605,12 @@ function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISe
 }
 
 function extractLuciName(pkg) {
-    const patterns = state.packageManager?.config?.luciModulePatterns;
-    if (!patterns) {
-        console.error('luciModulePatterns not loaded');
-        return null;
+    if (pkg === 'luci') return 'base';
+
+    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
+    if (prefixMatch && prefixMatch[1]) {
+        return prefixMatch[1];
     }
-    
-    // "luci" → "base"
-    const baseRegex = new RegExp(patterns.base);
-    if (baseRegex.test(pkg)) {
-        return 'base';
-    }
-    
-    // "luci-app-xxx" → "xxx"
-    const extractRegex = new RegExp(patterns.extractPattern);
-    const match = pkg.match(extractRegex);
-    if (match && match[1]) {
-        return match[1];
-    }
-    
     return null;
 }
 
@@ -2765,16 +2750,12 @@ async function buildPackageUrl(feed, deviceInfo) {
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
-    const feedMapping = state.packageManager?.config?.feedMapping;
-    if (!feedMapping) {
-        console.error('feedMapping not loaded');
-        return 'packages';
+    if (pkgName.startsWith('kmod-')) {
+        return 'kmods';
     }
     
-    for (const [prefix, feed] of Object.entries(feedMapping)) {
-        if (pkgName.startsWith(prefix)) {
-            return feed;
-        }
+    if (pkgName.startsWith('luci-')) {
+        return 'luci';
     }
     
     return 'packages';
@@ -2859,7 +2840,7 @@ async function getFeedPackageSet(feed, deviceInfo) {
 }
 
 // ==================== パッケージ存在確認 ====================
-async function verifyAllPackages() { 
+async function verifyAllPackages() {
     const arch = state.device.arch;
     if (!state.packages.json || !arch) {
         console.log('Cannot verify packages: missing data');
@@ -4288,7 +4269,7 @@ async function initializeCustomFeatures(asuSection, temp) {
         console.log('Already initialized, skipping');
         return;
     }
-    
+
     injectSettingsBar(temp);
   
     cleanupExistingCustomElements();
