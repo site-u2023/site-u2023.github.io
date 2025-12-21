@@ -175,33 +175,31 @@ function determinePackageManager(version) {
     const channel = isSnapshot ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
     
-    let bestManager = null;
-    let highestThreshold = '0.0';
+    const versionNum = version.match(/^[\d.]+/)?.[0];
     
-    for (const [managerName, managerInfo] of Object.entries(state.packageManager.config.packageManagers)) {
+    let bestManager = null;
+    let highestThreshold = '';
+    let fallbackManager = null;
+    
+    for (const [managerName] of Object.entries(state.packageManager.config.packageManagers)) {
         const threshold = channelConfig[managerName]?.versionThreshold;
         
-        if (!threshold) continue;
+        if (threshold === undefined) continue;
         
-        if (isSnapshot) {
-            // SNAPSHOTは最も高いthresholdを持つものを選択
-            if (threshold > highestThreshold) {
-                highestThreshold = threshold;
-                bestManager = managerName;
-            }
-        } else {
-            const versionNum = version.match(/^[\d.]+/)?.[0];
-            if (!versionNum) {
-                throw new Error('Invalid version format');
-            }
-            
-            // バージョンがthreshold以上で、かつより高いthresholdなら更新
-            if (versionNum >= threshold && threshold > highestThreshold) {
-                highestThreshold = threshold;
-                bestManager = managerName;
-            }
+        if (threshold === '') {
+            fallbackManager = managerName;
+            continue;
+        }
+        
+        if (!versionNum) continue;
+        
+        if (versionNum >= threshold && (!highestThreshold || threshold > highestThreshold)) {
+            highestThreshold = threshold;
+            bestManager = managerName;
         }
     }
+    
+    if (!bestManager) bestManager = fallbackManager;
     
     if (!bestManager) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
