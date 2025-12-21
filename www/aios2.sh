@@ -4813,182 +4813,6 @@ PLAN_EOF
     echo "[PLAN] Execution plan generated: $plan_file" >> "$CONFIG_DIR/debug.log"
 }
 
-XXXXXXXXXX_generate_config_summary() {
-    local summary_file="$CONFIG_DIR/config_summary_light.txt"
-    local tr_packages tr_customfeeds tr_variables tr_customscripts
-    local has_content=0
-    
-    tr_packages=$(translate "tr-tui-summary-packages")
-    tr_customfeeds=$(translate "tr-tui-summary-customfeeds")
-    tr_variables=$(translate "tr-tui-summary-variables")
-    tr_customscripts=$(translate "tr-tui-summary-customscripts")
-    
-    {
-        [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ] && cache_installed_packages
-        
-        # ========================================
-        # パッケージ変更（削除 + 追加）
-        # ========================================
-        
-        local packages_to_remove=$(detect_packages_to_remove)
-        
-        local install_list=""
-        local remove_list=""
-        
-        local custom_feed_pkgs=""
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            for cat_id in $(get_customfeed_categories); do
-                for pkg_id in $(get_category_packages "$cat_id"); do
-                    local pattern exclude installed_pkgs
-                    pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    exclude=$(get_customfeed_package_exclude "$pkg_id")
-                    
-                    [ -z "$pattern" ] && continue
-                    
-                    installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                    
-                    if [ -n "$installed_pkgs" ]; then
-                        while read -r installed_pkg; do
-                            [ -z "$installed_pkg" ] && continue
-                            custom_feed_pkgs="${custom_feed_pkgs}${installed_pkg}
-"
-                        done <<EOF
-$installed_pkgs
-EOF
-                    fi
-                done
-            done
-        fi
-        
-        if [ -n "$packages_to_remove" ]; then
-            for pkg in $packages_to_remove; do
-                if echo "$custom_feed_pkgs" | grep -qx "$pkg"; then
-                    echo "[DEBUG] Skipping $pkg from package section (custom feed)" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-                remove_list="${remove_list}remove ${pkg}
-"
-            done
-        fi
-        
-        if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
-            while read -r cache_line; do
-                [ -z "$cache_line" ] && continue
-                
-                local pkg_id uid
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                uid=$(echo "$cache_line" | cut -d= -f3)
-                
-                if ! is_package_installed "$pkg_id"; then
-                    install_list="${install_list}install ${pkg_id}
-"
-                fi
-            done < "$SELECTED_PACKAGES"
-        fi
-        
-        if [ -n "$remove_list" ] || [ -n "$install_list" ]; then
-            printf "🔵 %s\n\n" "$tr_packages"
-            [ -n "$remove_list" ] && echo "$remove_list"
-            [ -n "$install_list" ] && echo "$install_list"
-            echo ""
-            has_content=1
-        fi
-        
-        # ========================================
-        # カスタムフィード変更（削除 + 追加）
-        # ========================================
-        local custom_install=""
-        local custom_remove=""
-        
-        if [ -f "$CUSTOMFEEDS_JSON" ]; then
-            for cat_id in $(get_customfeed_categories); do
-                for pkg_id in $(get_category_packages "$cat_id"); do
-                    local pattern exclude installed_pkgs
-                    pattern=$(get_customfeed_package_pattern "$pkg_id")
-                    exclude=$(get_customfeed_package_exclude "$pkg_id")
-                    
-                    [ -z "$pattern" ] && continue
-                    
-                    installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                    
-                    [ -z "$installed_pkgs" ] && continue
-                    
-                    if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                        custom_remove="${custom_remove}remove ${pkg_id}
-"
-                    fi
-                done
-            done
-        fi
-        
-        if [ -f "$SELECTED_CUSTOM_PACKAGES" ] && [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
-            while read -r cache_line; do
-                [ -z "$cache_line" ] && continue
-                
-                local pkg_id pattern exclude installed_pkgs
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                pattern=$(get_customfeed_package_pattern "$pkg_id")
-                exclude=$(get_customfeed_package_exclude "$pkg_id")
-                
-                [ -z "$pattern" ] && continue
-                
-                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
-                
-                if [ -z "$installed_pkgs" ]; then
-                    custom_install="${custom_install}install ${pkg_id}
-"
-                fi
-            done < "$SELECTED_CUSTOM_PACKAGES"
-        fi
-        
-        if [ -n "$custom_remove" ] || [ -n "$custom_install" ]; then
-            printf "🟢 %s\n\n" "$tr_customfeeds"
-            [ -n "$custom_remove" ] && echo "$custom_remove"
-            [ -n "$custom_install" ] && echo "$custom_install"
-            echo ""
-            has_content=1
-        fi
-        
-        # 設定変数
-        if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
-            printf "🟡 %s\n\n" "$tr_variables"
-            cat "$SETUP_VARS"
-            echo ""
-            has_content=1
-        fi
-        
-        # カスタムスクリプト
-        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-            [ -f "$var_file" ] || continue
-            
-            local script_id script_name confirmed_status action_label
-            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-            script_name=$(get_customscript_name "$script_id")
-            [ -z "$script_name" ] && script_name="$script_id"
-            
-            # CONFIRMED の値を確認
-            if grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null; then
-                action_label="install"
-            elif grep -q "^CONFIRMED='0'$" "$var_file" 2>/dev/null; then
-                action_label="remove"
-            else
-                action_label="install"
-            fi
-            
-            printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
-            cat "$var_file"
-            echo ""
-            has_content=1
-        done
-        
-        if [ "$has_content" -eq 0 ]; then
-            echo "$(translate 'tr-tui-no-config')"
-        fi
-    } > "$summary_file"
-    
-    echo "$summary_file"
-}
-
 generate_config_summary() {
     local summary_file="$CONFIG_DIR/config_summary_light.txt"
     local tr_packages tr_customfeeds tr_variables tr_customscripts
@@ -5038,9 +4862,14 @@ EOF
         
         if [ -n "$packages_to_remove" ]; then
             for pkg in $packages_to_remove; do
-                # スナップショットから is_custom フラグをチェック
+                # まず packages_initial_snapshot.txt をチェック
                 local is_custom
                 is_custom=$(grep "^${pkg}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null | cut -d= -f12)
+                
+                # なければ custom_packages_initial_snapshot.txt に存在するかチェック
+                if [ -z "$is_custom" ] && grep -q "^${pkg}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
+                    is_custom="1"
+                fi
                 
                 [ "$is_custom" = "1" ] && continue
                 
