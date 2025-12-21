@@ -945,22 +945,10 @@ get_extended_device_info() {
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
     _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
     
-    # DS-Lite（修正版）
-    _set_api_value 'DSLITE_AFTR_IPV6'   'aftr.aftrIpv6Address'
-    _set_api_value 'DSLITE_AFTR_FQDN'   'aftr.aftrFqdn'
+    # DS-Lite
     _set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
     _set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
     _set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
-    
-    # デバッグログ
-    {
-        echo "[DEBUG] DS-Lite configuration:"
-        echo "[DEBUG]   DSLITE_AFTR_TYPE='$DSLITE_AFTR_TYPE'"
-        echo "[DEBUG]   DSLITE_JURISDICTION='$DSLITE_JURISDICTION'"
-        echo "[DEBUG]   DSLITE_AFTR_IPV6='$DSLITE_AFTR_IPV6'"
-        echo "[DEBUG]   DSLITE_AFTR_FQDN='$DSLITE_AFTR_FQDN'"
-        echo "[DEBUG]   DSLITE_AFTR='$DSLITE_AFTR'"
-    } >> "$CONFIG_DIR/debug.log"
     
     reset_detected_conn_type
     
@@ -976,6 +964,7 @@ get_extended_device_info() {
     else
         DEVICE_USB="Not available"
     fi
+
 
     # リソース情報（数値、チェック用）
     MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
