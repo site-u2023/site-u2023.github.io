@@ -75,7 +75,7 @@ const dsliteRulesData = {
  * IPv6プレフィックスからMAP-E設定パラメータを判定
  * 
  * ※注意: ここには最小限のサンプルのみ記載
- * 実際の運用では6000行以上のルールを追加してください
+ * 実際の運用スクリプトでは6000行以上のルールが入っています
  */
 const mapRulesData = {
   "basicMapRules": [
