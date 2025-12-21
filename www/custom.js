@@ -2856,6 +2856,10 @@ async function getFeedPackageSet(feed, deviceInfo) {
 
 // ==================== パッケージ存在確認 ====================
 async function verifyAllPackages() {
+    if (!state.packageManager?.config) {
+        await loadPackageManagerConfig();
+    }
+    
     const arch = state.device.arch;
     if (!state.packages.json || !arch) {
         console.log('Cannot verify packages: missing data');
