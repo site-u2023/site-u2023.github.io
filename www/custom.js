@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1219.1227) loaded');
+console.log('custom.js (R7.1222.0005) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -175,26 +175,39 @@ function determinePackageManager(version) {
     const channel = isSnapshot ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
     
+    let bestManager = null;
+    let highestThreshold = '0.0';
+    
     for (const [managerName, managerInfo] of Object.entries(state.packageManager.config.packageManagers)) {
         const threshold = channelConfig[managerName]?.versionThreshold;
         
         if (!threshold) continue;
         
         if (isSnapshot) {
-            return managerName;
-        }
-        
-        const versionNum = version.match(/^[\d.]+/)?.[0];
-        if (!versionNum) {
-            throw new Error('Invalid version format');
-        }
-        
-        if (versionNum >= threshold) {
-            return managerName;
+            // SNAPSHOTは最も高いthresholdを持つものを選択
+            if (threshold > highestThreshold) {
+                highestThreshold = threshold;
+                bestManager = managerName;
+            }
+        } else {
+            const versionNum = version.match(/^[\d.]+/)?.[0];
+            if (!versionNum) {
+                throw new Error('Invalid version format');
+            }
+            
+            // バージョンがthreshold以上で、かつより高いthresholdなら更新
+            if (versionNum >= threshold && threshold > highestThreshold) {
+                highestThreshold = threshold;
+                bestManager = managerName;
+            }
         }
     }
     
-    throw new Error(`No package manager found for version ${version} in channel ${channel}`);
+    if (!bestManager) {
+        throw new Error(`No package manager found for version ${version} in channel ${channel}`);
+    }
+    
+    return bestManager;
 }
 
 function applyUrlTemplate(template, vars) {
