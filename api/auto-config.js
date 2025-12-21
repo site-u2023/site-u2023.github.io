@@ -36,8 +36,9 @@ const dsliteRulesData = {
     {
       aftrType: "transix",
       ipv6PrefixRanges: [
-        "2404:8e00::/32", "2404:8e01::/32",
-        "240b:0010::/32", "240b:0011::/32", "240b:0012::/32"
+        "240b:0010::/32", 
+        "240b:0011::/32", 
+        "240b:0012::/32"
       ],
       aftrAddresses: {
         east: "2404:8e00::feed:100",
@@ -45,18 +46,6 @@ const dsliteRulesData = {
       },
       aftrFqdn: "gw.transix.jp"
     },
-    {
-      aftrType: "xpass",
-      ipv6PrefixRanges: [
-        "2001:e30:1c1e::/48", "2001:e30:1c1f::/48"
-      ],
-      aftrAddresses: {
-        east: "2404:8e02::feed:100",
-        west: "2404:8e03::feed:100"
-      },
-      aftrFqdn: "dgw.xpass.jp"
-    },
-    // 追加：v6プラス（NTTコミュニケーションズ）
     {
       aftrType: "v6plus",
       ipv6PrefixRanges: [
@@ -68,6 +57,18 @@ const dsliteRulesData = {
         west: "2404:8e01::feed:100"
       },
       aftrFqdn: "dslite.v6connect.net"
+    },
+    {
+      aftrType: "xpass",
+      ipv6PrefixRanges: [
+        "2001:e30:1c1e::/48", 
+        "2001:e30:1c1f::/48"
+      ],
+      aftrAddresses: {
+        east: "2404:8e02::feed:100",
+        west: "2404:8e03::feed:100"
+      },
+      aftrFqdn: "dgw.xpass.jp"
     }
   ]
 };
@@ -81,7 +82,7 @@ const dsliteRulesData = {
  */
 const mapRulesData = {
   "basicMapRules": [
-    // BIGLOBE v6オプション
+    // BIGLOBE
     // OCN
     // v6プラス
     // nuro光
@@ -747,9 +748,9 @@ function checkMapERule(ipv6) {
   if (!ipv6) return null;
 
   for (const rule of mapRulesData.basicMapRules) {
-    if (rule.ipv6Prefix && rule.ipv6PrefixLength) {
-      if (checkIPv6InRangeJS(ipv6, rule.ipv6Prefix, rule.ipv6PrefixLength)) {
-        return rule;
+    if (rule.mape_ipv6_prefix && rule.mape_ipv6_prefixlen) {
+      if (checkIPv6InRangeJS(ipv6, rule.mape_ipv6_prefix, rule.mape_ipv6_prefixlen)) {
+        return rule;  // ← これでOK！変換不要
       }
     }
   }
