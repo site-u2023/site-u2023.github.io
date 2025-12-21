@@ -196,7 +196,7 @@
     "tr-tui-removal-completed": "パッケージの削除が完了しました",
     "tr-tui-package-removal-failed": "パッケージの削除に失敗しました",
     
-    "tr-tui-summary-removed": "リムーブ""
+    "tr-tui-summary-removed": "リムーブ",
     "tr-tui-summary-installed": "インストール",
     "tr-tui-summary-customfeeds": "カスタムフィード",
     "tr-tui-summary-settings": "設定変数",
