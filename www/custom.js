@@ -175,33 +175,31 @@ function determinePackageManager(version) {
     const channel = isSnapshot ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
     
-    let bestManager = null;
-    let highestThreshold = '0.0';
+    const versionNum = version.match(/^[\d.]+/)?.[0];
     
-    for (const [managerName, managerInfo] of Object.entries(state.packageManager.config.packageManagers)) {
+    let bestManager = null;
+    let highestThreshold = '';
+    let fallbackManager = null;
+    
+    for (const [managerName] of Object.entries(state.packageManager.config.packageManagers)) {
         const threshold = channelConfig[managerName]?.versionThreshold;
         
-        if (!threshold) continue;
+        if (threshold === undefined) continue;
         
-        if (isSnapshot) {
-            // SNAPSHOTは最も高いthresholdを持つものを選択
-            if (threshold > highestThreshold) {
-                highestThreshold = threshold;
-                bestManager = managerName;
-            }
-        } else {
-            const versionNum = version.match(/^[\d.]+/)?.[0];
-            if (!versionNum) {
-                throw new Error('Invalid version format');
-            }
-            
-            // バージョンがthreshold以上で、かつより高いthresholdなら更新
-            if (versionNum >= threshold && threshold > highestThreshold) {
-                highestThreshold = threshold;
-                bestManager = managerName;
-            }
+        if (threshold === '') {
+            fallbackManager = managerName;
+            continue;
+        }
+        
+        if (!versionNum) continue;
+        
+        if (versionNum >= threshold && (!highestThreshold || threshold > highestThreshold)) {
+            highestThreshold = threshold;
+            bestManager = managerName;
         }
     }
+    
+    if (!bestManager) bestManager = fallbackManager;
     
     if (!bestManager) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
@@ -1605,12 +1603,25 @@ function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISe
 }
 
 function extractLuciName(pkg) {
-    if (pkg === 'luci') return 'base';
-
-    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
-    if (prefixMatch && prefixMatch[1]) {
-        return prefixMatch[1];
+    const patterns = state.packageManager?.config?.luciModulePatterns;
+    if (!patterns) {
+        console.error('luciModulePatterns not loaded');
+        return null;
     }
+    
+    // "luci" → "base"
+    const baseRegex = new RegExp(patterns.base);
+    if (baseRegex.test(pkg)) {
+        return 'base';
+    }
+    
+    // "luci-app-xxx" → "xxx"
+    const extractRegex = new RegExp(patterns.extractPattern);
+    const match = pkg.match(extractRegex);
+    if (match && match[1]) {
+        return match[1];
+    }
+    
     return null;
 }
 
@@ -2750,12 +2761,16 @@ async function buildPackageUrl(feed, deviceInfo) {
 function guessFeedForPackage(pkgName) {
     if (!pkgName) return 'packages';
     
-    if (pkgName.startsWith('kmod-')) {
-        return 'kmods';
+    const feedMapping = state.packageManager?.config?.feedMapping;
+    if (!feedMapping) {
+        console.error('feedMapping not loaded');
+        return 'packages';
     }
     
-    if (pkgName.startsWith('luci-')) {
-        return 'luci';
+    for (const [prefix, feed] of Object.entries(feedMapping)) {
+        if (pkgName.startsWith(prefix)) {
+            return feed;
+        }
     }
     
     return 'packages';
