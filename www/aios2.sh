@@ -4163,7 +4163,7 @@ EOF3
     echo "$remove_list" | xargs
 }
 
-detect_packages_to_remove() {
+XXXXX_detect_packages_to_remove() {
     local remove_list=""
     
     echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
@@ -4265,6 +4265,117 @@ EOF
         done < "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
     fi
 
+    echo "$remove_list" | xargs
+}
+
+detect_packages_to_remove() {
+    local remove_list=""
+    
+    echo "[DEBUG] === detect_packages_to_remove called ===" >> "$CONFIG_DIR/debug.log"
+
+    # 重複追加防止用関数
+    add_remove_pkg() {
+        local pkg="$1"
+        echo "$remove_list" | grep -qw "$pkg" && return
+        remove_list="${remove_list}${pkg} "
+    }
+
+    # ----------------------------------------
+    # Phase 1: 通常パッケージ判定
+    # ----------------------------------------
+    if [ -f "$CONFIG_DIR/packages_initial_snapshot.txt" ]; then
+        while read -r snapshot_line; do
+            [ -z "$snapshot_line" ] && continue
+            
+            local pkg_id uid is_custom
+            pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
+            uid=$(echo "$snapshot_line" | cut -d= -f3)
+            is_custom=$(echo "$snapshot_line" | cut -d= -f12)
+            
+            echo "[DEBUG] Snapshot check: pkg=$pkg_id, is_custom=$is_custom" >> "$CONFIG_DIR/debug.log"
+            
+            # custom feed 管理下は Phase 1 で除外
+            [ "$is_custom" = "1" ] && continue
+            
+            # インストール済みチェック
+            is_package_installed "$pkg_id" || continue
+            
+            # 現在も選択されているかチェック
+            local still_selected=0
+            if [ -n "$uid" ]; then
+                grep -q "=${uid}[=\$]" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
+            else
+                grep -q "^${pkg_id}=" "$SELECTED_PACKAGES" 2>/dev/null && still_selected=1
+            fi
+            
+            # 現在選択されていなければ削除対象
+            if [ "$still_selected" -eq 0 ]; then
+                add_remove_pkg "$pkg_id"
+                echo "[REMOVE] User deselected: $pkg_id" >> "$CONFIG_DIR/debug.log"
+            fi
+        done < "$CONFIG_DIR/packages_initial_snapshot.txt"
+    fi
+
+    # ----------------------------------------
+    # Phase 2: 言語パッケージ削除
+    # ----------------------------------------
+    local new_lang
+    new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+
+    if [ -n "$new_lang" ] && [ -f "$CONFIG_DIR/lang_packages_initial_snapshot.txt" ]; then
+        while read -r pkg; do
+            [ -z "$pkg" ] && continue
+            
+            # 新しい言語のパッケージはスキップ
+            echo "$pkg" | grep -q -- "-${new_lang}$" && continue
+            
+            # 現在も選択されているかチェック
+            grep -q "^${pkg}=" "$SELECTED_PACKAGES" 2>/dev/null && continue
+            
+            add_remove_pkg "$pkg"
+            echo "[REMOVE] Marked language pack for removal: $pkg" >> "$CONFIG_DIR/debug.log"
+        done < "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    fi
+
+    # ----------------------------------------
+    # Phase 3: カスタムフィード判定
+    # ----------------------------------------
+    local custom_remove_list=""
+    
+    if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ] && [ -f "$CUSTOMFEEDS_JSON" ]; then
+        while read -r snapshot_line; do
+            [ -z "$snapshot_line" ] && continue
+            
+            local pkg_id
+            pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
+            
+            local pattern exclude
+            pattern=$(get_customfeed_package_pattern "$pkg_id")
+            exclude=$(get_customfeed_package_exclude "$pkg_id")
+            
+            [ -z "$pattern" ] && continue
+            
+            local installed_pkgs
+            installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+            [ -z "$installed_pkgs" ] && continue
+            
+            # 現在も選択されているかチェック
+            if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                while read -r installed_pkg; do
+                    [ -z "$installed_pkg" ] && continue
+                    add_remove_pkg "$installed_pkg"
+                    custom_remove_list="${custom_remove_list}${pkg_id} "
+                    echo "[REMOVE] Custom feed deselected: $installed_pkg (pkg_id=$pkg_id)" >> "$CONFIG_DIR/debug.log"
+                done <<EOF
+$installed_pkgs
+EOF
+            fi
+        done < "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+    fi
+    
+    # カスタムフィード削除リストをファイルに保存
+    echo "$custom_remove_list" | xargs > "$CONFIG_DIR/custom_feed_remove_list.txt"
+    
     echo "$remove_list" | xargs
 }
 
