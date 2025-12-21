@@ -47,28 +47,22 @@ const dsliteRulesData = {
       aftrFqdn: "gw.transix.jp"
     },
     {
-      aftrType: "v6plus",
-      ipv6PrefixRanges: [
-        "2404:8e00::/32",
-        "2404:8e01::/32"
-      ],
-      aftrAddresses: {
-        east: "2404:8e00::feed:100",
-        west: "2404:8e01::feed:100"
-      },
-      aftrFqdn: "dslite.v6connect.net"
-    },
-    {
       aftrType: "xpass",
       ipv6PrefixRanges: [
         "2001:e30:1c1e::/48", 
         "2001:e30:1c1f::/48"
       ],
-      aftrAddresses: {
-        east: "2404:8e02::feed:100",
-        west: "2404:8e03::feed:100"
-      },
+      aftrAddresses: null,
       aftrFqdn: "dgw.xpass.jp"
+    },
+    {
+      aftrType: "v6connect",
+      ipv6PrefixRanges: [
+        "2404:8e00::/32",
+        "2404:8e01::/32"
+      ],
+      aftrAddresses: null,
+      aftrFqdn: "dslite.v6connect.net"
     }
   ]
 };
@@ -82,9 +76,8 @@ const dsliteRulesData = {
  */
 const mapRulesData = {
   "basicMapRules": [
-    // BIGLOBE
     // OCN
-    // v6プラス
+    // v6プラス (BIGLOBE)
     // nuro光
     {
       "brIpv6Address": "xxxx:xxxx:xxxx::x",
@@ -722,7 +715,9 @@ function checkDSLiteRule(ipv6) {
 
       if (checkIPv6InRangeJS(ipv6, prefix, len)) {
         const jurisdiction = determineJurisdiction(ipv6);
-        const aftrIpv6Address = jurisdiction && rule.aftrAddresses
+        
+        // IPv6アドレスの決定（aftrAddressesがnullならnull）
+        const aftrIpv6Address = (rule.aftrAddresses && jurisdiction)
           ? rule.aftrAddresses[jurisdiction]
           : null;
 
@@ -730,7 +725,9 @@ function checkDSLiteRule(ipv6) {
           aftrType: rule.aftrType,
           jurisdiction: jurisdiction,
           aftrIpv6Address: aftrIpv6Address,
-          peeraddr: rule.aftrFqdn
+          aftrFqdn: rule.aftrFqdn,
+          peeraddr: rule.aftrFqdn,
+          tunlink: rule.tunlink || "wan6"
         };
       }
     }
@@ -978,7 +975,7 @@ export default {
 
     // AFTRアドレスの選定ロジック
     if (aftrRule) {
-      aftrRule.aftrAddress = aftrRule.aftrIpv6Address || aftrRule.peeraddr;
+      aftrRule.aftrAddress = aftrRule.aftrIpv6Address || aftrRule.aftrFqdn;
     }
     
     // レスポンス構築
