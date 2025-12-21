@@ -66,5 +66,12 @@
         "kmodsIndexUrl": "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json"
       }
     }
+  },
+  "versionMapping": {
+    "default": "opkg",
+    "patterns": [
+      { "regex": "^2[5-9]\\.", "manager": "apk" },
+      { "regex": "^snapshot$", "manager": "apk" }
+    ]
   }
 }
