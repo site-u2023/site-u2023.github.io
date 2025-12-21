@@ -4128,7 +4128,7 @@ detect_packages_to_remove() {
         echo "$remove_list" | grep -qw "$pkg" && return
         remove_list="${remove_list}${pkg} "
     }
-
+	
     # ----------------------------------------
     # Phase 1: 通常パッケージ判定
     # ----------------------------------------
@@ -5038,10 +5038,12 @@ EOF
         
         if [ -n "$packages_to_remove" ]; then
             for pkg in $packages_to_remove; do
-                if echo "$custom_feed_pkgs" | grep -qx "$pkg"; then
-                    echo "[DEBUG] Skipping $pkg from package section (custom feed)" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
+                # スナップショットから is_custom フラグをチェック
+                local is_custom
+                is_custom=$(grep "^${pkg}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null | cut -d= -f12)
+                
+                [ "$is_custom" = "1" ] && continue
+                
                 remove_list="${remove_list}remove ${pkg}
 "
             done
