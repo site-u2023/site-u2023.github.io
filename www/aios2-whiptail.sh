@@ -2297,7 +2297,7 @@ PKGS
             local custom_removed
             custom_removed=$(cat "$CONFIG_DIR/custom_feed_remove_list.txt" | xargs)
             if [ -n "$custom_removed" ]; then
-                summary="${summary}$(translate 'tr-tui-summary-customfeeds')（削除）:\n"
+                summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
                 for pkg in $custom_removed; do
                     summary="${summary}  - ${pkg}\n"
                 done
@@ -2316,7 +2316,7 @@ PKGS
                 packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
                 
                 if [ -n "$packages_value" ]; then
-                    summary="${summary}$(translate 'tr-tui-summary-customfeeds')（インストール）:\n"
+                    summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
                     while read -r pkg_pattern; do
                         [ -z "$pkg_pattern" ] && continue
                         summary="${summary}  - ${pkg_pattern}\n"
