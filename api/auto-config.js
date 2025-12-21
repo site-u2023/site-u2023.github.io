@@ -56,14 +56,16 @@ const dsliteRulesData = {
       },
       aftrFqdn: "dgw.xpass.jp"
     },
+    // 追加：v6プラス（NTTコミュニケーションズ）
     {
-      aftrType: "v6option",
+      aftrType: "v6plus",
       ipv6PrefixRanges: [
-        "2404:8e00::/32", "2404:8e01::/32"
+        "2404:8e00::/32",
+        "2404:8e01::/32"
       ],
       aftrAddresses: {
-        east: "2404:8e04::feed:100",
-        west: "2404:8e05::feed:100"
+        east: "2404:8e00::feed:100",
+        west: "2404:8e01::feed:100"
       },
       aftrFqdn: "dslite.v6connect.net"
     }
@@ -79,6 +81,7 @@ const dsliteRulesData = {
  */
 const mapRulesData = {
   "basicMapRules": [
+    // BIGLOBE v6オプション
     // OCN
     // v6プラス
     // nuro光
