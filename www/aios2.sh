@@ -3391,12 +3391,16 @@ update_language_packages() {
     echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    old_lang=$(grep "^language_old=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    echo "[DEBUG] new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] new_lang='$new_lang', old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
     [ -z "$new_lang" ] && return 0
-
-    # キャッシュをファイルに書き出し（パイプ処理を回避）
+    [ -z "$old_lang" ] && return 0
+    [ "$old_lang" = "$new_lang" ] && return 0
+    
+    echo "[DEBUG] Removing old language packages for lang=$old_lang" >> "$CONFIG_DIR/debug.log"
+    
     if [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; then
         cache_installed_packages
         local cache_file="$CONFIG_DIR/installed_packages_cache.txt"
@@ -3405,26 +3409,6 @@ update_language_packages() {
             _INSTALLED_PACKAGES_LOADED=1
         fi
     fi
-
-    # 一時ファイル使用でパイプエラー回避
-    local temp_base_pkg="$CONFIG_DIR/temp_base_pkg.txt"
-    printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" > "$temp_base_pkg" 2>/dev/null || true
-
-    local base_lang_pkg
-    if [ -s "$temp_base_pkg" ]; then
-        base_lang_pkg=$(head -1 "$temp_base_pkg")
-        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
-    else
-        old_lang="en"
-    fi
-    rm -f "$temp_base_pkg"
-    
-    echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
-    
-    [ "$old_lang" = "$new_lang" ] && return 0
-    
-    # 既存言語パッケージ削除（一時ファイル使用）
-    echo "[DEBUG] Removing old language packages for lang=$old_lang" >> "$CONFIG_DIR/debug.log"
     
     local temp_installed="$CONFIG_DIR/temp_installed.txt"
     printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" > "$temp_installed"
@@ -3442,7 +3426,6 @@ update_language_packages() {
     done < "$temp_installed"
     rm -f "$temp_installed"
     
-    # パターン取得
     local exclude_patterns module_patterns language_prefixes
     exclude_patterns=$(get_language_exclude_patterns)
     module_patterns=$(get_language_module_patterns)
@@ -3452,11 +3435,9 @@ update_language_packages() {
     echo "[DEBUG] Loaded language_module_patterns: $module_patterns" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] Loaded language_prefixes: $language_prefixes" >> "$CONFIG_DIR/debug.log"
     
-    # パッケージ収集（一時ファイル使用）
     local temp_all_pkgs="$CONFIG_DIR/temp_all_pkgs.txt"
     : > "$temp_all_pkgs"
     
-    # インストール済みから収集
     while IFS= read -r pkg_id || [ -n "$pkg_id" ]; do
         [ -z "$pkg_id" ] && continue
         
@@ -3470,7 +3451,6 @@ update_language_packages() {
         [ "$excluded" -eq 0 ] && echo "$pkg_id" >> "$temp_all_pkgs"
     done < "$CONFIG_DIR/installed_packages_cache.txt"
     
-    # 選択済みから収集
     if [ -f "$SELECTED_PACKAGES" ]; then
         while IFS= read -r line || [ -n "$line" ]; do
             [ -z "$line" ] && continue
@@ -3492,14 +3472,12 @@ update_language_packages() {
     echo "[DEBUG] all_packages count=$(wc -l < "$temp_all_pkgs" 2>/dev/null || echo 0)" >> "$CONFIG_DIR/debug.log"
     
     [ "$new_lang" = "en" ] && { rm -f "$temp_all_pkgs"; clear_selection_cache; return 0; }
-
-    # ベースパッケージ追加
+    
     for prefix in $language_prefixes; do
         local base_pkg="${prefix}${new_lang}"
         check_package_available "$base_pkg" "normal" && echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
     done
-
-    # 言語パック追加（一時ファイルから読み込み）
+    
     while IFS= read -r pkg || [ -n "$pkg" ]; do
         [ -z "$pkg" ] && continue
         
@@ -3525,7 +3503,7 @@ update_language_packages() {
             echo "[DEBUG] lang_pkg='$lang_pkg_name' NOT AVAILABLE (skipped)" >> "$CONFIG_DIR/debug.log"
             continue
         fi
-
+        
         echo "[DEBUG] lang_pkg='$lang_pkg_name' AVAILABLE, adding" >> "$CONFIG_DIR/debug.log"
         
         grep -q "^${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null || echo "${lang_pkg_name}=${lang_pkg_name}===" >> "$SELECTED_PACKAGES"
