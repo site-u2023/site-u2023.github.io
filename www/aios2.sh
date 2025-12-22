@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1221.1711"
+VERSION="R7.1222.1612"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -3574,6 +3574,7 @@ update_language_packages() {
     
     [ -z "$new_lang" ] && return 0
 
+    # キャッシュをファイルに書き出し（パイプ処理を回避）
     if [ "$_INSTALLED_PACKAGES_LOADED" -eq 0 ]; then
         cache_installed_packages
         local cache_file="$CONFIG_DIR/installed_packages_cache.txt"
@@ -3583,37 +3584,43 @@ update_language_packages() {
         fi
     fi
 
-    local base_lang_pkg
-    base_lang_pkg=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | head -1)
+    # 一時ファイル使用でパイプエラー回避
+    local temp_base_pkg="$CONFIG_DIR/temp_base_pkg.txt"
+    printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" > "$temp_base_pkg" 2>/dev/null || true
 
-    if [ -n "$base_lang_pkg" ]; then
+    local base_lang_pkg
+    if [ -s "$temp_base_pkg" ]; then
+        base_lang_pkg=$(head -1 "$temp_base_pkg")
         old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
     else
         old_lang="en"
     fi
+    rm -f "$temp_base_pkg"
     
     echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
     [ "$old_lang" = "$new_lang" ] && return 0
     
-    # ★ 既存の言語パッケージを直接削除
+    # 既存言語パッケージ削除（一時ファイル使用）
     echo "[DEBUG] Removing old language packages for lang=$old_lang" >> "$CONFIG_DIR/debug.log"
     
-    while read -r installed_pkg; do
+    local temp_installed="$CONFIG_DIR/temp_installed.txt"
+    printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" > "$temp_installed"
+    
+    while IFS= read -r installed_pkg || [ -n "$installed_pkg" ]; do
         [ -z "$installed_pkg" ] && continue
         
         case "$installed_pkg" in
             luci-i18n-*-${old_lang})
-                grep -v "^${installed_pkg}=" "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp" 2>/dev/null || touch "$SELECTED_PACKAGES.tmp"
+                awk -F= -v pkg="$installed_pkg" '$1 != pkg' "$SELECTED_PACKAGES" > "$SELECTED_PACKAGES.tmp" 2>/dev/null || touch "$SELECTED_PACKAGES.tmp"
                 mv "$SELECTED_PACKAGES.tmp" "$SELECTED_PACKAGES"
                 echo "[DEBUG] Removed from SELECTED_PACKAGES: $installed_pkg" >> "$CONFIG_DIR/debug.log"
                 ;;
         esac
-    done <<EOF
-$_INSTALLED_PACKAGES_CACHE
-EOF
+    done < "$temp_installed"
+    rm -f "$temp_installed"
     
-    # JSON駆動のパターンを取得
+    # パターン取得
     local exclude_patterns module_patterns language_prefixes
     exclude_patterns=$(get_language_exclude_patterns)
     module_patterns=$(get_language_module_patterns)
@@ -3623,82 +3630,63 @@ EOF
     echo "[DEBUG] Loaded language_module_patterns: $module_patterns" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] Loaded language_prefixes: $language_prefixes" >> "$CONFIG_DIR/debug.log"
     
-    # 1. ローカルの全パッケージを取得
-    local all_packages=""
+    # パッケージ収集（一時ファイル使用）
+    local temp_all_pkgs="$CONFIG_DIR/temp_all_pkgs.txt"
+    : > "$temp_all_pkgs"
     
-    while read -r pkg_id; do
+    # インストール済みから収集
+    while IFS= read -r pkg_id || [ -n "$pkg_id" ]; do
         [ -z "$pkg_id" ] && continue
         
-        # 除外パターンチェック
         local excluded=0
         for pattern in $exclude_patterns; do
             case "$pkg_id" in
-                ${pattern}*)
-                    excluded=1
-                    break
-                    ;;
+                ${pattern}*) excluded=1; break ;;
             esac
         done
         
-        if [ "$excluded" -eq 0 ]; then
-            all_packages="${all_packages}${pkg_id}
-"
-        fi
-    done <<EOF
-$_INSTALLED_PACKAGES_CACHE
-EOF
-
-    # 2. 選択済みからも追加
+        [ "$excluded" -eq 0 ] && echo "$pkg_id" >> "$temp_all_pkgs"
+    done < "$CONFIG_DIR/installed_packages_cache.txt"
+    
+    # 選択済みから収集
     if [ -f "$SELECTED_PACKAGES" ]; then
-        while read -r line; do
+        while IFS= read -r line || [ -n "$line" ]; do
             [ -z "$line" ] && continue
-            local pkg_id
-            pkg_id=$(echo "$line" | cut -d= -f1)
+            local pkg_id=$(echo "$line" | cut -d= -f1)
             
             local excluded=0
             for pattern in $exclude_patterns; do
                 case "$pkg_id" in
-                    ${pattern}*)
-                        excluded=1
-                        break
-                        ;;
-            esac
+                    ${pattern}*) excluded=1; break ;;
+                esac
             done
             
             if [ "$excluded" -eq 0 ]; then
-                if ! echo "$all_packages" | grep -qx "$pkg_id"; then
-                    all_packages="${all_packages}${pkg_id}
-"
-                fi
+                grep -qx "$pkg_id" "$temp_all_pkgs" || echo "$pkg_id" >> "$temp_all_pkgs"
             fi
         done < "$SELECTED_PACKAGES"
     fi
     
-    echo "[DEBUG] all_packages count=$(echo \"$all_packages\" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] all_packages count=$(wc -l < "$temp_all_pkgs" 2>/dev/null || echo 0)" >> "$CONFIG_DIR/debug.log"
     
-    if [ "$new_lang" = "en" ]; then
-        clear_selection_cache
-        return 0
-    fi
+    [ "$new_lang" = "en" ] && { rm -f "$temp_all_pkgs"; clear_selection_cache; return 0; }
 
-    # ベースパッケージを追加
+    # ベースパッケージ追加
     for prefix in $language_prefixes; do
         local base_pkg="${prefix}${new_lang}"
         check_package_available "$base_pkg" "normal" && echo "${base_pkg}=${base_pkg}===" >> "$SELECTED_PACKAGES"
     done
 
-    # 3. 各パッケージに対して言語パック名を生成
-    while read -r pkg; do
+    # 言語パック追加（一時ファイルから読み込み）
+    while IFS= read -r pkg || [ -n "$pkg" ]; do
         [ -z "$pkg" ] && continue
         
         local lang_pkg_name=""
         local matched=0
         
-        # module_patterns にマッチするか確認
         for pattern in $module_patterns; do
             case "$pkg" in
                 ${pattern}*)
-                    # プレフィックスを除去
                     local module_name="${pkg#$pattern}"
                     lang_pkg_name="luci-i18n-${module_name}-${new_lang}"
                     matched=1
@@ -3707,14 +3695,10 @@ EOF
             esac
         done
         
-        # マッチしない場合はそのまま
-        if [ "$matched" -eq 0 ]; then
-            lang_pkg_name="luci-i18n-${pkg}-${new_lang}"
-        fi
+        [ "$matched" -eq 0 ] && lang_pkg_name="luci-i18n-${pkg}-${new_lang}"
         
         echo "[DEBUG] Checking lang_pkg='$lang_pkg_name' for pkg='$pkg'" >> "$CONFIG_DIR/debug.log"
         
-        # 4. リポジトリに存在するかチェック
         if ! check_package_available "$lang_pkg_name" "normal"; then
             echo "[DEBUG] lang_pkg='$lang_pkg_name' NOT AVAILABLE (skipped)" >> "$CONFIG_DIR/debug.log"
             continue
@@ -3722,14 +3706,10 @@ EOF
 
         echo "[DEBUG] lang_pkg='$lang_pkg_name' AVAILABLE, adding" >> "$CONFIG_DIR/debug.log"
         
-        # 5. 重複チェックして追加
-        if ! grep -q "^${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null; then
-            echo "${lang_pkg_name}=${lang_pkg_name}===" >> "$SELECTED_PACKAGES"
-        fi
-    done <<EOF
-$all_packages
-EOF
+        grep -q "^${lang_pkg_name}=" "$SELECTED_PACKAGES" 2>/dev/null || echo "${lang_pkg_name}=${lang_pkg_name}===" >> "$SELECTED_PACKAGES"
+    done < "$temp_all_pkgs"
     
+    rm -f "$temp_all_pkgs"
     clear_selection_cache
 }
 
