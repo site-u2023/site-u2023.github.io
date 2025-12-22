@@ -875,7 +875,7 @@ show_auto_detection_if_available() {
 category_config() {
     local cat_id="$1"
     local tr_main_menu cat_title base_breadcrumb
-    local tr_language lang_breadcrumb current_lang value old_lang
+    local tr_language lang_breadcrumb current_lang value
     local item_id item_type ret
     local temp_vars="$CONFIG_DIR/temp_vars_${cat_id}.txt"
     
@@ -902,11 +902,7 @@ category_config() {
             return $RETURN_BACK
         fi
         
-        # ★ 修正：SETUP_VARS更新前に old_lang を保存
-        old_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -z "$old_lang" ] && old_lang="${AUTO_LANGUAGE}"
-        
-        # SETUP_VARS更新
+        # 空欄なら変数削除
         if [ -z "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "[DEBUG] Empty language input, removed variable" >> "$CONFIG_DIR/debug.log"
@@ -914,9 +910,7 @@ category_config() {
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
         fi
-        
-        # ★ 修正：old_lang を引数として渡す
-        update_language_packages "$old_lang"
+        update_language_packages
     fi
     
     # internet-connection カテゴリの場合、自動検出を試みる
