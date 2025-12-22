@@ -879,7 +879,6 @@ category_config() {
     local item_id item_type ret
     local temp_vars="$CONFIG_DIR/temp_vars_${cat_id}.txt"
     
-    # 現在の状態をバックアップ
     cp "$SETUP_VARS" "$temp_vars"
     
     tr_main_menu=$(translate "tr-tui-main-menu")
@@ -896,24 +895,25 @@ category_config() {
         value=$(show_inputbox "$lang_breadcrumb" "" "$current_lang")
         
         if ! [ $? -eq 0 ]; then
-            # キャンセル: 元に戻す
             cp "$temp_vars" "$SETUP_VARS"
             rm -f "$temp_vars"
             return $RETURN_BACK
         fi
         
-        # 空欄なら変数削除
         if [ -z "$value" ]; then
             sed -i "/^language=/d" "$SETUP_VARS"
+            sed -i "/^language_old=/d" "$SETUP_VARS"
             echo "[DEBUG] Empty language input, removed variable" >> "$CONFIG_DIR/debug.log"
         else
+            sed -i "/^language_old=/d" "$SETUP_VARS"
+            echo "language_old='${current_lang}'" >> "$SETUP_VARS"
+            
             sed -i "/^language=/d" "$SETUP_VARS"
             echo "language='${value}'" >> "$SETUP_VARS"
         fi
         update_language_packages
     fi
     
-    # internet-connection カテゴリの場合、自動検出を試みる
     if [ "$cat_id" = "internet-connection" ]; then
         if show_auto_detection_if_available; then
             auto_cleanup_conditional_variables "$cat_id"
@@ -923,11 +923,9 @@ category_config() {
         fi
     fi
     
-    # カテゴリ内の全アイテムを処理
     for item_id in $(get_setup_category_items "$cat_id"); do
         item_type=$(get_setup_item_type "$item_id")
         
-        # アイテムを表示すべきかチェック
         if ! should_show_item "$item_id" "$cat_id"; then
             echo "[DEBUG] Skipping hidden item: $item_id" >> "$CONFIG_DIR/debug.log"
             continue
@@ -941,13 +939,11 @@ category_config() {
                 continue
                 ;;
             $RETURN_BACK)
-                # キャンセル: 元に戻す
                 cp "$temp_vars" "$SETUP_VARS"
                 rm -f "$temp_vars"
                 return $RETURN_BACK
                 ;;
             $RETURN_MAIN)
-                # メインメニューへ: 元に戻す
                 cp "$temp_vars" "$SETUP_VARS"
                 rm -f "$temp_vars"
                 return $RETURN_MAIN
@@ -955,7 +951,6 @@ category_config() {
         esac
     done
     
-    # 成功: バックアップを削除
     rm -f "$temp_vars"
     
     auto_add_conditional_packages "$cat_id"
@@ -1030,12 +1025,9 @@ show_language_selector() {
         return 1
     fi
     
-    # ループ開始（他のパッケージ選択と同じ）
     while true; do
-        # ★ 追加：ループ内でローカル変数を宣言
         local current_lang selected all_langs radio_list
         
-        # 現在の言語検出
         current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
         if [ -z "$current_lang" ]; then
@@ -1046,7 +1038,6 @@ show_language_selector() {
         
         echo "[DEBUG] show_language_selector: current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
         
-        # en を含む全言語リスト
         all_langs=$(
             {
                 echo "en"
@@ -1054,7 +1045,6 @@ show_language_selector() {
             } | sort -u
         )
         
-        # ラジオリスト構築
         radio_list=""
         while read -r lang; do
             [ -z "$lang" ] && continue
@@ -1074,7 +1064,6 @@ EOF
             $DIALOG_HEIGHT $DIALOG_WIDTH $LIST_HEIGHT \
             $radio_list" 3>&1 1>&2 2>&3)
         
-        # キャンセル時はループ終了
         if [ $? -ne 0 ] || [ -z "$selected" ]; then
             echo "[DEBUG] Language selection cancelled or empty" >> "$CONFIG_DIR/debug.log"
             return 0
@@ -1084,22 +1073,20 @@ EOF
         
         echo "[DEBUG] Selected language: '$selected', current was: '$current_lang'" >> "$CONFIG_DIR/debug.log"
         
-        # 変更なしの場合は次のループへ
         if [ "$selected" = "$current_lang" ]; then
             echo "[DEBUG] No language change detected, continuing loop" >> "$CONFIG_DIR/debug.log"
             continue
         fi
         
-        # SETUP_VARSを更新
+        sed -i "/^language_old=/d" "$SETUP_VARS"
+        echo "language_old='${current_lang}'" >> "$SETUP_VARS"
+        
         sed -i "/^language=/d" "$SETUP_VARS"
         echo "language='${selected}'" >> "$SETUP_VARS"
         echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
         
-        # 言語パッケージを更新（全LuCIパッケージ対応）
         update_language_packages
         clear_selection_cache
-        
-        # ループ継続（画面に戻る）
     done
 }
 
