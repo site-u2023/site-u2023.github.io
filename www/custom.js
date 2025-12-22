@@ -2810,27 +2810,95 @@ async function getFeedPackageSet(feed, deviceInfo) {
     const url = await buildPackageUrl(feed, deviceInfo);
 
     const resp = await fetch(url, { cache: 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
-    const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+    // 修正：パッケージマネージャーで判定
+    const packageManager = state.packageManager.activeManager;
     let pkgSet;
 
-    if (isSnapshot) {
+    if (packageManager === 'apk') {
+        // APK形式（JSON）
         const data = await resp.json();
+        const names = new Set();
+        
         if (Array.isArray(data.packages)) {
-            pkgSet = new Set(data.packages.map(p => p?.name).filter(Boolean));
+            data.packages.forEach(pkg => {
+                if (pkg && pkg.name) {
+                    names.add(pkg.name);
+                    if (pkg.desc) {
+                        const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
+                        state.cache.packageDescriptions.set(descKey, pkg.desc);
+                    }
+                    if (pkg.size) {
+                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
+                        state.cache.packageSizes.set(sizeKey, parseInt(pkg.size));
+                    }
+                }
+            });
         } else if (data.packages && typeof data.packages === 'object') {
-            pkgSet = new Set(Object.keys(data.packages));
-        } else {
-            pkgSet = new Set();
+            Object.entries(data.packages).forEach(([name, info]) => {
+                names.add(name);
+                if (info && typeof info === 'object') {
+                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
+                    if (info.desc) {
+                        state.cache.packageDescriptions.set(descKey, info.desc);
+                    }
+                    if (info.size) {
+                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
+                        state.cache.packageSizes.set(sizeKey, parseInt(info.size));
+                    }
+                }
+            });
         }
+        
+        pkgSet = names;
+        
     } else {
+        // OPKG形式（テキスト）
         const text = await resp.text();
-        const names = text.split('\n')
-            .filter(line => line.startsWith('Package: '))
-            .map(line => line.substring(9).trim())
-            .filter(Boolean);
-        pkgSet = new Set(names);
+        const lines = text.split('\n');
+        const names = [];
+        let currentPackage = null;
+        let currentDescription = '';
+        let inDescription = false;
+        
+        for (const line of lines) {
+            if (line.startsWith('Package: ')) {
+                if (currentPackage && currentDescription) {
+                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+                    state.cache.packageDescriptions.set(descKey, currentDescription.trim());
+                }
+                
+                currentPackage = line.substring(9).trim();
+                names.push(currentPackage);
+                currentDescription = '';
+                inDescription = false;
+            } else if (line.startsWith('Size: ') && currentPackage) {
+                const size = parseInt(line.substring(6).trim());
+                if (size > 0) {
+                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+                    state.cache.packageSizes.set(sizeCacheKey, size);
+                }
+            } else if (line.startsWith('Description: ') && currentPackage) {
+                currentDescription = line.substring(13).trim();
+                inDescription = true;
+            } else if (inDescription && currentPackage) {
+                if (line.startsWith(' ')) {
+                    currentDescription += '\n' + line.trim();
+                } else if (!line.trim()) {
+                    inDescription = false;
+                } else if (!line.startsWith(' ')) {
+                    inDescription = false;
+                }
+            }
+        }
+        
+        if (currentPackage && currentDescription) {
+            const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
+            state.cache.packageDescriptions.set(descKey, currentDescription.trim());
+        }
+        
+        pkgSet = new Set(names.filter(Boolean));
     }
 
     state.cache.feedPackageSet.set(key, pkgSet);
