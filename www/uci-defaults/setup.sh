@@ -482,12 +482,6 @@ filters:
   - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
-  - enabled: false
-    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
-    name: AdGuard Japanese filter
-  - enabled: false
-    url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
-    name: 豆腐フィルタ
 log:
   file: ""
 schema_version: 29
