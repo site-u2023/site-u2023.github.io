@@ -171,6 +171,10 @@ function determinePackageManager(version) {
         throw new Error('Version not specified');
     }
     
+    if (version === 'SNAPSHOT') {
+        return 'apk';
+    }
+    
     const isSnapshot = version.includes('SNAPSHOT');
     const channel = isSnapshot ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
@@ -179,17 +183,11 @@ function determinePackageManager(version) {
     
     let bestManager = null;
     let highestThreshold = '';
-    let fallbackManager = null;
     
     for (const [managerName] of Object.entries(state.packageManager.config.packageManagers)) {
         const threshold = channelConfig[managerName]?.versionThreshold;
         
-        if (threshold === undefined) continue;
-        
-        if (threshold === '') {
-            fallbackManager = managerName;
-            continue;
-        }
+        if (threshold === undefined || threshold === '') continue;
         
         if (!versionNum) continue;
         
@@ -198,8 +196,6 @@ function determinePackageManager(version) {
             bestManager = managerName;
         }
     }
-    
-    if (!bestManager) bestManager = fallbackManager;
     
     if (!bestManager) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
