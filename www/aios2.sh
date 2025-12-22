@@ -3441,6 +3441,10 @@ update_language_packages() {
     while IFS= read -r pkg_id || [ -n "$pkg_id" ]; do
         [ -z "$pkg_id" ] && continue
         
+        case "$pkg_id" in
+            luci-i18n-*) continue ;;
+        esac
+        
         local excluded=0
         for pattern in $exclude_patterns; do
             case "$pkg_id" in
@@ -3455,6 +3459,10 @@ update_language_packages() {
         while IFS= read -r line || [ -n "$line" ]; do
             [ -z "$line" ] && continue
             local pkg_id=$(echo "$line" | cut -d= -f1)
+            
+            case "$pkg_id" in
+                luci-i18n-*) continue ;;
+            esac
             
             local excluded=0
             for pattern in $exclude_patterns; do
