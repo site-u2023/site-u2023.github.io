@@ -119,7 +119,7 @@ firewall_wan() {
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
         
         band=$(uci -q get wireless.${radio}.band)
-        set -- 30 15 5
+        [ -n "${snr}" ] && set -- ${snr} || set -- 30 15 5
         case "${band}" in
             2g) 
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk-mixed'
