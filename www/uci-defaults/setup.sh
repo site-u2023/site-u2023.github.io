@@ -156,7 +156,6 @@ firewall_wan() {
             
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
                 SET ${iface}.isolate='1'
-                SET ${iface}.ocv='1'
                 
                 [ "${wifi_mode}" = "usteer" ] && {
                     SET ${iface}.ieee80211r='1'
