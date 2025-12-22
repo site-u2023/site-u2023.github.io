@@ -208,190 +208,6 @@ EOF
     done
 }
 
-XXXXX_custom_script_options_ui() {
-    local script_id="$1"
-    local breadcrumb="$2"
-    local filtered_options="$3"
-    
-    while true; do
-        local menu_items i option_id option_label choice selected_option
-        
-        menu_items=""
-        i=1
-        
-        while read -r option_id; do
-            [ -z "$option_id" ] && continue
-            option_label=$(get_customscript_option_label "$script_id" "$option_id")
-            menu_items="$menu_items $i \"$option_label\""
-            i=$((i+1))
-        done <<EOF
-$filtered_options
-EOF
-        
-        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
-        choice=$(eval "radiolist \"\$breadcrumb\" \"\" \"\" \"\" $menu_items") || return 0
-        
-        if [ -n "$choice" ]; then
-            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-            
-            local requires_confirmation
-            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
-            if [ "$requires_confirmation" = "true" ]; then
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
-            fi
-            
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-            if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-            fi
-        fi
-    done
-}
-
-ZZZZZ_custom_script_options_ui() {
-    local script_id="$1"
-    local breadcrumb="$2"
-    local filtered_options="$3"
-    
-    while true; do
-        local radio_items i option_id option_label choice selected_option
-        local current_selection=""
-        
-        # 現在の選択を取得
-        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-        fi
-        
-        radio_items=""
-        i=1
-        
-        while read -r option_id; do
-            [ -z "$option_id" ] && continue
-            option_label=$(get_customscript_option_label "$script_id" "$option_id")
-            
-            local status="OFF"
-            [ "$option_id" = "$current_selection" ] && status="ON"
-            
-            radio_items="$radio_items \"$i\" \"$option_label\" $status"
-            i=$((i+1))
-        done <<EOF
-$filtered_options
-EOF
-        
-        choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
-            --ok-button \"$(translate 'tr-tui-refresh')\" \
-            --cancel-button \"$(translate 'tr-tui-back')\" \
-            --radiolist \"\" \
-            $UI_HEIGHT $UI_WIDTH 0 \
-            $radio_items" 3>&1 1>&2 2>&3) || return 0
-        
-        if [ -n "$choice" ]; then
-            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-            
-            # 選択が変更されていない場合はループを続ける
-            if [ "$selected_option" = "$current_selection" ]; then
-                continue
-            fi
-            
-            # 選択が変更された場合のみ処理
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            
-            local requires_confirmation
-            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
-            if [ "$requires_confirmation" = "true" ]; then
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
-            fi
-            
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-            if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-            fi
-        fi
-    done
-}
-
-XXXXXXXXXX_custom_script_options_ui() {
-    local script_id="$1"
-    local breadcrumb="$2"
-    local filtered_options="$3"
-    
-    while true; do
-        local radio_items i option_id option_label choice selected_option
-        local current_selection=""
-        
-        if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-            current_selection=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-        fi
-        
-        radio_items=""
-        i=1
-        
-        while read -r option_id; do
-            [ -z "$option_id" ] && continue
-            option_label=$(get_customscript_option_label "$script_id" "$option_id")
-            
-            local status="OFF"
-            [ "$option_id" = "$current_selection" ] && status="ON"
-            
-            radio_items="$radio_items \"$i\" \"$option_label\" $status"
-            i=$((i+1))
-        done <<EOF
-$filtered_options
-EOF
-        
-        choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
-            --ok-button \"$(translate 'tr-tui-refresh')\" \
-            --cancel-button \"$(translate 'tr-tui-back')\" \
-            --radiolist \"\" \
-            $UI_HEIGHT $UI_WIDTH 0 \
-            $radio_items" 3>&1 1>&2 2>&3) || return 0
-        
-        if [ -n "$choice" ]; then
-            selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
-            
-            if [ "$selected_option" = "$current_selection" ]; then
-                continue
-            fi
-            
-            # ★ 1. ファイルをクリア
-            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-            
-            # ★ 2. SELECTED_OPTION を書き込む
-            echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            
-            # ★ 3. envVars があれば追記
-            write_option_envvars "$script_id" "$selected_option"
-            
-            local requires_confirmation
-            requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
-            if [ "$requires_confirmation" = "true" ]; then
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
-            fi
-            
-            local skip_inputs
-            skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
-            if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
-            fi
-        fi
-    done
-}
-
 # =============================================================================
 # Custom Script Options UI
 # Saves SELECTED_OPTION and transitions to confirmation or input screen
@@ -1216,8 +1032,10 @@ show_language_selector() {
     
     # ループ開始（他のパッケージ選択と同じ）
     while true; do
+        # ★ 追加：ループ内でローカル変数を宣言
+        local current_lang selected all_langs radio_list
+        
         # 現在の言語検出
-        local current_lang
         current_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
         if [ -z "$current_lang" ]; then
@@ -1229,7 +1047,6 @@ show_language_selector() {
         echo "[DEBUG] show_language_selector: current_lang='$current_lang'" >> "$CONFIG_DIR/debug.log"
         
         # en を含む全言語リスト
-        local all_langs
         all_langs=$(
             {
                 echo "en"
@@ -1238,7 +1055,7 @@ show_language_selector() {
         )
         
         # ラジオリスト構築
-        local radio_list=""
+        radio_list=""
         while read -r lang; do
             [ -z "$lang" ] && continue
             
@@ -1250,7 +1067,6 @@ show_language_selector() {
 $all_langs
 EOF
         
-        local selected
         selected=$(eval "$DIALOG --title \"$breadcrumb\" \
             --ok-button \"$(translate 'tr-tui-refresh')\" \
             --cancel-button \"$(translate 'tr-tui-back')\" \
@@ -1259,275 +1075,31 @@ EOF
             $radio_list" 3>&1 1>&2 2>&3)
         
         # キャンセル時はループ終了
-        [ $? -ne 0 ] || [ -z "$selected" ] && return 0
+        if [ $? -ne 0 ] || [ -z "$selected" ]; then
+            echo "[DEBUG] Language selection cancelled or empty" >> "$CONFIG_DIR/debug.log"
+            return 0
+        fi
         
         selected=$(echo "$selected" | tr -d '"')
         
         echo "[DEBUG] Selected language: '$selected', current was: '$current_lang'" >> "$CONFIG_DIR/debug.log"
         
         # 変更なしの場合は次のループへ
-        [ "$selected" = "$current_lang" ] && continue
+        if [ "$selected" = "$current_lang" ]; then
+            echo "[DEBUG] No language change detected, continuing loop" >> "$CONFIG_DIR/debug.log"
+            continue
+        fi
         
         # SETUP_VARSを更新
         sed -i "/^language=/d" "$SETUP_VARS"
-        
         echo "language='${selected}'" >> "$SETUP_VARS"
         echo "[DEBUG] Set language='${selected}' in SETUP_VARS" >> "$CONFIG_DIR/debug.log"
         
-        # 言語パッケージを更新（全LuCIパッケージ対応
+        # 言語パッケージを更新（全LuCIパッケージ対応）
         update_language_packages
         clear_selection_cache
         
         # ループ継続（画面に戻る）
-    done
-}
-
-OG_XXX_package_selection() {
-    local cat_id="$1"
-    local caller="${2:-normal}"
-    local parent_breadcrumb="$3"
-
-    local cat_name breadcrumb
-    cat_name=$(get_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-    
-    if [ "$cat_id" = "language-pack" ]; then
-        show_language_selector "$breadcrumb"
-        return $?
-    fi
-    
-    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
-        get_package_name "dummy" > /dev/null 2>&1
-        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
-    fi
-
-    local cat_name breadcrumb checklist_items
-    local pkg_name status idx selected target_file idx_str idx_clean
-    local packages
-    
-    cat_name=$(get_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-    
-    packages=$(get_category_packages "$cat_id")
-
-    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
-    echo "$packages" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
-    
-    # 依存パッケージIDをキャッシュから取得（1階層目のみ）
-    local dependent_ids=" "
-    
-    while read -r parent_id; do
-        [ -z "$parent_id" ] && continue
-        
-        local deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F'=' -v id="$parent_id" '$1 == id || $3 == id {print $6; exit}')
-        
-        echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
-        
-        while read -r dep; do
-            [ -z "$dep" ] && continue
-            
-            local matched_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v dep="$dep" '$1 == dep || $3 == dep {print; exit}')
-            
-            if [ -n "$matched_line" ]; then
-                local matched_id=$(echo "$matched_line" | cut -d= -f1)
-                local matched_uid=$(echo "$matched_line" | cut -d= -f3)
-                
-                if [ -n "$matched_uid" ]; then
-                    dependent_ids="${dependent_ids}${matched_id} ${matched_uid} "
-                    echo "[DEBUG] Added dependency: id=$matched_id, uid=$matched_uid" >> "$CONFIG_DIR/debug.log"
-                else
-                    dependent_ids="${dependent_ids}${matched_id} "
-                    echo "[DEBUG] Added dependency: id=$matched_id" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-        done <<DEPS_INNER
-$(echo "$deps" | tr ',' '\n')
-DEPS_INNER
-    done <<EOF
-$packages
-EOF
-    
-    dependent_ids="${dependent_ids} "
-    echo "[DEBUG] Final dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
-    
-    # ループ開始 - 更新ボタンでここに戻る
-    while true; do
-        
-        checklist_items=""
-        idx=1
-        local display_names=""
-
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-
-            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
-            
-            local entry
-            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '$1 == id || $3 == id {print; exit}')
-
-            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
-
-            [ -z "$entry" ] && {
-                echo "[DEBUG] No cache entry found for $pkg_id" >> "$CONFIG_DIR/debug.log"
-                continue
-            }
-            
-            # キャッシュから全フィールドを取得
-            local pkg_name uid real_id hidden_flag virtual_flag
-            pkg_name=$(echo "$entry" | cut -d= -f2)
-            uid=$(echo "$entry" | cut -d= -f3)
-            real_id=$(echo "$entry" | cut -d= -f1)
-            hidden_flag=$(echo "$entry" | cut -d= -f7)
-            virtual_flag=$(echo "$entry" | cut -d= -f8)
-            pkg_owner=$(echo "$entry" | cut -d= -f11)
-            
-            echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
-            
-            if [ "$caller" = "custom_feeds" ]; then
-                package_compatible "$pkg_id" || continue
-            fi
-
-            # 依存パッケージ判定（1階層目のみ）
-            local is_dependent=0
-            
-            if [ -n "$uid" ]; then
-                if echo " ${dependent_ids} " | grep -q " ${uid} "; then
-                    is_dependent=1
-                    echo "[DEBUG] $pkg_id is dependent (matched by uid=$uid)" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-            
-            if [ "$is_dependent" -eq 0 ]; then
-                if echo " ${dependent_ids} " | grep -q " ${real_id} "; then
-                    is_dependent=1
-                    echo "[DEBUG] $pkg_id is dependent (matched by id=$real_id)" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-
-            # 所有権チェック（ystem または auto は UI に表示しない）
-            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
-                echo "[DEBUG] Package $pkg_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-            
-            # hidden チェック（キャッシュから取得したフラグを使用）
-            if [ "$is_dependent" -eq 0 ]; then
-                # 独立パッケージ：hidden=true なら非表示
-                if [ "$hidden_flag" = "true" ]; then
-                    echo "[DEBUG] Package $pkg_id is hidden (independent package), skipped" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-            else
-                # 1階層目の依存パッケージ：hidden を無視して表示
-                echo "[DEBUG] Package $pkg_id is dependent (level 1), ignoring hidden flag" >> "$CONFIG_DIR/debug.log"
-            fi
-
-            # availability check 用 caller を決定
-            local avail_caller="$caller"
-            [ "$is_dependent" -eq 1 ] && avail_caller="dependent"
-
-            echo "[DEBUG] Checking availability for $pkg_id (caller=$avail_caller)" >> "$CONFIG_DIR/debug.log"
-            
-            if [ "$virtual_flag" != "true" ] && [ "$caller" != "custom_feeds" ]; then
-                if ! check_package_available "$pkg_id" "$avail_caller"; then
-                    echo "[DEBUG] Package $pkg_id not available, skipped" >> "$CONFIG_DIR/debug.log"
-                    continue
-                fi
-            fi
-    
-            echo "[DEBUG] Package $pkg_id is available, adding to list" >> "$CONFIG_DIR/debug.log"
-            
-            local display_name="$pkg_name"
-            if [ "$is_dependent" -eq 1 ]; then
-                display_name="   ${pkg_name}"
-            fi
-            
-            display_names="${display_names}${display_name}|${pkg_id}
-"
-            
-            local status
-            if is_package_selected "$pkg_id" "$caller"; then 
-                status="ON"
-            else
-                status="OFF"
-            fi
-            
-            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-            idx=$((idx+1))
-        done <<EOF
-$packages
-EOF
-        
-        local tr_space_toggle
-        tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
-        local btn_refresh=$(translate "tr-tui-refresh")
-        local btn_back=$(translate "tr-tui-back")
-        
-        [ -z "$btn_refresh" ] && btn_refresh="Update"
-        [ -z "$btn_back" ] && btn_back="Back"
-
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items")
-        
-        local exit_status=$?
-
-        if [ $exit_status -ne 0 ]; then
-            return 0
-        fi
-        
-        if [ "$caller" = "custom_feeds" ]; then
-            target_file="$SELECTED_CUSTOM_PACKAGES"
-        else
-            target_file="$SELECTED_PACKAGES"
-        fi
-        
-        local old_selection=""
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            
-            if awk -F= -v target="$pkg_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
-                old_selection="${old_selection}${pkg_id}
-"
-            fi
-        done <<EOF
-$packages
-EOF
-        
-        local new_selection=""
-        for idx_str in $selected; do
-            idx_clean=$(echo "$idx_str" | tr -d '"')
-            local selected_line pkg_id
-            selected_line=$(echo "$display_names" | sed -n "${idx_clean}p")
-            
-            if [ -n "$selected_line" ]; then
-                pkg_id=$(echo "$selected_line" | cut -d'|' -f2)
-                new_selection="${new_selection}${pkg_id}
-"
-            fi
-        done
-        
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            if ! echo "$old_selection" | grep -qx "$pkg_id"; then
-                add_package_with_dependencies "$pkg_id" "$caller"
-            fi
-        done <<NEW_SEL
-$new_selection
-NEW_SEL
-        
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-            if ! echo "$new_selection" | grep -qx "$pkg_id"; then
-                remove_package_with_dependencies "$pkg_id" "$caller"
-            fi
-        done <<OLD_SEL
-$old_selection
-OLD_SEL
-        
-        clear_selection_cache
     done
 }
 
@@ -1840,211 +1412,6 @@ EOF
                 show_msgbox "$script_breadcrumb" "Script not found: customscripts-${selected_script}.sh"
             fi
         fi
-    done
-}
-
-NG_XXXXX_package_selection() {
-    local cat_id="$1"
-    local caller="${2:-normal}"
-    local parent_breadcrumb="$3"
-
-    local cat_name breadcrumb
-    cat_name=$(get_category_name "$cat_id")
-    breadcrumb="${parent_breadcrumb}${BREADCRUMB_SEP}${cat_name}"
-
-    if [ "$cat_id" = "language-pack" ]; then
-        show_language_selector "$breadcrumb"
-        return $?
-    fi
-
-    echo "[DEBUG] package_selection called: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-
-    if [ "$_PACKAGE_NAME_LOADED" -eq 0 ]; then
-        echo "[DEBUG] Loading package name cache..." >> "$CONFIG_DIR/debug.log"
-        get_package_name "dummy" > /dev/null 2>&1
-        echo "[DEBUG] Cache loaded, size: $(echo "$_PACKAGE_NAME_CACHE" | wc -l) lines" >> "$CONFIG_DIR/debug.log"
-    fi
-
-    local packages
-    packages=$(get_category_packages "$cat_id")
-
-    echo "[DEBUG] Category packages:" >> "$CONFIG_DIR/debug.log"
-    echo "$packages" >> "$CONFIG_DIR/debug.log"
-    echo "[DEBUG] Package count: $(echo "$packages" | wc -l)" >> "$CONFIG_DIR/debug.log"
-
-    # ----------------------------------------
-    # 依存パッケージID取得（1階層目）
-    # ----------------------------------------
-    local dependent_ids=" "
-
-    while read -r parent_id; do
-        [ -z "$parent_id" ] && continue
-
-        local deps
-        deps=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$parent_id" '
-            $1 == id || $3 == id { print $6; exit }
-        ')
-
-        echo "[DEBUG] parent_id=$parent_id, deps=$deps" >> "$CONFIG_DIR/debug.log"
-
-        # パイプを使わずにループさせることで、dependent_ids の変更を保持する
-        for dep in $(echo "$deps" | tr ',' ' '); do
-            [ -z "$dep" ] && continue
-
-            local line
-            line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v d="$dep" '
-                $1 == d || $3 == d { print; exit }
-            ')
-
-            if [ -n "$line" ]; then
-                local did uid
-                did=$(echo "$line" | cut -d= -f1)
-                uid=$(echo "$line" | cut -d= -f3)
-
-                if [ -n "$uid" ]; then
-                    dependent_ids="${dependent_ids}${did} ${uid} "
-                else
-                    dependent_ids="${dependent_ids}${did} "
-                fi
-            fi
-        done
-    done <<EOF
-$packages
-EOF
-
-    dependent_ids="${dependent_ids} "
-    echo "[DEBUG] Final dependent_ids='$dependent_ids'" >> "$CONFIG_DIR/debug.log"
-
-    # ----------------------------------------
-    # UI ループ
-    # ----------------------------------------
-    while true; do
-        checklist_items=""
-        idx=1
-        display_names=""
-
-        # ★ 追加：表示済み pkg_id 管理
-        local shown_pkg_ids=""
-
-        while read -r pkg_id; do
-            [ -z "$pkg_id" ] && continue
-
-            echo "[DEBUG] Processing pkg_id: $pkg_id" >> "$CONFIG_DIR/debug.log"
-
-            local entry
-            entry=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$pkg_id" '
-                $1 == id || $3 == id { print; exit }
-            ')
-
-            echo "[DEBUG] Cache entry: $entry" >> "$CONFIG_DIR/debug.log"
-            [ -z "$entry" ] && continue
-
-            local real_id pkg_name uid hidden_flag virtual_flag pkg_owner
-            real_id=$(echo "$entry" | cut -d= -f1)
-            pkg_name=$(echo "$entry" | cut -d= -f2)
-            uid=$(echo "$entry" | cut -d= -f3)
-            hidden_flag=$(echo "$entry" | cut -d= -f7)
-            virtual_flag=$(echo "$entry" | cut -d= -f8)
-            pkg_owner=$(echo "$entry" | cut -d= -f11)
-
-            echo "[DEBUG] Parsed: id=$real_id, name=$pkg_name, uid=$uid, hidden=$hidden_flag" >> "$CONFIG_DIR/debug.log"
-
-            # ★ 追加：UI 重複表示防止
-            if echo "$shown_pkg_ids" | grep -qx "$real_id"; then
-                echo "[DEBUG] Skipping duplicate display: $real_id" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-            shown_pkg_ids="${shown_pkg_ids}${real_id}
-"
-
-            # 所有者チェック
-            if [ "$pkg_owner" = "system" ] || [ "$pkg_owner" = "auto" ]; then
-                echo "[DEBUG] Package $real_id skipped from UI (owner=$pkg_owner)" >> "$CONFIG_DIR/debug.log"
-                continue
-            fi
-
-            # 依存判定
-            local is_dependent=0
-            echo " ${dependent_ids} " | grep -q " ${real_id} " && is_dependent=1
-            [ -n "$uid" ] && echo " ${dependent_ids} " | grep -q " ${uid} " && is_dependent=1
-
-            # hidden 判定
-            if [ "$is_dependent" -eq 0 ] && [ "$hidden_flag" = "true" ]; then
-                continue
-            fi
-
-            # availability 判定
-            local avail_caller="$caller"
-            [ "$is_dependent" -eq 1 ] && avail_caller="dependent"
-
-            if [ "$virtual_flag" != "true" ] && ! check_package_available "$real_id" "$avail_caller"; then
-                continue
-            fi
-
-            local display_name="$pkg_name"
-            [ "$is_dependent" -eq 1 ] && display_name="   $pkg_name"
-
-            display_names="${display_names}${display_name}|${real_id}
-"
-
-            local status="OFF"
-            is_package_selected "$real_id" "$caller" && status="ON"
-
-            checklist_items="$checklist_items \"$idx\" \"$display_name\" $status"
-            idx=$((idx+1))
-        done <<EOF
-$packages
-EOF
-
-        local tr_space_toggle
-        tr_space_toggle="($(translate 'tr-tui-space-toggle'))"
-        local btn_refresh=$(translate "tr-tui-refresh")
-        local btn_back=$(translate "tr-tui-back")
-
-        selected=$(eval "show_checklist \"\$breadcrumb\" \"$tr_space_toggle\" \"\$btn_refresh\" \"\$btn_back\" $checklist_items") || return 0
-
-        local target_file
-        if [ "$caller" = "custom_feeds" ]; then
-            target_file="$SELECTED_CUSTOM_PACKAGES"
-        else
-            target_file="$SELECTED_PACKAGES"
-        fi
-
-        local old_selection=""
-        while read -r pid; do
-            [ -z "$pid" ] && continue
-            if awk -F= -v t="$pid" '($1==t && $3=="") || $3==t' "$target_file" | grep -q .; then
-                old_selection="${old_selection}${pid}
-"
-            fi
-        done <<EOF
-$packages
-EOF
-
-        local new_selection=""
-        for idx_str in $selected; do
-            local idx_clean pkg_id
-            idx_clean=$(echo "$idx_str" | tr -d '"')
-            pkg_id=$(echo "$display_names" | sed -n "${idx_clean}p" | cut -d'|' -f2)
-            [ -n "$pkg_id" ] && new_selection="${new_selection}${pkg_id}
-"
-        done
-
-        while read -r pid; do
-            [ -z "$pid" ] && continue
-            echo "$old_selection" | grep -qx "$pid" || add_package_with_dependencies "$pid" "$caller"
-        done <<EOF
-$new_selection
-EOF
-
-        while read -r pid; do
-            [ -z "$pid" ] && continue
-            echo "$new_selection" | grep -qx "$pid" || remove_package_with_dependencies "$pid" "$caller"
-        done <<EOF
-$old_selection
-EOF
-
-        clear_selection_cache
     done
 }
 
