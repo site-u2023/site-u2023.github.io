@@ -105,29 +105,57 @@ firewall_wan() {
     SET @defaults[0].flow_offloading='1'
     [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
-{ [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
+{ [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
     wireless_cfg=$(uci -q show wireless)
+    
+    [ "${wifi_mode}" = "mlo" ] && mld_id=$(printf '%s' "${wlan_ssid}" | md5sum | cut -c1-8)
+    
+    link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET ${radio}.disabled='0'
         SET ${radio}.country="${COUNTRY}"
+        
+        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
+        
         band=$(uci -q get wireless.${radio}.band)
         set -- 30 15 5
         case "${band}" in
-            2g) encryption='psk-mixed'; nasid_suffix='-2g'; band_snr=$1;;
-            5g) encryption='sae-mixed'; nasid_suffix='-5g'; band_snr=$2;;
-            6g) encryption='sae'; nasid_suffix='-6g'; band_snr=$3;;
-            *)  encryption='psk-mixed'; nasid_suffix=''; band_snr=20;;
+            2g) 
+                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk-mixed'
+                nasid_suffix='-2g'
+                band_snr=$1
+                ;;
+            5g) 
+                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='sae-mixed'
+                nasid_suffix='-5g'
+                band_snr=$2
+                [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1'
+                ;;
+            6g) 
+                encryption='sae'
+                nasid_suffix='-6g'
+                band_snr=$3
+                ;;
+            *)  
+                encryption='psk-mixed'
+                nasid_suffix=''
+                band_snr=20
+                ;;
         esac
+        
         suffix=${band:+-$band}
-        [ "${wifi_mode}" = "usteer" ] && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
+        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
+        
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
-            [ "${wifi_mode}" = "usteer" ] && {
+            [ "${wifi_mode}" = "mlo" ] && SET ${iface}.ieee80211w='2'
+            
+            { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
                 SET ${iface}.isolate='1'
                 SET ${iface}.ocv='1'
                 SET ${iface}.ieee80211r='1'
@@ -138,8 +166,17 @@ firewall_wan() {
                 SET ${iface}.ieee80211k='1'
                 SET ${iface}.ieee80211v='1'
             }
+            
+            [ "${wifi_mode}" = "mlo" ] && {
+                SET ${iface}.mlo='1'
+                SET ${iface}.mld_id="${mld_id}"
+                SET ${iface}.mlo_link_id="${link_id}"
+            }
         }
+        
+        link_id=$((link_id + 1))
     done
+    
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0].band_steering='1'
