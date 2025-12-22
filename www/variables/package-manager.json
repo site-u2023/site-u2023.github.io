@@ -40,7 +40,7 @@
   "channels": {
     "release": {
       "opkg": {
-        "versionThreshold": "23.05",
+        "versionThreshold": "19.07",
         "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
         "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/Packages",
         "kmodsIndexBaseUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
@@ -63,7 +63,7 @@
         "kmodsIndexUrl": "https://downloads.openwrt.org/snapshots/targets/{vendor}/{subtarget}/kmods/{kmod}/index.json"
       },
       "opkg": {
-        "versionThreshold": "23.05",
+        "versionThreshold": "19.07",
         "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/Packages",
         "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/Packages",
         "kmodsIndexBaseUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
