@@ -3386,13 +3386,15 @@ reset_state_for_next_session() {
 }
 
 update_language_packages() {
-    local new_lang old_lang
+    local old_lang="$1"  # ★ 引数として受け取る
+    local new_lang
     
     echo "[DEBUG] update_language_packages called" >> "$CONFIG_DIR/debug.log"
     
     new_lang=$(grep "^language=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
     echo "[DEBUG] new_lang='$new_lang'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
     [ -z "$new_lang" ] && return 0
 
@@ -3406,20 +3408,22 @@ update_language_packages() {
         fi
     fi
 
-    # 一時ファイル使用でパイプエラー回避
-    local temp_base_pkg="$CONFIG_DIR/temp_base_pkg.txt"
-    printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" > "$temp_base_pkg" 2>/dev/null || true
+    # ★ old_lang が空の場合のフォールバック
+    if [ -z "$old_lang" ]; then
+        local temp_base_pkg="$CONFIG_DIR/temp_base_pkg.txt"
+        printf "%s\n" "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" > "$temp_base_pkg" 2>/dev/null || true
 
-    local base_lang_pkg
-    if [ -s "$temp_base_pkg" ]; then
-        base_lang_pkg=$(head -1 "$temp_base_pkg")
-        old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
-    else
-        old_lang="en"
+        local base_lang_pkg
+        if [ -s "$temp_base_pkg" ]; then
+            base_lang_pkg=$(head -1 "$temp_base_pkg")
+            old_lang=$(echo "$base_lang_pkg" | sed 's/^luci-i18n-base-//')
+        else
+            old_lang="en"
+        fi
+        rm -f "$temp_base_pkg"
     fi
-    rm -f "$temp_base_pkg"
     
-    echo "[DEBUG] old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] final old_lang='$old_lang'" >> "$CONFIG_DIR/debug.log"
     
     [ "$old_lang" = "$new_lang" ] && return 0
     
