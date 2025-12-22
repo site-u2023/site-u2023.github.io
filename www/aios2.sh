@@ -4540,26 +4540,22 @@ generate_files() {
             fi
         done < "$SELECTED_PACKAGES"
         
-        # enableVar処理（新規インストール対象パッケージのみ）
-        if [ -n "$packages_to_install" ]; then
-            while read -r cache_line; do
-                [ -z "$cache_line" ] && continue
-                
-                local pkg_id unique_id enable_var
-                pkg_id=$(echo "$cache_line" | cut -d= -f1)
-                unique_id=$(echo "$cache_line" | cut -d= -f3)
-                
-                enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
-                
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$temp_enablevars"
-                fi
-            done <<EOF
-$packages_to_install
-EOF
+        # enableVar処理（選択されている全パッケージ）
+        while read -r cache_line; do
+            [ -z "$cache_line" ] && continue
             
-            [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
-        fi
+            local pkg_id unique_id enable_var
+            pkg_id=$(echo "$cache_line" | cut -d= -f1)
+            unique_id=$(echo "$cache_line" | cut -d= -f3)
+            
+            enable_var=$(get_package_enablevar "$pkg_id" "$unique_id")
+            
+            if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                echo "${enable_var}='1'" >> "$temp_enablevars"
+            fi
+        done < "$SELECTED_PACKAGES"
+        
+        [ -s "$temp_enablevars" ] && cat "$temp_enablevars" >> "$SETUP_VARS"
         
         install_packages_content="$packages_to_install"
     fi
