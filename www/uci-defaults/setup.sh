@@ -157,12 +157,15 @@ firewall_wan() {
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
                 SET ${iface}.isolate='1'
                 SET ${iface}.ocv='1'
-                SET ${iface}.ieee80211r='1'
-                SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
-                SET ${iface}.ft_over_ds='1'
-                SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
-                SET ${iface}.ieee80211k='1'
-                SET ${iface}.ieee80211v='1'
+                
+                [ "${wifi_mode}" = "usteer" ] && {
+                    SET ${iface}.ieee80211r='1'
+                    SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
+                    SET ${iface}.ft_over_ds='1'
+                    SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
+                    SET ${iface}.ieee80211k='1'
+                    SET ${iface}.ieee80211v='1'
+                }
                 
                 [ "${wifi_mode}" = "usteer" ] && SET ${iface}.usteer_min_snr="${band_snr}"
             }
