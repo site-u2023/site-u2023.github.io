@@ -153,7 +153,6 @@ firewall_wan() {
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
-            [ "${wifi_mode}" = "mlo" ] && SET ${iface}.ieee80211w='2'
             
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
                 SET ${iface}.isolate='1'
@@ -162,12 +161,14 @@ firewall_wan() {
                 SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
                 SET ${iface}.ft_over_ds='1'
                 SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
-                SET ${iface}.usteer_min_snr="${band_snr}"
                 SET ${iface}.ieee80211k='1'
                 SET ${iface}.ieee80211v='1'
+                
+                [ "${wifi_mode}" = "usteer" ] && SET ${iface}.usteer_min_snr="${band_snr}"
             }
             
             [ "${wifi_mode}" = "mlo" ] && {
+                SET ${iface}.ieee80211w='2'
                 SET ${iface}.mlo='1'
                 SET ${iface}.mld_id="${mld_id}"
                 SET ${iface}.mlo_link_id="${link_id}"
