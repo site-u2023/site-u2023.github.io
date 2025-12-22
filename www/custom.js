@@ -2808,12 +2808,12 @@ async function getFeedPackageSet(feed, deviceInfo) {
     const resp = await fetch(url, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
-    // 修正：パッケージマネージャーで判定
-    const packageManager = state.packageManager.activeManager;
+    const contentType = resp.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    
     let pkgSet;
 
-    if (packageManager === 'apk') {
-        // APK形式（JSON）
+    if (isJson) {
         const data = await resp.json();
         const names = new Set();
         
@@ -2850,7 +2850,6 @@ async function getFeedPackageSet(feed, deviceInfo) {
         pkgSet = names;
         
     } else {
-        // OPKG形式（テキスト）
         const text = await resp.text();
         const lines = text.split('\n');
         const names = [];
