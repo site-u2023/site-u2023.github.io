@@ -37,7 +37,7 @@ const JURISDICTION_PREFIXES = {
     aftrRules: [
       {
         aftrType: "xpass",
-        asn: [45062, 17964, 2516, 10000, 17506], 
+        asn: [45062, 17964, 2516, 17506, 17932], 
         ipv6PrefixRanges: null,
         aftrAddresses: null,
         aftrFqdn: "dgw.xpass.jp",
@@ -53,7 +53,7 @@ const JURISDICTION_PREFIXES = {
       },
       {
         aftrType: "transix",
-        asn: [7506, 2497, 2527, 7691, 18137, 2518, 2514],
+        asn: [7506, 2497, 2527, 7691, 18137, 2518, 2514, 2519, 17511],
         ipv6PrefixRanges: [
           "240b:0010::/32", 
           "240b:0011::/32", 
