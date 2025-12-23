@@ -1690,13 +1690,13 @@ PKGS
             if [ "$setup_count" -gt 0 ]; then
                 summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
                 
-                # 全ての変数名を列挙
-                while IFS='=' read -r var_name var_value; do
-                    [ -z "$var_name" ] && continue
-                    case "$var_name" in
+                # 変数名=値 のペアを全て表示
+                while IFS= read -r line; do
+                    [ -z "$line" ] && continue
+                    case "$line" in
                         \#*) continue ;;
                     esac
-                    summary="${summary}  - ${var_name}\n"
+                    summary="${summary}  - ${line}\n"
                 done < "$SETUP_VARS"
                 
                 summary="${summary}\n"
