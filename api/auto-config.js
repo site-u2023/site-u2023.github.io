@@ -7245,6 +7245,9 @@ function checkDSLiteRule(ipv6) {
       // AS情報構築
       const isp = cf.asOrganization || null;
       const asn = cf.asn || null;
+        
+      globalThis.currentAsn = asn;
+    
       const as = (asn && isp) ? `AS${asn} ${isp}` : (isp || `AS${asn}` || null);
 
       // 言語・通知
