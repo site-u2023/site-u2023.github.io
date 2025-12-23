@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1222.1612"
+VERSION="R7.1223.1810"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -944,7 +944,13 @@ get_extended_device_info() {
     _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
     _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
-    
+
+	# GUAプレフィックスがある場合、mape_typeをguaに設定
+	if [ -n "$MAPE_GUA_PREFIX" ]; then
+    	echo "mape_type='gua'" >> "$SETUP_VARS"
+    	debug_log "Set mape_type='gua' because MAPE_GUA_PREFIX is available"
+	fi
+  
     # DS-Lite
     _set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
     _set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
