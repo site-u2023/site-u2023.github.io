@@ -1915,7 +1915,7 @@ function updateUciDefaultsFileSize(text) {
     return lines;
 }
 
-function loadUciDefaultsTemplate() {
+async function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     const templatePath = config.setup_template_path;
     
@@ -1942,21 +1942,15 @@ function loadUciDefaultsTemplate() {
         });
     });
 
-    fetch(templatePath + '?t=' + Date.now())
-        .then(r => { 
-            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`);
-            return r.text(); 
-        })
-        .then(text => {
-            textarea.value = text;
-            console.log('setup.sh loaded successfully');
-            updateUciDefaultsFileSize(text);
-            updateVariableDefinitions();
-            autoResize();
-        })
-        .catch(err => {
-            console.error('Failed to load setup.sh:', err);
-        });
+    const response = await fetch(templatePath + '?t=' + Date.now());
+    if (!response.ok) throw new Error(`Failed to load setup.sh: ${response.statusText}`);
+    
+    const text = await response.text();
+    textarea.value = text;
+    console.log('setup.sh loaded successfully');
+    updateUciDefaultsFileSize(text);
+    updateVariableDefinitions();
+    autoResize();
 }
 
 // ==================== ISP情報処理 ====================
@@ -4415,7 +4409,7 @@ async function initializeCustomFeatures(asuSection, temp) {
         loadPackageDatabase()
     ]);
 
-    loadUciDefaultsTemplate();
+    await loadUciDefaultsTemplate();
     setupLanguageSelector();
     setupPackageSearch();
     setupCommandsInput();
