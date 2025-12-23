@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1222.1414) loaded');
+console.log('custom.js (R7.1223.1035) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1617,27 +1617,78 @@ function shouldIncludeVariable(value) {
 function collectExclusiveVars(varsToCollect, values, useApiValues) {
     if (!varsToCollect || !Array.isArray(varsToCollect)) return;
     
+    console.log('[collectExclusiveVars] Processing vars:', varsToCollect, 'useApiValues:', useApiValues);
+    
     for (const varName of varsToCollect) {
         const fieldConfig = findFieldByVariable(varName);
-        if (!fieldConfig) continue;
+        if (!fieldConfig) {
+            console.warn(`[collectExclusiveVars] Field config not found for: ${varName}`);
+            continue;
+        }
+        
+        if (fieldConfig.type === 'radio-group' && fieldConfig.exclusiveVars) {
+            let radioValue = null;
+            
+            if (useApiValues && state.apiInfo) {
+                if (varName === 'mape_type') {
+                    const guaPrefix = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua');
+                    radioValue = guaPrefix ? 'gua' : 'pd';
+                    console.log(`[collectExclusiveVars] AUTO mode - inferred mape_type: ${radioValue} (API has GUA: ${!!guaPrefix})`);
+                }
+            }
+            
+            if (!radioValue) {
+                radioValue = getFieldValue(`input[name="${varName}"]:checked`);
+                console.log(`[collectExclusiveVars] Using UI value for ${varName}: ${radioValue}`);
+            }
+            
+            if (!radioValue && fieldConfig.default) {
+                radioValue = fieldConfig.default;
+                console.log(`[collectExclusiveVars] Using default value for ${varName}: ${radioValue}`);
+            }
+            
+            if (!fieldConfig.ui_variable && shouldIncludeVariable(radioValue)) {
+                values[varName] = radioValue;
+                console.log(`[collectExclusiveVars] Set ${varName} = ${radioValue}`);
+            }
+            
+            if (radioValue && fieldConfig.exclusiveVars[radioValue]) {
+                const nestedVars = fieldConfig.exclusiveVars[radioValue];
+                console.log(`[collectExclusiveVars] Processing nested vars for ${varName}=${radioValue}:`, nestedVars);
+                collectExclusiveVars(nestedVars, values, useApiValues);
+            }
+            
+            continue;
+        }
         
         let value = null;
         
         if (useApiValues && state.apiInfo) {
             if (fieldConfig.apiSource) {
                 value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+                if (value) {
+                    console.log(`[collectExclusiveVars] Got ${varName} from API: ${value}`);
+                }
             }
-            if (!value && fieldConfig.computeFrom === 'generateGuaPrefix') {
+            
+            if (!value && fieldConfig.computeFrom === 'generateGuaPrefix' && state.apiInfo) {
                 value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                if (value) {
+                    console.log(`[collectExclusiveVars] Computed ${varName} from API IPv6: ${value}`);
+                }
             }
         }
         
         if (value === null || value === undefined) {
             value = getFieldValue(`#${fieldConfig.id}`);
+            if (value) {
+                console.log(`[collectExclusiveVars] Got ${varName} from UI: ${value}`);
+            }
         }
         
         if (shouldIncludeVariable(value)) {
             values[varName] = value;
+            console.log(`[collectExclusiveVars] Set ${varName} = ${value}`);
         }
     }
 }
