@@ -389,19 +389,17 @@
           "id": "luci-app-attendedsysupgrade",
           "name": "luci-app-attendedsysupgrade",
           "checked": "false",
-          "dependencies": ["owut", "auc"]
+          "dependencies": []
         },
         {
           "id": "owut",
           "name": "owut",
-          "checked": "false",
-          "hidden": "true"
+          "checked": "true",
         },
         {
           "id": "auc",
           "name": "auc",
           "checked": "false",
-          "hidden": "true"
         },
         {
           "id": "luci-proto-wireguard",
