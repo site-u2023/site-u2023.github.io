@@ -1606,33 +1606,21 @@ EOF
         fi
         
         if [ "$HAS_SETUP" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-applying-config')"
-            sh "$CONFIG_DIR/setup.sh"
-            if [ $? -ne 0 ]; then
-                failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}setup.sh "
+            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
+            if [ "$setup_count" -gt 0 ]; then
+                summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
+                
+                while IFS= read -r line; do
+                    [ -z "$line" ] && continue
+                    case "$line" in
+                        \#*) continue ;;
+                    esac
+                    summary="${summary}  - ${line}\n"
+                done < "$SETUP_VARS"
+                
+                summary="${summary}\n"
+                has_changes=1
             fi
-        fi
-        
-        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            echo ""
-            echo "$(translate 'tr-tui-installing-custom-scripts')"
-            
-            for script in "$CONFIG_DIR"/customscripts-*.sh; do
-                [ -f "$script" ] || continue
-                
-                local script_id
-                script_id=$(basename "$script" | sed 's/^customscripts-//;s/\.sh$//')
-                
-                [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
-
-                sh "$script"
-                if [ $? -ne 0 ]; then
-                    failed_count=$((failed_count + 1))
-                    failed_scripts="${failed_scripts}$(basename "$script") "
-                fi
-            done
         fi
         
         local summary=""
