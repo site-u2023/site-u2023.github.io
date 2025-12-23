@@ -536,6 +536,6 @@ AGHEOF
 # END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-echo "[setup.sh] All done!"
+echo "[setup.sh] All done! ${DATE}"
 
 exit 0
