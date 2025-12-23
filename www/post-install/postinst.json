@@ -388,7 +388,7 @@
         {
           "id": "luci-app-attendedsysupgrade",
           "name": "luci-app-attendedsysupgrade",
-          "checked": "true",
+          "checked": "false",
           "dependencies": ["owut", "auc"]
         },
         {
