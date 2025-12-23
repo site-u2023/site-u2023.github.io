@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1223.1250) loaded');
+console.log('custom.js (R7.1223.1256) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1008,19 +1008,24 @@ function computeFieldValue(targetVariable) {
 
 function findFieldByVariable(variableName) {
     if (!state.config.setup) return null;
-    
-    for (const category of state.config.setup.categories) {
-        for (const item of category.items) {
-            if (item.type === 'field' && item.variable === variableName) {
+
+    const search = (items) => {
+        if (!items || !Array.isArray(items)) return null;
+        for (const item of items) {
+            if (item.variable === variableName) {
                 return item;
-            } else if (item.type === 'section' && item.items) {
-                for (const subItem of item.items) {
-                    if (subItem.type === 'field' && subItem.variable === variableName) {
-                        return subItem;
-                    }
-                }
+            }
+            if (item.items) {
+                const found = search(item.items);
+                if (found) return found;
             }
         }
+        return null;
+    };
+
+    for (const category of state.config.setup.categories) {
+        const result = search(category.items);
+        if (result) return result;
     }
     return null;
 }
