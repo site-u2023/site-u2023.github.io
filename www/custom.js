@@ -1346,12 +1346,9 @@ async function updateLanguagePackageCore() {
 
     const addedLangPackages = new Set();
 
-    const isSnapshot = (state.device.version || '').includes('SNAPSHOT');
-    
-    const prefixKey = isSnapshot ? 'language_prefixes_snapshot' : 'language_prefixes_release';
-    const prefixes = state.config.setup?.constants?.[prefixKey] || [];
-    
-    console.log(`Using ${isSnapshot ? 'SNAPSHOT' : 'release'} language prefixes:`, prefixes);
+    const prefixes = state.config.setup?.constants?.language_prefixes || [];
+
+    console.log(`Using language prefixes:`, prefixes);
 
     for (const prefix of prefixes) {
         const name = `${prefix}${lang}`;
