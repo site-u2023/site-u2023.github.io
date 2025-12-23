@@ -1624,10 +1624,11 @@ function collectExclusiveVars(varsToCollect, values, useApiValues) {
         let value = null;
         
         if (useApiValues && state.apiInfo) {
-            if (fieldConfig.computeFrom === 'generateGuaPrefix') {
-                value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            } else if (fieldConfig.apiSource) {
+            if (fieldConfig.apiSource) {
                 value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+            }
+            if (!value && fieldConfig.computeFrom === 'generateGuaPrefix') {
+                value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
             }
         }
         
@@ -2039,12 +2040,13 @@ function applyIspAutoConfig(apiInfo) {
                 const element = document.getElementById(item.id);
                 if (!element) continue;
                 
-                let value = null;  // ← これを追加
+                let value = null;
                 
-                if (item.computeFrom === 'generateGuaPrefix') {
-                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                } else if (item.apiSource) {
+                if (item.apiSource) {
                     value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
+                }
+                if (!value && item.computeFrom === 'generateGuaPrefix') {
+                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
                 }
                 
                 if (value !== null && value !== undefined && value !== '') {
@@ -2061,10 +2063,11 @@ function applyIspAutoConfig(apiInfo) {
                         
                         let value = null;
                         
-                        if (subItem.computeFrom === 'generateGuaPrefix') {
-                            value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                        } else if (subItem.apiSource) {
+                        if (subItem.apiSource) {
                             value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
+                        }
+                        if (!value && subItem.computeFrom === 'generateGuaPrefix') {
+                            value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
                         }
                         
                         if (value !== null && value !== undefined && value !== '') {
