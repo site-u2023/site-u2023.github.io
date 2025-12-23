@@ -2044,7 +2044,7 @@ function applyIspAutoConfig(apiInfo) {
                 const element = document.getElementById(item.id);
                 if (!element) continue;
                 
-                let value = null;  // ← これを追加
+                let value = null;  //
                 
                 if (item.computeFrom === 'generateGuaPrefix') {
                     value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
