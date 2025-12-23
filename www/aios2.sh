@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1223.1810"
+VERSION="R7.1223.1820"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -3274,7 +3274,9 @@ EOF
     local should_keep=0
     if [ -n "$current_val" ] && echo "$expected" | grep -q "^${current_val}\$"; then
         should_keep=1
-    fi
+    else
+    	echo "[DEBUG] Variable check failed: item_id=$item_id, var_name=$var_name, expected='$expected', current='$current_val'" >> "$CONFIG_DIR/debug.log"
+	fi
     
     if [ "$should_keep" -eq 0 ]; then
         if grep -q "^${variable}=" "$SETUP_VARS" 2>/dev/null; then
