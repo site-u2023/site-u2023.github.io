@@ -944,12 +944,6 @@ get_extended_device_info() {
     _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
     _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
-
-	# GUAプレフィックスがある場合、mape_typeをguaに設定
-	if [ -n "$MAPE_GUA_PREFIX" ]; then
-    	echo "mape_type='gua'" >> "$SETUP_VARS"
-    	debug_log "Set mape_type='gua' because MAPE_GUA_PREFIX is available"
-	fi
   
     # DS-Lite
     _set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
@@ -5233,6 +5227,13 @@ aios2_main() {
         initialize_installed_packages
         
         : > "$SETUP_VARS"
+
+    	# GUAプレフィックスがある場合、ここで mape_type を設定
+    	if [ -n "$MAPE_GUA_PREFIX" ]; then
+        	echo "mape_type='gua'" >> "$SETUP_VARS"
+        	debug_log "Set mape_type='gua' because MAPE_GUA_PREFIX is available"
+    	fi
+	
         cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
         cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
         : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
