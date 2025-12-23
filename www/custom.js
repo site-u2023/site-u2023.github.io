@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1223.1147) loaded');
+console.log('custom.js (R7.1223.1243) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -336,8 +336,18 @@ const CustomUtils = {
     },
 
     getNestedValue(obj, path) {
-        if (!obj || !path) return undefined;
-        return path.split('.').reduce((current, key) => current?.[key], obj);
+        if (!obj || !path) {
+            console.log(`[DEBUG-API] Path or Object is empty. path: ${path}`);
+            return undefined;
+        }
+        const result = path.split('.').reduce((current, key) => {
+            const next = current?.[key];
+            console.log(`[DEBUG-API] Digging path: ${key}, found:`, next);
+            return next;
+        }, obj);
+        
+        console.log(`[DEBUG-API] FINAL RESULT for path "${path}":`, result);
+        return result;
     }
 };
 
@@ -4458,9 +4468,22 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
+    // custom.js 内の async function init() の最後の方を書き換え
     await checkAsuServerStatus();
     
     state.ui.initialized = true;
+    
+    // --- デバッグログ追加 ---
+    console.log('--- [DEBUG-INIT] Full API Data Dump ---');
+    console.log(state.apiInfo); 
+    if (state.apiInfo && state.apiInfo.mape) {
+        console.log('[DEBUG-INIT] Found mape object:', state.apiInfo.mape);
+        console.log('[DEBUG-INIT] GUA Prefix Value:', state.apiInfo.mape.ipv6Prefix_gua);
+    } else {
+        console.log('[DEBUG-INIT] mape object is MISSING in apiInfo');
+    }
+    console.log('--- [DEBUG-INIT] End Dump ---');
+    // ----------------------
     
     console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
 }
