@@ -6955,10 +6955,12 @@ function checkIPv6InRangeJS(ipv6, prefixStr, prefixLen) {
  * DS-Lite / Map-E 統合判定関数
  * 1. DS-Lite (IPv6判定) -> 2. DS-Lite (AS判定キープ) -> 3. Map-E判定(v6優先)
  * * 戻り値の 'type' フィールドでメインハンドラーが振り分けを行う
+ * @param {string} ipv6 - 判定対象のIPv6アドレス
+ * @param {number|null} userAsn - ユーザーのAS番号
+ * @returns {object|null}
  */
-function checkDSLiteRule(ipv6) {
+function checkDSLiteRule(ipv6, userAsn = null) {
     if (!ipv6) return null;
-    const userAsn = globalThis.currentAsn || null;
     let matchedAsRule = null;
 
     // --- ① ds-liteをv6で判定（有れば即リターン） ---
@@ -7163,7 +7165,7 @@ function checkDSLiteRule(ipv6) {
     return COUNTRY_TO_LANGUAGE[country] || 'en';
   }
   
-  // ========================================
+// ========================================
   // メインハンドラー
   // ========================================
   
@@ -7209,6 +7211,11 @@ function checkDSLiteRule(ipv6) {
         if (!clientIPv4 && ip.includes('.')) clientIPv4 = ip;
       }
 
+      // AS情報構築（判定ロジックより前に移動）
+      const isp = cf.asOrganization || null;
+      const asn = cf.asn || null;
+      const as = (asn && isp) ? `AS${asn} ${isp}` : (isp || `AS${asn}` || null);
+
       // ========================================
       // 【修正箇所】DS-Lite / MAP-E 判定ロジック
       // ========================================
@@ -7217,7 +7224,7 @@ function checkDSLiteRule(ipv6) {
 
       if (clientIPv6) {
         // 1. 全ての判定の起点（checkDSLiteRule内でv6/AS/セカンドオピニオンを実施）
-        const result = checkDSLiteRule(clientIPv6);
+        const result = checkDSLiteRule(clientIPv6, asn);
 
         // 2. 戻り値のタイプに合わせて変数を振り分け
         if (result && result.type === "map-e") {
@@ -7241,14 +7248,6 @@ function checkDSLiteRule(ipv6) {
             }
         }
       }
-
-      // AS情報構築
-      const isp = cf.asOrganization || null;
-      const asn = cf.asn || null;
-        
-      globalThis.currentAsn = asn;
-    
-      const as = (asn && isp) ? `AS${asn} ${isp}` : (isp || `AS${asn}` || null);
 
       // 言語・通知
       const lang = selectLang(request, cf);
