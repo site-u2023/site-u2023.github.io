@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1219.1021"
+VERSION="R7.1224.0021"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1605,22 +1605,40 @@ EOF
             done
         fi
         
+        # setup.sh実行処理
         if [ "$HAS_SETUP" -eq 1 ]; then
-            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
-            if [ "$setup_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
-                
-                while IFS= read -r line; do
-                    [ -z "$line" ] && continue
-                    case "$line" in
-                        \#*) continue ;;
-                    esac
-                    summary="${summary}  - ${line}\n"
-                done < "$SETUP_VARS"
-                
-                summary="${summary}\n"
-                has_changes=1
+            echo ""
+            echo "$(translate 'tr-tui-applying-settings')"
+            
+            sh "$CONFIG_DIR/setup.sh"
+            
+            if [ $? -ne 0 ]; then
+                failed_count=$((failed_count + 1))
+                failed_scripts="${failed_scripts}setup.sh "
+            else
+                echo "$(translate 'tr-tui-setup-completed')"
             fi
+        fi
+        
+        # カスタムスクリプト実行処理
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            echo ""
+            echo "$(translate 'tr-tui-executing-custom-scripts')"
+            
+            for script in "$CONFIG_DIR"/customscripts-*.sh; do
+                [ -f "$script" ] || continue
+                
+                local script_name
+                script_name=$(basename "$script" .sh | sed 's/^customscripts-//')
+                
+                echo "Executing: $script_name"
+                sh "$script"
+                
+                if [ $? -ne 0 ]; then
+                    failed_count=$((failed_count + 1))
+                    failed_scripts="${failed_scripts}$(basename "$script") "
+                fi
+            done
         fi
         
         local summary=""
@@ -1647,7 +1665,6 @@ PKGS
             has_changes=1
         fi
         
-        # カスタムフィード削除
         if [ -f "$CONFIG_DIR/custom_feed_remove_list.txt" ]; then
             local custom_removed
             custom_removed=$(cat "$CONFIG_DIR/custom_feed_remove_list.txt" | xargs)
@@ -1661,7 +1678,6 @@ PKGS
             fi
         fi
         
-        # カスタムフィードインストール
         if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
             for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                 [ -f "$script" ] || continue
@@ -1690,7 +1706,6 @@ PKGS
             if [ "$setup_count" -gt 0 ]; then
                 summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
                 
-                # 変数名=値 のペアを全て表示
                 while IFS= read -r line; do
                     [ -z "$line" ] && continue
                     case "$line" in
