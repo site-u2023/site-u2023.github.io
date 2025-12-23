@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1223.1212) loaded');
+console.log('custom.js (R7.1223.1147) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1915,7 +1915,7 @@ function updateUciDefaultsFileSize(text) {
     return lines;
 }
 
-async function loadUciDefaultsTemplate() {
+function loadUciDefaultsTemplate() {
     const textarea = document.querySelector("#custom-scripts-details #uci-defaults-content");
     const templatePath = config.setup_template_path;
     
@@ -1942,15 +1942,21 @@ async function loadUciDefaultsTemplate() {
         });
     });
 
-    const response = await fetch(templatePath + '?t=' + Date.now());
-    if (!response.ok) throw new Error(`Failed to load setup.sh: ${response.statusText}`);
-    
-    const text = await response.text();
-    textarea.value = text;
-    console.log('setup.sh loaded successfully');
-    updateUciDefaultsFileSize(text);
-    updateVariableDefinitions();
-    autoResize();
+    fetch(templatePath + '?t=' + Date.now())
+        .then(r => { 
+            if (!r.ok) throw new Error(`Failed to load setup.sh: ${r.statusText}`);
+            return r.text(); 
+        })
+        .then(text => {
+            textarea.value = text;
+            console.log('setup.sh loaded successfully');
+            updateUciDefaultsFileSize(text);
+            updateVariableDefinitions();
+            autoResize();
+        })
+        .catch(err => {
+            console.error('Failed to load setup.sh:', err);
+        });
 }
 
 // ==================== ISP情報処理 ====================
@@ -4409,7 +4415,7 @@ async function initializeCustomFeatures(asuSection, temp) {
         loadPackageDatabase()
     ]);
 
-    await loadUciDefaultsTemplate();
+    loadUciDefaultsTemplate();
     setupLanguageSelector();
     setupPackageSearch();
     setupCommandsInput();
