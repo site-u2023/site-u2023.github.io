@@ -2037,58 +2037,38 @@ function updateAutoConnectionInfo(apiInfo) {
 function applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
-    
-    for (const category of state.config.setup.categories) {
-        for (const item of category.items) {
-            if (item.type === 'field' && item.id) {
+
+    const processItems = (items) => {
+        if (!items || !Array.isArray(items)) return;
+        for (const item of items) {
+            if (item.id) {
                 const element = document.getElementById(item.id);
-                if (!element) continue;
-                
-                let value = null;  //
-                
-                if (item.computeFrom === 'generateGuaPrefix') {
-                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                } else if (item.apiSource) {
-                    value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
-                }
-                
-                if (value !== null && value !== undefined && value !== '') {
-                    if (element.value !== String(value)) {
-                        UI.updateElement(element, { value: value });
-                        mutated = true;
+                if (element) {
+                    let value = null;
+                    if (item.computeFrom === 'generateGuaPrefix') {
+                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                    } else if (item.apiSource) {
+                        value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
                     }
-                }
-            } else if (item.type === 'section' && item.items) {
-                for (const subItem of item.items) {
-                    if (subItem.type === 'field' && subItem.id) {
-                        const element = document.getElementById(subItem.id);
-                        if (!element) continue;
-                        
-                        let value = null;
-                        
-                        if (subItem.computeFrom === 'generateGuaPrefix') {
-                            value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                        } else if (subItem.apiSource) {
-                            value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-                        }
-                        
-                        if (value !== null && value !== undefined && value !== '') {
-                            if (element.value !== String(value)) {
-                                UI.updateElement(element, { value: value });
-                                mutated = true;
-                            }
+
+                    if (value !== null && value !== undefined && value !== '') {
+                        if (element.value !== String(value)) {
+                            UI.updateElement(element, { value: value });
+                            mutated = true;
                         }
                     }
                 }
             }
+            if (item.items) processItems(item.items);
         }
-    }
-    
+    };
+
+    state.config.setup.categories.forEach(cat => processItems(cat.items));
+
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
         updateAutoConnectionInfo(apiInfo);
     }
-    
     return mutated;
 }
 
