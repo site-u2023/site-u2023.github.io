@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1223.1147) loaded');
+console.log('custom.js (R7.1223.1212) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
