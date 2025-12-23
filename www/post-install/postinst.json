@@ -394,12 +394,12 @@
         {
           "id": "owut",
           "name": "owut",
-          "checked": "true",
+          "checked": "true"
         },
         {
           "id": "auc",
           "name": "auc",
-          "checked": "false",
+          "checked": "false"
         },
         {
           "id": "luci-proto-wireguard",
