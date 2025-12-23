@@ -172,12 +172,14 @@
       "luci-i18n-base-",
       "luci-i18n-opkg-",
       "luci-i18n-package-manager-",
+      "luci-i18n-firewall-",
       "luci-i18n-attendedsysupgrade-"
     ],
     "language_prefixes_snapshot": [
       "luci-i18n-base-",
       "luci-i18n-opkg-",
       "luci-i18n-package-manager-",
+      "luci-i18n-firewall-",
       "luci-i18n-attendedsysupgrade-"
     ],
     "language_prefixes": [
