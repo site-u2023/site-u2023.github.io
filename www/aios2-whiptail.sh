@@ -1614,6 +1614,8 @@ EOF
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}setup.sh "
+            else
+                echo "$(translate 'tr-tui-config-applied')"
             fi
         fi
         
