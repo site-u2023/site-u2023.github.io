@@ -242,9 +242,9 @@ firewall_wan() {
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
+    [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
-    [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
     MAP_SH="/lib/netifd/proto/map.sh"   
     EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
     ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
