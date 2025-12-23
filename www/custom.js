@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1223.1035) loaded');
+console.log('custom.js (R7.1223.1147) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -145,6 +145,8 @@ const state = {
         activeChannel: null
     }
 };
+
+window.state = state;
 
 // ==================== パッケージマネージャー設定 ====================
 async function loadPackageManagerConfig() {
