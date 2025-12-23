@@ -1700,7 +1700,36 @@ PKGS
         if [ "$HAS_SETUP" -eq 1 ]; then
             local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
             if [ "$setup_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-settings'): ${setup_count}\n"
+                summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
+                
+                # 変数名をリストアップ（最大5個まで表示）
+                local var_count=0
+                local display_count=0
+                local max_display=5
+                
+                while IFS='=' read -r var_name var_value; do
+                    # 空行とコメント行をスキップ
+                    [ -z "$var_name" ] && continue
+                    case "$var_name" in
+                        \#*) continue ;;
+                    esac
+                    
+                    var_count=$((var_count + 1))
+                    
+                    # 最初の5個のみ表示
+                    if [ "$display_count" -lt "$max_display" ]; then
+                        summary="${summary}  - ${var_name}\n"
+                        display_count=$((display_count + 1))
+                    fi
+                done < "$SETUP_VARS"
+                
+                # 残りの件数を表示
+                if [ "$var_count" -gt "$max_display" ]; then
+                    local remaining=$((var_count - max_display))
+                    summary="${summary}  ... (他${remaining}件)\n"
+                fi
+                
+                summary="${summary}\n"
                 has_changes=1
             fi
         fi
