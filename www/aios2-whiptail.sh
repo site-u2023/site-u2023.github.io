@@ -1605,25 +1605,21 @@ EOF
             done
         fi
         
-        # setup.sh実行処理
         if [ "$HAS_SETUP" -eq 1 ]; then
             echo ""
-            echo "$(translate 'tr-tui-applying-settings')"
+            echo "$(translate 'tr-tui-applying-config')"
             
             sh "$CONFIG_DIR/setup.sh"
             
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}setup.sh "
-            else
-                echo "$(translate 'tr-tui-setup-completed')"
             fi
         fi
         
-        # カスタムスクリプト実行処理
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             echo ""
-            echo "$(translate 'tr-tui-executing-custom-scripts')"
+            echo "$(translate 'tr-tui-installing-custom-scripts')"
             
             for script in "$CONFIG_DIR"/customscripts-*.sh; do
                 [ -f "$script" ] || continue
