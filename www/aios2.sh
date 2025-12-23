@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.1223.1906"
+VERSION="R7.1223.1832"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -2980,46 +2980,27 @@ auto_add_conditional_packages() {
     effective_conn_type=$(get_effective_connection_type)
     debug_log "Effective connection type: $effective_conn_type"
 
-    # ========================================
-    # MAP-E パラメータの自動設定（connection_type='mape' の場合のみ）
-    # ========================================
+    # connection_typeが'mape'の場合、GUAプレフィックスの有無で mape_type を自動設定
     if [ "$effective_conn_type" = "mape" ]; then
-        debug_log "[AUTO] connection_type='mape' detected, checking MAP-E parameters"
+        local gua_prefix
+        gua_prefix=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
         
-        # mape_type の自動判定（未設定の場合のみ）
-        if ! grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null; then
-            if [ -n "$MAPE_GUA_PREFIX" ]; then
+        if [ -n "$gua_prefix" ]; then
+            # GUAプレフィックスがある → mape_type='gua' をデフォルト設定
+            if ! grep -q "^mape_type='gua'$" "$SETUP_VARS" 2>/dev/null; then
+                sed -i "/^mape_type=/d" "$SETUP_VARS" 2>/dev/null
                 echo "mape_type='gua'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Initial mape_type='gua' (GUA prefix detected: $MAPE_GUA_PREFIX)"
-            else
-                echo "mape_type='pd'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Initial mape_type='pd' (no GUA prefix)"
+                debug_log "[AUTO] Set mape_type='gua' (API provides GUA prefix)"
             fi
         else
-            debug_log "[AUTO] mape_type already set, skipping"
-        fi
-        
-        # MAP-E パラメータの自動設定（未設定の場合のみ）
-        local params="mape_gua_prefix:$MAPE_GUA_PREFIX mape_br:$MAPE_BR mape_ealen:$MAPE_EALEN mape_ipv4_prefix:$MAPE_IPV4_PREFIX mape_ipv4_prefixlen:$MAPE_IPV4_PREFIXLEN mape_ipv6_prefix:$MAPE_IPV6_PREFIX mape_ipv6_prefixlen:$MAPE_IPV6_PREFIXLEN mape_psid_offset:$MAPE_PSID_OFFSET mape_psidlen:$MAPE_PSIDLEN"
-        
-        for param_pair in $params; do
-            local var_name="${param_pair%%:*}"
-            local var_value="${param_pair#*:}"
-            
-            # 値が存在し、かつ SETUP_VARS に未設定の場合のみ追加
-            if [ -n "$var_value" ] && ! grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set ${var_name}='${var_value}' (from API)"
-            else
-                debug_log "[AUTO] Skipped ${var_name} (already set or no API value)"
+            # GUAプレフィックスがない → mape_type='pd' をデフォルト設定
+            if ! grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null; then
+                echo "mape_type='pd'" >> "$SETUP_VARS"
+                debug_log "[AUTO] Set mape_type='pd' (no GUA prefix in API)"
             fi
-        done
+        fi
     fi
 
-    # ========================================
-    # 条件付きパッケージの管理
-    # ========================================
-    
     # 初回のみキャッシュ構築
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
         _CONDITIONAL_PACKAGES_CACHE=$(
