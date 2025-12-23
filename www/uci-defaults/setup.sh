@@ -199,6 +199,8 @@ firewall_wan() {
 { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ] && {
     SEC=network
     disable_wan
+    DEL ${DSL6}
+    DEL ${DSL}
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
     SET ${DSL6}.device="${WAN}"
@@ -216,6 +218,8 @@ firewall_wan() {
 { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ] && {
     SEC=network
     disable_wan
+    DEL ${MAPE6}
+    DEL ${MAPE}
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
     SET ${MAPE6}.device="${WAN}"
@@ -282,6 +286,8 @@ fi
     disable_wan
     {
         SEC=network
+        DEL ${AP}
+        DEL ${AP6}
         SET ${AP}=interface
         SET ${AP}.proto='static'
         SET ${AP}.device="${LAN}"
