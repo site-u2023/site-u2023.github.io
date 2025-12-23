@@ -12,6 +12,7 @@ DELLIST() { uci del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
+ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1 || echo '@zone[1]')"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
 DIAG="one.one.one.one"
 NTPDOMAIN=".pool.ntp.org"
@@ -53,12 +54,12 @@ dhcp_relay() {
 }
 firewall_wan() {
     SEC=firewall
-    DELLIST @zone[1].network="wan"
-    DELLIST @zone[1].network="wan6"
-    ADDLIST @zone[1].network="$1"
-    ADDLIST @zone[1].network="$2"
-    SET @zone[1].masq='1'
-    SET @zone[1].mtu_fix='1'
+    DELLIST ${ZONE}.network="wan"
+    DELLIST ${ZONE}.network="wan6"
+    ADDLIST ${ZONE}.network="$1"
+    ADDLIST ${ZONE}.network="$2"
+    SET ${ZONE}.masq='1'
+    SET ${ZONE}.mtu_fix='1'
 }
 [ -n "${enable_notes}" ] && {
     SEC=system
