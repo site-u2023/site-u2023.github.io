@@ -1,13 +1,13 @@
 // custom.js
-console.log('custom.js (R7.1223.1256) loaded');
+console.log('custom.js (R7.1222.1308) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
-log: true,    // ON
-    info: true,   // ON
-    warn: true,   // ON
-    debug: true,  // ON
-    error: true   // ON
+    log: false,   // 通常ログ
+    info: false,  // 情報
+    warn: false,  // 警告
+    debug: false, // デバッグ
+    error: true   // エラー（常時 true 推奨）
 };
 
 // ===== Console Control Layer =====
@@ -145,8 +145,6 @@ const state = {
         activeChannel: null
     }
 };
-
-window.state = state;
 
 // ==================== パッケージマネージャー設定 ====================
 async function loadPackageManagerConfig() {
@@ -336,18 +334,8 @@ const CustomUtils = {
     },
 
     getNestedValue(obj, path) {
-        if (!obj || !path) {
-            console.log(`[DEBUG-API] Path or Object is empty. path: ${path}`);
-            return undefined;
-        }
-        const result = path.split('.').reduce((current, key) => {
-            const next = current?.[key];
-            console.log(`[DEBUG-API] Digging path: ${key}, found:`, next);
-            return next;
-        }, obj);
-        
-        console.log(`[DEBUG-API] FINAL RESULT for path "${path}":`, result);
-        return result;
+        if (!obj || !path) return undefined;
+        return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 };
 
@@ -1634,78 +1622,26 @@ function shouldIncludeVariable(value) {
 function collectExclusiveVars(varsToCollect, values, useApiValues) {
     if (!varsToCollect || !Array.isArray(varsToCollect)) return;
     
-    console.log('[collectExclusiveVars] Processing vars:', varsToCollect, 'useApiValues:', useApiValues);
-    
     for (const varName of varsToCollect) {
         const fieldConfig = findFieldByVariable(varName);
-        if (!fieldConfig) {
-            console.warn(`[collectExclusiveVars] Field config not found for: ${varName}`);
-            continue;
-        }
-        
-        if (fieldConfig.type === 'radio-group' && fieldConfig.exclusiveVars) {
-            let radioValue = null;
-            
-            if (useApiValues && state.apiInfo) {
-                if (varName === 'mape_type') {
-                    const guaPrefix = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua');
-                    radioValue = guaPrefix ? 'gua' : 'pd';
-                    console.log(`[collectExclusiveVars] AUTO mode - inferred mape_type: ${radioValue} (API has GUA: ${!!guaPrefix})`);
-                }
-            }
-            
-            if (!radioValue) {
-                radioValue = getFieldValue(`input[name="${varName}"]:checked`);
-                console.log(`[collectExclusiveVars] Using UI value for ${varName}: ${radioValue}`);
-            }
-            
-            if (!radioValue && fieldConfig.default) {
-                radioValue = fieldConfig.default;
-                console.log(`[collectExclusiveVars] Using default value for ${varName}: ${radioValue}`);
-            }
-            
-            if (!fieldConfig.ui_variable && shouldIncludeVariable(radioValue)) {
-                values[varName] = radioValue;
-                console.log(`[collectExclusiveVars] Set ${varName} = ${radioValue}`);
-            }
-            
-            if (radioValue && fieldConfig.exclusiveVars[radioValue]) {
-                const nestedVars = fieldConfig.exclusiveVars[radioValue];
-                console.log(`[collectExclusiveVars] Processing nested vars for ${varName}=${radioValue}:`, nestedVars);
-                collectExclusiveVars(nestedVars, values, useApiValues);
-            }
-            
-            continue;
-        }
+        if (!fieldConfig) continue;
         
         let value = null;
         
         if (useApiValues && state.apiInfo) {
-            if (fieldConfig.apiSource) {
-                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
-                if (value) {
-                    console.log(`[collectExclusiveVars] Got ${varName} from API: ${value}`);
-                }
-            }
-            
-            if (!value && fieldConfig.computeFrom === 'generateGuaPrefix' && state.apiInfo) {
+            if (fieldConfig.computeFrom === 'generateGuaPrefix') {
                 value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-                if (value) {
-                    console.log(`[collectExclusiveVars] Computed ${varName} from API IPv6: ${value}`);
-                }
+            } else if (fieldConfig.apiSource) {
+                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
             }
         }
         
         if (value === null || value === undefined) {
             value = getFieldValue(`#${fieldConfig.id}`);
-            if (value) {
-                console.log(`[collectExclusiveVars] Got ${varName} from UI: ${value}`);
-            }
         }
         
         if (shouldIncludeVariable(value)) {
             values[varName] = value;
-            console.log(`[collectExclusiveVars] Set ${varName} = ${value}`);
         }
     }
 }
@@ -2108,13 +2044,12 @@ function applyIspAutoConfig(apiInfo) {
                 const element = document.getElementById(item.id);
                 if (!element) continue;
                 
-                let value = null;
+                let value = null;  // ← これを追加
                 
-                if (item.apiSource) {
-                    value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
-                }
-                if (!value && item.computeFrom === 'generateGuaPrefix') {
+                if (item.computeFrom === 'generateGuaPrefix') {
                     value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                } else if (item.apiSource) {
+                    value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
                 }
                 
                 if (value !== null && value !== undefined && value !== '') {
@@ -2131,11 +2066,10 @@ function applyIspAutoConfig(apiInfo) {
                         
                         let value = null;
                         
-                        if (subItem.apiSource) {
-                            value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
-                        }
-                        if (!value && subItem.computeFrom === 'generateGuaPrefix') {
+                        if (subItem.computeFrom === 'generateGuaPrefix') {
                             value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                        } else if (subItem.apiSource) {
+                            value = CustomUtils.getNestedValue(apiInfo, subItem.apiSource);
                         }
                         
                         if (value !== null && value !== undefined && value !== '') {
@@ -4473,22 +4407,9 @@ async function initializeCustomFeatures(asuSection, temp) {
         document.addEventListener('devicePackagesReady', runWhenReady);
     }
 
-    // custom.js 内の async function init() の最後の方を書き換え
     await checkAsuServerStatus();
     
     state.ui.initialized = true;
-    
-    // --- デバッグログ追加 ---
-    console.log('--- [DEBUG-INIT] Full API Data Dump ---');
-    console.log(state.apiInfo); 
-    if (state.apiInfo && state.apiInfo.mape) {
-        console.log('[DEBUG-INIT] Found mape object:', state.apiInfo.mape);
-        console.log('[DEBUG-INIT] GUA Prefix Value:', state.apiInfo.mape.ipv6Prefix_gua);
-    } else {
-        console.log('[DEBUG-INIT] mape object is MISSING in apiInfo');
-    }
-    console.log('--- [DEBUG-INIT] End Dump ---');
-    // ----------------------
     
     console.log('Initialization complete. API Info:', state.apiInfo ? 'Available' : 'Not available');
 }
