@@ -2979,7 +2979,28 @@ auto_add_conditional_packages() {
     
     effective_conn_type=$(get_effective_connection_type)
     debug_log "Effective connection type: $effective_conn_type"
-    
+
+    # connection_typeが'mape'の場合、GUAプレフィックスの有無で mape_type を自動設定
+    if [ "$effective_conn_type" = "mape" ]; then
+        local gua_prefix
+        gua_prefix=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
+        
+        if [ -n "$gua_prefix" ]; then
+            # GUAプレフィックスがある → mape_type='gua' をデフォルト設定
+            if ! grep -q "^mape_type='gua'$" "$SETUP_VARS" 2>/dev/null; then
+                sed -i "/^mape_type=/d" "$SETUP_VARS" 2>/dev/null
+                echo "mape_type='gua'" >> "$SETUP_VARS"
+                debug_log "[AUTO] Set mape_type='gua' (API provides GUA prefix)"
+            fi
+        else
+            # GUAプレフィックスがない → mape_type='pd' をデフォルト設定
+            if ! grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null; then
+                echo "mape_type='pd'" >> "$SETUP_VARS"
+                debug_log "[AUTO] Set mape_type='pd' (no GUA prefix in API)"
+            fi
+        fi
+    fi
+
     # 初回のみキャッシュ構築
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
         _CONDITIONAL_PACKAGES_CACHE=$(
@@ -5227,12 +5248,6 @@ aios2_main() {
         initialize_installed_packages
         
         : > "$SETUP_VARS"
-
-    	# GUAプレフィックスがある場合、ここで mape_type を設定
-    	if [ -n "$MAPE_GUA_PREFIX" ]; then
-        	echo "mape_type='gua'" >> "$SETUP_VARS"
-        	debug_log "Set mape_type='gua' because MAPE_GUA_PREFIX is available"
-    	fi
 	
         cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
         cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
