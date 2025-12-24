@@ -33,7 +33,7 @@ const JURISDICTION_PREFIXES = {
    * DS-Lite AFTRルールデータベース
    * IPv6プレフィックスからAFTRタイプを判定
    */
-  const dsliteRulesData = {
+const dsliteRulesData = {
     aftrRules: [
       {
         aftrType: "xpass",
@@ -52,7 +52,8 @@ const JURISDICTION_PREFIXES = {
         aftrType: "v6connect",
         asn: [131908, 7682, 4685, 2519],
         ipv6PrefixRanges: [
-          "2405:6580::/29"
+          "2405:6580::/29",
+          "2405:6584::/29"
         ],
         aftrAddresses: null,
         aftrFqdn: "dslite.v6connect.net",
@@ -65,7 +66,7 @@ const JURISDICTION_PREFIXES = {
             "2409:10::/30",
             "2409:250::/30",
             "2404:8e00::/32",
-            "2404:8e01::/32"
+            "2404:8e01::/32"
         ],
         aftrAddresses: {
           east: "2404:8e00::feed:100",
@@ -7072,9 +7073,14 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     const psidlen = calculatePsidlenFromEaAndOffset(rule.eaBitLength, calculatedOffset);
     if (psidlen == null) return null;
     return {
-      ...rule,
-      calculatedOffset,
-      psidlen
+      brIpv6Address: rule.brIpv6Address,
+      ipv4Prefix: rule.ipv4Prefix,
+      ipv4PrefixLength: rule.ipv4PrefixLength,
+      ipv6Prefix: rule.ipv6Prefix,
+      ipv6PrefixLength: rule.ipv6PrefixLength,
+      eaBitLength: rule.eaBitLength,
+      psidlen,
+      psIdOffset: rule.psIdOffset
     };
   }
   
