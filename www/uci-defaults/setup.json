@@ -607,7 +607,7 @@
               ],
               "apiSource": "aftr.jurisdiction",
               "computeTarget": "dslite_aftr_address",
-              "showWhen": {"dslite-aftr-type": ["transix"]}
+              "showWhen": {"dslite_aftr_type": ["transix"]}
             },
             {
               "type": "field",
