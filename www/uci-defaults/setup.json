@@ -377,7 +377,8 @@
           "variable": "backup_path",
           "placeholder": "/root/backup.tar.gz",
           "default": "/root/backup.tar.gz",
-          "description": "Path to backup file for restore"
+          "description": "Path to backup file for restore",
+          "guiOnly": true
         }
       ]
     },
