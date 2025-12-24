@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1222.1327) loaded');
+console.log('custom.js (R7.1224.2328) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1046,10 +1046,20 @@ function setupEventListeners() {
 function evaluateShowWhen(condition) {
     if (!condition || typeof condition !== 'object') return true;
     
-    for (const [key, expectedValue] of Object.entries(condition)) {
-        const actualValue = getFieldValue(`input[name="${key}"]:checked`) || 
-                          getFieldValue(`#${key}`) ||
-                          getFieldValue(`input[name="${key}"]`);
+    for (const [variableName, expectedValue] of Object.entries(condition)) {
+        let actualValue = null;
+        
+        const radioElement = document.querySelector(`input[name="${variableName}"]:checked`);
+        if (radioElement) {
+            actualValue = radioElement.value;
+        } else {
+            const fieldConfig = findFieldByVariable(variableName);
+            if (fieldConfig && fieldConfig.id) {
+                actualValue = getFieldValue(`#${fieldConfig.id}`);
+            }
+        }
+        
+        if (actualValue === null) return false;
         
         if (Array.isArray(expectedValue)) {
             if (!expectedValue.includes(actualValue)) return false;
