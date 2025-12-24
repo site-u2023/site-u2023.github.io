@@ -33,7 +33,7 @@ const JURISDICTION_PREFIXES = {
    * DS-Lite AFTRルールデータベース
    * IPv6プレフィックスからAFTRタイプを判定
    */
-const dsliteRulesData = {
+  const dsliteRulesData = {
     aftrRules: [
       {
         aftrType: "xpass",
@@ -52,12 +52,10 @@ const dsliteRulesData = {
         aftrType: "v6connect",
         asn: [131908, 7682, 4685, 2519],
         ipv6PrefixRanges: [
-          "2405:6580::/29"
+          "2405:6580::/29",
+          "2405:6584::/29"
         ],
-        aftrAddresses: {
-          east: "2001:c28:5:301::11",
-          west: "2001:c28:1:301::11"
-        },
+        aftrAddresses: null,
         aftrFqdn: "dslite.v6connect.net",
         tunlink: "wan6"
       },
@@ -68,7 +66,7 @@ const dsliteRulesData = {
             "2409:10::/30",
             "2409:250::/30",
             "2404:8e00::/32",
-            "2404:8e01::/32"
+            "2404:8e01::/32"
         ],
         aftrAddresses: {
           east: "2404:8e00::feed:100",
@@ -7002,9 +7000,9 @@ function checkDSLiteRule(ipv6, userAsn = null) {
 
     return null;
 
-function createResult(rule, v6) {
+    function createResult(rule, v6) {
         const result = {
-            type: "ds-lite",
+            type: "ds-lite", // 明示的にds-liteであることを指定
             aftrType: rule.aftrType,
             peeraddr: rule.aftrFqdn,
             tunlink: rule.tunlink || "wan6"
@@ -7012,15 +7010,11 @@ function createResult(rule, v6) {
         if (rule.aftrAddresses) {
             const jurisdiction = determineJurisdiction(v6);
             result.jurisdiction = jurisdiction;
-            if (jurisdiction && rule.aftrAddresses[jurisdiction]) {
-                result.aftrIpv6Address = rule.aftrAddresses[jurisdiction];
-            } else {
-                // 東西判定できない場合はeast/westどちらかをデフォルト、または両方同じなら使う
-                result.aftrIpv6Address = rule.aftrAddresses.east || rule.aftrAddresses.west;
-            }
+            result.aftrIpv6Address = rule.aftrAddresses[jurisdiction];
         }
         return result;
     }
+}
   
   /**
    * MAP-Eルールをチェック
