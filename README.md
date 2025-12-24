@@ -79,7 +79,7 @@ Config
 ### Landing Page (Portal Site)
 [site-u.pages.dev/](https://site-u.pages.dev/)
 
-![Landing Page.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/92a74952-ef71-4f95-ae47-6dec9585028f.png)
+<img width="1924" height="1036" alt="portal" src="https://github.com/user-attachments/assets/5996d4ee-ef9e-43e1-9771-1f333208a1ae" />
 
 - Setup
 Terminal > Protocol Handler Registration > Download > Install (double-click)
