@@ -43,10 +43,29 @@ const JURISDICTION_PREFIXES = {
         aftrFqdn: "dgw.xpass.jp",
         tunlink: "wan6"
       },
+
+const dsliteRulesData = {
+    aftrRules: [
+      {
+        aftrType: "xpass",
+        asn: [45062, 17964, 2516, 17506, 17932], 
+        ipv6PrefixRanges: [
+          "2001:f60::/32"
+        ],
+        aftrAddresses: {
+          east: "2001:f60:0:200::1:1",
+          west: "2001:f60:0:200::1:1"
+        },
+        aftrFqdn: "dgw.xpass.jp",
+        tunlink: "wan6"
+      },
       {
         aftrType: "v6connect",
         asn: [131908, 7682, 4685, 2519],
-        ipv6PrefixRanges: null,
+        ipv6PrefixRanges: [
+          "2405:6580::/29",
+          "2405:6584::/29"
+        ],
         aftrAddresses: null,
         aftrFqdn: "dslite.v6connect.net",
         tunlink: "wan6"
@@ -55,9 +74,10 @@ const JURISDICTION_PREFIXES = {
         aftrType: "transix",
         asn: [7506, 2497, 2527, 7691, 18137, 2518, 2514, 2519, 17511],
         ipv6PrefixRanges: [
-          "240b:0010::/32", 
-          "240b:0011::/32", 
-          "240b:0012::/32"
+            "2409:10::/30",
+            "2409:250::/30",
+            "2404:8e00::/32",
+            "2404:8e01::/32"
         ],
         aftrAddresses: {
           east: "2404:8e00::feed:100",
