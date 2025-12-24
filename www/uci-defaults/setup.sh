@@ -2,11 +2,7 @@
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
-[ -d "/etc/uci-defaults" ] && {
-    enable_ntp="1"
-    enable_log="1"
-    enable_diag="1"
-}
+# enable_log="1"
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
@@ -17,8 +13,8 @@ WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-DIAG="one.one.one.one"
-NTPDOMAIN=".pool.ntp.org"
+DIAG="${diag_address:-one.one.one.one}"
+NTPDOMAIN=".${ntp_domain:-pool.ntp.org}"
 COUNTRY="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
