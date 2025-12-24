@@ -63,10 +63,12 @@ const dsliteRulesData = {
         aftrType: "v6connect",
         asn: [131908, 7682, 4685, 2519],
         ipv6PrefixRanges: [
-          "2405:6580::/29",
-          "2405:6584::/29"
+          "2405:6580::/29"
         ],
-        aftrAddresses: null,
+        aftrAddresses: {
+          east: "2001:c28:5:301::11",
+          west: "2001:c28:1:301::11"
+        },
         aftrFqdn: "dslite.v6connect.net",
         tunlink: "wan6"
       },
