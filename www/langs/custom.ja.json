@@ -45,6 +45,8 @@
     "tr-lan-ipv6-address": "LAN IPv6アドレス",
     "tr-ssh-interface": "SSHインターフェース",
     "tr-ssh-port": "SSHポート",
+    "tr-ntp-domain": "NTPドメイン",
+    "tr-diagnostic-address": "診断アドレス",
     "tr-flow-offloading-type": "フローオフロード方式",
     "tr-software-flow-offloading": "ソフトウェアフローオフロード",
     "tr-hardware-flow-offloading": "ハードウェアフローオフロード",
