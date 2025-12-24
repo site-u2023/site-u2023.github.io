@@ -43,7 +43,7 @@ disable_wan() {
 }
 dhcp_relay() {
     SEC=dhcp
-    SET $1=dhcp
+    SET "$1"=dhcp
     SET $1.interface="$1"
     SET $1.master='1'
     SET $1.ra='relay'
@@ -111,17 +111,13 @@ firewall_wan() {
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
-    wireless_cfg=$(uci -q show wireless)
-    
-    [ "${wifi_mode}" = "mlo" ] && mld_id=$(printf '%s' "${wlan_ssid}" | md5sum | cut -c1-8)
-    
+    wireless_cfg=$(uci -q show wireless)    
+    [ "${wifi_mode}" = "mlo" ] && mld_id=$(printf '%s' "${wlan_ssid}" | md5sum | cut -c1-8)    
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        SET ${radio}.disabled='0'
-        SET ${radio}.country="${COUNTRY}"
-        
-        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
-        
+        SET "${radio}".disabled='0'
+        SET ${radio}.country="${COUNTRY}"        
+        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
         [ -n "${snr}" ] && set -- ${snr} || set -- 30 15 5
         case "${band}" in
@@ -146,21 +142,17 @@ firewall_wan() {
                 nasid_suffix=''
                 band_snr=20
                 ;;
-        esac
-        
+        esac        
         suffix=${band:+-$band}
-        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
-        
+        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"        
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
-            SET ${iface}.key="${wlan_password}"
-            
+            SET ${iface}.key="${wlan_password}"           
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
-                SET ${iface}.isolate='1'
-                
+                SET ${iface}.isolate='1'               
                 [ "${wifi_mode}" = "usteer" ] && {
                     SET ${iface}.ieee80211r='1'
                     SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
@@ -168,22 +160,18 @@ firewall_wan() {
                     SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
                     SET ${iface}.ieee80211k='1'
                     SET ${iface}.ieee80211v='1'
-                }
-                
+                }               
                 [ "${wifi_mode}" = "usteer" ] && SET ${iface}.usteer_min_snr="${band_snr}"
-            }
-            
+            }           
             [ "${wifi_mode}" = "mlo" ] && {
                 SET ${iface}.ieee80211w='2'
                 SET ${iface}.mlo='1'
                 SET ${iface}.mld_id="${mld_id}"
                 SET ${iface}.mlo_link_id="${link_id}"
             }
-        }
-        
+        }        
         link_id=$((link_id + 1))
-    done
-    
+    done    
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0].band_steering='1'
@@ -372,8 +360,7 @@ fi
 }
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
     C=/etc/sysctl.d/99-net-opt.conf
-    P=$(grep -c ^processor /proc/cpuinfo)
-    
+    P=$(grep -c ^processor /proc/cpuinfo)    
     [ "${net_optimizer}" = "auto" ] && {
         if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
         elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
@@ -382,8 +369,7 @@ fi
         [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
         CONG=cubic
-    }
-    
+    }    
     [ "${net_optimizer}" = "manual" ] && {
         R=$(echo "${netopt_rmem}" | awk '{print $3}')
         W=$(echo "${netopt_wmem}" | awk '{print $3}')
@@ -393,28 +379,24 @@ fi
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
         CONG="${netopt_congestion:-cubic}"
-    }
-    
+    }    
     printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 [ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
-    SEC=dhcp
-    
+    SEC=dhcp    
     [ "${enable_dnsmasq}" = "auto" ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
         NEG_CACHE=1
-    }
-    
+    }    
     [ "${enable_dnsmasq}" = "manual" ] && {
         CACHE_SIZE="${dnsmasq_cache}"
         NEG_CACHE="${dnsmasq_negcache}"
-    }
-    
+    }    
     SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
     SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
 }
