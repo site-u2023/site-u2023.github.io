@@ -201,6 +201,7 @@
           "mape_gua_prefix",
           "mape_type",
           "dslite_aftr_type",
+          "dslite_jurisdiction",
           "dslite_aftr_address"
         ]
       },
@@ -586,6 +587,11 @@
                 {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
                 {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"}
               ],
+              "exclusiveVars": {
+                "transix": ["dslite_jurisdiction"],
+                "xpass": [],
+                "v6connect": []
+              },
               "computeTarget": "dslite_aftr_address"
             },
             {
