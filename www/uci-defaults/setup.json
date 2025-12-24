@@ -1117,13 +1117,11 @@
       "packages": [
         {
           "id": "adguardhome",
-          "enableVar": "enable_adguardhome", 
           "when": {"enable_adguardhome": "enabled"}
         },
         {
           "id": "apache",
           "uniqueId": "htpasswd-from-apache",
-          "enableVar": "enable_htpasswd",
           "when": {"enable_adguardhome": "enabled"}
         }
       ]
