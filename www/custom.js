@@ -1712,21 +1712,25 @@ function collectCategoryValues(categoryId, values) {
 
 function collectFormValues() {
     const values = {};
-
     if (!state.config.setup || !state.config.setup.categories) {
         return values;
     }
-
     for (const category of state.config.setup.categories) {
         collectCategoryValues(category.id, values);
     }
-
     collectPackageEnableVars(values);
-
+    
+    if (values.enable_adguardhome === 'enabled') {
+        const aghConfig = findFieldByVariable('enable_adguardhome');
+        if (aghConfig?.requirements) {
+            values.agh_min_memory = aghConfig.requirements.minMemoryMB;
+            values.agh_min_flash = aghConfig.requirements.minFlashMB;
+        }
+    }
+    
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
     }
-
     return values;
 }
 
