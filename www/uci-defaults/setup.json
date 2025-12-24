@@ -337,6 +337,26 @@
         },
         {
           "type": "field",
+          "id": "ntp-domain",
+          "label": "NTP Domain",
+          "class": "tr-ntp-domain",
+          "fieldType": "text",
+          "variable": "ntp_domain",
+          "placeholder": "pool.ntp.org",
+          "default": "pool.ntp.org"
+        },
+        {
+          "type": "field",
+          "id": "diag-address",
+          "label": "Diagnostic Address",
+          "class": "tr-diagnostic-address",
+          "fieldType": "text",
+          "variable": "diag_address",
+          "placeholder": "one.one.one.one",
+          "default": "one.one.one.one"
+        },
+        {
+          "type": "field",
           "id": "aios-flow-offloading",
           "label": "Flow offloading type",
           "class": "tr-flow-offloading-type",
