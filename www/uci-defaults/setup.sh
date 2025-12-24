@@ -536,5 +536,9 @@ AGHEOF
 # END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
+[ -n "${connection_type}" ] && {
+    /etc/init.d/network restart
+    /etc/init.d/ttyd restart 2>/dev/null
+}
 echo "[setup.sh] All done!"
 exit 0
