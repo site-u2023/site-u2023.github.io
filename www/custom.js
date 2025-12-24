@@ -1793,6 +1793,10 @@ function updateVariableDefinitions() {
     if (values.lan_ip_address && !values.lan_ip_address.includes('/')) {
         values.lan_ip_address += '/24';
     }
+
+    if (values.lan_ipv6_address && !values.lan_ipv6_address.includes('/')) {
+        values.lan_ipv6_address += '/64';
+    }
     
     let emissionValues = { ...values };
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
