@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.124.0947"
+VERSION="R7.124.0931"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -4451,16 +4451,12 @@ IDOPTS
         chmod +x "$CONFIG_DIR/postinst.sh"
     fi
     
-	# ========================================
+    # ========================================
     # Phase 3: setup.sh生成
     # ========================================
     fetch_cached_template "$SETUP_TEMPLATE_URL" "$TPL_SETUP"
     
     if [ -f "$TPL_SETUP" ]; then
-        # postProcessCommandsを抽出
-        jsonfilter -i "$SETUP_JSON" -e "@.postProcessCommands[*]" 2>/dev/null > "$CONFIG_DIR/post_cmds.txt"
-        
-        # VARS置換
         awk '
             /^# BEGIN_VARS/ {
                 print
@@ -4477,28 +4473,8 @@ IDOPTS
                 skip=0
             }
             !skip
-        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh.tmp"
+        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh"
         
-        # CMDS置換
-        awk '
-            /^# BEGIN_CMDS/ {
-                print
-                if (cmds_file != "") {
-                    while ((getline line < cmds_file) > 0) {
-                        print line
-                    }
-                    close(cmds_file)
-                }
-                skip=1
-                next
-            }
-            /^# END_CMDS/ {
-                skip=0
-            }
-            !skip
-        ' cmds_file="$CONFIG_DIR/post_cmds.txt" "$CONFIG_DIR/setup.sh.tmp" > "$CONFIG_DIR/setup.sh"
-        
-        rm -f "$CONFIG_DIR/setup.sh.tmp" "$CONFIG_DIR/post_cmds.txt"
         chmod +x "$CONFIG_DIR/setup.sh"
     fi
     
