@@ -7002,9 +7002,9 @@ function checkDSLiteRule(ipv6, userAsn = null) {
 
     return null;
 
-    function createResult(rule, v6) {
+function createResult(rule, v6) {
         const result = {
-            type: "ds-lite", // 明示的にds-liteであることを指定
+            type: "ds-lite",
             aftrType: rule.aftrType,
             peeraddr: rule.aftrFqdn,
             tunlink: rule.tunlink || "wan6"
@@ -7012,11 +7012,15 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         if (rule.aftrAddresses) {
             const jurisdiction = determineJurisdiction(v6);
             result.jurisdiction = jurisdiction;
-            result.aftrIpv6Address = rule.aftrAddresses[jurisdiction];
+            if (jurisdiction && rule.aftrAddresses[jurisdiction]) {
+                result.aftrIpv6Address = rule.aftrAddresses[jurisdiction];
+            } else {
+                // 東西判定できない場合はeast/westどちらかをデフォルト、または両方同じなら使う
+                result.aftrIpv6Address = rule.aftrAddresses.east || rule.aftrAddresses.west;
+            }
         }
         return result;
     }
-}
   
   /**
    * MAP-Eルールをチェック
