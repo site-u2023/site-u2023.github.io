@@ -277,7 +277,7 @@
         {
           "id": "collectd",
           "name": "collectd",
-          "uniqueId": "collectd-htop", 
+          "uniqueId": "collectd-htop",
           "hidden": "true"
         },
         {
@@ -657,23 +657,13 @@
       "id": "web-tools",
       "name": "Web Server Tools",
       "class": "tr-web-tools",
-      "description": "Apache web server and htpasswd password tool. Note: apache includes htpasswd.",
+      "description": "Apache web server. Note: apache includes htpasswd.",
       "packages": [
         {
           "id": "apache",
           "name": "apache",
           "description": "Full Apache HTTP Server (includes htpasswd)",
           "enableVar": "apache_keep"
-        },
-        {
-          "id": "apache",
-          "name": "htpasswd",
-          "uniqueId": "htpasswd-from-apache",
-          "description": "Password hash tool (extracted from apache)",
-          "enableVar": "enable_htpasswd",
-          "installOptions": "ignoreDeps",
-          "extractOnly": "true",
-          "binaryPath": "/usr/bin/htpasswd"
         }
       ]
     },   
@@ -725,10 +715,10 @@
           "reboot": true
         },
         {
-            "id": "coreutils-sha1sum",
-            "name": "coreutils-sha1sum",
-            "hidden": "true",
-            "description": "SHA1 checksum utility for MAP-E"
+          "id": "coreutils-sha1sum",
+          "name": "coreutils-sha1sum",
+          "hidden": "true",
+          "description": "SHA1 checksum utility for MAP-E"
         },
         {
           "id": "ds-lite", 
@@ -749,6 +739,17 @@
           "hidden": "true",
           "enableVar": "enable_adguardhome",
           "description": "AdGuard Home DNS server (managed by Custom Scripts)"
+        },
+        {
+          "id": "apache",
+          "name": "htpasswd",
+          "uniqueId": "htpasswd-from-apache",
+          "hidden": "true",
+          "description": "Password hash tool for AdGuard Home (extracted from apache)",
+          "enableVar": "enable_htpasswd",
+          "installOptions": "ignoreDeps",
+          "extractOnly": "true",
+          "binaryPath": "/usr/bin/htpasswd"
         }
       ]
     }
