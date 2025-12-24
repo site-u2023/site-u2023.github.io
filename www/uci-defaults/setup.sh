@@ -23,8 +23,6 @@ NAS="openwrt"
 MNT="/mnt/sda"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
-AGH_MIN_MEM="${agh_min_memory:-20}"
-AGH_MIN_FLASH="${agh_min_flash:-25}"
 mkdir -p /tmp/aios2
 exec > >(tee -a /tmp/aios2/debug.log) 2>&1
 disable_wan() {
@@ -422,7 +420,7 @@ fi
     fi
 }
 [ -n "${enable_adguardhome}" ] && {
-    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
+    if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ "$PACKAGE_MANAGER" = "apk" ] && agh_yaml="/etc/adguardhome/adguardhome.yaml" && mkdir -p /etc/adguardhome || agh_yaml="/etc/adguardhome.yaml"
         cfg_dhcp="/etc/config/dhcp"
         cfg_fw="/etc/config/firewall"
