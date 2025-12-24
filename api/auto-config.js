@@ -52,8 +52,7 @@ const JURISDICTION_PREFIXES = {
         aftrType: "v6connect",
         asn: [131908, 7682, 4685, 2519],
         ipv6PrefixRanges: [
-          "2405:6580::/29",
-          "2405:6584::/29"
+          "2405:6580::/29"
         ],
         aftrAddresses: null,
         aftrFqdn: "dslite.v6connect.net",
