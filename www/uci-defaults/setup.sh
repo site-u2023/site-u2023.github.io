@@ -2,9 +2,11 @@
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
-enable_ntp="1"
-enable_log="1"
-enable_diag="1"
+[ -d "/etc/uci-defaults" ] && {
+    enable_ntp="1"
+    enable_log="1"
+    enable_diag="1"
+}
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
