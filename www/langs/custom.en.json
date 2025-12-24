@@ -45,6 +45,8 @@
     "tr-lan-ipv6-address": "LAN IPv6 Address",
     "tr-ssh-interface": "SSH Interface",
     "tr-ssh-port": "SSH Port",
+    "tr-ntp-domain": "NTP Domain",
+    "tr-diagnostic-address": "Diagnostic Address",
     "tr-flow-offloading-type": "Flow Offloading Type",
     "tr-software-flow-offloading": "Software Flow Offloading",
     "tr-hardware-flow-offloading": "Hardware Flow Offloading",
