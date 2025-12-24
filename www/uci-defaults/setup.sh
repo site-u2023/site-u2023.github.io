@@ -13,9 +13,6 @@ WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-DIAG="${diag_address:-one.one.one.one}"
-NTPDOMAIN=".${ntp_domain:-pool.ntp.org}"
-COUNTRY="${country:-00}"
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -65,6 +62,12 @@ firewall_wan() {
     SET @system[0].description="${DATE}"
     SET @system[0].notes="site-u.pages.dev"
 }
+[ -n "${enable_log}" ] && {
+    SEC=system
+    SET @system[0].log_size='32'
+    SET @system[0].conloglevel='1'
+    SET @system[0].cronloglevel='9'
+}
 [ -n "${enable_ntp}" ] && {
     SEC=system
     SET ntp=timeserver
@@ -72,17 +75,11 @@ firewall_wan() {
     SET ntp.enable_server='1'
     SET ntp.interface='lan'
     DEL ntp.server
-    COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr '[:upper:]' '[:lower:]')
+    COUNTRY_LC=$(printf '%s' "${country}" | tr '[:upper:]' '[:lower:]')
     for i in 0 1; do
         ADDLIST ntp.server="${i}.${COUNTRY_LC}${NTPDOMAIN}"
         ADDLIST ntp.server="${i}${NTPDOMAIN}"
     done
-}
-[ -n "${enable_log}" ] && {
-    SEC=system
-    SET @system[0].log_size='32'
-    SET @system[0].conloglevel='1'
-    SET @system[0].cronloglevel='9'
 }
 [ -n "${enable_diag}" ] && {
     SEC=luci
@@ -112,7 +109,8 @@ firewall_wan() {
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
-        SET ${radio}.country="${COUNTRY}"        
+        SET ${radio}.country="${country}"
+        COUNTRY_LC=$(printf '%s' "${country}" | tr '[:upper:]' '[:lower:]')      
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
         [ -n "${snr}" ] && set -- ${snr} || set -- 30 15 5
