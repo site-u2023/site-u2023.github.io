@@ -536,6 +536,10 @@ AGHEOF
 # END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ -n "${connection_type}" ] && for s in network ttyd uhttpd; do /etc/init.d/$s restart 2>/dev/null; done
+[ ! -d "/etc/uci-defaults" ] && [ -n "${connection_type}" ] && {
+    for s in network uhttpd ttyd; do
+        /etc/init.d/$s restart 2>/dev/null
+    done
+}
 echo "[setup.sh] All done!"
 exit 0
