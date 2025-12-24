@@ -1093,7 +1093,7 @@
         }
       ],
       
-"packages": [
+      "packages": [
         {
           "id": "adguardhome",
           "enableVar": "enable_adguardhome", 
@@ -1107,9 +1107,5 @@
         }
       ]
     }
-  ],
-  "postProcessCommands": [
-    "/etc/init.d/network restart",
-    "/etc/init.d/ttyd restart 2>/dev/null"
   ]
 }
