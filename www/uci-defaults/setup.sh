@@ -396,7 +396,7 @@ fi
     :
 }
 [ -n "${enable_htpasswd}" ] && {
-    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
+    if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ -z "${apache_keep}" ] && {
             /etc/init.d/apache stop 2>/dev/null || true
             /etc/init.d/apache disable 2>/dev/null || true
