@@ -17,6 +17,7 @@ WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
+INITD="/etc/init.d"
 DIAG="one.one.one.one"
 NTPDOMAIN=".pool.ntp.org"
 COUNTRY="${country:-00}"
@@ -300,10 +301,10 @@ fi
             [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
     }
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable
+    [ -x $INITD/odhcpd ] && $INITD/odhcpd disable
+    [ -x $INITD/dnsmasq ] && $INITD/dnsmasq disable
     uci -q delete firewall
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
+    [ -x $INITD/firewall ] && $INITD/firewall disable
 }
 [ -n "${enable_ttyd}" ] && {
     SEC=ttyd
@@ -406,8 +407,8 @@ fi
 [ -n "${enable_htpasswd}" ] && {
     if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
         [ -z "${apache_keep}" ] && {
-            /etc/init.d/apache stop 2>/dev/null || true
-            /etc/init.d/apache disable 2>/dev/null || true
+            $INITD/apache stop 2>/dev/null || true
+            $INITD/apache disable 2>/dev/null || true
             htpasswd_bin="/usr/bin/htpasswd"
             htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
             tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
@@ -509,8 +510,8 @@ AGHEOF
         SET ${agh_rule}.dest_port="${agh_dns_port}"
         SET ${agh_rule}.target='DNAT'
     else
-        /etc/init.d/adguardhome stop 2>/dev/null
-        /etc/init.d/adguardhome disable 2>/dev/null
+        $INITD/adguardhome stop 2>/dev/null
+        $INITD/adguardhome disable 2>/dev/null
     fi
 }
 # BEGIN_CMDS
@@ -519,7 +520,7 @@ uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 [ ! -d "/etc/uci-defaults" ] && [ -n "${connection_type}" ] && {
     for s in network uhttpd ttyd; do
-        /etc/init.d/$s restart 2>/dev/null
+        $INITD/$s restart 2>/dev/null
     done
 }
 echo "[setup.sh] All done!"
