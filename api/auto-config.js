@@ -33,17 +33,6 @@ const JURISDICTION_PREFIXES = {
    * DS-Lite AFTRルールデータベース
    * IPv6プレフィックスからAFTRタイプを判定
    */
-  const dsliteRulesData = {
-    aftrRules: [
-      {
-        aftrType: "xpass",
-        asn: [45062, 17964, 2516, 17506, 17932], 
-        ipv6PrefixRanges: null,
-        aftrAddresses: null,
-        aftrFqdn: "dgw.xpass.jp",
-        tunlink: "wan6"
-      },
-
 const dsliteRulesData = {
     aftrRules: [
       {
