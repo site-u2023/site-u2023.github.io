@@ -1136,11 +1136,14 @@ generate_yaml() {
     if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
         yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
     else
-        # OpenWrt package version: path differs by package manager
-        if [ "$PACKAGE_MANAGER" = "apk" ]; then
-            yaml_path="/etc/adguardhome/adguardhome.yaml"  # SNAPSHOT
+        # OpenWrt package: check which path exists
+        if [ -f "/etc/adguardhome/adguardhome.yaml" ] || [ "$PACKAGE_MANAGER" = "apk" ]; then
+            # New version (24.10+) or apk
+            yaml_path="/etc/adguardhome/adguardhome.yaml"
+            mkdir -p /etc/adguardhome
         else
-            yaml_path="/etc/adguardhome.yaml"              # Release (opkg)
+            # Old version (23.05 or earlier)
+            yaml_path="/etc/adguardhome.yaml"
         fi
     fi
     
