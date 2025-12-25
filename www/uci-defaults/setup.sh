@@ -325,15 +325,14 @@ fi
     SET sambashare.create_mask='0777'
     SET sambashare.dir_mask='0777'
 }
-[ -n "${enable_adblock_fast}" ] && {
+[ "${dns_adblock}" = "adblock_fast" ] && {
     SEC=adblock-fast
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
-    [ -n "${enable_tofukko_filter}" ] && {
+    [ -n "${adblock_filter_url}" ] && {
         local IDX
         IDX=$(uci add "$SEC" file_url)
-        SET "$IDX".name='Tofukko Filter'
-        SET "$IDX".url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
+        SET "$IDX".url="${adblock_filter_url}"
         SET "$IDX".action='block'
         SET "$IDX".enabled='1'
     }
