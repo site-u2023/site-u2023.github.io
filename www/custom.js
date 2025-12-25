@@ -2292,7 +2292,7 @@ async function loadCustomTranslations(lang) {
 
 // ==================== 変数値の解決 ====================
 function resolveVariableValue(varName) {
-    const config = state.config.setup?.variableResolution?.[varName];
+    const config = state.config.setup?.constants?.variableResolution?.[varName];
     
     if (config?.fallback) {
         for (const rule of config.fallback) {
