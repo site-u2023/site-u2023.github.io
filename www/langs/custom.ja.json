@@ -261,9 +261,10 @@
     "tr-agh-customscript-password": "パスワード（8文字以上）",
     "tr-agh-customscript-webport": "WEBポート",
     "tr-agh-customscript-dnsport": "DNSポート",
-
+    "tr-dns-adblock-adblock-fast-info": "フィルターは言語設定に基づいて自動的に選択されます",
     "tr-dns-adblock-title": "DNS広告ブロック",
     "tr-dns-adblock-adblock-fast": "アドブロックファースト",
+    
     "tr-dns-adblock-filter-url": "フィルタURL",
     "tr-dns-adblock-nextdns": "ネクストDNS",
     "tr-dns-adblock-disabled": "無効",
