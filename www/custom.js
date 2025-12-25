@@ -2311,11 +2311,29 @@ function applyCustomTranslations(map) {
                 e.placeholder = translationMap[tr];
             } else {
                 let content = translationMap[tr];
-                const linkMatch = content.match(/\{([^}]+\.[^}]+)\}/);
+                let hasHtml = false;
+                
+                const linkMatch = content.match(/<([^>]+\.[^>]+)>/);
                 if (linkMatch) {
                     const text = linkMatch[1];
                     const link = `<a href="https://${text}" target="_blank">${text}</a>`;
-                    content = content.replace(`{${text}}`, link);
+                    content = content.replace(`<${text}>`, link);
+                    hasHtml = true;
+                }
+                
+                const varMatches = content.matchAll(/\$([a-z_]+)/g);
+                for (const match of varMatches) {
+                    const varName = match[1];
+                    const field = findFieldByVariable(varName);
+                    if (field) {
+                        const el = document.getElementById(field.id);
+                        if (el) {
+                            content = content.replace(`$${varName}`, el.value || '');
+                        }
+                    }
+                }
+                
+                if (hasHtml) {
                     e.innerHTML = content;
                 } else {
                     e.innerText = content;
