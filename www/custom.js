@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1224.2328) loaded');
+console.log('custom.js (R7.1225.1348) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -755,6 +755,33 @@ function buildField(field) {
     return row;
 }
 
+function buildRequirementsDisplay(requirements) {
+    if (!requirements) return null;
+    
+    const reqDiv = document.createElement('div');
+    reqDiv.className = 'resource-requirements';
+    reqDiv.style.fontSize = '0.9em';
+    reqDiv.style.color = 'var(--text-muted)';
+    reqDiv.style.marginTop = '0.5em';
+    reqDiv.style.marginBottom = '0.5em';
+    
+    const minMem = requirements.minMemoryMB || 0;
+    const minFlash = requirements.minFlashMB || 0;
+    const recMem = requirements.recommendedMemoryMB || 0;
+    const recFlash = requirements.recommendedFlashMB || 0;
+    
+    reqDiv.innerHTML = `
+        <span class="tr-tui-customscript-minimum"></span>: 
+        <span class="tr-tui-customscript-memory"></span> ${minMem}MB / 
+        <span class="tr-tui-customscript-storage"></span> ${minFlash}MB | 
+        <span class="tr-tui-customscript-recommended"></span>: 
+        <span class="tr-tui-customscript-memory"></span> ${recMem}MB / 
+        <span class="tr-tui-customscript-storage"></span> ${recFlash}MB
+    `;
+    
+    return reqDiv;
+}
+
 function buildRadioGroup(item) {
     const row = document.createElement('div');
     row.className = 'form-row';
@@ -797,30 +824,8 @@ function buildRadioGroup(item) {
         group.appendChild(legend);
     }
 
-    if (item.requirements) {
-        const reqDiv = document.createElement('div');
-        reqDiv.className = 'resource-requirements';
-        reqDiv.style.fontSize = '0.9em';
-        reqDiv.style.color = 'var(--text-muted)';
-        reqDiv.style.marginTop = '0.5em';
-        reqDiv.style.marginBottom = '0.5em';
-        
-        const minMem = item.requirements.minMemoryMB || 0;
-        const minFlash = item.requirements.minFlashMB || 0;
-        const recMem = item.requirements.recommendedMemoryMB || 0;
-        const recFlash = item.requirements.recommendedFlashMB || 0;
-        
-    reqDiv.innerHTML = `
-        <span class="tr-tui-customscript-minimum"></span>: 
-        <span class="tr-tui-customscript-memory"></span> ${minMem}MB / 
-        <span class="tr-tui-customscript-storage"></span> ${minFlash}MB | 
-        <span class="tr-tui-customscript-recommended"></span>: 
-        <span class="tr-tui-customscript-memory"></span> ${recMem}MB / 
-        <span class="tr-tui-customscript-storage"></span> ${recFlash}MB
-        `;
-        
-        group.appendChild(reqDiv);
-    }
+    const reqEl = buildRequirementsDisplay(item.requirements);
+    if (reqEl) group.appendChild(reqEl);
 
     const radioWrap = document.createElement('div');
     radioWrap.className = 'radio-group';
@@ -932,6 +937,9 @@ function buildInfoDisplay(item) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
         div.style.display = 'none';
     }
+    
+    const reqEl = buildRequirementsDisplay(item.requirements);
+    if (reqEl) div.appendChild(reqEl);
     
     return div;
 }
