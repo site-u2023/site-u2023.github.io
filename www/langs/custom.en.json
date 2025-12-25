@@ -257,8 +257,7 @@
     "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?",
 
-    "tr-customscripts": "Custom Scripts",
-    "tr-dns-adblock": "DNS Ad Blocking",
+    "tr-customscripts-title": "Custom Scripts",
     "tr-adguardhome-disabled": "AdGuard Home Disabled",
     "tr-agh-customscript-enabled": "Enabled",
     "tr-agh-customscript-disabled": "Disabled",
