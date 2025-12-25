@@ -168,6 +168,18 @@
         "2001:4:112::/48"
       ]
     },
+    "variableResolution": {
+      "device_name": {
+        "fallback": [
+          {"field": "aios-device-name", "type": "value"},
+          {"field": "aios-lan-ipv4", "type": "value", "format": "strip_cidr"},
+          {"field": "aios-lan-ipv6", "type": "value", "format": "strip_cidr"},
+          {"field": "aios-device-name", "type": "placeholder"},
+          {"field": "aios-lan-ipv4", "type": "placeholder", "format": "strip_cidr"},
+          {"field": "aios-lan-ipv6", "type": "placeholder", "format": "strip_cidr"}
+        ]
+      }
+    },
     "language_prefixes": [
       "luci-i18n-base-",
       "luci-i18n-opkg-",
