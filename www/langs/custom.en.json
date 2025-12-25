@@ -257,8 +257,8 @@
     "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?",
 
+    "tr-dns-adblock": "DNS Ad Blocking",
     "tr-adguardhome-disabled": "AdGuard Home Disabled",
-    "tr-agh-summary-customscripts": "Custom Scripts",
     "tr-agh-customscript-enabled": "Enabled",
     "tr-agh-customscript-disabled": "Disabled",
     "tr-agh-customscript-adguardhome": "AdGuard Home",
@@ -266,6 +266,13 @@
     "tr-agh-customscript-password": "Password (min 8 characters)",
     "tr-agh-customscript-webport": "WEB Port",
     "tr-agh-customscript-dnsport": "DNS Port",
+
+    "tr-dns-adblock-title": "DNS Ad Blocking",
+    "tr-dns-adblock-adblock-fast": "Adblock Fast",
+    "tr-dns-adblock-filter-url": "Filter URL",
+    "tr-dns-adblock-nextdns": "NextDNS",
+    "tr-dns-adblock-disabled": "Disabled",
+    "tr-dns-adblock-nextdns-info": "NextDNS will be installed. Configure via LuCI after installation."
     
     "tr-tui-restore-point": "Restore Point",
     "tr-tui-no-restore-points": "No restore points available",
