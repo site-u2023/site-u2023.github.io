@@ -178,6 +178,18 @@
           {"field": "aios-lan-ipv4", "type": "placeholder", "format": "strip_cidr"},
           {"field": "aios-lan-ipv6", "type": "placeholder", "format": "strip_cidr"}
         ]
+      },
+      "agh_web_port": {
+        "fallback": [
+          {"field": "agh-web-port", "type": "value"},
+          {"field": "agh-web-port", "type": "placeholder"}
+        ]
+      },
+      "agh_dns_port": {
+        "fallback": [
+          {"field": "agh-dns-port", "type": "value"},
+          {"field": "agh-dns-port", "type": "placeholder"}
+        ]
       }
     },
     "language_prefixes": [
