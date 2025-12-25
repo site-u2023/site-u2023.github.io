@@ -1021,6 +1021,36 @@ function setupEventListeners() {
         radio.addEventListener('change', handleRadioChange);
     });
 
+    if (state.config.setup?.categories) {
+        state.config.setup.categories.forEach(category => {
+            category.items?.forEach(item => {
+                if (item.type === 'field' && item.id) {
+                    const field = document.getElementById(item.id);
+                    if (field) {
+                        field.addEventListener('input', () => {
+                            if (current_language_json) {
+                                applyCustomTranslations(current_language_json);
+                            }
+                        });
+                    }
+                } else if (item.type === 'section' && item.items) {
+                    item.items.forEach(subItem => {
+                        if (subItem.type === 'field' && subItem.id) {
+                            const field = document.getElementById(subItem.id);
+                            if (field) {
+                                field.addEventListener('input', () => {
+                                    if (current_language_json) {
+                                        applyCustomTranslations(current_language_json);
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            });
+        });
+    }
+
     requestAnimationFrame(() => {
         evaluateAllShowWhen();
     });
@@ -2281,6 +2311,57 @@ async function loadCustomTranslations(lang) {
     }
 }
 
+// 変数値の解決（フォールバック処理を含む）
+function resolveVariableValue(varName) {
+    // device_name の特別処理：複数フィールドからフォールバック
+    if (varName === 'device_name') {
+        // 1. デバイス名フィールドの入力値
+        const deviceNameField = document.getElementById('aios-device-name');
+        if (deviceNameField?.value) {
+            return deviceNameField.value;
+        }
+        // 2. IPv4フィールドの入力値（CIDR除去）
+        const ipv4Field = document.getElementById('lan-ipv4-address');
+        if (ipv4Field?.value) {
+            return ipv4Field.value.split('/')[0];
+        }
+        // 3. IPv6フィールドの入力値（CIDR除去）
+        const ipv6Field = document.getElementById('lan-ipv6-address');
+        if (ipv6Field?.value) {
+            return ipv6Field.value.split('/')[0];
+        }
+        // 4. デバイス名フィールドのplaceholder
+        if (deviceNameField?.placeholder) {
+            return deviceNameField.placeholder;
+        }
+        // 5. IPv4フィールドのplaceholder
+        if (ipv4Field?.placeholder) {
+            return ipv4Field.placeholder.split('/')[0];
+        }
+        // 6. IPv6フィールドのplaceholder
+        if (ipv6Field?.placeholder) {
+            return ipv6Field.placeholder.split('/')[0];
+        }
+        return '';
+    }
+    
+    // 通常の変数処理：setup.jsonのvariableからフィールドを検索
+    const field = findFieldByVariable(varName);
+    if (field) {
+        const el = document.getElementById(field.id);
+        if (el) {
+            // 1. 入力値
+            if (el.value) return el.value;
+            // 2. placeholder
+            if (el.placeholder) return el.placeholder;
+            // 3. デフォルト値
+            if (field.default) return field.default;
+        }
+    }
+    
+    return '';
+}
+
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
@@ -2313,15 +2394,12 @@ function applyCustomTranslations(map) {
                 let content = translationMap[tr];
                 let hasHtml = false;
                 
+                // 変数置換処理
                 const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
                 for (const match of varMatches) {
                     const varName = match[1];
-                    const field = findFieldByVariable(varName);
-                    if (field) {
-                        const el = document.getElementById(field.id);
-                        const value = (el && el.value) || field.default || '';
-                        content = content.replace(`$${varName}`, value);
-                    }
+                    const value = resolveVariableValue(varName);
+                    content = content.replace(`$${varName}`, value);
                 }
                 
                 const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
