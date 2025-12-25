@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1225.1348) loaded');
+console.log('custom.js (R7.1225.1349) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -760,24 +760,13 @@ function buildRequirementsDisplay(requirements) {
     
     const reqDiv = document.createElement('div');
     reqDiv.className = 'resource-requirements';
-    reqDiv.style.fontSize = '0.9em';
-    reqDiv.style.color = 'var(--text-muted)';
-    reqDiv.style.marginTop = '0.5em';
-    reqDiv.style.marginBottom = '0.5em';
     
     const minMem = requirements.minMemoryMB || 0;
     const minFlash = requirements.minFlashMB || 0;
     const recMem = requirements.recommendedMemoryMB || 0;
     const recFlash = requirements.recommendedFlashMB || 0;
     
-    reqDiv.innerHTML = `
-        <span class="tr-tui-customscript-minimum"></span>: 
-        <span class="tr-tui-customscript-memory"></span> ${minMem}MB / 
-        <span class="tr-tui-customscript-storage"></span> ${minFlash}MB | 
-        <span class="tr-tui-customscript-recommended"></span>: 
-        <span class="tr-tui-customscript-memory"></span> ${recMem}MB / 
-        <span class="tr-tui-customscript-storage"></span> ${recFlash}MB
-    `;
+    reqDiv.textContent = `Minimum: Memory ${minMem}MB / Storage ${minFlash}MB | Recommended: Memory ${recMem}MB / Storage ${recFlash}MB`;
     
     return reqDiv;
 }
