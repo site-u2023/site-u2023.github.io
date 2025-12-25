@@ -2360,7 +2360,6 @@ function applyCustomTranslations(map) {
                 let content = translationMap[tr];
                 let hasHtml = false;
                 
-
                 const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
                 for (const match of varMatches) {
                     const varName = match[1];
