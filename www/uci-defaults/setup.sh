@@ -2,7 +2,6 @@
 # BEGIN_VARS
 # END_VARS
 enable_notes="1"
-# enable_log="1"
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
@@ -59,12 +58,6 @@ firewall_wan() {
     SEC=system
     SET @system[0].description="${DATE}"
     SET @system[0].notes="site-u.pages.dev"
-}
-[ -n "${enable_log}" ] && {
-    SEC=system
-    SET @system[0].log_size='32'
-    SET @system[0].conloglevel='1'
-    SET @system[0].cronloglevel='9'
 }
 [ -n "${enable_ntp}" ] && {
     SEC=system
