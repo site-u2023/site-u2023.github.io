@@ -1146,7 +1146,6 @@
           "id": "nextdns-info",
           "class": "tr-dns-adblock-nextdns-info",
           "description": "Create account and get Configuration ID before installation",
-          "link": "https://nextdns.io",
           "showWhen": {"dns_adblock": "nextdns"}
         },
         {
