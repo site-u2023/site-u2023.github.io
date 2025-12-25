@@ -33,20 +33,54 @@
 #   DNS_PORT         DNS service port (default: 53)
 #   DNS_BACKUP_PORT  Fallback dnsmasq port (default: 54)
 
-VERSION="R7.1216.1225"
+VERSION="R7.1225.2250"
+
+# =============================================================================
+# System Environment Detection
+# =============================================================================
+
+# Package Manager Detection (Must be defined before path logic)
+PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
+
+# OS Version Information
+OS_MAJOR_VERSION=0
+IS_SNAPSHOT=false
+
+check_os_version() {
+    if [ -f /etc/openwrt_release ]; then
+        # Extract major version (e.g., "23" from "23.05.5")
+        OS_MAJOR_VERSION=$(grep "DISTRIB_RELEASE" /etc/openwrt_release | cut -d"'" -f2 | cut -d"." -f1)
+        # Handle non-numeric versions like SNAPSHOT
+        if ! [ "$OS_MAJOR_VERSION" -eq "$OS_MAJOR_VERSION" ] 2>/dev/null; then
+            OS_MAJOR_VERSION=0
+            if grep -q "SNAPSHOT" /etc/openwrt_release; then
+                IS_SNAPSHOT=true
+            fi
+        fi
+    fi
+}
+
+check_os_version
 
 # =============================================================================
 # AdGuard Home Path Definitions
 # =============================================================================
 
+# Determine the configuration path based on OS version/package manager
+if [ "$OS_MAJOR_VERSION" -ge 24 ] || [ "$IS_SNAPSHOT" = true ] || [ "$PACKAGE_MANAGER" = "apk" ]; then
+    # New standard path (OpenWrt 24.10+, SNAPSHOT, or APK-based systems)
+    AGH_CONFIG_PATH="/etc/adguardhome/adguardhome.yaml"
+else
+    # Legacy path (OpenWrt 23.05 and earlier)
+    AGH_CONFIG_PATH="/etc/adguardhome.yaml"
+fi
+
 # Binary paths
 AGH_BINARY_OFFICIAL="/etc/AdGuardHome/AdGuardHome"
 AGH_BINARY_OPENWRT="/usr/bin/AdGuardHome"
 
-# Config file paths
+# Config file paths (Official binary uses a specific path)
 AGH_CONFIG_OFFICIAL="/etc/AdGuardHome/AdGuardHome.yaml"
-AGH_CONFIG_SNAPSHOT="/etc/adguardhome/adguardhome.yaml"
-AGH_CONFIG_RELEASE="/etc/adguardhome.yaml"
 
 # Config directory paths
 AGH_DIR_OFFICIAL="/etc/AdGuardHome"
