@@ -409,8 +409,7 @@ fi
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
-        agh_yaml="/etc/adguardhome/adguardhome.yaml"
-        mkdir -p /etc/adguardhome
+        "${agh_dir}"
         cfg_dhcp="/etc/config/dhcp"
         cfg_fw="/etc/config/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
