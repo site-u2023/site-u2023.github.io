@@ -1013,10 +1013,10 @@
     },
     
     {
-      "id": "dns-adblock",
-      "title": "DNS Ad Blocking",
-      "class": "tr-dns-adblock-title",
-      "description": "DNS-based ad blocking solutions (GUI only)",
+      "id": "custom-scripts",
+      "title": "Custom Script",
+      "class": "tr-customscripts-title",
+      "description": [],
       "guiOnly": true,
       
       "items": [
@@ -1130,7 +1130,8 @@
               "class": "tr-dns-adblock-filter-url",
               "fieldType": "text",
               "variable": "adblock_filter_url",
-              "placeholder": "https://example.com/filter.txt (optional)",
+              "placeholder": "https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt",
+              "default": "https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt",
               "description": "Custom filter list URL (optional)"
             }
           ]
