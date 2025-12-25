@@ -2313,24 +2313,23 @@ function applyCustomTranslations(map) {
                 let content = translationMap[tr];
                 let hasHtml = false;
                 
-                const linkMatch = content.match(/<([^>]+\.[^>]+)>/);
-                if (linkMatch) {
-                    const text = linkMatch[1];
-                    const link = `<a href="https://${text}" target="_blank">${text}</a>`;
-                    content = content.replace(`<${text}>`, link);
-                    hasHtml = true;
-                }
-                
-                const varMatches = content.matchAll(/\$([a-z_]+)/g);
+                const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
                 for (const match of varMatches) {
                     const varName = match[1];
                     const field = findFieldByVariable(varName);
                     if (field) {
                         const el = document.getElementById(field.id);
-                        if (el) {
-                            content = content.replace(`$${varName}`, el.value || '');
-                        }
+                        const value = (el && el.value) || field.default || '';
+                        content = content.replace(`$${varName}`, value);
                     }
+                }
+                
+                const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
+                if (linkMatch) {
+                    const url = linkMatch[1];
+                    const href = url.startsWith('http') ? url : `https://${url}`;
+                    content = content.replace(`<${url}>`, `<a href="${href}" target="_blank">${url}</a>`);
+                    hasHtml = true;
                 }
                 
                 if (hasHtml) {
