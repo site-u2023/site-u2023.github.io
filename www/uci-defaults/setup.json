@@ -1036,7 +1036,7 @@
             "flashVar": "agh_min_flash"
           },
           "options": [
-            {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-adguardhome"},
+            {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-agh-customscript-adguardhome"},
             {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
             {"value": "nextdns", "label": "NextDNS", "class": "tr-dns-adblock-nextdns"},
             {"value": "disabled", "label": "Disabled", "class": "tr-dns-adblock-disabled"}
