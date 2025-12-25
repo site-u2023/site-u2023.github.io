@@ -1025,7 +1025,7 @@
           "id": "dns_adblock",
           "title": "DNS Ad Blocking",
           "class": "tr-dns-adblock-title",
-          "variable": "dns_adblock",
+          "variable": "enable_adblock_fast",
           "default": "disabled",
           "requirements": {
             "minMemoryMB": 20,
@@ -1037,13 +1037,13 @@
           },
           "options": [
             {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-agh-customscript-adguardhome"},
-            {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
+            {"value": "enabled", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
             {"value": "nextdns", "label": "NextDNS", "class": "tr-dns-adblock-nextdns"},
             {"value": "disabled", "label": "Disabled", "class": "tr-dns-adblock-disabled"}
           ],
           "exclusiveVars": {
             "adguardhome": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
-            "adblock_fast": ["adblock_filter_url"],
+            "enabled": ["adblock_filter_url"],
             "nextdns": [],
             "disabled": []
           },
@@ -1054,7 +1054,7 @@
         {
           "type": "section",
           "id": "adguardhome-section",
-          "showWhen": {"dns_adblock": "adguardhome"},
+          "showWhen": {"enable_adblock_fast": "adguardhome"},
           "items": [
             {
               "type": "field",
@@ -1118,7 +1118,7 @@
         {
           "type": "section",
           "id": "adblock-fast-section",
-          "showWhen": {"dns_adblock": "adblock_fast"},
+          "showWhen": {"enable_adblock_fast": "enabled"},
           "items": [
             {
               "type": "field",
@@ -1137,34 +1137,34 @@
           "id": "nextdns-info",
           "class": "tr-dns-adblock-nextdns-info",
           "content": "NextDNS will be installed. Configure via LuCI after installation.",
-          "showWhen": {"dns_adblock": "nextdns"}
+          "showWhen": {"enable_adblock_fast": "nextdns"}
         },
         {
           "type": "info-display",
           "id": "dns-adblock-disabled-info",
           "class": "tr-dns-adblock-disabled",
           "content": "DNS ad blocking will not be configured",
-          "showWhen": {"dns_adblock": "disabled"}
+          "showWhen": {"enable_adblock_fast": "disabled"}
         }
       ],
       
       "packages": [
         {
           "id": "adguardhome",
-          "when": {"dns_adblock": "adguardhome"}
+          "when": {"enable_adblock_fast": "adguardhome"}
         },
         {
           "id": "apache",
           "uniqueId": "htpasswd-from-apache",
-          "when": {"dns_adblock": "adguardhome"}
+          "when": {"enable_adblock_fast": "adguardhome"}
         },
         {
           "id": "luci-app-adblock-fast",
-          "when": {"dns_adblock": "adblock_fast"}
+          "when": {"enable_adblock_fast": "enabled"}
         },
         {
           "id": "luci-app-nextdns",
-          "when": {"dns_adblock": "nextdns"}
+          "when": {"enable_adblock_fast": "nextdns"}
         }
       ]
     }
