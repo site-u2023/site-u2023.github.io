@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1225.1700) loaded');
+console.log('custom.js (R7.1225.2326) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1748,6 +1748,36 @@ function collectFormValues() {
         if (aghConfig?.requirements) {
             values.agh_min_memory = aghConfig.requirements.minMemoryMB;
             values.agh_min_flash = aghConfig.requirements.minFlashMB;
+        }
+    }
+    
+    // AdGuard Home YAML path resolution based on package manager
+    if (dnsAdblock === 'adguardhome') {
+        let aghVariables = null;
+        for (const category of state.config.setup.categories) {
+            for (const item of category.items) {
+                if (item.type === 'radio-group' && item.variable === 'dns_adblock' && item.variables) {
+                    aghVariables = item.variables;
+                    break;
+                }
+            }
+            if (aghVariables) break;
+        }
+        
+        if (aghVariables) {
+            const packageManager = state.packageManager?.activeManager || 'opkg';
+            
+            if (packageManager === 'apk') {
+                // New path for apk (SNAPSHOT / 25.12+)
+                values.agh_yaml = aghVariables.agh_yaml;
+                values.agh_dir = aghVariables.agh_dir;
+            } else {
+                // Old path for opkg (24.10 and earlier)
+                values.agh_yaml = aghVariables.agh_yaml_old;
+                values.agh_dir = ':';  // no-op - /etc already exists
+            }
+            
+            console.log(`AdGuard Home YAML path resolved: ${packageManager} -> ${values.agh_yaml}`);
         }
     }
     
