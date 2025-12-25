@@ -823,7 +823,6 @@ process_items() {
             ;;
             
         info-display)
-            # ID直接検索でcontent/classを取得
             local raw_content raw_class
             
             raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].content" 2>/dev/null | head -1)
@@ -834,7 +833,6 @@ process_items() {
                 raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
             fi
 
-            # auto-info の特別処理
             if [ "$item_id" = "auto-info" ]; then
                 if show_network_info "$item_breadcrumb"; then
                     return $RETURN_STAY
@@ -848,7 +846,7 @@ process_items() {
                 content=$(translate "$raw_class")
             fi
             
-            [ -n "$content" ] && show_msgbox "$breadcrumb" "$content"
+            [ -n "$content" ] && show_msgbox "$item_breadcrumb" "$content"
             return $RETURN_STAY
             ;;
     esac
