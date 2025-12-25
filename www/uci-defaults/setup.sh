@@ -464,7 +464,7 @@ filters:
     name: AdGuard DNS filter
   - enabled: false
     url: {{FILTER_URL}}
-    name: AdGuard {{FILTER_LANG}} filter
+    name: AdGuard language filter
 log:
   file: ""
 schema_version: 29
@@ -475,7 +475,6 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{FILTER_LANG}}|${filter_lang}|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
