@@ -138,8 +138,8 @@
     "tr-themes-dashboard": "Themes and Dashboard",
     "tr-utilities": "Utilities",
     "tr-usb-storage": "USB Storage Support",
-    "tr-file-sharing": "File Sharing",
-    "tr-web-tools": "Web Server Tools",
+    "tr-file-sharing": "File Server",
+    "tr-web-tools": "Web Server",
     "tr-encrypted-dns": "Encrypted DNS",
     
     "tr-dnsmasq-settings": "DNS Server Optimization",
