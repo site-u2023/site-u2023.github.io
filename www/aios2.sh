@@ -3301,6 +3301,31 @@ EOF
     debug_log "=== auto_add_conditional_packages finished ==="
 }
 
+get_section_controlling_radio_info() {
+    local item_id="$1"
+    local show_when controlling_var radio_id radio_label current_val option_label
+    
+    show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    [ -z "$show_when" ] && show_when=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | head -1)
+    [ -z "$show_when" ] && return 1
+    
+    controlling_var=$(echo "$show_when" | sed 's/.*"\([^"]*\)".*/\1/' | head -1)
+    [ -z "$controlling_var" ] && return 1
+    
+    radio_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.variable='$controlling_var'].id" 2>/dev/null | head -1)
+    [ -z "$radio_id" ] && return 1
+    
+    radio_label=$(get_setup_item_label "$radio_id")
+    
+    current_val=$(grep "^${controlling_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    [ -z "$current_val" ] && return 1
+    
+    option_label=$(get_setup_item_option_label "$radio_id" "$current_val")
+    
+    echo "${radio_label}|${option_label}"
+    return 0
+}
+
 get_section_nested_items() {
     local item_id="$1"
     local cat_idx=0
