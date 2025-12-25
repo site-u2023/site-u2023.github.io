@@ -629,30 +629,7 @@ function buildField(field) {
     group.className = 'form-group';
 
     const label = document.createElement('label');
-  
-    if (field.link) {
-        const a = document.createElement('a');
-        a.href = field.link;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.className = 'linked-title';
-        if (field.class) {
-            a.classList.add(field.class);
-            a.textContent = field.class;
-        } else {
-            a.textContent = field.label || field.id || '';
-        }
-        label.appendChild(a);
-    } else {
-        const span = document.createElement('span');
-        if (field.class) {
-            span.classList.add(field.class);
-            span.textContent = field.class;
-        } else {
-            span.textContent = field.label || field.id || '';
-        }
-        label.appendChild(span);
-    }
+    label.appendChild(buildLinkOrSpan(field, field.label || field.id || ''));
     
     if (field.id) label.setAttribute('for', field.id);
     
@@ -755,6 +732,32 @@ function buildField(field) {
     return row;
 }
 
+function buildLinkOrSpan(item, textFallback) {
+    if (item.link) {
+        const a = document.createElement('a');
+        a.href = item.link;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.className = 'linked-title';
+        if (item.class) {
+            a.classList.add(item.class);
+            a.textContent = item.class;
+        } else {
+            a.textContent = textFallback || '';
+        }
+        return a;
+    } else {
+        const span = document.createElement('span');
+        if (item.class) {
+            span.classList.add(item.class);
+            span.textContent = item.class;
+        } else {
+            span.textContent = textFallback || '';
+        }
+        return span;
+    }
+}
+
 function buildRequirementsDisplay(requirements) {
     if (!requirements) return null;
     
@@ -781,30 +784,7 @@ function buildRadioGroup(item) {
     if (item.title || item.class) {
         const legend = document.createElement('div');
         legend.className = 'form-label';
-        
-        if (item.link) {
-            const a = document.createElement('a');
-            a.href = item.link;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.className = 'linked-title';
-            if (item.class) {
-                a.classList.add(item.class);
-                a.textContent = item.class;
-            } else {
-                a.textContent = item.title;
-            }
-            legend.appendChild(a);
-        } else {
-            const span = document.createElement('span');
-            if (item.class) {
-                span.classList.add(item.class);
-                span.textContent = item.class;
-            } else {
-                span.textContent = item.title;
-            }
-            legend.appendChild(span);
-        }
+        legend.appendChild(buildLinkOrSpan(item, item.title));
         
         if (item.description || item.descriptionUrl) {
             addTooltip(legend, item.descriptionUrl || item.description);
@@ -920,11 +900,17 @@ function buildInfoDisplay(item) {
     const div = document.createElement('div');
     div.id = item.id;
     div.className = 'info-display';
-    if (item.class) div.classList.add(item.class);
     
     if (item.showWhen) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
         div.style.display = 'none';
+    }
+    
+    const el = buildLinkOrSpan(item, item.content || '');
+    div.appendChild(el);
+    
+    if (item.description) {
+        addTooltip(div, item.description);
     }
     
     const reqEl = buildRequirementsDisplay(item.requirements);
