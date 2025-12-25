@@ -1028,7 +1028,7 @@
           "variable": "dns_adblock",
           "default": "disabled",
           "options": [
-            {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-dns-adblock-adguardhome"},
+            {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-adguardhome"},
             {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
             {"value": "nextdns", "label": "NextDNS", "class": "tr-dns-adblock-nextdns"},
             {"value": "disabled", "label": "Disabled", "class": "tr-dns-adblock-disabled"}
@@ -1142,7 +1142,7 @@
         {
           "type": "info-display",
           "id": "dns-adblock-disabled-info",
-          "class": "tr-dns-adblock-disabled-info",
+          "class": "tr-dns-adblock-disabled",
           "content": "DNS ad blocking will not be configured",
           "showWhen": {"dns_adblock": "disabled"}
         }
