@@ -2292,31 +2292,25 @@ async function loadCustomTranslations(lang) {
 
 // ==================== 変数値の解決 ====================
 function resolveVariableValue(varName) {
-    if (varName === 'device_name') {
-        const fields = [
-            document.getElementById('aios-device-name'),
-            document.getElementById('aios-lan-ipv4'),
-            document.getElementById('aios-lan-ipv6')
-        ];
-        
-        for (const field of fields) {
-            const value = field?.value?.trim();
-            if (value) return value.split('/')[0];
+    const config = state.config.setup?.variableResolution?.[varName];
+    
+    if (config?.fallback) {
+        for (const rule of config.fallback) {
+            const el = document.getElementById(rule.field);
+            if (!el) continue;
+            
+            const value = (rule.type === 'value' ? el.value : el.placeholder)?.trim();
+            if (!value) continue;
+            
+            return rule.format === 'strip_cidr' ? value.split('/')[0] : value;
         }
-        
-        for (const field of fields) {
-            if (field?.placeholder) return field.placeholder.split('/')[0];
-        }
-        
         return '';
     }
     
     const field = findFieldByVariable(varName);
     if (field) {
         const el = document.getElementById(field.id);
-        if (el) {
-            return el.value || el.placeholder || field.default || '';
-        }
+        if (el) return el.value || el.placeholder || field.default || '';
     }
     
     return '';
