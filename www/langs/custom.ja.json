@@ -140,7 +140,7 @@
     "tr-usb-storage": "USBストレージ対応",
     "tr-file-sharing": "ファイル共有",
     "tr-web-tools": "Webサーバーツール",
-    "tr-dns-privacy": "DNS & プライバシー",
+    "tr-encrypted-dns": "暗号化DNS",
     
     "tr-dnsmasq-settings": "DNS サーバー最適化",
     "tr-dnsmasq-mode": "DNS サーバーモード",
