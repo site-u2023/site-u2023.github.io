@@ -267,7 +267,7 @@
     "tr-agh-customscript-password": "Password (min 8 characters)",
     "tr-agh-customscript-webport": "WEB Port",
     "tr-agh-customscript-dnsport": "DNS Port",
-    "tr-dns-adblock-adblock-fast-info": "Filter is automatically selected based on your language setting",
+    "tr-dns-adblock-adblock-fast-info": "Filters are automatically added based on your language settings.",
     
     "tr-dns-adblock-title": "DNS Ad Blocking",
     "tr-dns-adblock-adblock-fast": "Adblock Fast",
