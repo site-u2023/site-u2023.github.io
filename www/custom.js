@@ -2310,7 +2310,16 @@ function applyCustomTranslations(map) {
             if ('placeholder' in e) {
                 e.placeholder = translationMap[tr];
             } else {
-                e.innerText = translationMap[tr];
+                let content = translationMap[tr];
+                const linkMatch = content.match(/\{([^}]+\.[^}]+)\}/);
+                if (linkMatch) {
+                    const text = linkMatch[1];
+                    const link = `<a href="https://${text}" target="_blank">${text}</a>`;
+                    content = content.replace(`{${text}}`, link);
+                    e.innerHTML = content;
+                } else {
+                    e.innerText = content;
+                }
             }
         });
     }
