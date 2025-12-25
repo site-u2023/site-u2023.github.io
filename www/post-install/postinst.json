@@ -668,24 +668,11 @@
       ]
     },   
     {
-      "id": "dns-privacy",
-      "name": "DNS & Privacy",
-      "class": "tr-dns-privacy",
-      "description": "DNS-based ad blocking and encrypted DNS (DoH/DoT)",
+      "id": "encrypted-dns",
+      "name": "Encrypted DNS",
+      "class": "tr-encrypted-dns",
+      "description": "DoH/DoT for upstream DNS servers",
       "packages": [
-        {
-          "id": "luci-app-adblock-fast",
-          "name": "luci-app-adblock-fast",
-          "dependencies": ["japan-tofukko-filter"],
-          "enableVar": "enable_adblock_fast"
-        },
-        {
-          "id": "japan-tofukko-filter",
-          "name": "Japan Tofukko Filter",
-          "enableVar": "enable_tofukko_filter",
-          "hidden": "true",
-          "virtual": true
-        },
         {
           "id": "luci-app-https-dns-proxy",
           "name": "luci-app-https-dns-proxy (DoH)"
@@ -693,10 +680,6 @@
         {
           "id": "stubby",
           "name": "stubby (DoT)"
-        },
-        {
-          "id": "luci-app-nextdns",
-          "name": "luci-app-nextdns"
         }
       ]
     },
