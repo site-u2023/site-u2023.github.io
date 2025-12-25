@@ -1154,7 +1154,7 @@
         {
           "type": "info-display",
           "id": "adblock-fast-disabled-info",
-          "class": "tr-adguardhome-disabled",
+          "class": "tr-dns-adblock-disabled",
           "content": "Adblock Fast will not be configured",
           "showWhen": {"enable_adblock_fast": "disabled"}
         },
@@ -1180,7 +1180,7 @@
         {
           "type": "info-display",
           "id": "nextdns-disabled-info",
-          "class": "tr-adguardhome-disabled",
+          "class": "tr-dns-adblock-disabled",
           "content": "NextDNS will not be configured",
           "showWhen": {"enable_nextdns": "disabled"}
         }
