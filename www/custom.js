@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1225.1657) loaded');
+console.log('custom.js (R7.1225.1700) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -708,7 +708,7 @@ function buildField(field) {
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
-        if (field.minlength != null) ctrl.minLength field.minlength;
+        if (field.minlength != null) ctrl.minLength = field.minlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
         if (field.computed) {
