@@ -541,40 +541,21 @@ process_items() {
         section)
             echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
             
-            # showWhenで制御されている場合、親radio-groupを探す
-            local controlling_var controlling_radio_id radio_label option_value option_label
-            controlling_var=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].showWhen" 2>/dev/null | jsonfilter -s - -e '@' | head -1 | sed 's/[{}"]//g' | cut -d: -f1)
+            local radio_info
+            radio_info=$(get_section_controlling_radio_info "$item_id")
             
-            if [ -z "$controlling_var" ]; then
-                controlling_var=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].showWhen" 2>/dev/null | jsonfilter -s - -e '@' | head -1 | sed 's/[{}"]//g' | cut -d: -f1)
-            fi
-            
-            if [ -n "$controlling_var" ]; then
-                # このvariableを持つradio-groupを探す
-                controlling_radio_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.variable='$controlling_var'].id" 2>/dev/null | head -1)
+            if [ -n "$radio_info" ]; then
+                local radio_label option_label
+                radio_label=$(echo "$radio_info" | cut -d'|' -f1)
+                option_label=$(echo "$radio_info" | cut -d'|' -f2)
                 
-                if [ -n "$controlling_radio_id" ]; then
-                    # radio-groupのラベルを取得
-                    radio_label=$(get_setup_item_label "$controlling_radio_id")
-                    
-                    # 現在選択されているoptionの値を取得
-                    option_value=$(grep "^${controlling_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    
-                    if [ -n "$option_value" ]; then
-                        # optionのラベルを取得
-                        option_label=$(get_setup_item_option_label "$controlling_radio_id" "$option_value")
-                        
-                        # breadcrumbを再構築
-                        item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${radio_label}${BREADCRUMB_SEP}${option_label}"
-                        
-                        if [ -n "$item_label" ] && [ "$item_label" != "$radio_label" ]; then
-                            item_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${item_label}"
-                        fi
-                        
-                        echo "[DEBUG] Section controlled by radio-group: $controlling_radio_id" >> "$CONFIG_DIR/debug.log"
-                        echo "[DEBUG] Updated breadcrumb: $item_breadcrumb" >> "$CONFIG_DIR/debug.log"
-                    fi
+                item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${radio_label}${BREADCRUMB_SEP}${option_label}"
+                
+                if [ -n "$item_label" ]; then
+                    item_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${item_label}"
                 fi
+                
+                echo "[DEBUG] Updated breadcrumb: $item_breadcrumb" >> "$CONFIG_DIR/debug.log"
             fi
             
             while true; do
