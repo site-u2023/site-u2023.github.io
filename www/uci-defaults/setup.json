@@ -1058,16 +1058,16 @@
           },
           "filterLanguageMap": {
             "_description": "AdGuard filter URL mapping by language code",
-            "en" "en" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_2_English/filter.txt",
-            "zh-cn" "Chinese" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_10_Chinese/filter.txt",
-            "nl" "Dutch" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt",
-            "fr" "French" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt",
-            "de" "German" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt",
-            "ja" "Japanese" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt",
-            "ru" "Russian" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt",
-            "es" "Spanish" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt",
-            "tr" "Turkish" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt",
-            "uk" "Ukrainian" "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt"
+            "en": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_2_English/filter.txt",
+            "zh-cn": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/fil10_Chinese/filter.txt",
+            "nl": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt",
+            "fr": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt",
+            "de": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt",
+            "ja": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt",
+            "ru": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt",
+            "es": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt",
+            "tr": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt",
+            "uk": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt"
           }
         },        
         {
