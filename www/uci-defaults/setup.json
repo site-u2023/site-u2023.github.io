@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "R7.1225.1300",
   "description": "Simplified setup configuration - packages.json style",
   "reboot": true,
   "columns": 2,
@@ -1027,14 +1027,6 @@
           "class": "tr-dns-adblock-title",
           "variable": "dns_adblock",
           "default": "disabled",
-          "requirements": {
-            "minMemoryMB": 20,
-            "minFlashMB": 25,
-            "recommendedMemoryMB": 50,
-            "recommendedFlashMB": 100,
-            "memoryVar": "agh_min_memory",
-            "flashVar": "agh_min_flash"
-          },
           "options": [
             {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-agh-customscript-adguardhome"},
             {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
@@ -1059,6 +1051,12 @@
           "id": "adguardhome-section",
           "showWhen": {"dns_adblock": "adguardhome"},
           "items": [
+            {
+              "type": "info-display",
+              "id": "adguardhome-requirements",
+              "class": "tr-agh-requirements",
+              "content": "Required: Memory 20MB / Storage 25MB | Recommended: Memory 50MB / Storage 100MB"
+            },
             {
               "type": "field",
               "id": "agh-user",
