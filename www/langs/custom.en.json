@@ -140,7 +140,7 @@
     "tr-usb-storage": "USB Storage Support",
     "tr-file-sharing": "File Sharing",
     "tr-web-tools": "Web Server Tools",
-    "tr-dns-privacy": "DNS & Privacy",
+    "tr-encrypted-dns": "Encrypted DNS",
     
     "tr-dnsmasq-settings": "DNS Server Optimization",
     "tr-dnsmasq-mode": "DNS Server Mode",
