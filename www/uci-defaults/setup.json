@@ -1013,10 +1013,10 @@
     },
     
     {
-      "id": "dns-adblock",
-      "title": "DNS Ad Blocking",
-      "class": "tr-dns-adblock-title",
-      "description": "DNS-based ad blocking solutions (GUI only)",
+      "id": "custom-scripts",
+      "title": "Custom Scripts",
+      "class": "tr-agh-summary-customscripts",
+      "description": "Custom scripts for advanced configuration (GUI only)",
       "guiOnly": true,
       
       "items": [
@@ -1117,72 +1117,6 @@
           "class": "tr-adguardhome-disabled",
           "content": "AdGuard Home will not be configured",
           "showWhen": {"enable_adguardhome": "disabled"}
-        },
-        {
-          "type": "radio-group",
-          "id": "enable_adblock_fast",
-          "title": "Adblock Fast",
-          "class": "tr-dns-adblock-adblock-fast",
-          "variable": "enable_adblock_fast",
-          "default": "disabled",
-          "options": [
-            {"value": "enabled", "label": "Enabled", "class": "tr-agh-customscript-enabled"},
-            {"value": "disabled", "label": "Disabled", "class": "tr-agh-customscript-disabled"}
-          ],
-          "exclusiveVars": {
-            "enabled": ["adblock_filter_url"],
-            "disabled": []
-          }
-        },
-        {
-          "type": "section",
-          "id": "adblock-fast-section",
-          "showWhen": {"enable_adblock_fast": "enabled"},
-          "items": [
-            {
-              "type": "field",
-              "id": "adblock-filter-url",
-              "label": "Filter URL",
-              "class": "tr-dns-adblock-filter-url",
-              "fieldType": "text",
-              "variable": "adblock_filter_url",
-              "placeholder": "https://example.com/filter.txt (optional)",
-              "description": "Custom filter list URL (optional)"
-            }
-          ]
-        },
-        {
-          "type": "info-display",
-          "id": "adblock-fast-disabled-info",
-          "class": "tr-dns-adblock-disabled",
-          "content": "Adblock Fast will not be configured",
-          "showWhen": {"enable_adblock_fast": "disabled"}
-        },
-        {
-          "type": "radio-group",
-          "id": "enable_nextdns",
-          "title": "NextDNS",
-          "class": "tr-dns-adblock-nextdns",
-          "variable": "enable_nextdns",
-          "default": "disabled",
-          "options": [
-            {"value": "enabled", "label": "Enabled", "class": "tr-agh-customscript-enabled"},
-            {"value": "disabled", "label": "Disabled", "class": "tr-agh-customscript-disabled"}
-          ]
-        },
-        {
-          "type": "info-display",
-          "id": "nextdns-enabled-info",
-          "class": "tr-dns-adblock-nextdns-info",
-          "content": "NextDNS will be installed. Configure via LuCI after installation.",
-          "showWhen": {"enable_nextdns": "enabled"}
-        },
-        {
-          "type": "info-display",
-          "id": "nextdns-disabled-info",
-          "class": "tr-dns-adblock-disabled",
-          "content": "NextDNS will not be configured",
-          "showWhen": {"enable_nextdns": "disabled"}
         }
       ],
       
@@ -1195,16 +1129,8 @@
           "id": "apache",
           "uniqueId": "htpasswd-from-apache",
           "when": {"enable_adguardhome": "enabled"}
-        },
-        {
-          "id": "luci-app-adblock-fast",
-          "when": {"enable_adblock_fast": "enabled"}
-        },
-        {
-          "id": "luci-app-nextdns",
-          "when": {"enable_nextdns": "enabled"}
         }
       ]
-    }
+    }  
   ]
 }
