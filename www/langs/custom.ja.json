@@ -236,6 +236,7 @@
     "tr-tui-customscript-available": "利用可能",
     "tr-tui-customscript-resource-ok": "インストール可能です",
     "tr-tui-customscript-resource-ng": "リソースが不足しています",
+    "tr-agh-admin-url": "管理画面: http://$device_name:$agh_web_port",
     "tr-tui-customscript-force-install-question": "強制インストールしますか？",
     "tr-tui-customscript-install-openwrt": "OpenWrtパッケージのインストール",
     "tr-tui-customscript-install-official": "公式バイナリのインストール",
@@ -266,7 +267,7 @@
     "tr-dns-adblock-filter-url": "フィルタURL",
     "tr-dns-adblock-nextdns": "ネクストDNS",
     "tr-dns-adblock-disabled": "無効",
-    "tr-dns-adblock-nextdns-info": "{nextdns.io} で、アカウント登録とConfiguration IDを取得して下さい",
+    "tr-dns-adblock-nextdns-info": "<nextdns.io> で、アカウント登録とConfiguration IDを取得して下さい",
     
     "tr-tui-summary-packages": "パッケージ",
     "tr-tui-summary-customfeeds": "カスタムフィード",
