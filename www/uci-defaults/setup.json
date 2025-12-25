@@ -1016,7 +1016,7 @@
       "id": "custom-scripts",
       "title": "Custom Script",
       "class": "tr-customscripts-title",
-      "description": [],
+      "description": "User-defined custom scripts for system configuration",
       "guiOnly": true,
       
       "items": [
