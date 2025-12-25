@@ -661,7 +661,38 @@ process_items() {
                 fi
 
                 cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
-
+                
+                # ★ 追加: option配下のitemsを処理
+                local opt_label option_breadcrumb option_items opt_child_id
+                opt_label=$(get_setup_item_option_label "$item_id" "$selected_opt")
+                option_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${opt_label}"
+                
+                option_items=$(jsonfilter -i "$SETUP_JSON" \
+                    -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].options[@.id='$selected_opt'].items[*].id" 2>/dev/null)
+                
+                if [ -z "$option_items" ]; then
+                    option_items=$(jsonfilter -i "$SETUP_JSON" \
+                        -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].options[@.id='$selected_opt'].items[*].id" 2>/dev/null)
+                fi
+                
+                echo "[DEBUG] Option items: $option_items" >> "$CONFIG_DIR/debug.log"
+                
+                for opt_child_id in $option_items; do
+                    [ -z "$opt_child_id" ] && continue
+                    
+                    if ! should_show_item "$opt_child_id" "$cat_id"; then
+                        continue
+                    fi
+                    
+                    process_items "$cat_id" "$opt_child_id" "$option_breadcrumb" "radio-group"
+                    local opt_ret=$?
+                    
+                    case $opt_ret in
+                        $RETURN_MAIN)
+                            return $RETURN_MAIN
+                            ;;
+                    esac
+                done
             fi
             return $RETURN_STAY
             ;;
