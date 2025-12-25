@@ -1055,7 +1055,14 @@
               "type": "info-display",
               "id": "adguardhome-requirements",
               "class": "tr-agh-requirements",
-              "content": "Required: Memory 20MB / Storage 25MB | Recommended: Memory 50MB / Storage 100MB"
+              "requirements": {
+                "minMemoryMB": 20,
+                "minFlashMB": 25,
+                "recommendedMemoryMB": 50,
+                "recommendedFlashMB": 100,
+                "memoryVar": "agh_min_memory",
+                "flashVar": "agh_min_flash"
+              }
             },
             {
               "type": "field",
