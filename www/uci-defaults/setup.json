@@ -1015,7 +1015,7 @@
     {
       "id": "dns-adblock",
       "title": "DNS Ad Blocking",
-      "class": "tr-dns-adblock",
+      "class": "tr-dns-adblock-title",
       "description": "DNS-based ad blocking solutions (GUI only)",
       "guiOnly": true,
       
@@ -1024,94 +1024,118 @@
           "type": "radio-group",
           "id": "dns_adblock",
           "title": "DNS Ad Blocking",
-          "class": "tr-dns-adblock",
+          "class": "tr-dns-adblock-title",
           "variable": "dns_adblock",
           "default": "disabled",
           "options": [
             {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-adguardhome"},
-            {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-adblock-fast"},
-            {"value": "nextdns", "label": "NextDNS", "class": "tr-nextdns"},
+            {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
+            {"value": "nextdns", "label": "NextDNS", "class": "tr-dns-adblock-nextdns"},
             {"value": "disabled", "label": "Disabled", "class": "tr-dns-adblock-disabled"}
-          ],
-          "exclusiveVars": {
-            "adguardhome": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
-            "adblock_fast": ["adblock_filter_url"],
-            "nextdns": [],
-            "disabled": []
-          },
-          "dependencies": {
-            "adguardhome": {"enable_htpasswd": "enabled"}
-          }
+          ]
         },
         {
           "type": "section",
-          "id": "adguardhome-section",
+          "id": "adguardhome-wrapper",
           "showWhen": {"dns_adblock": "adguardhome"},
-          "requirements": {
-            "minMemoryMB": 20,
-            "minFlashMB": 25,
-            "recommendedMemoryMB": 50,
-            "recommendedFlashMB": 100,
-            "memoryVar": "agh_min_memory",
-            "flashVar": "agh_min_flash"
-          },
           "items": [
             {
-              "type": "field",
-              "id": "agh-user",
-              "label": "Username",
-              "class": "tr-agh-customscript-username",
-              "fieldType": "text",
-              "variable": "agh_user",
-              "placeholder": "admin",
-              "default": "admin"
+              "type": "radio-group",
+              "id": "enable_adguardhome",
+              "title": "AdGuard Home",
+              "class": "tr-agh-customscript-adguardhome",
+              "variable": "enable_adguardhome",
+              "default": "disabled",
+              "requirements": {
+                "minMemoryMB": 20,
+                "minFlashMB": 25,
+                "recommendedMemoryMB": 50,
+                "recommendedFlashMB": 100,
+                "memoryVar": "agh_min_memory",
+                "flashVar": "agh_min_flash"
+              },
+              "options": [
+                {"value": "enabled", "label": "Enabled", "class": "tr-agh-customscript-enabled"},
+                {"value": "disabled", "label": "Disabled", "class": "tr-agh-customscript-disabled"}
+              ],
+              "exclusiveVars": {
+                "enabled": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
+                "disabled": []
+              },
+              "dependencies": {
+                "enabled": {"enable_htpasswd": "enabled"}
+              }
             },
             {
-              "type": "field",
-              "id": "agh-pass",
-              "label": "Password",
-              "class": "tr-agh-customscript-password",
-              "fieldType": "text",
-              "variable": "agh_pass",
-              "placeholder": "password",
-              "default": "password"
+              "type": "section",
+              "id": "adguardhome-section",
+              "showWhen": {"enable_adguardhome": "enabled"},
+              "items": [
+                {
+                  "type": "field",
+                  "id": "agh-user",
+                  "label": "Username",
+                  "class": "tr-agh-customscript-username",
+                  "fieldType": "text",
+                  "variable": "agh_user",
+                  "placeholder": "admin",
+                  "default": "admin"
+                },
+                {
+                  "type": "field",
+                  "id": "agh-pass",
+                  "label": "Password",
+                  "class": "tr-agh-customscript-password",
+                  "fieldType": "text",
+                  "variable": "agh_pass",
+                  "placeholder": "password",
+                  "default": "password"
+                },
+                {
+                  "type": "field",
+                  "id": "agh-web-port",
+                  "label": "Web Port",
+                  "class": "tr-agh-customscript-webport",
+                  "fieldType": "number",
+                  "variable": "agh_web_port",
+                  "placeholder": "8000",
+                  "default": "8000",
+                  "min": 1,
+                  "max": 65535
+                },
+                {
+                  "type": "field",
+                  "id": "agh-dns-port",
+                  "label": "DNS Port",
+                  "class": "tr-agh-customscript-dnsport",
+                  "fieldType": "number",
+                  "variable": "agh_dns_port",
+                  "placeholder": "53",
+                  "default": "53",
+                  "min": 1,
+                  "max": 65535
+                },
+                {
+                  "type": "field",
+                  "id": "agh-dns-backup-port",
+                  "label": "DNS Backup Port",
+                  "class": "tr-agh-customscript-dns-backup-port",
+                  "fieldType": "number",
+                  "variable": "agh_dns_backup_port",
+                  "placeholder": "54",
+                  "default": "54",
+                  "min": 1,
+                  "max": 65535,
+                  "hidden": true
+                }
+              ]
             },
             {
-              "type": "field",
-              "id": "agh-web-port",
-              "label": "Web Port",
-              "class": "tr-agh-customscript-webport",
-              "fieldType": "number",
-              "variable": "agh_web_port",
-              "placeholder": "8000",
-              "default": "8000",
-              "min": 1,
-              "max": 65535
-            },
-            {
-              "type": "field",
-              "id": "agh-dns-port",
-              "label": "DNS Port",
-              "class": "tr-agh-customscript-dnsport",
-              "fieldType": "number",
-              "variable": "agh_dns_port",
-              "placeholder": "53",
-              "default": "53",
-              "min": 1,
-              "max": 65535
-            },
-            {
-              "type": "field",
-              "id": "agh-dns-backup-port",
-              "label": "DNS Backup Port",
-              "class": "tr-agh-customscript-dns-backup-port",
-              "fieldType": "number",
-              "variable": "agh_dns_backup_port",
-              "placeholder": "54",
-              "default": "54",
-              "min": 1,
-              "max": 65535,
-              "hidden": true
+              "type": "info-display",
+              "id": "adguardhome-disabled-info",
+              "class": "tr-adguardhome-disabled",
+              "content": "AdGuard Home will not be configured",
+              "showWhen": {"enable_adguardhome": "disabled"}
             }
           ]
         },
@@ -1124,7 +1148,7 @@
               "type": "field",
               "id": "adblock-filter-url",
               "label": "Filter URL",
-              "class": "tr-filter-url",
+              "class": "tr-dns-adblock-filter-url",
               "fieldType": "text",
               "variable": "adblock_filter_url",
               "placeholder": "https://example.com/filter.txt (optional)",
@@ -1135,7 +1159,7 @@
         {
           "type": "info-display",
           "id": "nextdns-info",
-          "class": "tr-nextdns-info",
+          "class": "tr-dns-adblock-nextdns-info",
           "content": "NextDNS will be installed. Configure via LuCI after installation.",
           "showWhen": {"dns_adblock": "nextdns"}
         },
@@ -1151,12 +1175,12 @@
       "packages": [
         {
           "id": "adguardhome",
-          "when": {"dns_adblock": "adguardhome"}
+          "when": {"enable_adguardhome": "enabled"}
         },
         {
           "id": "apache",
           "uniqueId": "htpasswd-from-apache",
-          "when": {"dns_adblock": "adguardhome"}
+          "when": {"enable_adguardhome": "enabled"}
         },
         {
           "id": "luci-app-adblock-fast",
