@@ -733,6 +733,18 @@
           "installOptions": "ignoreDeps",
           "extractOnly": "true",
           "binaryPath": "/usr/bin/htpasswd"
+        },
+        {
+          "id": "luci-app-adblock-fast",
+          "name": "luci-app-adblock-fast",
+          "hidden": "true",
+          "description": "Adblock Fast (managed by Custom Scripts)"
+        },
+        {
+          "id": "luci-app-nextdns",
+          "name": "luci-app-nextdns",
+          "hidden": "true",
+          "description": "NextDNS (managed by Custom Scripts)"
         }
       ]
     }
