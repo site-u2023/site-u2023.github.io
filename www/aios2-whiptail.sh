@@ -396,13 +396,8 @@ device_info() {
 }
 
 show_network_info() {
-    local tr_main_menu tr_internet_connection conn_type_label breadcrumb
+    local breadcrumb="$1"
     local tr_isp tr_as tr_mape_notice tr_dslite_notice tr_auto_detection info
-    
-    tr_main_menu=$(translate "tr-tui-main-menu")
-    tr_internet_connection=$(translate "tr-internet-connection")
-    conn_type_label=$(get_setup_item_label "connection-type")
-    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_internet_connection" "$conn_type_label")
     
     tr_isp=$(translate "tr-isp")
     tr_as=$(translate "tr-as")
@@ -841,7 +836,7 @@ process_items() {
 
             # auto-info の特別処理
             if [ "$item_id" = "auto-info" ]; then
-                if show_network_info; then
+                if show_network_info "$item_breadcrumb"; then
                     return $RETURN_STAY
                 else
                     return $RETURN_BACK
