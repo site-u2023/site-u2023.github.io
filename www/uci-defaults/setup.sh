@@ -1,12 +1,11 @@
 #!/bin/sh
 # BEGIN_VARS
 # END_VARS
-enable_notes="1"
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci del_list "${SEC}${SEC:+.}$*"; }
-DATE="$(date '+%Y-%m-%d %H:%M')"
+DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
@@ -24,6 +23,8 @@ MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
 exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+SEC=system
+SET @system[0].description="${DATE} site-u"
 disable_wan() {
     SEC=network
     SET wan.disabled='1'
@@ -53,11 +54,6 @@ firewall_wan() {
     ADDLIST ${ZONE}.network="$2"
     SET ${ZONE}.masq='1'
     SET ${ZONE}.mtu_fix='1'
-}
-[ -n "${enable_notes}" ] && {
-    SEC=system
-    SET @system[0].description="${DATE}"
-    SET @system[0].notes="site-u.pages.dev"
 }
 [ -n "${enable_ntp}" ] && {
     SEC=system
