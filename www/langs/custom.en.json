@@ -272,7 +272,7 @@
     "tr-dns-adblock-filter-url": "Filter URL",
     "tr-dns-adblock-nextdns": "NextDNS",
     "tr-dns-adblock-disabled": "Disabled",
-    "tr-dns-adblock-nextdns-info": "Register account and get Configuration ID at <a href=\"https://nextdns.io\" target=\"_blank\">nextdns.io</a>",
+    "tr-dns-adblock-nextdns-info": "Register account and get Configuration ID at {nextdns.io}",
     
     "tr-tui-restore-point": "Restore Point",
     "tr-tui-no-restore-points": "No restore points available",
