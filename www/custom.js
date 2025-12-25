@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1225.1354) loaded');
+console.log('custom.js (R7.1225.1657) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -686,14 +686,12 @@ function buildField(field) {
         ctrl.type = field.fieldType || 'text';
         if (field.id) ctrl.id = field.id;
         
-        if (field.placeholder) {
-            ctrl.placeholder = field.placeholder;
-        } else if (field.default) {
-            ctrl.placeholder = field.default;
-        }
+        if (field.placeholder) ctrl.placeholder = field.placeholder;
         
         let setValue = null;
-        if (field.apiSource && state.apiInfo) {
+        if (field.default !== null && field.default !== undefined && field.default !== '') {
+            setValue = field.default;
+        } else if (field.apiSource && state.apiInfo) {
             const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiSource);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 setValue = apiValue;
@@ -710,7 +708,7 @@ function buildField(field) {
         if (field.min != null) ctrl.min = field.min;
         if (field.max != null) ctrl.max = field.max;
         if (field.maxlength != null) ctrl.maxLength = field.maxlength;
-        if (field.minlength != null) ctrl.minLength = field.minlength;
+        if (field.minlength != null) ctrl.minLength field.minlength;
         if (field.pattern != null) ctrl.pattern = field.pattern;
         
         if (field.computed) {
