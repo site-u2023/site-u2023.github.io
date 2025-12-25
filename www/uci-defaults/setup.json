@@ -1145,7 +1145,8 @@
           "type": "info-display",
           "id": "nextdns-info",
           "class": "tr-dns-adblock-nextdns-info",
-          "content": "NextDNS will be installed. Configure via LuCI after installation.",
+          "description": "Create account and get Configuration ID before installation",
+          "link": "https://nextdns.io",
           "showWhen": {"dns_adblock": "nextdns"}
         },
         {
