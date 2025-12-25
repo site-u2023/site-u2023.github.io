@@ -1054,7 +1054,6 @@
             {
               "type": "info-display",
               "id": "adguardhome-requirements",
-              "class": "tr-agh-requirements",
               "requirements": {
                 "minMemoryMB": 20,
                 "minFlashMB": 25,
