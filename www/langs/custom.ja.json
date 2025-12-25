@@ -251,8 +251,7 @@
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
 
-    "tr-customscripts": "カスタムスクリプト",
-    "tr-dns-adblock": "DNS広告ブロック",
+    "tr-customscripts-title": "カスタムスクリプト",
     "tr-adguardhome-disabled": "アドガードホーム無効",
     "tr-agh-customscript-enabled": "有効",
     "tr-agh-customscript-disabled": "無効",
