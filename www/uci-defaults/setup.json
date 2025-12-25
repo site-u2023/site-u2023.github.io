@@ -1045,7 +1045,7 @@
             {"value": "disabled", "label": "Disabled", "class": "tr-dns-adblock-disabled"}
           ],
           "exclusiveVars": {
-            "adguardhome": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port"],
+            "adguardhome": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port", "agh_yaml"],
             "adblock_fast": ["adblock_filter_url"],
             "nextdns": [],
             "disabled": []
@@ -1056,6 +1056,11 @@
               "enable_adguardhome": "enabled"
             }
           },
+          "variables": {
+            "agh_dir": "mkdir -p /etc/adguardhome",
+            "agh_yaml": "/etc/adguardhome/adguardhome.yaml",
+            "agh_yaml_old": "/etc/adguardhome.yaml"
+          },  
           "filterLanguageMap": {
             "_description": "AdGuard filter URL mapping by language code",
             "en": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_2_English/filter.txt",
