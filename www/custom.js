@@ -2293,12 +2293,11 @@ async function loadCustomTranslations(lang) {
 function resolveVariableValue(varName) {
     if (varName === 'device_name') {
         const deviceNameField = document.getElementById('aios-device-name');
-        if (deviceNameField?.value) return deviceNameField.value;
-        
         const ipv4Field = document.getElementById('lan-ipv4-address');
-        if (ipv4Field?.value) return ipv4Field.value.split('/')[0];
-        
         const ipv6Field = document.getElementById('lan-ipv6-address');
+        
+        if (deviceNameField?.value) return deviceNameField.value;
+        if (ipv4Field?.value) return ipv4Field.value.split('/')[0];
         if (ipv6Field?.value) return ipv6Field.value.split('/')[0];
         
         if (deviceNameField?.placeholder) return deviceNameField.placeholder;
