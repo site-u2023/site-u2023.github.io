@@ -325,18 +325,6 @@ fi
     SET sambashare.create_mask='0777'
     SET sambashare.dir_mask='0777'
 }
-[ "${dns_adblock}" = "adblock_fast" ] && {
-    SEC=adblock-fast
-    SET config.enabled='1'
-    SET config.procd_trigger_wan6='1'
-    [ -n "${adblock_filter_url}" ] && {
-        local IDX
-        IDX=$(uci add "$SEC" file_url)
-        SET "$IDX".url="${adblock_filter_url}"
-        SET "$IDX".action='block'
-        SET "$IDX".enabled='1'
-    }
-}
 [ -n "${enable_usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     SEC=network
@@ -394,7 +382,19 @@ fi
 [ -n "${enable_sd_resize}" ] && {
     :
 }
-[ -n "${enable_htpasswd}" ] && {
+[ "${dns_adblock}" = "adblock_fast" ] && {
+    SEC=adblock-fast
+    SET config.enabled='1'
+    SET config.procd_trigger_wan6='1'
+    [ -n "${adblock_filter_url}" ] && {
+        local IDX
+        IDX=$(uci add "$SEC" file_url)
+        SET "$IDX".url="${adblock_filter_url}"
+        SET "$IDX".action='block'
+        SET "$IDX".enabled='1'
+    }
+}
+[ "${dns_adblock}" = "adguardhome" ] && {
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ -z "${apache_keep}" ] && {
             /etc/init.d/apache stop 2>/dev/null || true
@@ -418,7 +418,7 @@ fi
         }
     fi
 }
-[ -n "${enable_adguardhome}" ] && {
+[ "${dns_adblock}" = "adguardhome" ] && {
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ "$PACKAGE_MANAGER" = "apk" ] && agh_yaml="/etc/adguardhome/adguardhome.yaml" && mkdir -p /etc/adguardhome || agh_yaml="/etc/adguardhome.yaml"
         cfg_dhcp="/etc/config/dhcp"
