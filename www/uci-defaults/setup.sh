@@ -386,10 +386,10 @@ fi
     SEC=adblock-fast
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
-    [ -n "${adblock_filter_url}" ] && {
+    [ -n "${filter_url}" ] && {
         local IDX
         IDX=$(uci add "$SEC" file_url)
-        SET "$IDX".url="https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_${FILTER_NO}_${FILTER_LANG}/filter.txt"
+        SET "$IDX".url="${filter_url}"
         SET "$IDX".action='block'
         SET "$IDX".enabled='1'
     }
@@ -463,9 +463,8 @@ filters:
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
   - enabled: false
-    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_${FILTER_NO}_${FILTER_LANG}/filter.txt
-    name: AdGuard ${FILTER_LANG} filter
-
+    url: {{FILTER_URL}}
+    name: AdGuard {{FILTER_LANG}} filter
 log:
   file: ""
 schema_version: 29
@@ -475,6 +474,8 @@ AGHEOF
         sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
+        sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{FILTER_LANG}}|${filter_lang}|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
