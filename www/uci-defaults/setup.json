@@ -1048,7 +1048,10 @@
             "disabled": []
           },
           "dependencies": {
-            "adguardhome": {"enable_htpasswd": "enabled"}
+            "adguardhome": {
+              "enable_htpasswd": "enabled",
+              "enable_adguardhome": "enabled"
+            }
           }
         },
         {
