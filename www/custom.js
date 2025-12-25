@@ -1722,6 +1722,27 @@ function collectFormValues() {
     }
     collectPackageEnableVars(values);
     
+    const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
+    if (dnsAdblock === 'adguardhome' || dnsAdblock === 'adblock_fast') {
+        const deviceLang = getFieldValue('#device-language') || config.device_language || 'en';
+        
+        let filterLanguageMap = null;
+        for (const category of state.config.setup.categories) {
+            for (const item of category.items) {
+                if (item.type === 'radio-group' && item.variable === 'dns_adblock' && item.filterLanguageMap) {
+                    filterLanguageMap = item.filterLanguageMap;
+                    break;
+                }
+            }
+            if (filterLanguageMap) break;
+        }
+        
+        if (filterLanguageMap) {
+            values.filter_url = filterLanguageMap[deviceLang] || filterLanguageMap['en'] || '';
+            console.log(`Filter URL resolved: ${deviceLang} -> ${values.filter_url}`);
+        }
+    }
+    
     if (values.enable_adguardhome === 'enabled') {
         const aghConfig = findFieldByVariable('enable_adguardhome');
         if (aghConfig?.requirements) {
