@@ -1157,15 +1157,10 @@
           "showWhen": {"dns_adblock": "adblock_fast"},
           "items": [
             {
-              "type": "field",
-              "id": "adblock-filter-url",
-              "label": "Filter URL",
-              "class": "tr-dns-adblock-filter-url",
-              "fieldType": "text",
-              "variable": "adblock_filter_url",
-              "placeholder": "https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt",
-              "default": "https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt",
-              "description": "Custom filter list URL (optional)"
+              "type": "info-display",
+              "id": "adblock-fast-info",
+              "class": "tr-dns-adblock-adblock-fast-info",
+              "content": "Filter automatically selected based on language"
             }
           ]
         },
