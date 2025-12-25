@@ -2296,12 +2296,26 @@ function resolveVariableValue(varName) {
         const ipv4Field = document.getElementById('lan-ipv4-address');
         const ipv6Field = document.getElementById('lan-ipv6-address');
         
-        if (deviceNameField?.value) return deviceNameField.value;
-        if (ipv4Field?.value) return ipv4Field.value.split('/')[0];
-        if (ipv6Field?.value) return ipv6Field.value.split('/')[0];
+        const deviceNameConfig = findFieldByVariable('device_name');
+        const defaultValue = deviceNameConfig?.default || '';
         
+        if (deviceNameField?.value && deviceNameField.value !== defaultValue) {
+            return deviceNameField.value;
+        }
+        
+        if (ipv4Field?.value) {
+            return ipv4Field.value.split('/')[0];
+        }
+        
+        if (ipv6Field?.value) {
+            return ipv6Field.value.split('/')[0];
+        }
+        
+        if (deviceNameField?.value) return deviceNameField.value;
         if (deviceNameField?.placeholder) return deviceNameField.placeholder;
+        
         if (ipv4Field?.placeholder) return ipv4Field.placeholder.split('/')[0];
+        
         if (ipv6Field?.placeholder) return ipv6Field.placeholder.split('/')[0];
         
         return '';
