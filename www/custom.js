@@ -2296,8 +2296,8 @@ async function loadCustomTranslations(lang) {
 function resolveVariableValue(varName) {
     if (varName === 'device_name') {
         const deviceNameField = document.getElementById('aios-device-name');
-        const ipv4Field = document.getElementById('lan-ipv4-address');
-        const ipv6Field = document.getElementById('lan-ipv6-address');
+        const ipv4Field = document.getElementById('aios-lan-ipv4');
+        const ipv6Field = document.getElementById('aios-lan-ipv6');
         
         const deviceName = deviceNameField?.value?.trim();
         if (deviceName) return deviceName;
