@@ -1064,6 +1064,11 @@
               }
             },
             {
+              "type": "info-display",
+              "id": "adguardhome-admin-url",
+              "class": "tr-agh-admin-url"
+            },
+            {
               "type": "field",
               "id": "agh-user",
               "label": "Username",
