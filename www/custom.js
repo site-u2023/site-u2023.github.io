@@ -2293,22 +2293,20 @@ async function loadCustomTranslations(lang) {
 // ==================== 変数値の解決 ====================
 function resolveVariableValue(varName) {
     if (varName === 'device_name') {
-        const deviceNameField = document.getElementById('aios-device-name');
-        const ipv4Field = document.getElementById('aios-lan-ipv4');
-        const ipv6Field = document.getElementById('aios-lan-ipv6');
+        const fields = [
+            document.getElementById('aios-device-name'),
+            document.getElementById('aios-lan-ipv4'),
+            document.getElementById('aios-lan-ipv6')
+        ];
         
-        const deviceName = deviceNameField?.value?.trim();
-        if (deviceName) return deviceName;
+        for (const field of fields) {
+            const value = field?.value?.trim();
+            if (value) return value.split('/')[0];
+        }
         
-        const ipv4 = ipv4Field?.value?.trim();
-        if (ipv4) return ipv4.split('/')[0];
-        
-        const ipv6 = ipv6Field?.value?.trim();
-        if (ipv6) return ipv6.split('/')[0];
-        
-        if (deviceNameField?.placeholder) return deviceNameField.placeholder;
-        if (ipv4Field?.placeholder) return ipv4Field.placeholder.split('/')[0];
-        if (ipv6Field?.placeholder) return ipv6Field.placeholder.split('/')[0];
+        for (const field of fields) {
+            if (field?.placeholder) return field.placeholder.split('/')[0];
+        }
         
         return '';
     }
@@ -2317,9 +2315,7 @@ function resolveVariableValue(varName) {
     if (field) {
         const el = document.getElementById(field.id);
         if (el) {
-            if (el.value) return el.value;
-            if (el.placeholder) return el.placeholder;
-            if (field.default) return field.default;
+            return el.value || el.placeholder || field.default || '';
         }
     }
     
