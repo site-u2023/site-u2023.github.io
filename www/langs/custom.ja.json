@@ -251,8 +251,8 @@
     "tr-tui-installing-custom-scripts": "カスタムスクリプトを実行中",
     "tr-tui-no-custom-scripts": "スクリプトが選択されていません" ,
 
+    "tr-dns-adblock": "DNS広告ブロック",
     "tr-adguardhome-disabled": "アドガードホーム無効",
-    "tr-agh-summary-customscripts": "カスタムスクリプト",
     "tr-agh-customscript-enabled": "有効",
     "tr-agh-customscript-disabled": "無効",
     "tr-agh-customscript-adguardhome": "アドガードホーム",
@@ -260,6 +260,13 @@
     "tr-agh-customscript-password": "パスワード（8文字以上）",
     "tr-agh-customscript-webport": "WEBポート",
     "tr-agh-customscript-dnsport": "DNSポート",
+
+    "tr-dns-adblock-title": "DNS広告ブロック",
+    "tr-dns-adblock-adblock-fast": "Adblock Fast",
+    "tr-dns-adblock-filter-url": "フィルタURL",
+    "tr-dns-adblock-nextdns": "NextDNS",
+    "tr-dns-adblock-disabled": "無効",
+    "tr-dns-adblock-nextdns-info": "NextDNSがインストールされます。インストール後、LuCIから設定してください。"
     
     "tr-tui-summary-packages": "パッケージ",
     "tr-tui-summary-customfeeds": "カスタムフィード",
