@@ -685,12 +685,15 @@ function buildField(field) {
         ctrl = document.createElement('input');
         ctrl.type = field.fieldType || 'text';
         if (field.id) ctrl.id = field.id;
-        if (field.placeholder) ctrl.placeholder = field.placeholder;
+        
+        if (field.placeholder) {
+            ctrl.placeholder = field.placeholder;
+        } else if (field.default) {
+            ctrl.placeholder = field.default;
+        }
         
         let setValue = null;
-        if (field.default !== null && field.default !== undefined && field.default !== '') {
-            setValue = field.default;
-        } else if (field.apiSource && state.apiInfo) {
+        if (field.apiSource && state.apiInfo) {
             const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiSource);
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 setValue = apiValue;
