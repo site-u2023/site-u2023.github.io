@@ -1341,9 +1341,7 @@ async function updateAllPackageState(source = 'unknown') {
 async function updateLanguagePackageCore() {
     state.ui.language.selected = config.device_language || config.fallback_language || 'en';
     const lang = state.ui.language.selected;
-
     console.log(`Language package update - Selected language: ${lang}`);
-
     const removedPackages = [];
     for (const pkg of Array.from(state.packages.dynamic)) {
         if (pkg.startsWith('luci-i18n-')) {
@@ -1354,22 +1352,16 @@ async function updateLanguagePackageCore() {
     if (removedPackages.length > 0) {
         console.log('Removed old language packages:', removedPackages);
     }
-
     const hasArch = state.device.arch;
     if (!lang || lang === config.fallback_language || !hasArch) {
         console.log('Skipping language packages - fallback language or no arch info');
         return;
     }
-
     const currentPackages = getCurrentPackageListForLanguage();
     console.log(`Checking language packages for ${currentPackages.length} packages`);
-
     const addedLangPackages = new Set();
-
     const prefixes = state.config.setup?.constants?.language_prefixes || [];
-
-    console.log(`Using language prefixes:`, prefixes);
-
+    console.log('Using language prefixes:', prefixes);
     for (const prefix of prefixes) {
         const name = `${prefix}${lang}`;
         try {
@@ -1382,19 +1374,14 @@ async function updateLanguagePackageCore() {
             console.error('Error checking language package:', name, err);
         }
     }
-
     const checkPromises = [];
     for (const pkg of currentPackages) {
         let moduleName = null;
-
         if (pkg.startsWith('luci-') && !pkg.startsWith('luci-i18n-')) {
             moduleName = extractLuciName(pkg);
         }
-
         if (!moduleName) continue;
-
         const langPkg = `luci-i18n-${moduleName}-${lang}`;
-
         const promise = (async () => {
             try {
                 if (await isPackageAvailable(langPkg, 'luci')) {
@@ -1408,9 +1395,7 @@ async function updateLanguagePackageCore() {
         })();
         checkPromises.push(promise);
     }
-
     await Promise.all(checkPromises);
-
     if (addedLangPackages.size > 0) {
         console.log(`Language package update complete: ${addedLangPackages.size} packages added`);
     }
