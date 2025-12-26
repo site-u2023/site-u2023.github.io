@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1244) loaded');
+console.log('custom.js (R7.1226.1301) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2803,14 +2803,9 @@ async function buildPackageUrl(feed, deviceInfo) {
             throw new Error('Missing vendor or subtarget for kmods');
         }
         
-        const cacheKey = `${version}|${vendor}|${channel === 'snapshot' ? 'S' : 'R'}`;
-        
-        if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
-            vars.kmod = state.cache.kmods.token;
-            return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
-        }
-        
         const indexUrl = applyUrlTemplate(channelConfig.kmodsIndexBaseUrl, vars);
+        console.log(`Fetching latest kmods directory list: ${indexUrl}`);
+        
         const resp = await fetch(indexUrl, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
         
@@ -2822,10 +2817,11 @@ async function buildPackageUrl(feed, deviceInfo) {
         if (!matches.length) throw new Error("kmods token not found");
         
         matches.sort();
-        state.cache.kmods.token = matches[matches.length - 1];
-        state.cache.kmods.key = cacheKey;
+        const latestToken = matches[matches.length - 1];
         
-        vars.kmod = state.cache.kmods.token;
+        console.log(`Latest kmods token: ${latestToken}`);
+        
+        vars.kmod = latestToken;
         return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
         
     } else if (feed === 'target') {
