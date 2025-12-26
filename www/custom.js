@@ -2673,10 +2673,11 @@ async function searchInFeed(query, feed, version, arch) {
             const resp = await fetch(url, { cache: 'force-cache' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
-            const isSnapshot = version.includes('SNAPSHOT');
+            const packageManager = determinePackageManager(version);
+            const isJsonFormat = (packageManager === 'apk');
 
             let list = [];
-            if (isSnapshot) {
+            if (isJsonFormat) {
                 const data = await resp.json();
                 
                 if (Array.isArray(data.packages)) {
@@ -2987,12 +2988,12 @@ async function getFeedPackageSet(feed, deviceInfo) {
     const resp = await fetch(url, { cache: 'force-cache' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
-    const contentType = resp.headers.get('content-type') || '';
-    const isJson = contentType.includes('application/json');
+    const packageManager = determinePackageManager(deviceInfo.version);
+    const isJsonFormat = (packageManager === 'apk');
     
     let pkgSet;
 
-    if (isJson) {
+    if (isJsonFormat) {
         const data = await resp.json();
         const names = new Set();
         
@@ -3019,12 +3020,12 @@ async function getFeedPackageSet(feed, deviceInfo) {
                 } else if (verOrInfo && typeof verOrInfo === 'object') {
                     if (verOrInfo.version) state.cache.packageVersions.set(vKey, verOrInfo.version);
                     const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                    if (info.desc) {
-                        state.cache.packageDescriptions.set(descKey, info.desc);
+                    if (verOrInfo.desc) {
+                        state.cache.packageDescriptions.set(descKey, verOrInfo.desc);
                     }
-                    if (info.size) {
+                    if (verOrInfo.size) {
                         const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(info.size));
+                        state.cache.packageSizes.set(sizeKey, parseInt(verOrInfo.size));
                     }
                 }
             });
@@ -3286,10 +3287,12 @@ async function getPackageDescription(pkgNameOrUrl) {
         const resp = await fetch(url, { cache: 'force-cache' });
         if (!resp.ok) return null;
         
-        const isSnapshot = deviceInfo.isSnapshot || (feed === 'kmods' && deviceInfo.isSnapshot);
+        const packageManager = determinePackageManager(deviceInfo.version);
+        const isJsonFormat = (packageManager === 'apk');
+        
         let description = null;
         
-        if (isSnapshot) {
+        if (isJsonFormat) {
             const data = await resp.json();
             let packages = [];
             
