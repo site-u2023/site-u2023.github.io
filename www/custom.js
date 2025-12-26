@@ -1561,13 +1561,43 @@ function updatePackageListToTextarea(source = 'unknown') {
         const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
         const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
         
+        const dependencyPackages = new Set();
+        for (const pkgName of checkedPackages) {
+            const pkgInfo = findPackageById(pkgName);
+            if (pkgInfo && pkgInfo.dependencies) {
+                pkgInfo.dependencies.forEach(depId => {
+                    if (!baseSet.has(depId) && !checkedPackages.has(depId)) {
+                        dependencyPackages.add(depId);
+                    }
+                });
+            }
+        }
+        
         const versionArchPrefix = `${state.device.version}:${state.device.arch}:`;
         
-        let totalBytes = 0;
+        let addedBytes = 0;
         for (const pkg of addedPackages) {
             const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
             if (typeof size === 'number' && size > 0) {
-                totalBytes += size;
+                addedBytes += size;
+            }
+        }
+        
+        let dependencyBytes = 0;
+        for (const pkg of dependencyPackages) {
+            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
+            if (typeof size === 'number' && size > 0) {
+                dependencyBytes += size;
+            }
+        }
+        
+        let langBytes = 0;
+        for (const pkg of state.packages.dynamic) {
+            if (pkg.startsWith('luci-i18n-')) {
+                const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
+                if (typeof size === 'number' && size > 0) {
+                    langBytes += size;
+                }
             }
         }
         
@@ -1586,15 +1616,17 @@ function updatePackageListToTextarea(source = 'unknown') {
         const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
             const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
-            const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
-            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size']}: ${baseMB} MB + ${current_language_json['tr-added-size']}: ${addedMB} MB = ${current_language_json['tr-total-size']}: ${totalMB} MB`;
+            const addedMB = (addedBytes / (1024 * 1024)).toFixed(2);
+            const langMB = (langBytes / (1024 * 1024)).toFixed(2);
+            const depMB = (dependencyBytes / (1024 * 1024)).toFixed(2);
+            const totalBytes = baseBytes + addedBytes + langBytes + dependencyBytes;
+            const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
+            
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'ベース'}: ${baseMB} MB + ${current_language_json['tr-added-size'] || '追加'}: ${addedMB} MB + ${current_language_json['tr-lang-size'] || '言語'}: ${langMB} MB + ${current_language_json['tr-dep-size'] || '依存'}: ${depMB} MB = ${current_language_json['tr-total-size'] || '統計'}: ${totalMB} MB`;
             
             const noteEl = document.querySelector('#package-size-note');
             if (noteEl) {
-                noteEl.classList.remove('tr-package-size-unavailable');
-                noteEl.classList.add('tr-package-size-note');
-                applyCustomTranslations(current_language_json);
+                noteEl.style.display = 'none';
             }
         }
     }
