@@ -2780,15 +2780,8 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function isApkRelease(version) {
-    if (!version) return false;
-    if (version.includes('SNAPSHOT')) return true;
-    const m = version.match(/^(\d+\.\d+)/);
-    return m && parseFloat(m[1]) >= 25.12;
-}
-
 async function fetchApkPackageSizes(packages, deviceInfo) {
-    if (!isApkRelease(deviceInfo.version)) return;
+    if (determinePackageManager(deviceInfo.version) !== 'apk') return;
     
     const prefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
     const channel = deviceInfo.version.includes('SNAPSHOT') ? 'snapshot' : 'release';
