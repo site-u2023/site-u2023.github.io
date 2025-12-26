@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1633) loaded');
+console.log('custom.js (R7.1226.1728) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2781,17 +2781,44 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
     const channel = deviceInfo.version.includes('SNAPSHOT') ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel].apk;
     
+    const kmodPackages = packages.filter(p => p.feed === 'kmods');
+    if (kmodPackages.length > 0 && !state.cache.kmods.token) {
+        try {
+            await buildPackageUrl('kmods', deviceInfo);
+        } catch (err) {
+            console.error('Failed to get kmods token:', err);
+        }
+    }
+    
     const tasks = [];
     
     for (const { name, feed, version: pkgVer } of packages) {
-        if (!pkgVer || feed === 'kmods' || feed === 'target') continue;
+        if (!pkgVer) continue;
+        if (feed === 'target') continue;
         if (state.cache.packageSizes.has(prefix + name)) continue;
         
-        const indexUrl = applyUrlTemplate(channelConfig.packageIndexUrl, {
-            version: deviceInfo.version,
-            arch: deviceInfo.arch,
-            feed: feed
-        });
+        let indexUrl;
+        if (feed === 'kmods') {
+            if (!state.cache.kmods.token) {
+                console.warn(`kmods token not available for ${name}`);
+                continue;
+            }
+            indexUrl = applyUrlTemplate(channelConfig.kmodsIndexUrl, {
+                version: deviceInfo.version,
+                arch: deviceInfo.arch,
+                vendor: deviceInfo.vendor,
+                subtarget: deviceInfo.subtarget,
+                feed: feed,
+                kmod: state.cache.kmods.token
+            });
+        } else {
+            indexUrl = applyUrlTemplate(channelConfig.packageIndexUrl, {
+                version: deviceInfo.version,
+                arch: deviceInfo.arch,
+                feed: feed
+            });
+        }
+        
         const url = indexUrl.replace('index.json', `${name}-${pkgVer}.apk`);
         
         tasks.push(
@@ -2799,10 +2826,15 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
                 .then(r => {
                     if (r.ok) {
                         const size = parseInt(r.headers.get('content-length') || '0');
-                        if (size > 0) state.cache.packageSizes.set(prefix + name, size);
+                        if (size > 0) {
+                            state.cache.packageSizes.set(prefix + name, size);
+                            console.log(`kmods size fetched: ${name} = ${size} bytes`);
+                        }
                     }
                 })
-                .catch(() => {})
+                .catch(err => {
+                    console.error(`Failed to fetch size for ${name}:`, err);
+                })
         );
     }
     
