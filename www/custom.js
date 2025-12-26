@@ -2849,7 +2849,9 @@ async function buildPackageUrl(feed, deviceInfo) {
     }
     
     const packageManager = determinePackageManager(version);
+    
     const channel = version.includes('SNAPSHOT') ? 'snapshot' : 'release';
+    const isVersionlessSnapshot = (version === 'SNAPSHOT');
     
     state.packageManager.activeManager = packageManager;
     state.packageManager.activeChannel = channel;
@@ -2871,10 +2873,17 @@ async function buildPackageUrl(feed, deviceInfo) {
         
         if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
             vars.kmod = state.cache.kmods.token;
-            return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
+            const baseUrl = isVersionlessSnapshot 
+                ? channelConfig.kmodsIndexUrl.replace('/releases/{version}/', '/snapshots/')
+                : channelConfig.kmodsIndexUrl;
+            return applyUrlTemplate(baseUrl, vars);
         }
         
-        const indexUrl = applyUrlTemplate(channelConfig.kmodsIndexBaseUrl, vars);
+        const baseUrl = isVersionlessSnapshot 
+            ? channelConfig.kmodsIndexBaseUrl.replace('/releases/{version}/', '/snapshots/')
+            : channelConfig.kmodsIndexBaseUrl;
+        const indexUrl = applyUrlTemplate(baseUrl, vars);
+        
         const resp = await fetch(indexUrl, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
         
@@ -2890,16 +2899,25 @@ async function buildPackageUrl(feed, deviceInfo) {
         state.cache.kmods.key = cacheKey;
         
         vars.kmod = state.cache.kmods.token;
-        return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
+        const finalUrl = isVersionlessSnapshot 
+            ? channelConfig.kmodsIndexUrl.replace('/releases/{version}/', '/snapshots/')
+            : channelConfig.kmodsIndexUrl;
+        return applyUrlTemplate(finalUrl, vars);
         
     } else if (feed === 'target') {
         if (!vendor || !subtarget) {
             throw new Error('Missing vendor or subtarget for target packages');
         }
-        return applyUrlTemplate(channelConfig.targetsIndexUrl, vars);
+        const baseUrl = isVersionlessSnapshot
+            ? channelConfig.targetsIndexUrl.replace('/releases/{version}/', '/snapshots/')
+            : channelConfig.targetsIndexUrl;
+        return applyUrlTemplate(baseUrl, vars);
         
     } else {
-        return applyUrlTemplate(channelConfig.packageIndexUrl, vars);
+        const baseUrl = isVersionlessSnapshot
+            ? channelConfig.packageIndexUrl.replace('/releases/{version}/', '/snapshots/')
+            : channelConfig.packageIndexUrl;
+        return applyUrlTemplate(baseUrl, vars);
     }
 }
 
