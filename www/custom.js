@@ -3264,19 +3264,13 @@ function addTooltip(element, descriptionSource) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    switch (feed) {
-        case 'packages': return index.packages?.has(pkgName) || false;
-        case 'luci':     return index.luci?.has(pkgName) || false;
-        case 'base':     return index.base?.has(pkgName) || false;
-        case 'target':   return index.target?.has(pkgName) || false;
-        case 'kmods':    return index.kmods?.has(pkgName) || false;
-        default:
-            return index.packages?.has(pkgName) || 
-                   index.luci?.has(pkgName) || 
-                   index.base?.has(pkgName) || 
-                   index.target?.has(pkgName) || 
-                   index.kmods?.has(pkgName) || false;
+    if (feed && index[feed]) {
+        return index[feed].has(pkgName);
     }
+    for (const feedSet of Object.values(index)) {
+        if (feedSet?.has?.(pkgName)) return true;
+    }
+    return false;
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
