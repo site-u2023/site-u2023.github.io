@@ -1396,8 +1396,33 @@ async function updateLanguagePackageCore() {
         checkPromises.push(promise);
     }
     await Promise.all(checkPromises);
+    
     if (addedLangPackages.size > 0) {
         console.log(`Language package update complete: ${addedLangPackages.size} packages added`);
+        
+        if (determinePackageManager(state.device.version) === 'apk') {
+            const deviceInfo = {
+                version: state.device.version,
+                arch: state.device.arch,
+                vendor: state.device.vendor,
+                subtarget: state.device.subtarget,
+                isSnapshot: (state.device.version || '').includes('SNAPSHOT')
+            };
+            
+            const prefix = `${deviceInfo.version}:${deviceInfo.arch}:luci:`;
+            const langPkgs = [];
+            for (const pkg of addedLangPackages) {
+                const ver = state.cache.packageVersions.get(prefix + pkg);
+                if (ver) {
+                    langPkgs.push({ name: pkg, feed: 'luci', version: ver });
+                }
+            }
+            
+            if (langPkgs.length > 0) {
+                console.log(`Fetching sizes for ${langPkgs.length} language packages`);
+                await fetchApkPackageSizes(langPkgs, deviceInfo);
+            }
+        }
     }
 }
 
