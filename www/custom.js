@@ -2853,7 +2853,6 @@ async function buildPackageUrl(feed, deviceInfo) {
     const channel = version === 'SNAPSHOT' ? 'snapshotBare' 
               : version.includes('SNAPSHOT') ? 'snapshot' 
               : 'release';
-    const isVersionlessSnapshot = (version === 'SNAPSHOT');
     
     state.packageManager.activeManager = packageManager;
     state.packageManager.activeChannel = channel;
@@ -2875,16 +2874,10 @@ async function buildPackageUrl(feed, deviceInfo) {
         
         if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
             vars.kmod = state.cache.kmods.token;
-            const baseUrl = isVersionlessSnapshot 
-                ? channelConfig.kmodsIndexUrl.replace('/releases/{version}/', '/snapshots/')
-                : channelConfig.kmodsIndexUrl;
-            return applyUrlTemplate(baseUrl, vars);
+            return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
         }
         
-        const baseUrl = isVersionlessSnapshot 
-            ? channelConfig.kmodsIndexBaseUrl.replace('/releases/{version}/', '/snapshots/')
-            : channelConfig.kmodsIndexBaseUrl;
-        const indexUrl = applyUrlTemplate(baseUrl, vars);
+        const indexUrl = applyUrlTemplate(channelConfig.kmodsIndexBaseUrl, vars);
         
         const resp = await fetch(indexUrl, { cache: 'no-store' });
         if (!resp.ok) throw new Error(`Failed to fetch kmods index: HTTP ${resp.status}`);
@@ -2901,25 +2894,16 @@ async function buildPackageUrl(feed, deviceInfo) {
         state.cache.kmods.key = cacheKey;
         
         vars.kmod = state.cache.kmods.token;
-        const finalUrl = isVersionlessSnapshot 
-            ? channelConfig.kmodsIndexUrl.replace('/releases/{version}/', '/snapshots/')
-            : channelConfig.kmodsIndexUrl;
-        return applyUrlTemplate(finalUrl, vars);
+        return applyUrlTemplate(channelConfig.kmodsIndexUrl, vars);
         
     } else if (feed === 'target') {
         if (!vendor || !subtarget) {
             throw new Error('Missing vendor or subtarget for target packages');
         }
-        const baseUrl = isVersionlessSnapshot
-            ? channelConfig.targetsIndexUrl.replace('/releases/{version}/', '/snapshots/')
-            : channelConfig.targetsIndexUrl;
-        return applyUrlTemplate(baseUrl, vars);
+        return applyUrlTemplate(channelConfig.targetsIndexUrl, vars);
         
     } else {
-        const baseUrl = isVersionlessSnapshot
-            ? channelConfig.packageIndexUrl.replace('/releases/{version}/', '/snapshots/')
-            : channelConfig.packageIndexUrl;
-        return applyUrlTemplate(baseUrl, vars);
+        return applyUrlTemplate(channelConfig.packageIndexUrl, vars);
     }
 }
 
