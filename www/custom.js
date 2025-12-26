@@ -2784,7 +2784,8 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
     const tasks = [];
     
     for (const { name, feed, version: pkgVer } of packages) {
-        if (!pkgVer || feed === 'kmods' || feed === 'target') continue;
+        if (!pkgVer) continue;
+        if (feed === 'target') continue;
         if (state.cache.packageSizes.has(prefix + name)) continue;
         
         const indexUrl = applyUrlTemplate(channelConfig.packageIndexUrl, {
