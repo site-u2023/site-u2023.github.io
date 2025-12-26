@@ -1807,15 +1807,6 @@ function getActualConnectionType() {
     return null;
 }
 
-function XXX_collectPackageEnableVars(values) {
-    document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
-        const enableVar = cb.getAttribute('data-enable-var');
-        if (enableVar) {
-            values[enableVar] = '1';
-        }
-    });
-}
-
 function collectPackageEnableVars(values) {
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
 
