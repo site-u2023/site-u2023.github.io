@@ -8,7 +8,7 @@
     "tr-base-size": "Base",
     "tr-added-size": "Added",
     "tr-total-size": "Total",
-    "tr-package-size-snapshot-unavailable": "※ Package size information is not available for SNAPSHOT builds",
+    "tr-package-size-unavailable": "※ Package size information is not available",
     "tr-package-size-note": "※ Language and dependency packages are not included",
     "tr-uci-size-limit": "※ File size limit: 20480 bytes: 20.00 KB",
     
