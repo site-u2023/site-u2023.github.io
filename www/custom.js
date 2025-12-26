@@ -1,9 +1,9 @@
 // custom.js
-console.log('custom.js (R7.1226.1158) loaded');
+console.log('custom.js (R7.1226.1143) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
-    log: true,   // 通常ログ
+    log: false,   // 通常ログ
     info: false,  // 情報
     warn: false,  // 警告
     debug: false, // デバッグ
@@ -215,13 +215,14 @@ function applyUrlTemplate(template, vars) {
 function getConfiguredFeeds() {
     const channel = state.packageManager.activeChannel || 'release';
     const manager = state.packageManager.activeManager || 'opkg';
-    const channelConfig = state.packageManager.config?.channels?.[channel]?.[manager];
     
-    if (!channelConfig) return ['base', 'packages', 'luci'];
+    const managerConfig = state.packageManager.config?.packageManagers?.[manager];
     
-    const feeds = [...(channelConfig.feeds || [])];
-    if (channelConfig.includeTargets) feeds.push('target');
-    if (channelConfig.includeKmods) feeds.push('kmods');
+    if (!managerConfig) return ['base', 'packages', 'luci', 'routing', 'telephony'];
+    
+    const feeds = [...(managerConfig.feeds || [])];
+    if (managerConfig.includeTargets) feeds.push('target');
+    if (managerConfig.includeKmods) feeds.push('kmods');
     
     return feeds;
 }
@@ -3263,11 +3264,13 @@ function addTooltip(element, descriptionSource) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    return index.packages?.has(pkgName) || 
-           index.luci?.has(pkgName) || 
-           index.base?.has(pkgName) || 
-           index.target?.has(pkgName) || 
-           index.kmods?.has(pkgName) || false;
+    if (feed && index[feed]) {
+        return index[feed].has(pkgName);
+    }
+    for (const feedSet of Object.values(index)) {
+        if (feedSet?.has?.(pkgName)) return true;
+    }
+    return false;
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
