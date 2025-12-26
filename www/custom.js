@@ -2619,8 +2619,6 @@ async function searchPackages(query, inputElement) {
     const version = state.device.version || document.querySelector("#versions")?.value;
     const vendor = state.device.vendor;
     
-    const allResults = new Set();
-    
     let feeds;
     if (query.toLowerCase().startsWith('kmod-')) {
         feeds = vendor ? ['kmods'] : [];
@@ -2628,14 +2626,17 @@ async function searchPackages(query, inputElement) {
         feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
     }
     
-    for (const feed of feeds) {
-        try {
-            const results = await searchInFeed(query, feed, version, arch);
-            results.forEach(pkg => allResults.add(pkg));
-        } catch (err) {
-            console.error(`Error searching ${feed}:`, err);
+    // 並列で全フィード検索
+    const results = await Promise.allSettled(
+        feeds.map(feed => searchInFeed(query, feed, version, arch))
+    );
+    
+    const allResults = new Set();
+    results.forEach(result => {
+        if (result.status === 'fulfilled') {
+            result.value.forEach(pkg => allResults.add(pkg));
         }
-    }
+    });
     
     const sortedResults = Array.from(allResults).sort((a, b) => {
         const q = query.toLowerCase();
@@ -2646,7 +2647,6 @@ async function searchPackages(query, inputElement) {
         const bExact = (bLower === q);
         if (aExact && !bExact) return -1;
         if (bExact && !aExact) return 1;
-        if (aExact && bExact) return a.localeCompare(b);
         return a.localeCompare(b);
     });
     
