@@ -15,7 +15,7 @@
         "forceOverwrite": "--force-overwrite",
         "allowUntrusted": ""
       },
-      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "feeds": ["base", "packages", "luci", "routing", "telephony", "video"],
       "includeTargets": true,
       "includeKmods": true
     },
@@ -32,7 +32,7 @@
         "forceOverwrite": "--force-overwrite",
         "allowUntrusted": "--allow-untrusted"
       },
-      "feeds": ["base", "packages", "luci", "routing", "telephony"],
+      "feeds": ["base", "packages", "luci", "routing", "telephony", "video"],
       "includeTargets": true,
       "includeKmods": true
     }
