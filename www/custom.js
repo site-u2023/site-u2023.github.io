@@ -2781,7 +2781,8 @@ document.addEventListener('click', function(e) {
 });
 
 function isApkRelease(version) {
-    if (!version || version.includes('SNAPSHOT')) return false;
+    if (!version) return false;
+    if (version.includes('SNAPSHOT')) return true;
     const m = version.match(/^(\d+\.\d+)/);
     return m && parseFloat(m[1]) >= 25.12;
 }
@@ -2790,12 +2791,19 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
     if (!isApkRelease(deviceInfo.version)) return;
     
     const prefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
+    const channel = deviceInfo.version.includes('SNAPSHOT') ? 'snapshot' : 'release';
+    const channelConfig = state.packageManager.config.channels[channel].apk;
     
     for (const { name, feed, version: pkgVer } of packages) {
         if (!pkgVer || feed === 'kmods' || feed === 'target') continue;
         if (state.cache.packageSizes.has(prefix + name)) continue;
         
-        const url = `https://downloads.openwrt.org/releases/${deviceInfo.version}/packages/${deviceInfo.arch}/${feed}/${name}-${pkgVer}.apk`;
+        const indexUrl = applyUrlTemplate(channelConfig.packageIndexUrl, {
+            version: deviceInfo.version,
+            arch: deviceInfo.arch,
+            feed: feed
+        });
+        const url = indexUrl.replace('index.json', `${name}-${pkgVer}.apk`);
         
         try {
             const r = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
