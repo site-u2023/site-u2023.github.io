@@ -3130,11 +3130,28 @@ async function verifyAllPackages() {
         isSnapshot: (state.device.version || '').includes('SNAPSHOT')
     };
     
+    const basePackages = [
+        ...state.packages.default,
+        ...state.packages.device,
+        ...state.packages.extra
+    ];
+    
     const allFeeds = getConfiguredFeeds();
-    const neededFeeds = new Set(allFeeds.filter(f => f !== 'kmods'));
+    const neededFeeds = new Set(allFeeds.filter(f => f !== 'kmods' && f !== 'target'));
+    
     if (uniquePackages.some(p => p.feed === 'kmods')) {
         neededFeeds.add('kmods');
     }
+    
+    for (const pkgName of basePackages) {
+        const feed = guessFeedForPackage(pkgName);
+        if (feed === 'kmods' && deviceInfo.vendor && deviceInfo.subtarget) {
+            neededFeeds.add('kmods');
+        }
+    }
+    
+    console.log(`Fetching feeds: ${[...neededFeeds].join(', ')}`);
+    
     const index = await buildAvailabilityIndex(deviceInfo, neededFeeds);
 
     let unavailableCount = 0;
@@ -3153,6 +3170,7 @@ async function verifyAllPackages() {
     const elapsedTime = Date.now() - startTime;
     console.log(`Package verification completed in ${elapsedTime}ms`);
     console.log(`${unavailableCount} packages are not available for this device`);
+    console.log(`Package sizes cached: ${state.cache.packageSizes.size}`);
 
     if (checkedUnavailable.length > 0) {
         console.warn('The following pre-selected packages are not available:', checkedUnavailable);
