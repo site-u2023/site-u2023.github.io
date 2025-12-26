@@ -3045,6 +3045,35 @@ async function getFeedPackageSet(feed, deviceInfo) {
     return pkgSet;
 }
 
+function updatePackageSizeDisplay() {
+    if (!state.device.version || !state.device.arch) return;
+    
+    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
+        const packageId = checkbox.getAttribute('data-package');
+        if (!packageId) return;
+        
+        const label = checkbox.closest('label');
+        if (!label) return;
+        
+        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${packageId}`;
+        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
+        
+        const textElement = label.querySelector('a.package-link') || label.querySelector('span');
+        if (!textElement) return;
+        
+        const currentText = textElement.textContent;
+        const baseText = currentText.split(':')[0];
+        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
+            const sizeKB = (sizeBytes / 1024).toFixed(1);
+            textElement.textContent = `${baseText}: ${sizeKB} KB`;
+        } else {
+            textElement.textContent = baseText;
+        }
+    });
+    
+    console.log('Package size display updated');
+}
+
 // ==================== パッケージ存在確認 ====================
 async function verifyAllPackages() {
     const arch = state.device.arch;
