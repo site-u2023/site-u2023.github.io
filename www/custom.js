@@ -3136,7 +3136,10 @@ async function verifyAllPackages() {
         fetchApkPackageSizes(pkgs, {
             version: state.device.version,
             arch: state.device.arch
-        }).then(() => updatePackageListToTextarea('apk-sizes-loaded'));
+        }).then(() => {
+            updatePackageSizeDisplay();
+            updatePackageListToTextarea('apk-sizes-loaded');
+        });
     }
 }
 
