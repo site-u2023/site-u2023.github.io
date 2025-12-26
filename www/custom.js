@@ -1,9 +1,9 @@
 // custom.js
-console.log('custom.js (R7.1226.1149) loaded');
+console.log('custom.js (R7.1226.1158) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
-    log: false,   // 通常ログ
+    log: true,   // 通常ログ
     info: false,  // 情報
     warn: false,  // 警告
     debug: false, // デバッグ
