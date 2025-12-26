@@ -7,6 +7,8 @@
     "tr-add-commands": "Add Command",
     "tr-base-size": "Base",
     "tr-added-size": "Added",
+    "tr-lang-size": "Lang",
+    "tr-dep-size": "Deps",
     "tr-total-size": "Total",
     "tr-package-size-unavailable": "※ Package size information is not available",
     "tr-package-size-note": "※ Language and dependency packages are not included",
