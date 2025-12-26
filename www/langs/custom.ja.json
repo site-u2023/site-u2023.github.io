@@ -7,6 +7,8 @@
     "tr-add-commands": "コマンド追加",
     "tr-base-size": "ベース",
     "tr-added-size": "追加",
+    "tr-lang-size": "言語",
+    "tr-dep-size": "依存",
     "tr-total-size": "総計",
     "tr-package-size-unavailable": "※ パッケージサイズ情報は利用できません",  
     "tr-package-size-note": "※ 言語及び依存パッケージは含まれません",
