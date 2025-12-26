@@ -69,7 +69,7 @@
     "tr-pppoe": "PPPoE",
     "tr-dslite": "DS-Lite",
     "tr-mape": "MAP-E",
-    "tr-ap": "APモード",
+    "tr-ap": "Dumb AP",
     "tr-auto-detection": "自動検出",
     "tr-dhcp": "DHCP",
     "tr-internet-optimization-disabled": "インターネット無効",
