@@ -407,7 +407,7 @@ window.updateImages = function(version, mobj) {
                     UI.updateElement(indicator, { show: true });
                 }
 
-                verifyAllPackages().then(() => {
+                verifyAllPackages(version).then(() => {
                     if (indicator) {
                         UI.updateElement(indicator, { show: false });
                     }
@@ -2999,8 +2999,10 @@ async function getFeedPackageSet(feed, deviceInfo) {
 }
 
 // ==================== パッケージ存在確認 ====================
-async function verifyAllPackages() {
+async function verifyAllPackages(overrideVersion = null) {
     const arch = state.device.arch;
+    const version = overrideVersion || state.device.version;
+    
     if (!state.packages.json || !arch) {
         console.log('Cannot verify packages: missing data');
         return;
@@ -3050,10 +3052,10 @@ async function verifyAllPackages() {
 
     const deviceInfo = {
         arch: state.device.arch,
-        version: state.device.version,
+        version: version,
         vendor: state.device.vendor,
         subtarget: state.device.subtarget,
-        isSnapshot: (state.device.version || '').includes('SNAPSHOT')
+        isSnapshot: (version || '').includes('SNAPSHOT')
     };
     
     const allFeeds = getConfiguredFeeds();
