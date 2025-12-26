@@ -130,7 +130,8 @@ const state = {
         lastPackageListHash: null,
         prevUISelections: new Set(),
         packageSizes: new Map(),
-        packageDescriptions: new Map() 
+        packageDescriptions: new Map(),
+        packageVersions: new Map()
     },
 
     dom: {
@@ -2779,6 +2780,33 @@ document.addEventListener('click', function(e) {
     }
 });
 
+function isApkRelease(version) {
+    if (!version || version.includes('SNAPSHOT')) return false;
+    const m = version.match(/^(\d+\.\d+)/);
+    return m && parseFloat(m[1]) >= 25.12;
+}
+
+async function fetchApkPackageSizes(packages, deviceInfo) {
+    if (!isApkRelease(deviceInfo.version)) return;
+    
+    const prefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
+    
+    for (const { name, feed, version: pkgVer } of packages) {
+        if (!pkgVer || feed === 'kmods' || feed === 'target') continue;
+        if (state.cache.packageSizes.has(prefix + name)) continue;
+        
+        const url = `https://downloads.openwrt.org/releases/${deviceInfo.version}/packages/${deviceInfo.arch}/${feed}/${name}-${pkgVer}.apk`;
+        
+        try {
+            const r = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
+            if (r.ok) {
+                const size = parseInt(r.headers.get('content-length') || '0');
+                if (size > 0) state.cache.packageSizes.set(prefix + name, size);
+            }
+        } catch (e) {}
+    }
+}
+
 async function buildPackageUrl(feed, deviceInfo) {
     const { version, arch, vendor, subtarget } = deviceInfo;
     
@@ -2932,9 +2960,13 @@ async function getFeedPackageSet(feed, deviceInfo) {
                 }
             });
         } else if (data.packages && typeof data.packages === 'object') {
-            Object.entries(data.packages).forEach(([name, info]) => {
+            Object.entries(data.packages).forEach(([name, verOrInfo]) => {
                 names.add(name);
-                if (info && typeof info === 'object') {
+                const vKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${name}`;
+                if (typeof verOrInfo === 'string') {
+                    state.cache.packageVersions.set(vKey, verOrInfo);
+                } else if (verOrInfo && typeof verOrInfo === 'object') {
+                    if (verOrInfo.version) state.cache.packageVersions.set(vKey, verOrInfo.version);
                     const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
                     if (info.desc) {
                         state.cache.packageDescriptions.set(descKey, info.desc);
@@ -3088,6 +3120,24 @@ async function verifyAllPackages() {
     
     updatePackageSizeDisplay();
     updatePackageListToTextarea('package-verification-complete');
+    
+    if (isApkRelease(state.device.version)) {
+        const pkgs = [];
+        const prefix = `${state.device.version}:${state.device.arch}:`;
+        
+        state.packages.json.categories.forEach(cat => {
+            cat.packages.forEach(p => {
+                const feed = guessFeedForPackage(p.id);
+                const ver = state.cache.packageVersions.get(prefix + feed + ':' + p.id);
+                if (ver) pkgs.push({ name: p.id, feed, version: ver });
+            });
+        });
+        
+        fetchApkPackageSizes(pkgs, {
+            version: state.device.version,
+            arch: state.device.arch
+        }).then(() => updatePackageListToTextarea('apk-sizes-loaded'));
+    }
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
