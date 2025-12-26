@@ -2849,7 +2849,6 @@ async function buildPackageUrl(feed, deviceInfo) {
     }
     
     const packageManager = determinePackageManager(version);
-    
     const channel = version.includes('SNAPSHOT') ? 'snapshot' : 'release';
     const isVersionlessSnapshot = (version === 'SNAPSHOT');
     
