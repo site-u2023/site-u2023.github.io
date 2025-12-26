@@ -268,14 +268,14 @@
     "tr-agh-customscript-password": "Password (min 8 characters)",
     "tr-agh-customscript-webport": "WEB Port",
     "tr-agh-customscript-dnsport": "DNS Port",
-    "tr-dns-adblock-adblock-fast-info": "Filters are automatically added based on your language settings.",
+    "tr-dns-adblock-adblock-fast-info": "Lightweight: Memory ~1MB / Storage ~1MB",
     
     "tr-dns-adblock-title": "DNS Ad Blocking",
     "tr-dns-adblock-adblock-fast": "Adblock Fast",
     "tr-dns-adblock-filter-url": "Filter URL",
     "tr-dns-adblock-nextdns": "NextDNS",
     "tr-dns-adblock-disabled": "Disabled",
-    "tr-dns-adblock-nextdns-info": "Register account and get Configuration ID at <nextdns.io>",
+    "tr-dns-adblock-nextdns-info": "External DNS (No device resources required)<br>Register at <nextdns.io> and get your Configuration ID",
     
     "tr-tui-restore-point": "Restore Point",
     "tr-tui-no-restore-points": "No restore points available",
