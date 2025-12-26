@@ -3169,7 +3169,10 @@ async function verifyAllPackages() {
         
         fetchApkPackageSizes(pkgs, {
             version: state.device.version,
-            arch: state.device.arch
+            arch: state.device.arch,
+            vendor: state.device.vendor,
+            subtarget: state.device.subtarget,
+            isSnapshot: (state.device.version || '').includes('SNAPSHOT')
         }).then(() => {
             updatePackageSizeDisplay();
             updatePackageListToTextarea('force-update');
