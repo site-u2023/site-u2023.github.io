@@ -433,7 +433,7 @@
           "exclusiveVars": {
             "standard": ["wlan_ssid", "wlan_password"],
             "usteer": ["wlan_ssid", "wlan_password", "mobility_domain", "snr"],
-            "mlo": ["wlan_ssid", "wlan_password"],
+            "mlo": ["wlan_ssid", "wlan_password", "mld_id"],
             "disabled": []
           }
         },
