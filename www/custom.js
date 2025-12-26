@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1326) loaded');
+console.log('custom.js (R7.1226.1633) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -3146,7 +3146,7 @@ async function verifyAllPackages() {
             arch: state.device.arch
         }).then(() => {
             updatePackageSizeDisplay();
-            updatePackageListToTextarea('apk-sizes-loaded');
+            updatePackageListToTextarea('force-update');
         });
     }
 }
