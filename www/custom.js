@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1310) loaded');
+console.log('custom.js (R7.1226.1326) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -389,6 +389,8 @@ window.updateImages = function(version, mobj) {
             state.cache.feedPackageSet.clear();
             state.cache.availabilityIndex.clear();
             state.cache.packageSizes.clear();
+            state.cache.kmods.token = null;
+            state.cache.kmods.key = null; 
             
             document.querySelectorAll('.package-item').forEach(item => {
                 item.style.display = '';
@@ -407,7 +409,7 @@ window.updateImages = function(version, mobj) {
                     UI.updateElement(indicator, { show: true });
                 }
 
-                verifyAllPackages(version).then(() => {
+                verifyAllPackages().then(() => {
                     if (indicator) {
                         UI.updateElement(indicator, { show: false });
                     }
@@ -2999,10 +3001,8 @@ async function getFeedPackageSet(feed, deviceInfo) {
 }
 
 // ==================== パッケージ存在確認 ====================
-async function verifyAllPackages(overrideVersion = null) {
+async function verifyAllPackages() {
     const arch = state.device.arch;
-    const version = overrideVersion || state.device.version;
-    
     if (!state.packages.json || !arch) {
         console.log('Cannot verify packages: missing data');
         return;
@@ -3052,10 +3052,10 @@ async function verifyAllPackages(overrideVersion = null) {
 
     const deviceInfo = {
         arch: state.device.arch,
-        version: version,
+        version: state.device.version,
         vendor: state.device.vendor,
         subtarget: state.device.subtarget,
-        isSnapshot: (version || '').includes('SNAPSHOT')
+        isSnapshot: (state.device.version || '').includes('SNAPSHOT')
     };
     
     const allFeeds = getConfiguredFeeds();
