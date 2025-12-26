@@ -427,11 +427,13 @@
           "options": [
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
             {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
+            {"value": "mlo", "label": "MLO (β)", "class": "tr-mlo"},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
             "standard": ["wlan_ssid", "wlan_password"],
             "usteer": ["wlan_ssid", "wlan_password", "mobility_domain", "snr"],
+            "mlo": ["wlan_ssid", "wlan_password"],
             "disabled": []
           }
         },
@@ -445,7 +447,7 @@
           "placeholder": "OpenWrt",
           "default": "OpenWrt",
           "maxlength": 32,
-          "showWhen": {"wifi_mode": ["standard", "usteer"]}
+          "showWhen": {"wifi_mode": ["standard", "usteer", "mlo"]}
         },
         {
           "type": "field",
@@ -458,7 +460,7 @@
           "default": "password",
           "minlength": 8,
           "maxlength": 63,
-          "showWhen": {"wifi_mode": ["standard", "usteer"]}
+          "showWhen": {"wifi_mode": ["standard", "usteer", "mlo"]}
         },
         {
           "type": "field",
