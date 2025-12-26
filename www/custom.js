@@ -2779,7 +2779,9 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
     if (determinePackageManager(deviceInfo.version) !== 'apk') return;
     
     const prefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
-    const channel = deviceInfo.version.includes('SNAPSHOT') ? 'snapshot' : 'release';
+    const channel = deviceInfo.version === 'SNAPSHOT' ? 'snapshotBare'
+              : deviceInfo.version.includes('SNAPSHOT') ? 'snapshot'
+              : 'release';
     const channelConfig = state.packageManager.config.channels[channel].apk;
     
     const kmodPackages = packages.filter(p => p.feed === 'kmods');
@@ -2829,7 +2831,7 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
                         const size = parseInt(r.headers.get('content-length') || '0');
                         if (size > 0) {
                             state.cache.packageSizes.set(prefix + name, size);
-                            console.log(`kmods size fetched: ${name} = ${size} bytes`);
+                            console.log(`Size fetched: ${name} = ${size} bytes`);
                         }
                     }
                 })
