@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1519) loaded');
+console.log('custom.js (R7.1226.1326) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -130,8 +130,7 @@ const state = {
         lastPackageListHash: null,
         prevUISelections: new Set(),
         packageSizes: new Map(),
-        packageDescriptions: new Map(),
-        packageVersions: new Map()
+        packageDescriptions: new Map() 
     },
 
     dom: {
@@ -2780,106 +2779,6 @@ document.addEventListener('click', function(e) {
     }
 });
 
-function isApkRelease(version) {
-    if (!version) return false;
-    if (version === 'SNAPSHOT' || version.includes('SNAPSHOT')) return false;
-    
-    const majorMinor = version.match(/^(\d+\.\d+)/)?.[1];
-    if (!majorMinor) return false;
-    
-    return parseFloat(majorMinor) >= 25.12;
-}
-
-function buildApkDownloadUrl(pkgName, pkgVersion, deviceInfo, feed) {
-    const { version, arch, vendor, subtarget } = deviceInfo;
-    
-    if (feed === 'kmods') {
-        const kmodToken = state.cache.kmods.token;
-        if (!kmodToken) return null;
-        return `https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/kmods/${kmodToken}/${pkgName}-${pkgVersion}.apk`;
-    } else if (feed === 'target') {
-        return `https://downloads.openwrt.org/releases/${version}/targets/${vendor}/${subtarget}/packages/${pkgName}-${pkgVersion}.apk`;
-    } else {
-        return `https://downloads.openwrt.org/releases/${version}/packages/${arch}/${feed}/${pkgName}-${pkgVersion}.apk`;
-    }
-}
-
-async function fetchSingleApkSize(pkgName, pkgVersion, deviceInfo, feed) {
-    const url = buildApkDownloadUrl(pkgName, pkgVersion, deviceInfo, feed);
-    if (!url) return 0;
-    
-    try {
-        const resp = await fetch(url, { 
-            method: 'HEAD',
-            cache: 'force-cache'
-        });
-        
-        if (resp.ok) {
-            return parseInt(resp.headers.get('Content-Length') || '0', 10);
-        }
-    } catch (err) {
-        console.warn(`Failed to fetch size for ${pkgName}:`, err.message);
-    }
-    return 0;
-}
-
-async function fetchApkPackageSizes(packages, deviceInfo) {
-    if (!packages || packages.length === 0) return new Map();
-    if (!isApkRelease(deviceInfo.version)) return new Map();
-    
-    const versionPrefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
-    const concurrency = 10;
-    let completed = 0;
-    
-    console.log(`Fetching APK package sizes for ${packages.length} packages...`);
-    
-    const queue = [...packages];
-    const results = new Map();
-    
-    const worker = async () => {
-        while (queue.length > 0) {
-            const pkg = queue.shift();
-            if (!pkg) continue;
-            
-            const { name, feed } = pkg;
-            const cacheKey = versionPrefix + name;
-            
-            if (state.cache.packageSizes.has(cacheKey)) {
-                completed++;
-                continue;
-            }
-            
-            const pkgVersionKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${name}`;
-            const pkgVersion = state.cache.packageVersions.get(pkgVersionKey);
-            
-            if (!pkgVersion) {
-                completed++;
-                continue;
-            }
-            
-            const size = await fetchSingleApkSize(name, pkgVersion, deviceInfo, feed);
-            
-            if (size > 0) {
-                state.cache.packageSizes.set(cacheKey, size);
-                results.set(name, size);
-            }
-            
-            completed++;
-        }
-    };
-    
-    const workers = [];
-    for (let i = 0; i < Math.min(concurrency, packages.length); i++) {
-        workers.push(worker());
-    }
-    
-    await Promise.all(workers);
-    
-    console.log(`APK package sizes fetched: ${results.size}/${packages.length}`);
-    
-    return results;
-}
-
 async function buildPackageUrl(feed, deviceInfo) {
     const { version, arch, vendor, subtarget } = deviceInfo;
     
@@ -3033,25 +2932,16 @@ async function getFeedPackageSet(feed, deviceInfo) {
                 }
             });
         } else if (data.packages && typeof data.packages === 'object') {
-            Object.entries(data.packages).forEach(([name, versionOrInfo]) => {
+            Object.entries(data.packages).forEach(([name, info]) => {
                 names.add(name);
-                
-                const versionKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${name}`;
-                if (typeof versionOrInfo === 'string') {
-                    // index.json format: { "packages": { "name": "version" } }
-                    state.cache.packageVersions.set(versionKey, versionOrInfo);
-                } else if (versionOrInfo && typeof versionOrInfo === 'object') {
-                    // Extended format with object info
-                    if (versionOrInfo.version) {
-                        state.cache.packageVersions.set(versionKey, versionOrInfo.version);
-                    }
+                if (info && typeof info === 'object') {
                     const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                    if (versionOrInfo.desc) {
-                        state.cache.packageDescriptions.set(descKey, versionOrInfo.desc);
+                    if (info.desc) {
+                        state.cache.packageDescriptions.set(descKey, info.desc);
                     }
-                    if (versionOrInfo.size) {
+                    if (info.size) {
                         const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(versionOrInfo.size));
+                        state.cache.packageSizes.set(sizeKey, parseInt(info.size));
                     }
                 }
             });
@@ -3198,50 +3088,6 @@ async function verifyAllPackages() {
     
     updatePackageSizeDisplay();
     updatePackageListToTextarea('package-verification-complete');
-    
-    if (isApkRelease(state.device.version)) {
-        const packagesToFetch = [];
-        
-        state.packages.json.categories.forEach(category => {
-            category.packages.forEach(pkg => {
-                const feed = guessFeedForPackage(pkg.id);
-                packagesToFetch.push({ name: pkg.id, feed });
-                
-                if (pkg.langs) {
-                    const langCode = state.ui.language.selected || 'en';
-                    const baseName = pkg.id.replace('luci-app-', '').replace('luci-proto-', '').replace('luci-mod-', '');
-                    const langPkg = `luci-i18n-${baseName}-${langCode}`;
-                    packagesToFetch.push({ name: langPkg, feed: 'luci' });
-                }
-            });
-        });
-        
-        state.packages.json.categories.forEach(category => {
-            category.packages.forEach(pkg => {
-                if (pkg.dependencies) {
-                    pkg.dependencies.forEach(depId => {
-                        const feed = guessFeedForPackage(depId);
-                        packagesToFetch.push({ name: depId, feed });
-                    });
-                }
-            });
-        });
-        
-        const uniquePackages = Array.from(
-            new Map(packagesToFetch.map(p => [`${p.name}:${p.feed}`, p])).values()
-        );
-    
-        fetchApkPackageSizes(uniquePackages, {
-            version: state.device.version,
-            arch: state.device.arch,
-            vendor: state.device.vendor,
-            subtarget: state.device.subtarget
-        }).then(() => {
-            updatePackageListToTextarea('apk-sizes-loaded');
-        }).catch(err => {
-            console.warn('APK size fetch failed:', err);
-        });
-    }
 }
 
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
