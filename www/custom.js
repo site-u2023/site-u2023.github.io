@@ -2787,6 +2787,8 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
     const channel = deviceInfo.version.includes('SNAPSHOT') ? 'snapshot' : 'release';
     const channelConfig = state.packageManager.config.channels[channel].apk;
     
+    const tasks = [];
+    
     for (const { name, feed, version: pkgVer } of packages) {
         if (!pkgVer || feed === 'kmods' || feed === 'target') continue;
         if (state.cache.packageSizes.has(prefix + name)) continue;
@@ -2798,14 +2800,19 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
         });
         const url = indexUrl.replace('index.json', `${name}-${pkgVer}.apk`);
         
-        try {
-            const r = await fetch(url, { method: 'HEAD', cache: 'force-cache' });
-            if (r.ok) {
-                const size = parseInt(r.headers.get('content-length') || '0');
-                if (size > 0) state.cache.packageSizes.set(prefix + name, size);
-            }
-        } catch (e) {}
+        tasks.push(
+            fetch(url, { method: 'HEAD', cache: 'force-cache' })
+                .then(r => {
+                    if (r.ok) {
+                        const size = parseInt(r.headers.get('content-length') || '0');
+                        if (size > 0) state.cache.packageSizes.set(prefix + name, size);
+                    }
+                })
+                .catch(() => {})
+        );
     }
+    
+    await Promise.all(tasks);
 }
 
 async function buildPackageUrl(feed, deviceInfo) {
