@@ -3139,13 +3139,11 @@ async function verifyAllPackages() {
     const allFeeds = getConfiguredFeeds();
     const neededFeeds = new Set(allFeeds.filter(f => f !== 'kmods' && f !== 'target'));
     
-    if (uniquePackages.some(p => p.feed === 'kmods')) {
-        neededFeeds.add('kmods');
-    }
-    
-    for (const pkgName of basePackages) {
-        const feed = guessFeedForPackage(pkgName);
-        if (feed === 'kmods' && deviceInfo.vendor && deviceInfo.subtarget) {
+    if (deviceInfo.vendor && deviceInfo.subtarget) {
+        neededFeeds.add('target');
+        
+        if (uniquePackages.some(p => p.feed === 'kmods') || 
+            basePackages.some(p => p.startsWith('kmod-'))) {
             neededFeeds.add('kmods');
         }
     }
