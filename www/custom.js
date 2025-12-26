@@ -136,7 +136,6 @@ const state = {
 
     dom: {
         textarea: null,
-        sizeBreakdown: null,
         packageLoadingIndicator: null
     },
 
@@ -1568,56 +1567,9 @@ function updatePackageListToTextarea(source = 'unknown') {
     });
 
     if (textarea) {
-        const baseSet = new Set([...state.packages.default, ...state.packages.device, ...state.packages.extra]);
-        const addedPackages = uniquePackages.filter(pkg => !baseSet.has(pkg));
-        
-        const versionArchPrefix = `${state.device.version}:${state.device.arch}:`;
-        
-        let addedBytes = 0;
-        for (const pkg of addedPackages) {
-            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-            if (typeof size === 'number' && size > 0) {
-                addedBytes += size;
-            }
-        }
-        
-        let langBytes = 0;
-        for (const pkg of state.packages.dynamic) {
-            if (pkg.startsWith('luci-i18n-')) {
-                const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-                if (typeof size === 'number' && size > 0) {
-                    langBytes += size;
-                }
-            }
-        }
-        
-        let baseBytes = 0;
-        for (const pkg of baseSet) {
-            const size = state.cache.packageSizes.get(versionArchPrefix + pkg);
-            if (typeof size === 'number' && size > 0) {
-                baseBytes += size;
-            }
-        }
-
         textarea.value = uniquePackages.join(' ');
         textarea.style.height = 'auto';
         textarea.style.height = textarea.scrollHeight + 'px';
-        
-        const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
-        if (sizeBreakdownEl) {
-            const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
-            const addedMB = (addedBytes / (1024 * 1024)).toFixed(2);
-            const langMB = (langBytes / (1024 * 1024)).toFixed(2);
-            const totalBytes = baseBytes + addedBytes + langBytes;
-            const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
-            
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size']}: ${baseMB} MB + ${current_language_json['tr-added-size']}: ${addedMB} MB + ${current_language_json['tr-lang-size']}: ${langMB} MB = ${current_language_json['tr-total-size']}: ${totalMB} MB`;
-            
-            const noteEl = document.querySelector('#package-size-note');
-            if (noteEl) {
-                noteEl.style.display = 'none';
-            }
-        }
     }
     console.log(`Package list updated: ${uniquePackages.length} packages`);
 }
@@ -3491,36 +3443,6 @@ function updateCategoryVisibility(packageItem) {
     } else {
         UI.updateElement(category, { show: true });
     }
-}
-
-function updatePackageSizeDisplay() {
-    if (!state.device.version || !state.device.arch) return;
-    
-    document.querySelectorAll('.package-selector-checkbox').forEach(checkbox => {
-        const packageId = checkbox.getAttribute('data-package');
-        if (!packageId) return;
-        
-        const label = checkbox.closest('label');
-        if (!label) return;
-        
-        const sizeCacheKey = `${state.device.version}:${state.device.arch}:${packageId}`;
-        const sizeBytes = state.cache.packageSizes.get(sizeCacheKey);
-        
-        const textElement = label.querySelector('a.package-link') || label.querySelector('span');
-        if (!textElement) return;
-        
-        const currentText = textElement.textContent;
-        const baseText = currentText.split(':')[0];
-
-        if (typeof sizeBytes === 'number' && sizeBytes > 0) {
-            const sizeKB = (sizeBytes / 1024).toFixed(1);
-            textElement.textContent = `${baseText}: ${sizeKB} KB`;
-        } else {
-            textElement.textContent = baseText;
-        }
-    });
-    
-    console.log('Package size display updated');
 }
 
 // ==================== OpenWrt ToH JSON ====================
