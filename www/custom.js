@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1119) loaded');
+console.log('custom.js (R7.1226.1133) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -210,6 +210,20 @@ function applyUrlTemplate(template, vars) {
         result = result.replace(new RegExp(`\\{${key}\\}`, 'g'), value);
     }
     return result;
+}
+
+function getConfiguredFeeds() {
+    const channel = state.packageManager.activeChannel || 'release';
+    const manager = state.packageManager.activeManager || 'opkg';
+    const channelConfig = state.packageManager.config?.channels?.[channel]?.[manager];
+    
+    if (!channelConfig) return ['base', 'packages', 'luci'];
+    
+    const feeds = [...(channelConfig.feeds || [])];
+    if (channelConfig.includeTargets) feeds.push('target');
+    if (channelConfig.includeKmods) feeds.push('kmods');
+    
+    return feeds;
 }
 
 // ==================== ユーティリティ ====================
@@ -2623,7 +2637,8 @@ async function searchPackages(query, inputElement) {
     if (query.toLowerCase().startsWith('kmod-')) {
         feeds = vendor ? ['kmods'] : [];
     } else {
-        feeds = ['base', 'packages', 'luci', 'routing', 'telephony'];
+        const allFeeds = getConfiguredFeeds();
+        feeds = allFeeds.filter(f => f !== 'kmods' && f !== 'target');
     }
     
     // 並列で全フィード検索
@@ -3049,7 +3064,8 @@ async function verifyAllPackages() {
         isSnapshot: (state.device.version || '').includes('SNAPSHOT')
     };
     
-    const neededFeeds = new Set(['base', 'packages', 'luci', 'target']);
+    const allFeeds = getConfiguredFeeds();
+    const neededFeeds = new Set(allFeeds.filter(f => f !== 'kmods'));
     if (uniquePackages.some(p => p.feed === 'kmods')) {
         neededFeeds.add('kmods');
     }
@@ -3092,33 +3108,25 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     const cached = state.cache.availabilityIndex.get(cacheKey);
     if (cached) return cached;
 
-    const index = { packages: new Set(), luci: new Set(), kmods: new Set(), base: new Set(), target: new Set() };
+    const index = {};
     const tasks = [];
+    const needsVendorSubtarget = new Set(['kmods', 'target']);
 
-    if (neededFeeds.has('packages')) {
-        tasks.push(getFeedPackageSet('packages', deviceInfo).then(set => index.packages = set).catch(() => (index.packages = new Set())));
-    }
-    if (neededFeeds.has('luci')) {
-        tasks.push(getFeedPackageSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
-    }
-    if (neededFeeds.has('base')) {
-        tasks.push(getFeedPackageSet('base', deviceInfo).then(set => index.base = set).catch(() => (index.base = new Set())));
-    }
-    if (neededFeeds.has('kmods')) {
-        if (!deviceInfo.vendor || !deviceInfo.subtarget) {
-            console.warn('[WARN] kmods feed required but vendor/subtarget missing');
-            index.kmods = new Set();
-        } else {
-            tasks.push(getFeedPackageSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
+    for (const feed of neededFeeds) {
+        index[feed] = new Set();
+        
+        if (needsVendorSubtarget.has(feed)) {
+            if (!deviceInfo.vendor || !deviceInfo.subtarget) {
+                console.warn(`[WARN] ${feed} feed required but vendor/subtarget missing`);
+                continue;
+            }
         }
-    }
-    if (neededFeeds.has('target')) {
-        if (!deviceInfo.vendor || !deviceInfo.subtarget) {
-            console.warn('[WARN] target feed required but vendor/subtarget missing');
-            index.target = new Set();
-        } else {
-            tasks.push(getFeedPackageSet('target', deviceInfo).then(set => index.target = set).catch(() => (index.target = new Set())));
-        }
+        
+        tasks.push(
+            getFeedPackageSet(feed, deviceInfo)
+                .then(set => index[feed] = set)
+                .catch(() => (index[feed] = new Set()))
+        );
     }
 
     await Promise.all(tasks);
