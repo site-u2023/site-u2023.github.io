@@ -91,8 +91,7 @@ firewall_wan() {
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
-    wireless_cfg=$(uci -q show wireless)    
-    [ "${wifi_mode}" = "mlo" ] && mld_id=$(printf '%s' "${wlan_ssid}" | md5sum | cut -c1-8)    
+    wireless_cfg=$(uci -q show wireless)       
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
@@ -147,7 +146,7 @@ firewall_wan() {
             [ "${wifi_mode}" = "mlo" ] && {
                 SET ${iface}.ieee80211w='2'
                 SET ${iface}.mlo='1'
-                SET ${iface}.mld_id="${mld_id}"
+                SET ${iface}.mld_id="${mld_id:-4f575254}"
                 SET ${iface}.mlo_link_id="${link_id}"
             }
         }        
