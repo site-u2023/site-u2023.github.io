@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.0957) loaded');
+console.log('custom.js (R7.1226.1119) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -3096,20 +3096,20 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     const tasks = [];
 
     if (neededFeeds.has('packages')) {
-        tasks.push(fetchFeedSet('packages', deviceInfo).then(set => index.packages = set).catch(() => (index.packages = new Set())));
+        tasks.push(getFeedPackageSet('packages', deviceInfo).then(set => index.packages = set).catch(() => (index.packages = new Set())));
     }
     if (neededFeeds.has('luci')) {
-        tasks.push(fetchFeedSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
+        tasks.push(getFeedPackageSet('luci', deviceInfo).then(set => index.luci = set).catch(() => (index.luci = new Set())));
     }
     if (neededFeeds.has('base')) {
-        tasks.push(fetchFeedSet('base', deviceInfo).then(set => index.base = set).catch(() => (index.base = new Set())));
+        tasks.push(getFeedPackageSet('base', deviceInfo).then(set => index.base = set).catch(() => (index.base = new Set())));
     }
     if (neededFeeds.has('kmods')) {
         if (!deviceInfo.vendor || !deviceInfo.subtarget) {
             console.warn('[WARN] kmods feed required but vendor/subtarget missing');
             index.kmods = new Set();
         } else {
-            tasks.push(fetchFeedSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
+            tasks.push(getFeedPackageSet('kmods', deviceInfo).then(set => index.kmods = set).catch(() => (index.kmods = new Set())));
         }
     }
     if (neededFeeds.has('target')) {
@@ -3117,7 +3117,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
             console.warn('[WARN] target feed required but vendor/subtarget missing');
             index.target = new Set();
         } else {
-            tasks.push(fetchFeedSet('target', deviceInfo).then(set => index.target = set).catch(() => (index.target = new Set())));
+            tasks.push(getFeedPackageSet('target', deviceInfo).then(set => index.target = set).catch(() => (index.target = new Set())));
         }
     }
 
@@ -3263,108 +3263,20 @@ function addTooltip(element, descriptionSource) {
     });
 }
 
-async function fetchFeedSet(feed, deviceInfo) {
-    const url = await buildPackageUrl(feed, deviceInfo);
-    
-    if (!state.packageManager.activeManager) {
-        throw new Error('Package manager not determined');
-    }
-    
-    const packageManager = state.packageManager.activeManager;
-    
-    const resp = await fetch(url, { cache: 'force-cache' });
-    if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
-
-    if (packageManager === 'apk') {
-        const data = await resp.json();
-        const names = new Set();
-        
-        if (Array.isArray(data.packages)) {
-            data.packages.forEach(pkg => {
-                if (pkg && pkg.name) {
-                    names.add(pkg.name);
-                    if (pkg.desc) {
-                        const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
-                        state.cache.packageDescriptions.set(descKey, pkg.desc);
-                    }
-                    if (pkg.size) {
-                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(pkg.size));
-                    }
-                }
-            });
-        } else if (data.packages && typeof data.packages === 'object') {
-            Object.entries(data.packages).forEach(([name, info]) => {
-                names.add(name);
-                if (info && typeof info === 'object') {
-                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                    if (info.desc) {
-                        state.cache.packageDescriptions.set(descKey, info.desc);
-                    }
-                    if (info.size) {
-                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(info.size));
-                    }
-                }
-            });
-        }
-        
-        return names;
-        
-    } else {
-        const text = await resp.text();
-        const lines = text.split('\n');
-        const names = [];
-        let currentPackage = null;
-        let currentDescription = '';
-        let inDescription = false;
-        
-        for (const line of lines) {
-            if (line.startsWith('Package: ')) {
-                if (currentPackage && currentDescription) {
-                    const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
-                    state.cache.packageDescriptions.set(descKey, currentDescription.trim());
-                }
-                
-                currentPackage = line.substring(9).trim();
-                names.push(currentPackage);
-                currentDescription = '';
-                inDescription = false;
-            } else if (line.startsWith('Size: ') && currentPackage) {
-                const size = parseInt(line.substring(6).trim());
-                if (size > 0) {
-                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
-                    state.cache.packageSizes.set(sizeCacheKey, size);
-                }
-            } else if (line.startsWith('Description: ') && currentPackage) {
-                currentDescription = line.substring(13).trim();
-                inDescription = true;
-            } else if (inDescription && currentPackage) {
-                if (line.startsWith(' ')) {
-                    currentDescription += '\n' + line.trim();
-                } else if (!line.trim()) {
-                    inDescription = false;
-                } else if (!line.startsWith(' ')) {
-                    inDescription = false;
-                }
-            }
-        }
-        
-        if (currentPackage && currentDescription) {
-            const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
-            state.cache.packageDescriptions.set(descKey, currentDescription.trim());
-        }
-        
-        return new Set(names.filter(Boolean));
-    }
-}
-
 function isAvailableInIndex(pkgName, feed, index) {
-    return index.packages.has(pkgName) || 
-           index.luci.has(pkgName) || 
-           index.base.has(pkgName) || 
-           index.target.has(pkgName) || 
-           index.kmods.has(pkgName);
+    switch (feed) {
+        case 'packages': return index.packages?.has(pkgName) || false;
+        case 'luci':     return index.luci?.has(pkgName) || false;
+        case 'base':     return index.base?.has(pkgName) || false;
+        case 'target':   return index.target?.has(pkgName) || false;
+        case 'kmods':    return index.kmods?.has(pkgName) || false;
+        default:
+            return index.packages?.has(pkgName) || 
+                   index.luci?.has(pkgName) || 
+                   index.base?.has(pkgName) || 
+                   index.target?.has(pkgName) || 
+                   index.kmods?.has(pkgName) || false;
+    }
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
