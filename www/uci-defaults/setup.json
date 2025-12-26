@@ -490,15 +490,16 @@
         },
         {
           "type": "field",
-          "id": "aios-mld-id",
+          "id": "aios-wifi-mld-id",
           "label": "MLD ID",
           "class": "tr-wifi-mld-id",
           "fieldType": "text",
-          "variable": "mlo_mld_id",
-          "placeholder": "Auto-generated from SSID",
+          "variable": "mld_id",
+          "placeholder": "4f575254",
+          "default": "4f575254",
           "maxlength": 8,
           "pattern": "[0-9A-Fa-f]{8}",
-          "description": "8-digit hex (auto-generated if empty)",
+          "description": "8-digit hex (e.g. 4f575254)",
           "showWhen": {"wifi_mode": ["mlo"]}
         },
         {
