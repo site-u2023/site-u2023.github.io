@@ -3122,7 +3122,7 @@ async function verifyAllPackages() {
     updatePackageSizeDisplay();
     updatePackageListToTextarea('package-verification-complete');
     
-    if (isApkRelease(state.device.version)) {
+    if (determinePackageManager(state.device.version) === 'apk') {
         const pkgs = [];
         const prefix = `${state.device.version}:${state.device.arch}:`;
         
