@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1143) loaded');
+console.log('custom.js (R7.1226.1149) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -3263,13 +3263,11 @@ function addTooltip(element, descriptionSource) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    if (feed && index[feed]) {
-        return index[feed].has(pkgName);
-    }
-    for (const feedSet of Object.values(index)) {
-        if (feedSet?.has?.(pkgName)) return true;
-    }
-    return false;
+    return index.packages?.has(pkgName) || 
+           index.luci?.has(pkgName) || 
+           index.base?.has(pkgName) || 
+           index.target?.has(pkgName) || 
+           index.kmods?.has(pkgName) || false;
 }
 
 function updatePackageAvailabilityUI(uniqueId, isAvailable) {
