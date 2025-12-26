@@ -61,6 +61,7 @@
     "tr-standard": "Standard",
     "tr-usteer": "Usteer",
     "tr-mlo": "[Experimental] MLO (Wi-Fi 7 only)",
+    "tr-wifi-mld-id": "MLD ID",
     "tr-disabled": "Disabled",
     "tr-wifi-optimization-disabled": "Wi-Fi Disabled",
     
