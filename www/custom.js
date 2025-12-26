@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.1639) loaded');
+console.log('custom.js (R7.1226.1633) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1585,10 +1585,17 @@ function updatePackageListToTextarea(source = 'unknown') {
         
         const sizeBreakdownEl = state.dom.sizeBreakdown || document.querySelector('#package-size-breakdown');
         if (sizeBreakdownEl) {
-            const baseMB = isSnapshot ? '---' : (baseBytes / (1024 * 1024)).toFixed(2);
-            const addedMB = isSnapshot ? '---' : (totalBytes / (1024 * 1024)).toFixed(2);
-            const totalMB = isSnapshot ? '---' : ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
+            const baseMB = (baseBytes / (1024 * 1024)).toFixed(2);
+            const addedMB = (totalBytes / (1024 * 1024)).toFixed(2);
+            const totalMB = ((baseBytes + totalBytes) / (1024 * 1024)).toFixed(2);
             sizeBreakdownEl.textContent = `${current_language_json['tr-base-size']}: ${baseMB} MB + ${current_language_json['tr-added-size']}: ${addedMB} MB = ${current_language_json['tr-total-size']}: ${totalMB} MB`;
+            
+            const noteEl = document.querySelector('#package-size-note');
+            if (noteEl) {
+                noteEl.classList.remove('tr-package-size-unavailable');
+                noteEl.classList.add('tr-package-size-note');
+                applyCustomTranslations(current_language_json);
+            }
         }
     }
     console.log(`Package list updated: ${uniquePackages.length} packages`);
