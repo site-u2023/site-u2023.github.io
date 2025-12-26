@@ -1622,7 +1622,7 @@ function updatePackageListToTextarea(source = 'unknown') {
             const totalBytes = baseBytes + addedBytes + langBytes + dependencyBytes;
             const totalMB = (totalBytes / (1024 * 1024)).toFixed(2);
             
-            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size'] || 'ベース'}: ${baseMB} MB + ${current_language_json['tr-added-size'] || '追加'}: ${addedMB} MB + ${current_language_json['tr-lang-size'] || '言語'}: ${langMB} MB + ${current_language_json['tr-dep-size'] || '依存'}: ${depMB} MB = ${current_language_json['tr-total-size'] || '統計'}: ${totalMB} MB`;
+            sizeBreakdownEl.textContent = `${current_language_json['tr-base-size']}: ${baseMB} MB + ${current_language_json['tr-added-size']}: ${addedMB} MB + ${current_language_json['tr-lang-size']}: ${langMB} MB + ${current_language_json['tr-dep-size']}: ${depMB} MB = ${current_language_json['tr-total-size']}: ${totalMB} MB`;
             
             const noteEl = document.querySelector('#package-size-note');
             if (noteEl) {
