@@ -1595,9 +1595,9 @@ function updatePackageListToTextarea(source = 'unknown') {
             if (noteEl) {
                 if (isSnapshot) {
                     noteEl.classList.remove('tr-package-size-note');
-                    noteEl.classList.add('tr-package-size-snapshot-unavailable');
+                    noteEl.classList.add('tr-package-size-unavailable');
                 } else {
-                    noteEl.classList.remove('tr-package-size-snapshot-unavailable');
+                    noteEl.classList.remove('tr-package-size-unavailable');
                     noteEl.classList.add('tr-package-size-note');
                 }
                 applyCustomTranslations(current_language_json);
