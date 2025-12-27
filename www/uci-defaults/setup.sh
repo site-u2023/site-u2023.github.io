@@ -479,7 +479,7 @@ AGHEOF
         DEL lan.dhcp_option6
         [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address%%/*}"
         [ -n "${mape_gua_prefix}" ] && ADDLIST lan.dhcp_option6="23,${mape_gua_prefix%%/*}"
-        [ -z "${mape_gua_prefix}" ] && [ -n "${lan_ipv6_address}" ] && ADDLIST lan.dhcp_option6="23,${lan_ipv6_address%%/*}"
+        [ -n "${lan_ipv6_address}" ] && ADDLIST lan.dhcp_option6="23,${lan_ipv6_address%%/*}"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
         DEL "${agh_rule}" 2>/dev/null || true
