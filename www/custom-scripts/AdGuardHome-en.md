@@ -640,16 +640,18 @@ Operates in integration mode when loaded from other scripts via `source` or `.`.
 
 ## Differences from Official OpenWrt Documentation
 
-### Web Interface Binding Address
+### Router Self-DNS Resolution (Bug Fix)
 
-The official OpenWrt AdGuard Home documentation instructs users to bind the Admin Web Interface to a specific IP address (e.g., `192.168.1.1`). However, this approach has limitations:
+The official OpenWrt AdGuard Home documentation instructs users to bind the Admin Web Interface to `192.168.1.1:3000` during initial setup. This configuration has a critical limitation:
 
-- IPv6 clients cannot access the web interface
-- Access is restricted to a single interface
+**Problem:**
+- The web interface becomes inaccessible from IPv6 clients
+- Access is restricted to IPv4 only
 
-This script uses `0.0.0.0:{{WEB_PORT}}` in the YAML configuration template, which binds to all available network interfaces. This allows access via:
-- IPv4 addresses
-- IPv6 addresses
-- All router interfaces
+**Solution:**
+This script uses `0.0.0.0:{{WEB_PORT}}` in the YAML configuration template, which binds to all available network interfaces (both IPv4 and IPv6). This ensures:
+- ✓ IPv4 client access
+- ✓ IPv6 client access  
+- ✓ All router interfaces
 
-This is the recommended configuration for multi-protocol environments and provides better accessibility without compromising security, as the interface is still restricted to the LAN zone by the firewall.
+The interface remains secure as it is restricted to the LAN zone by the firewall configuration.
