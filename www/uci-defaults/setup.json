@@ -599,7 +599,7 @@
               "id": "pppoe-password",
               "label": "Password",
               "class": "tr-pppoe-password",
-              "fieldType": "password",
+              "fieldType": "text",
               "variable": "pppoe_password",
               "placeholder": "Password"
             }
