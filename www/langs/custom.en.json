@@ -62,7 +62,7 @@
     "tr-min-snr": "Minimum SNR",
     "tr-standard": "Standard",
     "tr-usteer": "Usteer",
-    "tr-mlo": "[Experimental] MLO (Wi-Fi 7 only)",
+    "tr-mlo": "MLO (Wi-Fi 7 only)[Experimental] ",
     "tr-wifi-mld-id": "MLD ID",
     "tr-disabled": "Disabled",
     "tr-wifi-optimization-disabled": "Wi-Fi Disabled",
