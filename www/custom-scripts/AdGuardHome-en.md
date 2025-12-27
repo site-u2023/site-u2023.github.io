@@ -637,3 +637,19 @@ Executed as standalone mode when `$(basename "$0")` matches `adguardhome.sh`.
 ### Integration Mode
 
 Operates in integration mode when loaded from other scripts via `source` or `.`. In this mode, all behavior can be controlled via environment variables. Designed for external control.
+
+## Differences from Official OpenWrt Documentation
+
+### Web Interface Binding Address
+
+The official OpenWrt AdGuard Home documentation instructs users to bind the Admin Web Interface to a specific IP address (e.g., `192.168.1.1`). However, this approach has limitations:
+
+- IPv6 clients cannot access the web interface
+- Access is restricted to a single interface
+
+This script uses `0.0.0.0:{{WEB_PORT}}` in the YAML configuration template, which binds to all available network interfaces. This allows access via:
+- IPv4 addresses
+- IPv6 addresses
+- All router interfaces
+
+This is the recommended configuration for multi-protocol environments and provides better accessibility without compromising security, as the interface is still restricted to the LAN zone by the firewall.
