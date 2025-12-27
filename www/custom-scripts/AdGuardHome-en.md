@@ -1,4 +1,4 @@
-# AdGuard Home Installation Script - Technical Specification
+# AdGuard Home Installation Script (MAP-E / DS-Lite Support) - Technical Specification
 
 ## Quick Start
 
