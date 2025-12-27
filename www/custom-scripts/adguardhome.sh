@@ -1274,12 +1274,6 @@ add_list dhcp.lan.dhcp_option='6,${NET_ADDR}'
 del dhcp.lan.dhcp_option6
 EOF
 
-    if [ -n "$NET_ADDR6_LIST" ]; then
-        for ip in $NET_ADDR6_LIST; do
-            uci add_list dhcp.lan.dhcp_option6="option6:dns=[${ip}]"
-        done
-    fi
-    
     uci commit dhcp
     
     restart_service dnsmasq || { rollback_to_backup; exit 1; }
