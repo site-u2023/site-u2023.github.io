@@ -2316,12 +2316,39 @@ get_customfeed_package_restart_service() {
     jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[*].packages[@.id='$1'].restart_service" 2>/dev/null | head -1
 }
 
+# 変更後
 get_customfeed_api_base() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].api_base" 2>/dev/null | head -1
+    local cat_id="$1"
+    local result
+    
+    # まずパッケージマネージャー別のURLを試行
+    result=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].api_base.${PKG_MGR}" 2>/dev/null | head -1)
+    
+    # 見つからなければ従来形式（文字列）を試行
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].api_base" 2>/dev/null | head -1)
+        case "$result" in
+            "{"*) result="" ;;
+        esac
+    fi
+    
+    echo "$result"
 }
 
 get_customfeed_download_base() {
-    jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$1'].download_base" 2>/dev/null | head -1
+    local cat_id="$1"
+    local result
+    
+    result=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].download_base.${PKG_MGR}" 2>/dev/null | head -1)
+    
+    if [ -z "$result" ]; then
+        result=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].download_base" 2>/dev/null | head -1)
+        case "$result" in
+            "{"*) result="" ;;
+        esac
+    fi
+    
+    echo "$result"
 }
 
 get_customfeed_template_path() {
