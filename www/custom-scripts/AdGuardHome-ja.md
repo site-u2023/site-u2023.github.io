@@ -1,4 +1,4 @@
-# AdGuard Home インストールスクリプト - 技術仕様書
+# AdGuard Home インストールスクリプト（MAP-E / DS-Lite 対応）- 技術仕様書
 
 ## クイックスタート
 
