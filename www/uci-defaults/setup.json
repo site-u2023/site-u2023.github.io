@@ -1169,14 +1169,6 @@
               "min": 1,
               "max": 65535,
               "hidden": true
-            },
-            {
-              "type": "field",
-              "id": "agh-gua-prefix",
-              "fieldType": "text",
-              "variable": "mape_gua_prefix",
-              "apiSource": "mape.ipv6Prefix_gua",
-              "hidden": true
             }
           ]
         },
