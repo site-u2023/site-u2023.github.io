@@ -6,8 +6,14 @@
       "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
       "template_path": "custom-feeds/gSpotx2f.sh",
-      "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
-      "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
+      "api_base": {
+        "opkg": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
+        "apk": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/25.12"
+      },
+      "download_base": {
+        "opkg": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
+        "apk": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/25.12"
+      },
       "packages": [
         {
           "id": "luci-app-log-viewer",
@@ -18,7 +24,8 @@
           "requiresUpdate": true,
           "minOpenWrtVersion": "22.03",
           "description": "System log viewer for LuCI",
-          "packageManager": ["opkg"],
+          "restart_service": "rpcd",
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -30,7 +37,8 @@
           "requiresUpdate": false,
           "minOpenWrtVersion": "21.02",
           "description": "CPU status monitor",
-          "packageManager": ["opkg"],
+          "restart_service": "rpcd",
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -42,7 +50,9 @@
           "requiresUpdate": true,
           "minOpenWrtVersion": "22.03",
           "description": "CPU performance monitor",
-          "packageManager": ["opkg"],
+          "enable_service": "cpu-perf",
+          "restart_service": "rpcd",
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -54,7 +64,8 @@
           "requiresUpdate": true,
           "minOpenWrtVersion": "22.03",
           "description": "System temperature monitor",
-          "packageManager": ["opkg"],
+          "restart_service": "rpcd",
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -66,21 +77,21 @@
           "requiresUpdate": true,
           "minOpenWrtVersion": "21.02",
           "description": "Disk information display",
-          "packageManager": ["opkg"],
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
           "id": "internet-detector",
-          "pattern": "internet-detector_",
+          "pattern": "internet-detector-",
           "isCustomFeed": "true",
-          "exclude": "",
+          "exclude": "luci-app-internet-detector|internet-detector-mod-",
           "name": "internet-detector",
           "requiresUpdate": true,
           "minOpenWrtVersion": "21.02",
           "description": "Internet connection monitoring daemon",
           "enable_service": "internet-detector",
-          "packageManager": ["opkg"],
-          "dependencies": ["luci-app-internet-detector","internet-detector-mod-modem","internet-detector-mod-email"]
+          "packageManager": ["opkg", "apk"],
+          "dependencies": ["luci-app-internet-detector", "internet-detector-mod-modem", "internet-detector-mod-email"]
         },
         {
           "id": "luci-app-internet-detector",
@@ -91,7 +102,8 @@
           "requiresUpdate": false,
           "minOpenWrtVersion": "21.02",
           "description": "LuCI interface for Internet Detector",
-          "packageManager": ["opkg"],
+          "restart_service": "rpcd",
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -104,7 +116,7 @@
           "minOpenWrtVersion": "21.02",
           "description": "Modem restart module",
           "restart_service": "internet-detector",
-          "packageManager": ["opkg"],
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         },
         {
@@ -117,7 +129,7 @@
           "minOpenWrtVersion": "21.02",
           "description": "Email notification module",
           "restart_service": "internet-detector",
-          "packageManager": ["opkg"],
+          "packageManager": ["opkg", "apk"],
           "dependencies": []
         }
       ]
