@@ -494,7 +494,7 @@ AGHEOF
     else
         /etc/init.d/adguardhome stop 2>/dev/null
         /etc/init.d/adguardhome disable 2>/dev/null
-        echo "AdGuardHome: Start manually at ${lan_ip_address%%/*}:3000"
+        echo "AdGuardHome: /etc/init.d/adguardhome start then ${lan_ip_address%%/*}:3000"
     fi
 }
 # BEGIN_CMDS
