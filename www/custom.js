@@ -3171,6 +3171,7 @@ async function verifyAllPackages() {
 
         if (!available) {
             unavailableCount++;
+            console.log(`Unavailable: ${pkg.id} (feed: ${pkg.feed})`);
             if (pkg.checked) checkedUnavailable.push(pkg.id);
         }
     }
