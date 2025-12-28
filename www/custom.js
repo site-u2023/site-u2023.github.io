@@ -3242,7 +3242,10 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
         tasks.push(
             getFeedPackageSet(feed, deviceInfo)
                 .then(set => index[feed] = set)
-                .catch(() => (index[feed] = new Set()))
+                .catch(err => {
+                    console.error(`Feed ${feed} fetch failed:`, err.message);
+                    index[feed] = new Set();
+                })
         );
     }
 
