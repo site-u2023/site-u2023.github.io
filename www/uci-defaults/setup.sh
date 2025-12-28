@@ -395,7 +395,6 @@ fi
             apk del apache >/dev/null 2>&1 || true ;;
             opkg remove apache >/dev/null 2>&1 || true ;;
             mv /tmp/htpasswd "$htpasswd_bin"
-            chmod +x "$htpasswd_bin"
             for lib in $tmp_libs; do
                 [ -f "$lib" ] && mv "$lib" /usr/lib/
             done
