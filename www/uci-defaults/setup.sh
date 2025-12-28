@@ -385,7 +385,6 @@ fi
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ -z "${apache_keep}" ] && {
             /etc/init.d/apache stop 2>/dev/null || true
-            /etc/init.d/apache disable 2>/dev/null || true
             htpasswd_bin="/usr/bin/htpasswd"
             htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
             tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
