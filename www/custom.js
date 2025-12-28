@@ -3394,8 +3394,8 @@ function addTooltip(element, descriptionSource) {
 }
 
 function isAvailableInIndex(pkgName, feed, index) {
-    if (feed && index[feed]) {
-        return index[feed].has(pkgName);
+    if (feed && index[feed] && index[feed].has(pkgName)) {
+        return true;
     }
     for (const feedSet of Object.values(index)) {
         if (feedSet?.has?.(pkgName)) return true;
