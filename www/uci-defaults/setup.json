@@ -1073,7 +1073,7 @@
             }
           },
           "variables": {
-            "agh_dir": "mkdir -p /etc/adguardhome",
+            "agh_dir": "/etc/adguardhome",
             "agh_yaml": "/etc/adguardhome/adguardhome.yaml",
             "agh_yaml_old": "/etc/adguardhome.yaml"
           },  
