@@ -393,10 +393,8 @@ fi
             for lib in $htpasswd_libs; do
                 [ -f "$lib" ] && cp "$lib" /tmp/
             done
-            case "$PACKAGE_MANAGER" in
-                opkg) opkg remove apache >/dev/null 2>&1 || true ;;
-                apk) apk del apache >/dev/null 2>&1 || true ;;
-            esac
+            apk del apache >/dev/null 2>&1 || true ;;
+            opkg remove apache >/dev/null 2>&1 || true ;;
             mv /tmp/htpasswd "$htpasswd_bin"
             chmod +x "$htpasswd_bin"
             for lib in $tmp_libs; do
