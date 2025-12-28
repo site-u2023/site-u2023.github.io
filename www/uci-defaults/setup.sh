@@ -413,7 +413,7 @@ fi
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
         agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
-        [ -z "$agh_hash" ] && { echo "Error: Failed to generate AdGuard Home password hash"; exit 1; }
+        [ -n "$agh_hash" ] && {
         cat > "$agh_yaml" << 'AGHEOF'
 http:
   address: 0.0.0.0:{{WEB_PORT}}
@@ -490,9 +490,11 @@ AGHEOF
         SET ${agh_rule}.src_dport="${agh_dns_port}"
         SET ${agh_rule}.dest_port="${agh_dns_port}"
         SET ${agh_rule}.target='DNAT'
+        }
     else
         /etc/init.d/adguardhome stop 2>/dev/null
         /etc/init.d/adguardhome disable 2>/dev/null
+        echo "AdGuardHome: Start manually at ${lan_ip_address%%/*}:3000"
     fi
 }
 # BEGIN_CMDS
