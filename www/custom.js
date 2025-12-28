@@ -1728,11 +1728,19 @@ function collectFormValues() {
         }
     }
     
-    if (values.enable_adguardhome === 'enabled') {
-        const aghConfig = findFieldByVariable('enable_adguardhome');
-        if (aghConfig?.requirements) {
-            values.agh_min_memory = aghConfig.requirements.minMemoryMB;
-            values.agh_min_flash = aghConfig.requirements.minFlashMB;
+if (dnsAdblock === 'adguardhome') {
+        for (const category of state.config.setup.categories) {
+            for (const item of category.items) {
+                if (item.type === 'section' && item.id === 'adguardhome-section') {
+                    for (const subItem of item.items) {
+                        if (subItem.id === 'adguardhome-requirements' && subItem.requirements) {
+                            values.agh_min_memory = subItem.requirements.minMemoryMB;
+                            values.agh_min_flash = subItem.requirements.minFlashMB;
+                            break;
+                        }
+                    }
+                }
+            }
         }
     }
     
