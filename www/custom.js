@@ -392,7 +392,7 @@ window.updateImages = function(version, mobj) {
 
         console.log('[TRACE] device updated:', state.device);    
       
-        if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
+if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== mobj.id) {
             console.log('[TRACE] Device changed, clearing caches');
             
             state.cache.packageAvailability.clear();
@@ -400,8 +400,13 @@ window.updateImages = function(version, mobj) {
             state.cache.feedPackageSet.clear();
             state.cache.availabilityIndex.clear();
             state.cache.packageSizes.clear();
+            state.cache.packageDescriptions.clear();
+            state.cache.packageVersions.clear();
             state.cache.kmods.token = null;
-            state.cache.kmods.key = null; 
+            state.cache.kmods.key = null;
+            state.cache.lastFormStateHash = null;
+            state.cache.lastPackageListHash = null;
+            state.cache.prevUISelections.clear();
             
             document.querySelectorAll('.package-item').forEach(item => {
                 item.style.display = '';
