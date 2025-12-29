@@ -7,7 +7,7 @@
       "description": "Community packages from gSpotx2f",
       "template_path": "custom-feeds/gSpotx2f.sh",
       "api_base": {
-        "opkg": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/current",
+        "opkg": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/24.10",
         "apk": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/25.12"
       },
       "download_base": {
