@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1127) loaded');
+console.log('custom.js (R7.1229.1203) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -171,13 +171,14 @@ function determinePackageManager(version) {
         throw new Error('Version not specified');
     }
     
-    if (version === 'SNAPSHOT') {
-        return 'apk';
-    }
-    
-    const isSnapshot = version.includes('SNAPSHOT');
-    const channel = isSnapshot ? 'snapshot' : 'release';
+    const channel = version === 'SNAPSHOT' ? 'snapshotBare' 
+              : version.includes('SNAPSHOT') ? 'snapshot' 
+              : 'release';
     const channelConfig = state.packageManager.config.channels[channel];
+    
+    if (!channelConfig) {
+        throw new Error(`Channel config not found: ${channel}`);
+    }
     
     const versionNum = version.match(/^[\d.]+/)?.[0];
     
@@ -185,9 +186,16 @@ function determinePackageManager(version) {
     let highestThreshold = '';
     
     for (const [managerName] of Object.entries(state.packageManager.config.packageManagers)) {
-        const threshold = channelConfig[managerName]?.versionThreshold;
+        const managerChannelConfig = channelConfig[managerName];
+        if (!managerChannelConfig) continue;
         
-        if (threshold === undefined || threshold === '') continue;
+        const threshold = managerChannelConfig.versionThreshold;
+        
+        // snapshotBare等、thresholdが無い場合はそのmanagerを採用
+        if (threshold === undefined) {
+            bestManager = managerName;
+            continue;
+        }
         
         if (!versionNum) continue;
         
@@ -213,14 +221,17 @@ function applyUrlTemplate(template, vars) {
 }
 
 function getConfiguredFeeds() {
-    const channel = state.packageManager.activeChannel || 'release';
-    const manager = state.packageManager.activeManager || 'opkg';
+    if (!state.device.version) {
+        throw new Error('getConfiguredFeeds: version not set');
+    }
+    if (!state.packageManager.config) {
+        throw new Error('getConfiguredFeeds: package manager config not loaded');
+    }
     
-    const managerConfig = state.packageManager.config?.packageManagers?.[manager];
+    const manager = determinePackageManager(state.device.version);
+    const managerConfig = state.packageManager.config.packageManagers[manager];
     
-    if (!managerConfig) return ['base', 'packages', 'luci', 'routing', 'telephony'];
-    
-    const feeds = [...(managerConfig.feeds || [])];
+    const feeds = [...managerConfig.feeds];
     if (managerConfig.includeTargets) feeds.push('target');
     if (managerConfig.includeKmods) feeds.push('kmods');
     
@@ -1709,7 +1720,7 @@ function collectFormValues() {
     
     const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
     if (dnsAdblock === 'adguardhome' || dnsAdblock === 'adblock_fast') {
-        const deviceLang = getFieldValue('#device-language') || config.device_language || 'en';
+        const deviceLang = getFieldValue('#device-language') || config.device_language;
         
         let filterLanguageMap = null;
         for (const category of state.config.setup.categories) {
@@ -2228,7 +2239,7 @@ function syncDeviceLanguageSelector(lang) {
 }
 
 async function handleMainLanguageChange(e) {
-    const newLanguage = e?.target?.value || config?.fallback_language || 'en';
+    const newLanguage = e?.target?.value || config.fallback_language;
     if (newLanguage === current_language) return;
 
     const isUserAction = e && e.isTrusted === true;
@@ -2265,7 +2276,7 @@ async function handleMainLanguageChange(e) {
 }
 
 async function handleCustomLanguageChange(e) {
-    const newLanguage = e.target.value || config?.fallback_language || 'en';
+    const newLanguage = e.target.value || config.fallback_language;
     if (newLanguage === state.ui.language.selected) return;
 
     const oldDeviceLanguage = state.ui.language.selected;
@@ -2283,10 +2294,10 @@ async function handleCustomLanguageChange(e) {
 
 async function loadCustomTranslations(lang) {
     if (!lang) {
-        lang = current_language || (navigator.language || config.fallback_language).split('-')[0];
+        lang = current_language || navigator.language.split('-')[0];
     }
     
-    const fallback = config.fallback_language || 'en';
+    const fallback = config.fallback_language;
     
     if (lang !== fallback) {
         const fallbackFile = config.language_path_template.replace('{lang}', fallback);
