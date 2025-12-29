@@ -3368,7 +3368,6 @@ async function getPackageDescription(pkgNameOrUrl) {
                 return description;
             }
         } catch (err) {
-            // このfeedでエラーが出ても次を試す
         }
     }
     
