@@ -4570,11 +4570,18 @@ if [ -f "$CUSTOMFEEDS_JSON" ]; then
                 fi
             fi
             
-            # 新規インストール対象のみ追加
+			# 新規インストール対象のみ追加
             if [ "$in_snapshot" -eq 0 ]; then
+                local pattern exclude enable_service restart_service pkg_entry
                 pattern=$(get_customfeed_package_pattern "$pkg_id")
-                selected_patterns="${selected_patterns}${pattern} "
-                echo "[INFO] Custom feed to install: $pkg_id (pattern: $pattern)" >> "$CONFIG_DIR/debug.log"
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                enable_service=$(get_customfeed_package_enable_service "$pkg_id")
+                restart_service=$(get_customfeed_package_restart_service "$pkg_id")
+                
+                # Format: pattern:exclude:filename:enable_service:restart_service
+                pkg_entry="${pattern}:${exclude}::${enable_service}:${restart_service}"
+                selected_patterns="${selected_patterns}${pkg_entry} "
+                echo "[INFO] Custom feed to install: $pkg_id (entry: $pkg_entry)" >> "$CONFIG_DIR/debug.log"
             else
                 echo "[INFO] Skipping already installed custom feed: $pkg_id" >> "$CONFIG_DIR/debug.log"
             fi
