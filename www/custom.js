@@ -191,7 +191,6 @@ function determinePackageManager(version) {
         
         const threshold = managerChannelConfig.versionThreshold;
         
-        // snapshotBare等、thresholdが無い場合はそのmanagerを採用
         if (threshold === undefined) {
             bestManager = managerName;
             continue;
@@ -209,6 +208,7 @@ function determinePackageManager(version) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
     }
     
+    console.log(`determinePackageManager: version=${version} channel=${channel} → ${bestManager}`);
     return bestManager;
 }
 
