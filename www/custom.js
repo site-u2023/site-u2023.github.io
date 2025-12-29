@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1316) loaded');
+console.log('custom.js (R7.1229.1450) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -3211,7 +3211,7 @@ async function verifyAllPackages() {
     updatePackageSizeDisplay();
     updatePackageListToTextarea('package-verification-complete');
     
-    if (determinePackageManager(state.device.version) === 'apk') {
+if (determinePackageManager(state.device.version) === 'apk') {
         const pkgs = [];
         const prefix = `${state.device.version}:${state.device.arch}:`;
         
@@ -3227,16 +3227,16 @@ async function verifyAllPackages() {
             });
         });
         
-        fetchApkPackageSizes(pkgs, {
+        await fetchApkPackageSizes(pkgs, {
             version: state.device.version,
             arch: state.device.arch,
             vendor: state.device.vendor,
             subtarget: state.device.subtarget,
             isSnapshot: (state.device.version || '').includes('SNAPSHOT')
-        }).then(() => {
-            updatePackageSizeDisplay();
-            updatePackageListToTextarea('force-update');
         });
+        
+        updatePackageSizeDisplay();
+        updatePackageListToTextarea('force-update');
     }
 }
 
