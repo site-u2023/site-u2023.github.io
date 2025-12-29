@@ -2783,6 +2783,8 @@ document.addEventListener('click', function(e) {
 });
 
 async function fetchApkPackageSizes(packages, deviceInfo) {
+    console.log(`fetchApkPackageSizes called with ${packages.length} packages`);
+    
     if (determinePackageManager(deviceInfo.version) !== 'apk') return;
     
     const prefix = `${deviceInfo.version}:${deviceInfo.arch}:`;
@@ -2998,6 +3000,13 @@ async function getFeedPackageSet(feed, deviceInfo) {
             data.packages.forEach(pkg => {
                 if (pkg && pkg.name) {
                     names.add(pkg.name);
+                    
+                    // ★ バージョン情報をキャッシュ
+                    if (pkg.version) {
+                        const vKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${pkg.name}`;
+                        state.cache.packageVersions.set(vKey, pkg.version);
+                    }
+                    
                     if (pkg.desc) {
                         const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
                         state.cache.packageDescriptions.set(descKey, pkg.desc);
@@ -3203,6 +3212,7 @@ async function verifyAllPackages() {
     
     console.log(`Fetching feeds: ${[...neededFeeds].join(', ')}`);
     
+    // ★ すべてのfeedを先に読み込んでバージョン情報をキャッシュ
     const index = await buildAvailabilityIndex(deviceInfo, neededFeeds);
 
     let unavailableCount = 0;
@@ -3230,35 +3240,42 @@ async function verifyAllPackages() {
     updatePackageSizeDisplay();
     updatePackageListToTextarea('package-verification-complete');
     
+    // ★ APKの場合、バージョン情報が揃ってからサイズ取得
     if (determinePackageManager(state.device.version) === 'apk') {
         const pkgs = [];
         const prefix = `${state.device.version}:${state.device.arch}:`;
+        const allPackages = [
+            ...uniquePackages.map(p => p.id),
+            ...basePackages
+        ];
         
-        state.packages.json.categories.forEach(cat => {
-            cat.packages.forEach(p => {
-                for (const feed of getConfiguredFeeds()) {
-                    const ver = state.cache.packageVersions.get(prefix + feed + ':' + p.id);
-                    if (ver) {
-                        pkgs.push({ name: p.id, feed, version: ver });
-                        break;
-                    }
+        // ★ 重複排除してすべてのパッケージを対象に
+        const uniquePackageIds = [...new Set(allPackages)];
+        
+        for (const pkgId of uniquePackageIds) {
+            let found = false;
+            for (const feed of getConfiguredFeeds()) {
+                const ver = state.cache.packageVersions.get(prefix + feed + ':' + pkgId);
+                if (ver) {
+                    pkgs.push({ name: pkgId, feed, version: ver });
+                    found = true;
+                    break;
                 }
-            });
-        });
+            }
+            if (!found) {
+                console.warn(`Version not found for package: ${pkgId}`);
+            }
+        }
         
-        fetchApkPackageSizes(pkgs, {
-            version: state.device.version,
-            arch: state.device.arch,
-            vendor: state.device.vendor,
-            subtarget: state.device.subtarget,
-            isSnapshot: (state.device.version || '').includes('SNAPSHOT')
-        }).then(() => {
+        console.log(`Fetching sizes for ${pkgs.length} packages`);
+        
+        fetchApkPackageSizes(pkgs, deviceInfo).then(() => {
             updatePackageSizeDisplay();
             updatePackageListToTextarea('force-update');
         });
     }
 }
-
+    
 async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     const cacheKey = [
         deviceInfo.version,
