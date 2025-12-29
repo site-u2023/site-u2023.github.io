@@ -63,7 +63,7 @@
         "kmodsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/{kmod}/Packages"
       },
       "apk": {
-        "versionThreshold": "24.10",
+        "versionThreshold": "25.12",
         "packageIndexUrl": "https://downloads.openwrt.org/releases/{version}/packages/{arch}/{feed}/index.json",
         "targetsIndexUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/packages/index.json",
         "kmodsIndexBaseUrl": "https://downloads.openwrt.org/releases/{version}/targets/{vendor}/{subtarget}/kmods/",
