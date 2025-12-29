@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1240) loaded');
+console.log('custom.js (R7.1229.1316) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -131,7 +131,8 @@ const state = {
         prevUISelections: new Set(),
         packageSizes: new Map(),
         packageDescriptions: new Map(),
-        packageVersions: new Map()
+        packageVersions: new Map(),
+        packageManagerCache: new Map()
     },
 
     dom: {
@@ -171,6 +172,10 @@ function determinePackageManager(version) {
         throw new Error('Version not specified');
     }
     
+    if (state.cache.packageManagerCache.has(version)) {
+        return state.cache.packageManagerCache.get(version);
+    }
+    
     const channel = version === 'SNAPSHOT' ? 'snapshotBare' 
               : version.includes('SNAPSHOT') ? 'snapshot' 
               : 'release';
@@ -208,7 +213,12 @@ function determinePackageManager(version) {
         throw new Error(`No package manager found for version ${version} in channel ${channel}`);
     }
     
-    console.log(`determinePackageManager: version=${version} channel=${channel} → ${bestManager}`);
+    state.cache.packageManagerCache.set(version, bestManager);
+    
+    if (state.cache.packageManagerCache.size === 1) {
+        console.log(`determinePackageManager: version=${version} channel=${channel} → ${bestManager}`);
+    }
+    
     return bestManager;
 }
 
@@ -402,6 +412,7 @@ if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== 
             state.cache.packageSizes.clear();
             state.cache.packageDescriptions.clear();
             state.cache.packageVersions.clear();
+            state.cache.packageManagerCache.clear();
             state.cache.kmods.token = null;
             state.cache.kmods.key = null;
             state.cache.lastFormStateHash = null;
