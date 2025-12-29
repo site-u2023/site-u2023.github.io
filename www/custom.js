@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1316) loaded');
+console.log('custom.js (R7.1229.1325) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2839,6 +2839,7 @@ async function fetchApkPackageSizes(packages, deviceInfo) {
                         if (size > 0) {
                             state.cache.packageSizes.set(prefix + name, size);
                             console.log(`Size fetched: ${name} = ${size} bytes`);
+                            updateSinglePackageSize(name, size);
                         }
                     }
                 })
@@ -3107,6 +3108,24 @@ function updatePackageSizeDisplay() {
     });
     
     console.log('Package size display updated');
+}
+
+function updateSinglePackageSize(packageId, sizeBytes) {
+    if (!state.device.version || !state.device.arch) return;
+    
+    const checkbox = document.querySelector(`.package-selector-checkbox[data-package="${packageId}"]`);
+    if (!checkbox) return;
+    
+    const label = checkbox.closest('label');
+    if (!label) return;
+    
+    const textElement = label.querySelector('a.package-link') || label.querySelector('span');
+    if (!textElement) return;
+    
+    const currentText = textElement.textContent;
+    const baseText = currentText.split(':')[0];
+    const sizeKB = (sizeBytes / 1024).toFixed(1);
+    textElement.textContent = `${baseText}: ${sizeKB} KB`;
 }
 
 // ==================== verifyAllPackages: feed指定を削除 ====================
