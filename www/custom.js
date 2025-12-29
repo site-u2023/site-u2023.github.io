@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1234) loaded');
+console.log('custom.js (R7.1229.1238) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2867,7 +2867,7 @@ async function buildPackageUrl(feed, deviceInfo) {
         if (!vendor || !subtarget) {
             throw new Error('Missing vendor or subtarget for kmods');
         }
-        
+
         const cacheKey = `${version}|${vendor}|${subtarget}`;
         
         if (state.cache.kmods.token && state.cache.kmods.key === cacheKey) {
