@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1226.2125) loaded');
+console.log('custom.js (R7.1229.1127) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2598,20 +2598,19 @@ function setupPackageSearch() {
     console.log('Package search setup complete');
 }
 
+// ==================== searchPackages: kmodsの特別扱いのみ残す ====================
 async function searchPackages(query, inputElement) {
     const arch = state.device.arch;
     const version = state.device.version || document.querySelector("#versions")?.value;
     const vendor = state.device.vendor;
     
-    let feeds;
-    if (query.toLowerCase().startsWith('kmod-')) {
-        feeds = vendor ? ['kmods'] : [];
-    } else {
-        const allFeeds = getConfiguredFeeds();
-        feeds = allFeeds.filter(f => f !== 'kmods' && f !== 'target');
+    const allFeeds = getConfiguredFeeds();
+    let feeds = allFeeds.filter(f => f !== 'kmods' && f !== 'target');
+    
+    if (query.toLowerCase().startsWith('kmod-') && vendor) {
+        feeds = ['kmods'];
     }
     
-    // 並列で全フィード検索
     const results = await Promise.allSettled(
         feeds.map(feed => searchInFeed(query, feed, version, arch))
     );
@@ -2890,22 +2889,9 @@ async function buildPackageUrl(feed, deviceInfo) {
     }
 }
 
-function guessFeedForPackage(pkgName) {
-    if (!pkgName) return 'packages';
-    
-    if (pkgName.startsWith('kmod-')) {
-        return 'kmods';
-    }
-    
-    if (pkgName.startsWith('luci-')) {
-        return 'luci';
-    }
-    
-    return 'packages';
-}
-
-async function isPackageAvailable(pkgName, feed) {
-    if (!pkgName || !feed) return false;
+// ==================== isPackageAvailable: 全feed検索 ====================
+async function isPackageAvailable(pkgName) {
+    if (!pkgName) return false;
 
     const deviceInfo = {
         arch: state.device.arch,
@@ -2920,17 +2906,31 @@ async function isPackageAvailable(pkgName, feed) {
         return false;
     }
 
-    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${pkgName}`;
+    const cacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkgName}`;
     if (state.cache.packageAvailability.has(cacheKey)) {
         return state.cache.packageAvailability.get(cacheKey);
     }
 
     try {
-        const pkgSet = await getFeedPackageSet(feed, deviceInfo);
-        const result = pkgSet.has(pkgName);
+        const feeds = getConfiguredFeeds().filter(f => f !== 'target');
+        
+        if (pkgName.startsWith('kmod-') && deviceInfo.vendor && deviceInfo.subtarget) {
+            feeds.push('kmods');
+        }
+        
+        for (const feed of feeds) {
+            try {
+                const pkgSet = await getFeedPackageSet(feed, deviceInfo);
+                if (pkgSet.has(pkgName)) {
+                    state.cache.packageAvailability.set(cacheKey, true);
+                    return true;
+                }
+            } catch (err) {
+            }
+        }
 
-        state.cache.packageAvailability.set(cacheKey, result);
-        return result;
+        state.cache.packageAvailability.set(cacheKey, false);
+        return false;
     } catch (err) {
         console.error('Package availability check error:', err);
         state.cache.packageAvailability.set(cacheKey, false);
@@ -3082,7 +3082,7 @@ function updatePackageSizeDisplay() {
     console.log('Package size display updated');
 }
 
-// ==================== パッケージ存在確認 ====================
+// ==================== verifyAllPackages: feed指定を削除 ====================
 async function verifyAllPackages() {
     const arch = state.device.arch;
     if (!state.packages.json || !arch) {
@@ -3099,7 +3099,6 @@ async function verifyAllPackages() {
             packagesToVerify.push({
                 id: pkg.id,
                 uniqueId: pkg.uniqueId || pkg.id,
-                feed: guessFeedForPackage(pkg.id),
                 hidden: pkg.hidden || false,
                 checked: pkg.checked || false,
                 virtual: pkg.virtual || false
@@ -3111,7 +3110,6 @@ async function verifyAllPackages() {
                         packagesToVerify.push({
                             id: depPkg.id,
                             uniqueId: depPkg.uniqueId || depPkg.id,
-                            feed: guessFeedForPackage(depPkg.id),
                             hidden: depPkg.hidden || false,
                             isDependency: true,
                             virtual: depPkg.virtual || false
@@ -3122,10 +3120,9 @@ async function verifyAllPackages() {
         });
     });
 
-    const uniquePackages = Array.from(new Set(packagesToVerify.map(p => `${p.id}:${p.feed}`)))
-        .map(key => {
-            const [id, feed] = key.split(':');
-            const pkg = packagesToVerify.find(p => p.id === id && p.feed === feed);
+    const uniquePackages = Array.from(new Set(packagesToVerify.map(p => p.id)))
+        .map(id => {
+            const pkg = packagesToVerify.find(p => p.id === id);
             return pkg;
         })
         .filter(pkg => !pkg.virtual);
@@ -3146,14 +3143,14 @@ async function verifyAllPackages() {
         ...state.packages.extra
     ];
     
-    const allFeeds = getConfiguredFeeds();
-    const neededFeeds = new Set(allFeeds.filter(f => f !== 'kmods' && f !== 'target'));
+    const neededFeeds = new Set(getConfiguredFeeds().filter(f => f !== 'kmods' && f !== 'target'));
     
     if (deviceInfo.vendor && deviceInfo.subtarget) {
         neededFeeds.add('target');
         
-        if (uniquePackages.some(p => p.feed === 'kmods') || 
-            basePackages.some(p => p.startsWith('kmod-'))) {
+        const hasKmods = uniquePackages.some(p => p.id.startsWith('kmod-')) || 
+            basePackages.some(p => p.startsWith('kmod-'));
+        if (hasKmods) {
             neededFeeds.add('kmods');
         }
     }
@@ -3166,12 +3163,11 @@ async function verifyAllPackages() {
     const checkedUnavailable = [];
 
     for (const pkg of uniquePackages) {
-        const available = isAvailableInIndex(pkg.id, pkg.feed, index);
+        const available = isAvailableInIndex(pkg.id, index);
         updatePackageAvailabilityUI(pkg.uniqueId, available);
 
         if (!available) {
             unavailableCount++;
-            console.log(`Unavailable: ${pkg.id} (feed: ${pkg.feed})`);
             if (pkg.checked) checkedUnavailable.push(pkg.id);
         }
     }
@@ -3194,9 +3190,13 @@ async function verifyAllPackages() {
         
         state.packages.json.categories.forEach(cat => {
             cat.packages.forEach(p => {
-                const feed = guessFeedForPackage(p.id);
-                const ver = state.cache.packageVersions.get(prefix + feed + ':' + p.id);
-                if (ver) pkgs.push({ name: p.id, feed, version: ver });
+                for (const feed of getConfiguredFeeds()) {
+                    const ver = state.cache.packageVersions.get(prefix + feed + ':' + p.id);
+                    if (ver) {
+                        pkgs.push({ name: p.id, feed, version: ver });
+                        break;
+                    }
+                }
             });
         });
         
@@ -3254,7 +3254,7 @@ async function buildAvailabilityIndex(deviceInfo, neededFeeds) {
     return index;
 }
 
-// ==================== パッケージ説明取得関数 ====================
+// ==================== getPackageDescription: 全feed検索 ====================
 async function getPackageDescription(pkgNameOrUrl) {
     if (typeof pkgNameOrUrl === 'string' && (pkgNameOrUrl.startsWith('http://') || pkgNameOrUrl.startsWith('https://'))) {
         const cacheKey = `url:${pkgNameOrUrl}`;
@@ -3298,76 +3298,81 @@ async function getPackageDescription(pkgNameOrUrl) {
         return state.cache.packageDescriptions.get(cacheKey);
     }
     
-    const feed = guessFeedForPackage(pkgName);
+    const feeds = getConfiguredFeeds().filter(f => f !== 'target' && f !== 'kmods');
     
-    try {
-        const url = await buildPackageUrl(feed, deviceInfo);
-        const resp = await fetch(url, { cache: 'force-cache' });
-        if (!resp.ok) return null;
-        
-        const packageManager = determinePackageManager(deviceInfo.version);
-        const isJsonFormat = (packageManager === 'apk');
-        
-        let description = null;
-        
-        if (isJsonFormat) {
-            const data = await resp.json();
-            let packages = [];
+    for (const feed of feeds) {
+        try {
+            const url = await buildPackageUrl(feed, deviceInfo);
+            const resp = await fetch(url, { cache: 'force-cache' });
+            if (!resp.ok) continue;
             
-            if (Array.isArray(data.packages)) {
-                packages = data.packages;
-            } else if (data.packages && typeof data.packages === 'object') {
-                packages = Object.values(data.packages);
-            }
+            const packageManager = determinePackageManager(deviceInfo.version);
+            const isJsonFormat = (packageManager === 'apk');
             
-            const pkg = packages.find(p => p?.name === pkgName);
-            if (pkg && pkg.desc) {
-                description = pkg.desc;
-            }
-        } else {
-            const text = await resp.text();
-            const lines = text.split('\n');
-            let currentPackage = null;
-            let currentDescription = '';
-            let inDescription = false;
+            let description = null;
             
-            for (const line of lines) {
-                if (line.startsWith('Package: ')) {
-                    if (currentPackage === pkgName && currentDescription) {
-                        description = currentDescription.trim();
-                        break;
-                    }
-                    currentPackage = line.substring(9).trim();
-                    currentDescription = '';
-                    inDescription = false;
-                } else if (line.startsWith('Description: ') && currentPackage === pkgName) {
-                    currentDescription = line.substring(13).trim();
-                    inDescription = true;
-                } else if (inDescription && currentPackage === pkgName) {
-                    if (line.startsWith(' ')) {
-                        currentDescription += '\n' + line.trim();
-                    } else if (line.trim() === '') {
+            if (isJsonFormat) {
+                const data = await resp.json();
+                let packages = [];
+                
+                if (Array.isArray(data.packages)) {
+                    packages = data.packages;
+                } else if (data.packages && typeof data.packages === 'object') {
+                    packages = Object.entries(data.packages).map(([name, info]) => ({
+                        name,
+                        ...(typeof info === 'object' ? info : { version: info })
+                    }));
+                }
+                
+                const pkg = packages.find(p => p?.name === pkgName);
+                if (pkg && pkg.desc) {
+                    description = pkg.desc;
+                }
+            } else {
+                const text = await resp.text();
+                const lines = text.split('\n');
+                let currentPackage = null;
+                let currentDescription = '';
+                let inDescription = false;
+                
+                for (const line of lines) {
+                    if (line.startsWith('Package: ')) {
+                        if (currentPackage === pkgName && currentDescription) {
+                            description = currentDescription.trim();
+                            break;
+                        }
+                        currentPackage = line.substring(9).trim();
+                        currentDescription = '';
                         inDescription = false;
-                    } else if (!line.startsWith(' ')) {
-                        break;
+                    } else if (line.startsWith('Description: ') && currentPackage === pkgName) {
+                        currentDescription = line.substring(13).trim();
+                        inDescription = true;
+                    } else if (inDescription && currentPackage === pkgName) {
+                        if (line.startsWith(' ')) {
+                            currentDescription += '\n' + line.trim();
+                        } else if (line.trim() === '') {
+                            inDescription = false;
+                        } else if (!line.startsWith(' ')) {
+                            break;
+                        }
                     }
+                }
+                
+                if (currentPackage === pkgName && currentDescription) {
+                    description = currentDescription.trim();
                 }
             }
             
-            if (currentPackage === pkgName && currentDescription) {
-                description = currentDescription.trim();
+            if (description) {
+                state.cache.packageDescriptions.set(cacheKey, description);
+                return description;
             }
+        } catch (err) {
+            // このfeedでエラーが出ても次を試す
         }
-        
-        if (description) {
-            state.cache.packageDescriptions.set(cacheKey, description);
-        }
-        
-        return description;
-    } catch (err) {
-        console.error('Failed to get package description:', err);
-        return null;
     }
+    
+    return null;
 }
 
 function addTooltip(element, descriptionSource) {
@@ -3393,10 +3398,7 @@ function addTooltip(element, descriptionSource) {
     });
 }
 
-function isAvailableInIndex(pkgName, feed, index) {
-    if (feed && index[feed] && index[feed].has(pkgName)) {
-        return true;
-    }
+function isAvailableInIndex(pkgName, index) {
     for (const feedSet of Object.values(index)) {
         if (feedSet?.has?.(pkgName)) return true;
     }
