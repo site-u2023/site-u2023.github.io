@@ -11,7 +11,7 @@
         "apk": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/25.12"
       },
       "download_base": {
-        "opkg": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/current",
+        "opkg": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/24.10",
         "apk": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/25.12"
       },
       "packages": [
