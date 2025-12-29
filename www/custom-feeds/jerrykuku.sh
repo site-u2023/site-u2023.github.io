@@ -26,7 +26,7 @@ SORTED_PACKAGES=""
 THEME_PACKAGES=""
 CONFIG_PACKAGES=""
 
-while read -r pattern; do
+while IFS=':' read -r pattern exclude filename enable_service restart_service; do
     [ -z "$pattern" ] && continue
     
     case "$pattern" in
