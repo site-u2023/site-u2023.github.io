@@ -139,7 +139,7 @@
           "type": "password",
           "label": "tr-tui-customscript-password",
           "default": "admin12345678",
-          "minlength": 8,
+          "minlength": 12,
           "envVar": "FB_PASS"
         },
         {
