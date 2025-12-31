@@ -106,7 +106,7 @@
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-remove-adguardhome",
+          "label": "tr-tui-customscript-adguardhome",
           "requiresUpdate": false,
           "requiresConfirmation": true,
           "envVars": {
