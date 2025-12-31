@@ -497,10 +497,16 @@ AGHEOF
 # END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ ! -d "/etc/uci-defaults" ] && [ -n "${connection_type}" ] && {
-    for s in network uhttpd ttyd; do
-        /etc/init.d/$s restart 2>/dev/null
-    done
+[ ! "$(ls /etc/uci-defaults/)" ] && {
+    [ -n "${connection_type}" ] && {
+        for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
+            /etc/init.d/$s restart 2>/dev/null
+        done
+    }
+    [ -n "${wifi_mode}" ] && [ "${wifi_mode}" != "disabled" ] && {
+        wifi reload 2>/dev/null
+        /etc/init.d/usteer restart 2>/dev/null
+    }
 }
 echo "[setup.sh] All done!"
 exit 0
