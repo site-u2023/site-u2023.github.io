@@ -314,13 +314,9 @@ custom_script_confirm_ui() {
     local skip_inputs
     skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$option_id")
     
-    # インストール状態を検出して実態を設定
+    # 汎用インストール状態検出
     local default_state="OFF"
-    case "$script_id" in
-        adguardhome)
-            is_adguardhome_installed && default_state="ON"
-            ;;
-    esac
+    is_script_installed "$script_id" && default_state="ON"
     
     while true; do
         local confirmed="$default_state"
@@ -339,43 +335,23 @@ custom_script_confirm_ui() {
         local selected
         selected=$(eval "show_checklist \"\$item_breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-refresh')\" \"$(translate 'tr-tui-back')\" \"1\" \"${script_name}\" $confirmed")
         
-        [ $? -ne 0 ] && return 0
+        [ $? -ne 0 ] && return 1
         
-        local new_confirmed
-        if [ -z "$selected" ]; then
-            new_confirmed="OFF"
+        if echo "$selected" | grep -q "1"; then
+            confirmed="ON"
         else
-            new_confirmed="ON"
+            confirmed="OFF"
         fi
         
-        if [ "$new_confirmed" != "$initial_confirmed" ]; then
-            if [ "$new_confirmed" = "$default_state" ]; then
-                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
-            else
-                local saved_option=""
-                if [ -f "$CONFIG_DIR/script_vars_${script_id}.txt" ]; then
-                    saved_option=$(grep "^SELECTED_OPTION=" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null | cut -d"'" -f2)
-                fi
-                
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                
-                [ -n "$saved_option" ] && echo "SELECTED_OPTION='$saved_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                
-                write_option_envvars "$script_id" "$option_id"
-                
-                if [ "$new_confirmed" = "OFF" ]; then
-                    echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                else
-                    echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-                fi
-            fi
+        if [ "$confirmed" = "ON" ]; then
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        else
+            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
+            echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
-        if [ "$skip_inputs" != "true" ]; then
-            if grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                return 0
-            fi
-        fi
+        return 0
     done
 }
 
