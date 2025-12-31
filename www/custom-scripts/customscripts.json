@@ -123,12 +123,6 @@
       "class": "tr-tui-customscript-filebrowser",
       "description": "Web-based file manager for OpenWrt",
       "script": "filebrowser.sh",
-      "requirements": {
-        "minMemory": 10,
-        "minFlash": 15,
-        "recommendedMemory": 30,
-        "recommendedFlash": 50
-      },
       "binaryPaths": [
         "/usr/bin/filebrowser"
       ],
