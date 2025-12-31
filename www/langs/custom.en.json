@@ -271,7 +271,10 @@
     "tr-agh-customscript-password": "Password (min 8 characters)",
     "tr-agh-customscript-webport": "WEB Port",
     "tr-agh-customscript-dnsport": "DNS Port",
-    "tr-dns-adblock-adblock-fast-info": "Lightweight: Memory ~1MB / Storage ~1MB",
+    "tr-dns-adblock-adblock-fast-info": "Lightweight: Memory ~1MB / Storage ~1MB","tr-tui-customscript-filebrowser": "File Browser",
+    "tr-tui-customscript-filebrowser-install": "Install File Browser",
+    "tr-tui-customscript-filebrowser-remove": "Remove File Browser",
+    "tr-tui-customscript-rootpath": "Root Path",
     
     "tr-dns-adblock-title": "DNS Ad Blocking",
     "tr-dns-adblock-adblock-fast": "Adblock Fast",
