@@ -106,7 +106,81 @@
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-adguardhome",
+          "label": "tr-tui-customscript-remove",
+          "requiresUpdate": false,
+          "requiresConfirmation": true,
+          "envVars": {
+            "REMOVE_MODE": "auto"
+          },
+          "skipInputs": true,
+          "requireInstalled": true
+        }
+      ]
+    },
+    {
+      "id": "filebrowser",
+      "name": "File Browser",
+      "class": "tr-tui-customscript-filebrowser",
+      "description": "Web-based file manager for OpenWrt",
+      "script": "filebrowser.sh",
+      "requirements": {
+        "minMemory": 10,
+        "minFlash": 15,
+        "recommendedMemory": 30,
+        "recommendedFlash": 50
+      },
+      "binaryPaths": [
+        "/usr/bin/filebrowser"
+      ],
+      "inputs": [
+        {
+          "id": "username",
+          "type": "text",
+          "label": "tr-tui-customscript-username",
+          "default": "admin",
+          "envVar": "FB_USER"
+        },
+        {
+          "id": "password",
+          "type": "password",
+          "label": "tr-tui-customscript-password",
+          "default": "admin12345678",
+          "minlength": 8,
+          "envVar": "FB_PASS"
+        },
+        {
+          "id": "web_port",
+          "type": "number",
+          "label": "tr-tui-customscript-webport",
+          "default": "8080",
+          "envVar": "FB_PORT",
+          "validation": {
+            "type": "port",
+            "min": 1,
+            "max": 65535
+          }
+        },
+        {
+          "id": "root_path",
+          "type": "text",
+          "label": "tr-tui-customscript-rootpath",
+          "default": "/",
+          "envVar": "FB_ROOT"
+        }
+      ],
+      "options": [
+        {
+          "id": "install",
+          "label": "tr-tui-customscript-install",
+          "requiresUpdate": false,
+          "requiredInputs": ["username", "password", "web_port", "root_path"],
+          "requiresConfirmation": true,
+          "envVars": {},
+          "requireNotInstalled": true
+        },
+        {
+          "id": "remove",
+          "label": "tr-tui-customscript-remove",
           "requiresUpdate": false,
           "requiresConfirmation": true,
           "envVars": {
