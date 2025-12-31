@@ -168,7 +168,7 @@
           "label": "tr-tui-customscript-install",
           "requiresUpdate": false,
           "requiredInputs": ["username", "password", "web_port", "root_path"],
-          "requiresConfirmation": true,
+          "requiresConfirmation": false,
           "envVars": {},
           "requireNotInstalled": true
         },
@@ -176,7 +176,7 @@
           "id": "remove",
           "label": "tr-tui-customscript-remove",
           "requiresUpdate": false,
-          "requiresConfirmation": true,
+          "requiresConfirmation": false,
           "envVars": {
             "REMOVE_MODE": "auto"
           },
