@@ -95,7 +95,7 @@ firewall_wan() {
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
-        SET ${radio}.country="${country}"
+        SET ${radio}.country="${country:-00}"
         COUNTRY_LC=$(printf '%s' "${country}" | tr '[:upper:]' '[:lower:]')      
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
