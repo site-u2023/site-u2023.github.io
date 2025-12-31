@@ -4518,11 +4518,14 @@ EOF4
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
 
-    # ========================================
+# ========================================
     # Phase 5: customscriptsスクリプト生成
     # ========================================
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
         while read -r script_id; do
+            # script_varsファイルがなければスキップ
+            [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
+            
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
         
