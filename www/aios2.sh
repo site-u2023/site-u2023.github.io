@@ -2840,6 +2840,11 @@ collect_script_inputs() {
 check_script_requirements() {
     local script_id="$1"
     
+    # requirementsがなければスキップ
+    local has_requirements
+    has_requirements=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements" 2>/dev/null)
+    [ -z "$has_requirements" ] && return 0
+    
     local min_mem rec_mem min_flash rec_flash
     min_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.minMemory" 2>/dev/null)
     rec_mem=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].requirements.recommendedMemory" 2>/dev/null)
