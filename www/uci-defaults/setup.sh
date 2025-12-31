@@ -11,6 +11,7 @@ WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
+COUNTRY_LC=$(printf '%s' "${country:-00}" | tr '[:upper:]' '[:lower:]')
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -62,7 +63,6 @@ firewall_wan() {
     SET ntp.enable_server='1'
     SET ntp.interface='lan'
     DEL ntp.server
-    COUNTRY_LC=$(printf '%s' "${country}" | tr '[:upper:]' '[:lower:]')
     for i in 0 1; do
         ADDLIST ntp.server="${i}.${COUNTRY_LC}${NTPDOMAIN}"
         ADDLIST ntp.server="${i}${NTPDOMAIN}"
@@ -95,8 +95,7 @@ firewall_wan() {
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
-        SET ${radio}.country="${country:-00}"
-        COUNTRY_LC=$(printf '%s' "${country}" | tr '[:upper:]' '[:lower:]')      
+        SET ${radio}.country="${country:-00}"     
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
         [ -n "${snr}" ] && set -- ${snr} || set -- 30 15 5
