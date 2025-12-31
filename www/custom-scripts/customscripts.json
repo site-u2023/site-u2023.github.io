@@ -159,7 +159,8 @@
           "type": "text",
           "label": "tr-tui-customscript-rootpath",
           "default": "/",
-          "envVar": "FB_ROOT"
+          "envVar": "FB_ROOT",
+          "hidden": true
         }
       ],
       "options": [
