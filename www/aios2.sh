@@ -2590,12 +2590,21 @@ get_customscript_input_hidden() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].hidden" 2>/dev/null | head -1
 }
 
-is_adguardhome_installed() {
-    local paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='adguardhome'].binaryPaths[*]" 2>/dev/null)
+# =============================================================================
+# Generic Script Installation Detection
+# Uses binaryPaths from customscripts.json
+# Args: $1 - script_id
+# Returns: 0 if installed, 1 if not
+# =============================================================================
+is_script_installed() {
+    local script_id="$1"
+    local paths
+    
+    paths=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].binaryPaths[*]" 2>/dev/null)
     
     while read -r path; do
         [ -z "$path" ] && continue
-        "$path" --version >/dev/null 2>&1 && return 0
+        [ -x "$path" ] && return 0
     done <<EOF
 $paths
 EOF
@@ -2609,13 +2618,8 @@ filter_script_options() {
     local filtered=""
     local installed="no"
     
-    case "$script_id" in
-        adguardhome)
-            is_adguardhome_installed && installed="yes"
-            ;;
-        *)
-            ;;
-    esac
+    # 汎用インストール検出（binaryPathsベース）
+    is_script_installed "$script_id" && installed="yes"
     
     while read -r option_id; do
         [ -z "$option_id" ] && continue
