@@ -218,13 +218,9 @@ custom_script_options_ui() {
     local breadcrumb="$2"
     local filtered_options="$3"
     
-    # インストール状態確認
+    # 汎用インストール状態確認
     local installed=0
-    case "$script_id" in
-        adguardhome)
-            is_adguardhome_installed && installed=1
-            ;;
-    esac
+    is_script_installed "$script_id" && installed=1
     
     while true; do
         local radio_items menu_items i option_id option_label choice selected_option
