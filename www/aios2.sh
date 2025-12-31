@@ -3007,6 +3007,18 @@ auto_add_conditional_packages() {
     effective_conn_type=$(get_effective_connection_type)
     debug_log "Effective connection type: $effective_conn_type"
 
+    # wifi_mode設定時にcountryが未設定なら自動追加
+    if grep -q "^wifi_mode=" "$SETUP_VARS" 2>/dev/null; then
+        if ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null; then
+            local api_country
+            api_country=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
+            [ -n "$api_country" ] && {
+                echo "country='${api_country}'" >> "$SETUP_VARS"
+                debug_log "[AUTO] Set country='${api_country}' (for wifi_mode)"
+            }
+        fi
+    fi
+
     # connection_typeが'mape'の場合、GUAプレフィックスの有無で mape_type を自動設定
     if [ "$effective_conn_type" = "mape" ]; then
         local gua_prefix
@@ -3131,185 +3143,6 @@ CHECK
                     debug_log "[AUTO] Removed package: $pkg_id (owner=auto, no matching conditions)"
                     
                     # enableVar削除
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                        debug_log "Removed enableVar: $enable_var"
-                    fi
-                else
-                    debug_log "Skipped removal: $pkg_id (owner!=auto or not found)"
-                fi
-            fi
-        fi
-    done <<EOF
-$_CONDITIONAL_PACKAGES_CACHE
-EOF
-
-    debug_log "=== auto_add_conditional_packages finished ==="
-}
-
-NG_XXXXX_auto_add_conditional_packages() {
-    local cat_id="$1"
-    local effective_conn_type
-    
-    debug_log "=== auto_add_conditional_packages called ==="
-    debug_log "cat_id=$cat_id"
-    
-    effective_conn_type=$(get_effective_connection_type)
-    debug_log "Effective connection type: $effective_conn_type"
-
-    # ========================================
-    # MAP-E パラメータの整合性チェックと復元
-    # ========================================
-    if [ "$effective_conn_type" = "mape" ]; then
-        debug_log "[AUTO] connection_type='mape' detected, checking MAP-E parameters"
-        
-        # ★ 修正：必須パラメータの欠落チェック
-        local has_mape_type=0
-        local has_required_params=0
-        
-        grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null && has_mape_type=1
-        grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null && has_required_params=1
-        
-        # mape_type が存在するが、他のパラメータが欠けている場合
-        # （cleanup_radio_group_exclusive_vars で削除された可能性）
-        if [ "$has_mape_type" -eq 1 ] && [ "$has_required_params" -eq 0 ]; then
-            debug_log "[AUTO] mape_type exists but other parameters missing, restoring from API"
-            # mape_type も削除して再設定
-            sed -i "/^mape_type=/d" "$SETUP_VARS" 2>/dev/null
-            has_mape_type=0
-        fi
-        
-        # mape_type の設定（未設定または削除された場合）
-        if [ "$has_mape_type" -eq 0 ]; then
-            if [ -n "$MAPE_GUA_PREFIX" ]; then
-                echo "mape_type='gua'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set mape_type='gua' (GUA prefix detected: $MAPE_GUA_PREFIX)"
-            else
-                echo "mape_type='pd'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set mape_type='pd' (no GUA prefix)"
-            fi
-        fi
-        
-        # ★ MAP-E パラメータの復元（欠落している場合のみ）
-        local params="mape_gua_prefix:$MAPE_GUA_PREFIX mape_br:$MAPE_BR mape_ealen:$MAPE_EALEN mape_ipv4_prefix:$MAPE_IPV4_PREFIX mape_ipv4_prefixlen:$MAPE_IPV4_PREFIXLEN mape_ipv6_prefix:$MAPE_IPV6_PREFIX mape_ipv6_prefixlen:$MAPE_IPV6_PREFIXLEN mape_psid_offset:$MAPE_PSID_OFFSET mape_psidlen:$MAPE_PSIDLEN"
-        
-        for param_pair in $params; do
-            local var_name="${param_pair%%:*}"
-            local var_value="${param_pair#*:}"
-            
-            # 値が存在し、かつ SETUP_VARS に未設定の場合のみ追加
-            if [ -n "$var_value" ] && ! grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
-                echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Restored ${var_name}='${var_value}' (from API)"
-            fi
-        done
-        
-        debug_log "[AUTO] MAP-E parameter check completed"
-    fi
-
-    # ========================================
-    # 条件付きパッケージの管理（既存のロジック）
-    # ========================================
-    
-    # 初回のみキャッシュ構築
-    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(
-            # wifi_mode (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|wifi_mode|${when_val}"
-            fi
-            
-            # connection_type (配列)
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
-            
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                echo "$values" | while read -r val; do
-                    [ -z "$val" ] && continue
-                    echo "${pkg_id}|connection_type|${val}"
-                done
-            done
-        )
-        _CONDITIONAL_PACKAGES_LOADED=1
-        debug_log "Conditional packages cache built:"
-        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    # キャッシュから処理
-    while IFS='|' read -r pkg_id when_var expected; do
-        [ -z "$pkg_id" ] && continue
-        
-        debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
-        
-        # 現在値取得（connection_type の場合は実効値を使用）
-        local current_val
-        if [ "$when_var" = "connection_type" ]; then
-            current_val="$effective_conn_type"
-            debug_log "Using effective_conn_type: $current_val"
-        else
-            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        fi
-        
-        debug_log "current_val=$current_val"
-        
-        # 条件判定
-        local should_add=0
-        if [ "$current_val" = "$expected" ]; then
-            should_add=1
-            debug_log "Match found!"
-        fi
-        
-        # パッケージ追加/削除
-        if [ "$should_add" -eq 1 ]; then
-            if pkg_add "$pkg_id" "auto"; then
-                debug_log "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})"
-                
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    debug_log "Added enableVar: $enable_var"
-                fi
-            fi
-        else
-            local force_remove=0
-            if [ "$current_val" = "disabled" ]; then
-                force_remove=1
-                debug_log "${when_var} disabled, force removing $pkg_id"
-            fi
-            
-            local has_other_match=0
-            if [ "$force_remove" -eq 0 ]; then
-                while IFS='|' read -r check_pkg check_var check_val; do
-                    [ "$check_pkg" != "$pkg_id" ] && continue
-                    [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
-                    
-                    local check_current
-                    if [ "$check_var" = "connection_type" ]; then
-                        check_current="$effective_conn_type"
-                    else
-                        check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    fi
-                    
-                    if [ "$check_current" = "$check_val" ]; then
-                        has_other_match=1
-                        debug_log "Found other matching condition: ${check_var}=${check_current}"
-                        break
-                    fi
-                done <<CHECK
-$_CONDITIONAL_PACKAGES_CACHE
-CHECK
-            fi
-            
-            if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
-                if pkg_remove "$pkg_id" "auto"; then
-                    debug_log "[AUTO] Removed package: $pkg_id (owner=auto, no matching conditions)"
-                    
                     local enable_var
                     enable_var=$(get_package_enablevar "$pkg_id" "")
                     if [ -n "$enable_var" ]; then
