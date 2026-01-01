@@ -343,8 +343,7 @@ custom_script_confirm_ui() {
             confirmed="OFF"
         fi
         
-        # 変化があった場合のみ実行
-        if [ "$confirmed" != "$initial_confirmed" ]; then
+        if [ "$confirmed" = "ON" ]; then
             sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         else
