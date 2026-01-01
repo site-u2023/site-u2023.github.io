@@ -4529,18 +4529,17 @@ EOF4
         chmod +x "$CONFIG_DIR/customfeeds-none.sh"
     fi
 
-# ========================================
+	# ========================================
     # Phase 5: customscriptsスクリプト生成
     # ========================================
     if [ -f "$CUSTOMSCRIPTS_JSON" ]; then
         while read -r script_id; do
-            # script_varsファイルがなければスキップ
             [ ! -f "$CONFIG_DIR/script_vars_${script_id}.txt" ] && continue
             
             script_file=$(get_customscript_file "$script_id")
             [ -z "$script_file" ] && continue
-        
-            script_url="${BASE_URL}/custom-script/${script_file}"
+
+            script_url="${BASE_URL}/custom-scripts/${script_file}"
             template_path="$CONFIG_DIR/tpl_customscript_${script_id}.sh"
         
             if [ -f "$template_path" ]; then
@@ -4564,7 +4563,7 @@ EOF4
                     ' vars_file="$CONFIG_DIR/script_vars_${script_id}.txt" "$template_path"
                 
                     echo ""
-                    echo "${script_id}_main -t"
+					echo "${script_id}_main -t"
                 
                     echo ""
                     echo "# Cleanup after execution"
