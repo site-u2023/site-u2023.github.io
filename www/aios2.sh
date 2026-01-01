@@ -2383,18 +2383,17 @@ custom_scripts_selection() {
         return 0
     fi
     
-    # UIを表示してユーザーの選択（チェック状態）を取得
-    # choices には "id1" "id2" のように選択されたIDのみが入る
+    # 1. UIを表示し、ユーザーが現在チェックを入れているIDリストを取得
     choices=$(custom_scripts_selection_ui "$breadcrumb" "$all_scripts")
     
-    # UIでキャンセル（Back）が押された場合は何もしない
+    # UIでキャンセル（Back）が押された場合は中断
     [ $? -ne 0 ] && return 0
 
-    # 全スクリプトを走査して、チェックの有無に応じた処理を行う
+    # 2. 全てのスクリプトについて、現在の選択状態を確認して処理を分岐
     for script_id in $all_scripts; do
         [ -z "$script_id" ] && continue
         
-        # 現在のスクリプトがチェックリストで選択されたか確認
+        # ユーザーの選択結果（choices）にこのIDが含まれているか判定
         local is_selected=0
         if echo "$choices" | grep -q "\"$script_id\""; then
             is_selected=1
@@ -2407,15 +2406,16 @@ custom_scripts_selection() {
         opt_ids=$(echo "$filtered_options" | jsonfilter -e '@[*].id' 2>/dev/null)
 
         if [ "$is_selected" -eq 1 ]; then
-            # 【チェックがある場合】
-            # インストール済みで「削除」しか選択肢がない場合は何もしない（削除確認のループ防止）
-            # それ以外（installやconfigがある場合）はオプション画面へ
+            # 【チェックが入っている場合】
+            # すでにインストール済みで、かつ設定項目がなく「削除」しかできない場合はスキップ
+            # それ以外（未インストール、または設定変更可能）ならオプション画面へ
             if echo "$opt_ids" | grep -qv "remove"; then
                 custom_script_options "$script_id" "$breadcrumb"
             fi
         else
-            # 【チェックがない場合】
-            # リストで選択されていないが、現在インストール済み（removeオプションがある）なら削除処理へ
+            # 【チェックが外れている場合】★ここが重要
+            # リストで選ばれていない（＝チェックを外した）が、
+            # 現在インストール済み（＝removeオプションが有効）なら削除確認へ進む
             if echo "$opt_ids" | grep -q "remove"; then
                 custom_script_options "$script_id" "$breadcrumb"
             fi
