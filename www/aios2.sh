@@ -2452,6 +2452,14 @@ EOF
         fi
     fi
     
+	# オプションが1つだけの場合はオプション選択画面をスキップ
+    local option_count=$(echo "$filtered_options" | grep -c .)
+    if [ "$option_count" -eq 1 ]; then
+        local single_option=$(echo "$filtered_options" | head -1)
+        custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"
+        return $?
+    fi
+    
     custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
 }
 
