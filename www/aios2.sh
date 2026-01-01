@@ -2456,6 +2456,8 @@ EOF
     local option_count=$(echo "$filtered_options" | grep -c .)
     if [ "$option_count" -eq 1 ]; then
         local single_option=$(echo "$filtered_options" | head -1)
+        # SELECTED_OPTIONを書き込む
+        echo "SELECTED_OPTION='${single_option}'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
         custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"
         return $?
     fi
