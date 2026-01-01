@@ -12,78 +12,108 @@
         "recommendedMemory": "50",
         "recommendedFlash": "100"
       },
-      "binaryPaths": ["/usr/bin/AdGuardHome", "/etc/AdGuardHome/AdGuardHome"],
+      "binaryPaths": [
+        "/usr/bin/AdGuardHome",
+        "/etc/AdGuardHome/AdGuardHome"
+      ],
       "yamlPaths": [
         "/etc/adguardhome/adguardhome.yaml",
-        "/etc/adguardhome/AdGuardHome.yaml",
-        "/etc/AdGuardHome/AdGuardHome.yaml"
+        "/etc/AdGuardHome/AdGuardHome.yaml",
+        "/etc/adguardhome.yaml"
       ],
       "inputs": [
         {
           "id": "username",
+          "type": "text",
           "label": "tr-tui-customscript-username",
-          "envVar": "AGH_USER",
-          "default": "admin"
+          "default": "admin",
+          "envVar": "AGH_USER"
         },
         {
           "id": "password",
+          "type": "password",
           "label": "tr-tui-customscript-password",
-          "envVar": "AGH_PASS",
-          "default": "admin1234",
-          "minlength": "8"
+          "default": "password",
+          "minlength": "8",
+          "envVar": "AGH_PASS"
         },
         {
           "id": "web_port",
+          "type": "number",
           "label": "tr-tui-customscript-webport",
+          "default": "8000",
           "envVar": "WEB_PORT",
-          "default": "3000",
           "validation": {
             "type": "port",
             "min": "1",
             "max": "65535"
           }
+        },
+        {
+          "id": "dns_port",
+          "type": "number",
+          "label": "tr-tui-customscript-dnsport",
+          "default": "53",
+          "envVar": "DNS_PORT",
+          "validation": {
+            "type": "port",
+            "min": "1",
+            "max": "65535"
+          }
+        },
+        {
+          "id": "lan_addr",
+          "type": "text",
+          "label": "tr-tui-customscript-lanaddr",
+          "default": "192.168.1.1",
+          "envVar": "LAN_ADDR",
+          "hidden": "true"
         }
       ],
       "options": [
         {
           "id": "openwrt",
-          "label": "tr-tui-customscript-adguardhome-openwrt",
+          "label": "tr-tui-customscript-install-openwrt",
+          "requiresUpdate": "true",
+          "requiredInputs": ["username", "password", "web_port", "dns_port", "lan_addr"],
+          "requiresConfirmation": "true",
           "envVars": {
             "INSTALL_MODE": "openwrt"
           },
-          "requiredInputs": ["username", "password", "web_port"],
-          "requireNotInstalled": "true",
-          "requiresConfirmation": "true"
+          "requireNotInstalled": "true"
         },
         {
           "id": "official",
-          "label": "tr-tui-customscript-adguardhome-official",
+          "label": "tr-tui-customscript-install-official",
+          "requiresUpdate": "true",
+          "requiredInputs": ["username", "password", "web_port", "dns_port", "lan_addr"],
+          "requiresConfirmation": "true",
           "envVars": {
             "INSTALL_MODE": "official"
           },
-          "requiredInputs": ["username", "password", "web_port"],
-          "requireNotInstalled": "true",
-          "requiresConfirmation": "true"
+          "requireNotInstalled": "true"
         },
         {
           "id": "change-credentials",
-          "label": "tr-tui-customscript-adguardhome-change-credentials",
+          "label": "tr-tui-customscript-change-credentials",
+          "requiresUpdate": "false",
+          "requiredInputs": ["username", "password", "web_port"],
+          "requiresConfirmation": "false",
           "envVars": {
             "UPDATE_CREDENTIALS": "1"
           },
-          "requiredInputs": ["username", "password", "web_port"],
-          "requireInstalled": "true",
-          "requiresConfirmation": "false"
+          "requireInstalled": "true"
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-adguardhome-remove",
+          "label": "tr-tui-customscript-adguardhome",
+          "requiresUpdate": "false",
+          "requiresConfirmation": "true",
           "envVars": {
             "REMOVE_MODE": "auto"
           },
           "skipInputs": "true",
-          "requireInstalled": "true",
-          "requiresConfirmation": "true"
+          "requireInstalled": "true"
         }
       ]
     },
@@ -97,22 +127,25 @@
       "inputs": [
         {
           "id": "username",
+          "type": "text",
           "label": "tr-tui-customscript-username",
-          "envVar": "FB_USER",
-          "default": "admin"
+          "default": "admin",
+          "envVar": "FB_USER"
         },
         {
           "id": "password",
+          "type": "password",
           "label": "tr-tui-customscript-password",
-          "envVar": "FB_PASS",
           "default": "admin12345678",
-          "minlength": "12"
+          "minlength": "12",
+          "envVar": "FB_PASS"
         },
         {
           "id": "web_port",
+          "type": "number",
           "label": "tr-tui-customscript-webport",
-          "envVar": "FB_PORT",
           "default": "8080",
+          "envVar": "FB_PORT",
           "validation": {
             "type": "port",
             "min": "1",
@@ -121,29 +154,32 @@
         },
         {
           "id": "root_path",
+          "type": "text",
           "label": "tr-tui-customscript-rootpath",
-          "envVar": "FB_ROOT",
           "default": "/",
+          "envVar": "FB_ROOT",
           "hidden": "true"
         }
       ],
       "options": [
         {
           "id": "install",
-          "label": "tr-tui-customscript-filebrowser-install",
+          "label": "tr-tui-customscript-install-filebrowser",
+          "requiresUpdate": "false",
           "requiredInputs": ["username", "password", "web_port", "root_path"],
-          "requireNotInstalled": "true",
-          "requiresConfirmation": "true"
+          "requiresConfirmation": "true",
+          "requireNotInstalled": "true"
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-filebrowser-remove",
+          "label": "tr-tui-customscript-filebrowser",
+          "requiresUpdate": "false",
+          "requiresConfirmation": "true",
           "envVars": {
             "REMOVE_MODE": "auto"
           },
           "skipInputs": "true",
-          "requireInstalled": "true",
-          "requiresConfirmation": "true"
+          "requireInstalled": "true"
         }
       ]
     }
