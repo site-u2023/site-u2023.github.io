@@ -2367,59 +2367,101 @@ get_customfeed_template_url() {
 # Custom Feeds/Scripts UI Functions (Common)
 
 custom_scripts_selection() {
-    download_customscripts_json || return 0
-    
     local tr_main_menu tr_custom_scripts breadcrumb
-    local all_scripts choices script_id
+    local all_scripts checklist_items i script_id script_name status
+    local choices selected_script_ids
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_scripts=$(translate "tr-tui-custom-scripts")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_custom_scripts")
     
+    # 全スクリプトIDを取得
     all_scripts=$(get_customscript_all_scripts)
     
     if [ -z "$all_scripts" ]; then
         show_msgbox "$breadcrumb" "No custom scripts available"
         return 0
     fi
-    
-    # 1. UIを表示し、ユーザーが現在チェックを入れているIDリストを取得
-    choices=$(custom_scripts_selection_ui "$breadcrumb" "$all_scripts")
-    
-    # UIでキャンセル（Back）が押された場合は中断
-    [ $? -ne 0 ] && return 0
 
-    # 2. 全てのスクリプトについて、現在の選択状態を確認して処理を分岐
-    for script_id in $all_scripts; do
-        [ -z "$script_id" ] && continue
+    while true; do
+        checklist_items=""
+        i=1
         
-        # ユーザーの選択結果（choices）にこのIDが含まれているか判定
-        local is_selected=0
-        if echo "$choices" | grep -q "\"$script_id\""; then
-            is_selected=1
+        # チェックリストの項目構築
+        while read -r script_id; do
+            [ -z "$script_id" ] && continue
+            
+            script_name=$(get_customscript_name "$script_id")
+            
+            # インストール状態を確認してチェックボックスの初期状態を決定
+            if is_script_installed "$script_id"; then
+                status="ON"
+            else
+                status="OFF"
+            fi
+            
+            # IDをタグとして使用
+            checklist_items="$checklist_items \"$script_id\" \"$script_name\" $status"
+            i=$((i+1))
+        done <<EOF
+$all_scripts
+EOF
+        
+        # チェックリスト表示
+        choices=$(eval "show_checklist \"\$breadcrumb\" \"($(translate 'tr-tui-space-toggle'))\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $checklist_items")
+        
+        # キャンセル（戻る）された場合は関数を抜ける
+        if [ $? -ne 0 ]; then
+            return 0
         fi
         
-        # 利用可能なオプション（install/remove等）を取得
-        local options filtered_options opt_ids
-        options=$(get_customscript_options "$script_id")
-        filtered_options=$(filter_script_options "$script_id" "$options")
-        opt_ids=$(echo "$filtered_options" | jsonfilter -e '@[*].id' 2>/dev/null)
-
-        if [ "$is_selected" -eq 1 ]; then
-            # 【チェックが入っている場合】
-            # すでにインストール済みで、かつ設定項目がなく「削除」しかできない場合はスキップ
-            # それ以外（未インストール、または設定変更可能）ならオプション画面へ
-            if echo "$opt_ids" | grep -qv "remove"; then
-                custom_script_options "$script_id" "$breadcrumb"
+        # 選択されたIDのリストを整形 (例: "id1" "id2" -> id1 id2)
+        selected_script_ids=$(echo "$choices" | tr -d '"')
+        
+        # ★ 全スクリプトに対してループし、選択状態と現在の状態を比較して処理を決定
+        while read -r script_id; do
+            [ -z "$script_id" ] && continue
+            
+            local is_selected=0
+            # ユーザーが今回選択したリストに含まれているかチェック
+            if echo "$selected_script_ids" | grep -qF "$script_id"; then
+                is_selected=1
             fi
-        else
-            # 【チェックが外れている場合】★ここが重要
-            # リストで選ばれていない（＝チェックを外した）が、
-            # 現在インストール済み（＝removeオプションが有効）なら削除確認へ進む
-            if echo "$opt_ids" | grep -q "remove"; then
-                custom_script_options "$script_id" "$breadcrumb"
+            
+            # そのスクリプトの利用可能なオプションを取得
+            local options filtered_options
+            options=$(get_customscript_options "$script_id")
+            # フィルタリング (インストール済みなら install が消え remove が残る等)
+            filtered_options=$(filter_script_options "$script_id" "$options")
+            
+            # オプションIDのリスト抽出
+            local opt_ids
+            opt_ids=$(echo "$filtered_options" | jsonfilter -e '@[*].id')
+            
+            if [ "$is_selected" -eq 1 ]; then
+                # 【チェックあり】の場合
+                # インストール未なら「インストール」、済みなら「設定変更」などが期待される
+                # ただし、「削除(remove)」しか選択肢がない（＝設定項目がない）スクリプトの場合、
+                # チェックを入れたままで「削除確認」が出るのを防ぐため、remove 以外の選択肢がある場合のみ実行
+                if echo "$opt_ids" | grep -qv "remove"; then
+                    custom_script_options "$script_id" "$breadcrumb"
+                fi
+            else
+                # 【チェックなし（外した）】の場合
+                # 「削除(remove)」オプションが存在する（＝現在インストール済みである）なら、
+                # 削除処理を実行するために呼び出す
+                if echo "$opt_ids" | grep -q "remove"; then
+                    # 以前の修正（単一オプション自動選択）と組み合わせることで、
+                    # ここで即座に「削除確認画面」が表示される
+                    custom_script_options "$script_id" "$breadcrumb"
+                fi
             fi
-        fi
+            
+        done <<EOF
+$all_scripts
+EOF
+        
+        # 処理が終わったらループしてメニューを再描画（状態更新を反映するため）
     done
 }
 
