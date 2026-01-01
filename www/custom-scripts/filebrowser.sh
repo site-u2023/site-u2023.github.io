@@ -4,13 +4,6 @@ SCRIPT_VERSION="0101.1103"
 
 # =============================================================================
 # BEGIN_VARIABLE_DEFINITIONS
-FB_USER="${FB_USER:-admin}"
-FB_PASS="${FB_PASS:-admin12345678}"
-FB_PORT="${FB_PORT:-8080}"
-FB_ROOT="${FB_ROOT:-/}"
-SELECTED_OPTION="${SELECTED_OPTION:-}"
-REMOVE_MODE="${REMOVE_MODE:-}"
-TUI_MODE="${TUI_MODE:-0}"
 # END_VARIABLE_DEFINITIONS
 # =============================================================================
 
@@ -206,13 +199,12 @@ filebrowser_main() {
         esac
     done
     
-    # TUI mode: determine action from REMOVE_MODE
+    # TUI mode: determine action from SELECTED_OPTION
     if [ "$TUI_MODE" = "1" ] && [ -z "$action" ]; then
         case "$SELECTED_OPTION" in
             install) action="install" ;;
             remove)  action="remove" ;;
             *)
-                # SELECTED_OPTIONがない場合はREMOVE_MODEで判定（後方互換）
                 [ -n "$REMOVE_MODE" ] && action="remove" || action="install"
                 ;;
         esac
