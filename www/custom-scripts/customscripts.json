@@ -168,6 +168,9 @@
           "requiresUpdate": "false",
           "requiredInputs": ["username", "password", "web_port", "root_path"],
           "requiresConfirmation": "true",
+          "envVars": {
+            "SELECTED_OPTION": "install"
+          },
           "requireNotInstalled": "true"
         },
         {
@@ -176,6 +179,7 @@
           "requiresUpdate": "false",
           "requiresConfirmation": "true",
           "envVars": {
+            "SELECTED_OPTION": "remove",
             "REMOVE_MODE": "auto"
           },
           "skipInputs": "true",
