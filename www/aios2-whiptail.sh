@@ -1732,20 +1732,27 @@ PKGS
         
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                [ -f "$var_file" ] || continue
-                
-                local script_id script_name selected_option option_label
-                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-                script_name=$(get_customscript_name "$script_id")
-                
-                selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
-                
-                if [ -n "$selected_option" ]; then
-                    option_label=$(get_customscript_option_label "$script_id" "$selected_option")
-                    summary="${summary}$(translate 'tr-tui-summary-scripts'): ${script_name} (${option_label})\n"
-                    has_changes=1
-                fi
-            done
+            [ -f "$var_file" ] || continue
+            
+            local script_id script_name selected_option action_label
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            script_name=$(get_customscript_name "$script_id")
+            [ -z "$script_name" ] && script_name="$script_id"
+            
+            selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+            
+            if [ -n "$selected_option" ]; then
+                action_label=$(get_customscript_option_label "$script_id" "$selected_option")
+                [ -z "$action_label" ] && action_label="$selected_option"
+            else
+                action_label="unknown"
+            fi
+            
+            printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
+            grep -Ev "^(SELECTED_OPTION|CONFIRMED)=" "$var_file"
+            echo ""
+            has_content=1
+        done
         fi
         
         if [ "$has_changes" -eq 1 ]; then
