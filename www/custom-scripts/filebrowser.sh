@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SCRIPT_VERSION="2025.01.01-01-00"
+SCRIPT_VERSION="0101.1103"
 
 # =============================================================================
 # BEGIN_VARIABLE_DEFINITIONS
@@ -249,4 +249,6 @@ filebrowser_main() {
     esac
 }
 
-filebrowser_main "$@"
+if [ "$(basename "$0")" = "filebrowser.sh" ]; then
+    filebrowser_main "$@"
+fi
