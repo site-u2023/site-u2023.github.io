@@ -1591,7 +1591,7 @@ EOF
         if [ "$HAS_INSTALL" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-packages')"
-            sh "$CONFIG_DIR/postinst.sh"
+            sh "$CONFIG_DIR/postinst.sh" || return 1
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}postinst.sh "
