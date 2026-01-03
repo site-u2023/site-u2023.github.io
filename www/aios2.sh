@@ -4971,8 +4971,8 @@ update_package_manager() {
     if [ "$needs_update" -eq 1 ]; then
         echo "Updating package database..."
         case "$PKG_MGR" in
-            opkg) opkg update ;;
-            apk) apk update ;;
+            opkg) opkg update || return 1 ;;
+            apk) apk update || return 1 ;;
         esac
     fi
 }
