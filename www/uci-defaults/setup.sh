@@ -3,8 +3,8 @@
 # END_VARS
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
-ADDLIST() { uci add_list "${SEC}${SEC:+.}$*"; }
-DELLIST() { uci del_list "${SEC}${SEC:+.}$*"; }
+ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
+DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -51,6 +51,8 @@ firewall_wan() {
     SEC=firewall
     DELLIST ${ZONE}.network="wan"
     DELLIST ${ZONE}.network="wan6"
+    DELLIST ${ZONE}.network="$1"
+    DELLIST ${ZONE}.network="$2"
     ADDLIST ${ZONE}.network="$1"
     ADDLIST ${ZONE}.network="$2"
     SET ${ZONE}.masq='1'
