@@ -3,6 +3,7 @@
 # END_VARS
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
+RESET() { cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}"; }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date +%F\ %H:%M)"
@@ -35,6 +36,7 @@ disable_wan() {
 }
 dhcp_relay() {
     SEC=dhcp
+    RESET
     SET "$1"=dhcp
     SET $1.interface="$1"
     SET $1.master='1'
@@ -93,6 +95,7 @@ firewall_wan() {
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
+    RESET
     wireless_cfg=$(uci -q show wireless)       
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -165,15 +168,15 @@ firewall_wan() {
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
     SEC=network
+    RESET
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
 { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ] && {
     SEC=network
+    RESET
     disable_wan
-    DEL ${DSL6}
-    DEL ${DSL}
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
     SET ${DSL6}.device="${WAN}"
@@ -190,9 +193,8 @@ firewall_wan() {
 }
 { [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ] && {
     SEC=network
+    RESET
     disable_wan
-    DEL ${MAPE6}
-    DEL ${MAPE}
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
     SET ${MAPE6}.device="${WAN}"
@@ -259,8 +261,7 @@ fi
     disable_wan
     {
         SEC=network
-        DEL ${AP}
-        DEL ${AP6}
+        RESET
         SET ${AP}=interface
         SET ${AP}.proto='static'
         SET ${AP}.device="${LAN}"
