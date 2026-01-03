@@ -107,4 +107,16 @@ const custom_feedback_link = "https://forum.openwrt.org/t/builder-custom-firmwar
   customCSS.rel = 'stylesheet';
   customCSS.href = 'custom.css';
   document.head.appendChild(customCSS);
+  
+  // Google Analytics (gtag.js)を動的に読み込み
+  const gtagScript = document.createElement('script');
+  gtagScript.async = true;
+  gtagScript.src = 'https://www.googletagmanager.com/gtag/js?id=G-35ERS2K9TJ';
+  document.head.appendChild(gtagScript);
+  
+  // gtag初期化
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-35ERS2K9TJ');
 })();
