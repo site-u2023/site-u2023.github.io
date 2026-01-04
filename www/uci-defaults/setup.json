@@ -776,6 +776,13 @@
               "variable": "mape_psidlen",
               "placeholder": "6",
               "apiSource": "mape.psidlen"
+            },
+            {
+              "type": "info-display",
+              "id": "mape-credit-link",
+              "content": "Powered by config-softwire",
+              "link": "https://ipv4.web.fc2.com/map-e.html",
+              "centered": "true"
             }
           ]
         },
