@@ -751,7 +751,7 @@
               "type": "field",
               "id": "mape-ipv6-prefixlen",
               "label": "IPv6 Prefix Length",
-              "class": "tr-ipv6-prefix-length",
+              "class": "tr-ipv6-prefix-range",
               "fieldType": "number",
               "variable": "mape_ipv6_prefixlen",
               "placeholder": "38",
