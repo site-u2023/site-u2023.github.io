@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0104.1031) loaded');
+console.log('custom.js (R8.0104.1955) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -654,6 +654,129 @@ function buildItem(item) {
     }
 }
 
+function XXXXX_buildField(field) {
+    const row = document.createElement('div');
+    row.className = 'form-row';
+    
+    if (field.hidden) {
+        row.style.display = 'none';
+    }
+    
+    if (field.showWhen) {
+        row.setAttribute('data-show-when', JSON.stringify(field.showWhen));
+        if (!field.hidden) {
+            row.style.display = 'none';
+        }
+    }
+
+    const group = document.createElement('div');
+    group.className = 'form-group';
+
+    const label = document.createElement('label');
+    label.appendChild(buildLinkOrSpan(field, field.label || field.id || ''));
+    
+    if (field.id) label.setAttribute('for', field.id);
+    
+    if (field.description || field.descriptionUrl) {
+        addTooltip(label, field.descriptionUrl || field.description);
+    }
+    
+    group.appendChild(label);
+
+    let ctrl;
+    if (field.fieldType === 'select') {
+        ctrl = document.createElement('select');
+        if (field.id) ctrl.id = field.id;
+        if (field.variable) ctrl.name = field.variable;
+        
+        let optionsSource = [];
+        if (field.source === 'browser-languages') {
+            const select = document.querySelector('#languages-select');
+            if (select) {
+                optionsSource = Array.from(select.querySelectorAll('option')).map(opt => ({
+                    value: opt.value,
+                    label: opt.textContent
+                }));
+            }
+        } else {
+            optionsSource = field.options || [];
+        }
+
+        optionsSource.forEach(opt => {
+            const option = document.createElement('option');
+            option.value = opt.value;
+            option.textContent = opt.label || opt.value;
+            if (opt.class) option.classList.add(opt.class);
+            if (opt.selected || (field.default && opt.value === field.default)) {
+                option.selected = true;
+            }
+            ctrl.appendChild(option);
+        });
+
+        if (field.computeTarget) {
+            ctrl.addEventListener('change', () => {
+                computeFieldValue(field.computeTarget);
+                evaluateAllShowWhen();
+                updateVariableDefinitions();
+            });
+        } else if (field.id !== 'device-language') {
+            ctrl.addEventListener('change', () => {
+                evaluateAllShowWhen();
+                updateAllPackageState('form-field');
+            });
+        }
+    } else {
+        ctrl = document.createElement('input');
+        ctrl.type = field.fieldType || 'text';
+        if (field.id) ctrl.id = field.id;
+        
+        if (field.placeholder) ctrl.placeholder = field.placeholder;
+        
+        let setValue = null;
+        if (field.default !== null && field.default !== undefined && field.default !== '') {
+            setValue = field.default;
+        } else if (field.apiSource && state.apiInfo) {
+            const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiSource);
+            if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
+                setValue = apiValue;
+            }
+        } else if (field.computeFrom === 'generateGuaPrefix' && state.apiInfo) {
+            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+            if (guaPrefix) setValue = guaPrefix;
+        }
+        
+        if (setValue !== null) {
+            UI.updateElement(ctrl, { value: setValue });
+        }
+        
+        if (field.min != null) ctrl.min = field.min;
+        if (field.max != null) ctrl.max = field.max;
+        if (field.maxlength != null) ctrl.maxLength = field.maxlength;
+        if (field.minlength != null) ctrl.minLength = field.minlength;
+        if (field.pattern != null) ctrl.pattern = field.pattern;
+        
+        if (field.computed) {
+            ctrl.setAttribute('data-computed', 'true');
+        }
+        
+        if (field.id !== 'device-language') {
+            ctrl.addEventListener('blur', () => updateAllPackageState('form-field'));
+        }
+    }
+    
+    group.appendChild(ctrl);
+
+    if (field.description && !field.descriptionUrl) {
+        const small = document.createElement('small');
+        small.className = 'text-muted';
+        small.textContent = field.description;
+        group.appendChild(small);
+    }
+
+    row.appendChild(group);
+    return row;
+}
+
 function buildField(field) {
     const row = document.createElement('div');
     row.className = 'form-row';
@@ -757,6 +880,28 @@ function buildField(field) {
         
         if (field.computed) {
             ctrl.setAttribute('data-computed', 'true');
+        }
+        
+        if (field.id === 'mape-lookup-ipv6') {
+            ctrl.addEventListener('keydown', async (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    const ipv6 = e.target.value.trim();
+                    
+                    if (ipv6) {
+                        try {
+                            const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
+                            const apiInfo = await response.json();
+                            state.apiInfo = apiInfo;
+                            applyIspAutoConfig(apiInfo);
+                            displayIspInfo(apiInfo);
+                            updateAutoConnectionInfo(apiInfo);
+                        } catch (err) {
+                            console.error('MAP-E lookup failed:', err);
+                        }
+                    }
+                }
+            });
         }
         
         if (field.id !== 'device-language') {
