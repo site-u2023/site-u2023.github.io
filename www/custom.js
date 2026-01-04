@@ -944,7 +944,7 @@ function buildSection(section) {
 function buildInfoDisplay(item) {
     const div = document.createElement('div');
     div.id = item.id;
-    div.className = 'info-display';
+    div.className = item.linkOnly === "true" ? 'info-link' : 'info-display';
     
     if (item.showWhen) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
