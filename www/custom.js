@@ -892,7 +892,6 @@ function buildField(field) {
                         try {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
-                            state.apiInfo = apiInfo;
                             applyIspAutoConfig(apiInfo);
                             displayIspInfo(apiInfo);
                             updateAutoConnectionInfo(apiInfo);
