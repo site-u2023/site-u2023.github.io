@@ -668,20 +668,14 @@
           "showWhen": {"connection_type": "mape"},
           "items": [
             {
-              "type": "section",
-              "id": "mape-lookup-section",
-              "items": [
-                {
-                  "type": "field",
-                  "id": "mape-lookup-ipv6",
-                  "label": "IPv6 Address for Lookup",
-                  "class": "tr-mape-lookup-ipv6",
-                  "fieldType": "text",
-                  "placeholder": "2400:xxxx:xxxx:xxxx::1",
-                  "description": "Enter IPv6 to auto-fetch MAP-E parameters",
-                  "apiSource": "ipv6"
-                }
-              ]
+              "type": "field",
+              "id": "mape-lookup-ipv6",
+              "label": "IPv6 Address for Lookup",
+              "class": "tr-mape-lookup-ipv6",
+              "fieldType": "text",
+              "placeholder": "2400:xxxx:xxxx:xxxx::1",
+              "description": "Enter IPv6 to auto-fetch MAP-E parameters",
+              "apiSource": "ipv6"
             },
             {
               "type": "radio-group",
