@@ -662,7 +662,7 @@
             }
           ]
         },
-        {
+{
           "type": "section",
           "id": "mape-section",
           "showWhen": {"connection_type": "mape"},
@@ -709,16 +709,6 @@
             },
             {
               "type": "field",
-              "id": "mape-ealen",
-              "label": "EA-len",
-              "class": "tr-ea-len",
-              "fieldType": "number",
-              "variable": "mape_ealen",
-              "placeholder": "18",
-              "apiSource": "mape.eaBitLength"
-            },
-            {
-              "type": "field",
               "id": "mape-ipv4-prefix",
               "label": "IPv4 Address",
               "class": "tr-ipv4-prefix",
@@ -751,7 +741,7 @@
               "type": "field",
               "id": "mape-ipv6-prefixlen",
               "label": "IPv6 Prefix Length",
-              "class": "tr-ipv6-prefix-range",
+              "class": "tr-ipv6-prefix-length",
               "fieldType": "number",
               "variable": "mape_ipv6_prefixlen",
               "placeholder": "38",
@@ -759,13 +749,13 @@
             },
             {
               "type": "field",
-              "id": "mape-psid-offset",
-              "label": "PSID Offset",
-              "class": "tr-psid-offset",
+              "id": "mape-ealen",
+              "label": "EA-len",
+              "class": "tr-ea-len",
               "fieldType": "number",
-              "variable": "mape_psid_offset",
-              "placeholder": "6",
-              "apiSource": "mape.psIdOffset"
+              "variable": "mape_ealen",
+              "placeholder": "18",
+              "apiSource": "mape.eaBitLength"
             },
             {
               "type": "field",
@@ -776,6 +766,16 @@
               "variable": "mape_psidlen",
               "placeholder": "6",
               "apiSource": "mape.psidlen"
+            },
+            {
+              "type": "field",
+              "id": "mape-psid-offset",
+              "label": "PSID Offset",
+              "class": "tr-psid-offset",
+              "fieldType": "number",
+              "variable": "mape_psid_offset",
+              "placeholder": "6",
+              "apiSource": "mape.psIdOffset"
             },
             {
               "type": "info-display",
