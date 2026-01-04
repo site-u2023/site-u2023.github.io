@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R7.1229.1450) loaded');
+console.log('custom.js (R8.0104.1031) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -949,6 +949,10 @@ function buildInfoDisplay(item) {
     if (item.showWhen) {
         div.setAttribute('data-show-when', JSON.stringify(item.showWhen));
         div.style.display = 'none';
+    }
+    
+    if (item.centered === "true") {
+        div.style.textAlign = 'center';
     }
     
     const el = buildLinkOrSpan(item, item.content || '');
