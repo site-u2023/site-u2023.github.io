@@ -886,7 +886,7 @@ function buildField(field) {
             ctrl.addEventListener('keydown', async (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    const ipv6 = e.target.value.trim();
+                    const ipv6 = e.target.value.trim().split('/')[0];
                     
                     if (ipv6) {
                         try {
