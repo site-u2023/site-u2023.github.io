@@ -1468,7 +1468,16 @@ get_setup_item_variable() {
 }
 
 get_setup_item_default() {
-    get_setup_item_property "$1" "placeholder"
+    local item_id="$1"
+    local result
+    
+    result=$(get_setup_item_property "$item_id" "default")
+    
+    if [ -z "$result" ]; then
+        result=$(get_setup_item_property "$item_id" "placeholder")
+    fi
+    
+    echo "$result"
 }
 
 get_setup_item_api_source() {
