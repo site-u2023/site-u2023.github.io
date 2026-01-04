@@ -674,7 +674,8 @@
               "class": "tr-mape-lookup-ipv6",
               "fieldType": "text",
               "placeholder": "2400:xxxx:xxxx:xxxx::1",
-              "description": "Enter IPv6 to auto-fetch MAP-E parameters"
+              "description": "Enter IPv6 to auto-fetch MAP-E parameters",
+              "apiSource": "ipv6"
             },
             {
               "type": "radio-group",
@@ -702,8 +703,6 @@
               "variable": "mape_gua_prefix",
               "placeholder": "optional for GUA",
               "description": "IPv6 GUA prefix with /64 suffix",
-              "apiSource": "mape.ipv6Prefix_gua",
-              "computeFrom": "generateGuaPrefix",
               "showWhen": {"mape_type": "gua"}
             },
             {
