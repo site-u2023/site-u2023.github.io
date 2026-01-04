@@ -1468,7 +1468,7 @@ get_setup_item_variable() {
 }
 
 get_setup_item_default() {
-    get_setup_item_property "$1" "default"
+    get_setup_item_property "$1" "placeholder"
 }
 
 get_setup_item_api_source() {
