@@ -782,7 +782,8 @@
               "id": "mape-credit-link",
               "content": "Powered by config-softwire",
               "link": "https://ipv4.web.fc2.com/map-e.html",
-              "centered": "true"
+              "centered": "true",
+              "linkOnly": "true"
             }
           ]
         },
