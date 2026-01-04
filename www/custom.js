@@ -2396,6 +2396,10 @@ function applyIspAutoConfig(apiInfo) {
     const processItems = (items) => {
         if (!items || !Array.isArray(items)) return;
         for (const item of items) {
+            if (item.id === 'mape-lookup-ipv6') {
+                continue;
+            }
+            
             if (item.id) {
                 const element = document.getElementById(item.id);
                 if (element) {
