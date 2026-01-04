@@ -2389,7 +2389,7 @@ function updateAutoConnectionInfo(apiInfo) {
     applyCustomTranslations(current_language_json);
 }
 
-function applyIspAutoConfig(apiInfo) {
+function XXXXX_applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
 
@@ -2426,6 +2426,45 @@ function applyIspAutoConfig(apiInfo) {
 
     if (mutated) {
         CustomUtils.setGuaPrefixIfAvailable();
+        updateAutoConnectionInfo(apiInfo);
+    }
+    return mutated;
+}
+
+function applyIspAutoConfig(apiInfo) {
+    if (!apiInfo || !state.config.setup) return false;
+    let mutated = false;
+
+    const processItems = (items) => {
+        if (!items || !Array.isArray(items)) return;
+        for (const item of items) {
+            if (item.id === 'mape-lookup-ipv6') {
+                continue;
+            }
+            
+            if (item.id) {
+                const element = document.getElementById(item.id);
+                if (element) {
+                    let value = null;
+                    if (item.apiSource) {
+                        value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
+                    }
+
+                    if (value !== null && value !== undefined && value !== '') {
+                        if (element.value !== String(value)) {
+                            UI.updateElement(element, { value: value });
+                            mutated = true;
+                        }
+                    }
+                }
+            }
+            if (item.items) processItems(item.items);
+        }
+    };
+
+    state.config.setup.categories.forEach(cat => processItems(cat.items));
+
+    if (mutated) {
         updateAutoConnectionInfo(apiInfo);
     }
     return mutated;
