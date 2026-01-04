@@ -1358,7 +1358,7 @@ function XXXXX_handleRadioChange(e) {
     }
 }
 
-function handleRadioChange(e) {
+function XXXXX_handleRadioChange(e) {
     const name = e.target.name;
     const value = e.target.value;
     
@@ -1373,6 +1373,39 @@ function handleRadioChange(e) {
     }
     
     updatePackagesForRadioGroup(name, value);
+    updateAllPackageState(`radio-${name}`);
+    
+    if (current_language_json) {
+        requestAnimationFrame(() => {
+            applyCustomTranslations(current_language_json);
+        });
+    }
+}
+
+function handleRadioChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+    
+    console.log(`Radio changed: ${name} = ${value}`);
+    
+    evaluateAllShowWhen();
+    
+    applyRadioDependencies(name, value);
+    
+    if (name === 'connection_type' && value === 'auto') {
+        console.log('Connection type changed to AUTO, fetching API info');
+        fetchAndDisplayIspInfo();
+    }
+    
+    if (name === 'connection_type' && value === 'mape' && state.apiInfo) {
+        console.log('Connection type changed to MAP-E, applying API info');
+        requestAnimationFrame(() => {
+            applyIspAutoConfig(state.apiInfo);
+        });
+    }
+    
+    updatePackagesForRadioGroup(name, value);
+    
     updateAllPackageState(`radio-${name}`);
     
     if (current_language_json) {
@@ -2477,7 +2510,7 @@ function XXXXX_applyIspAutoConfig(apiInfo) {
     return mutated;
 }
 
-function applyIspAutoConfig(apiInfo) {
+function XXXXX_applyIspAutoConfig(apiInfo) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
 
@@ -2494,6 +2527,53 @@ function applyIspAutoConfig(apiInfo) {
                     let value = null;
                     if (item.apiSource) {
                         value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
+                    }
+
+                    if (value !== null && value !== undefined && value !== '') {
+                        if (element.value !== String(value)) {
+                            UI.updateElement(element, { value: value });
+                            mutated = true;
+                        }
+                    }
+                }
+            }
+            if (item.items) processItems(item.items);
+        }
+    };
+
+    state.config.setup.categories.forEach(cat => processItems(cat.items));
+
+    if (mutated) {
+        updateAutoConnectionInfo(apiInfo);
+    }
+    return mutated;
+}
+
+function applyIspAutoConfig(apiInfo) {
+    if (!apiInfo || !state.config.setup) return false;
+    let mutated = false;
+
+    const processItems = (items) => {
+        if (!items || !Array.isArray(items)) return;
+        for (const item of items) {
+            if (item.id === 'mape-lookup-ipv6') {
+                continue;
+            }
+            
+            if (item.id) {
+                const element = document.getElementById(item.id);
+                if (element) {
+                    let value = null;
+                    
+                    if (item.computeFrom === 'generateGuaPrefix' && apiInfo.ipv6) {
+                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                    }
+                    
+                    if (item.apiSource) {
+                        const apiValue = CustomUtils.getNestedValue(apiInfo, item.apiSource);
+                        if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
+                            value = apiValue;
+                        }
                     }
 
                     if (value !== null && value !== undefined && value !== '') {
