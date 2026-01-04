@@ -93,6 +93,7 @@
     "tr-dslite-aftr-ipv6-address": "AFTRアドレス",
     "tr-dslite-notice1": "注: 本当の値とは違う場合があります。",
 
+    "tr-mape-lookup-ipv6": "IPv6 プレフィックスかアドレスを入力",
     "tr-mape-type": "アドレスタイプ",
     "tr-gua-prefix": "option ip6prefix (GUA)",
     "tr-br": "option peeraddr (BR)",
