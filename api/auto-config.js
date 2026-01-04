@@ -6972,7 +6972,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     if (!ipv6) return null;
     let matchedAsRule = null;
 
-    // --- ① ds-liteをv6で判定（有れば即リターン） ---
     for (const rule of dsliteRulesData.aftrRules) {
         if (rule.ipv6PrefixRanges) {
             for (const range of rule.ipv6PrefixRanges) {
@@ -6987,14 +6986,11 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         }
     }
 
-    // --- ② AS判定があった場合、セカンドオピニオン（Map-E）を優先確認 ---
     if (matchedAsRule) {
         const mapeConfig = typeof checkMapERule === 'function' ? checkMapERule(ipv6) : null;
         if (mapeConfig) {
-            // 有った＞map-eで確定（メインへ横流し）
             return { type: "map-e", ...mapeConfig };
         }
-        // 無かった＞ds-liteで確定
         return createResult(matchedAsRule, ipv6);
     }
 
@@ -7002,7 +6998,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
 
     function createResult(rule, v6) {
         const result = {
-            type: "ds-lite", // 明示的にds-liteであることを指定
+            type: "ds-lite",
             aftrType: rule.aftrType,
             peeraddr: rule.aftrFqdn,
             tunlink: rule.tunlink || "wan6"
@@ -7110,14 +7106,12 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   function checkGlobalUnicastAddress(ipv6) {
     if (!ipv6) return false;
   
-    // 2000::/3の範囲内かチェック
     const [prefix, lenStr] = guaValidation.prefixCheck.split('/');
     const prefixLen = parseInt(lenStr, 10);
     if (!checkIPv6InRangeJS(ipv6, prefix, prefixLen)) {
       return false;
     }
   
-    // 除外CIDRに該当しないかチェック
     for (const exclude of guaValidation.excludeCidrs) {
       if (checkIPv6InRangeJS(ipv6, exclude.prefix, exclude.length)) {
         return false;
@@ -7149,37 +7143,32 @@ function checkDSLiteRule(ipv6, userAsn = null) {
    * @returns {string} 言語コード
    */
   function selectLang(request, cf) {
-    // Accept-Languageヘッダーから判定
     const accept = request.headers.get('Accept-Language') || '';
     if (accept) {
       const token = accept.split(',')[0].trim().toLowerCase();
       if (token) {
-        // 中国語の地域判定
         if (token.startsWith('zh')) {
           if (token.includes('tw') || token.includes('hk') || token.includes('mo')) {
             return 'zh_tw';
           }
           return 'zh_cn';
         }
-        // ポルトガル語の地域判定
         if (token.startsWith('pt')) {
           if (token.includes('br')) {
             return 'pt_br';
           }
           return 'pt';
         }
-        // 基本言語コードで判定
         const base = token.split('-')[0];
         if (noticeMessages[base]) return base;
       }
     }
   
-    // 国コードから判定
     const country = (cf && cf.country) ? cf.country.toUpperCase() : '';
     return COUNTRY_TO_LANGUAGE[country] || 'en';
   }
   
-// ========================================
+  // ========================================
   // メインハンドラー
   // ========================================
   
@@ -7188,7 +7177,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       const method = request.method;
       const cf = request.cf || {};
 
-      // CORSプリフライト対応
       if (method === 'OPTIONS') {
         return new Response(null, {
           status: 200,
@@ -7201,15 +7189,16 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         });
       }
 
-      // 非GETメソッド拒否
       if (method !== 'GET') {
         return new Response('Method Not Allowed', {
           status: 405,
           headers: { 'Cache-Control': 'no-store' }
         });
       }
+    
+      const url = new URL(request.url);
+      const queryIPv6 = url.searchParams.get('ipv6');
 
-      // IPv6/IPv4アドレス抽出
       const ipHeaders = [
         request.headers.get('CF-Connecting-IPv6'),
         request.headers.get('CF-Connecting-IP'),
@@ -7225,63 +7214,54 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         if (!clientIPv4 && ip.includes('.')) clientIPv4 = ip;
       }
 
-      // AS情報構築（判定ロジックより前に移動）
+      const lookupIPv6 = queryIPv6 || clientIPv6;
+
       const isp = cf.asOrganization || null;
       const asn = cf.asn || null;
       const as = (asn && isp) ? `AS${asn} ${isp}` : (isp || `AS${asn}` || null);
 
-      // ========================================
-      // 【修正箇所】DS-Lite / MAP-E 判定ロジック
-      // ========================================
       let aftrRule = null;
       let mapRule = null;
 
-      if (clientIPv6) {
-        // 1. 全ての判定の起点（checkDSLiteRule内でv6/AS/セカンドオピニオンを実施）
-        const result = checkDSLiteRule(clientIPv6, asn);
+      if (lookupIPv6) {
+        const result = checkDSLiteRule(lookupIPv6, asn);
 
-        // 2. 戻り値のタイプに合わせて変数を振り分け
         if (result && result.type === "map-e") {
             mapRule = result;
-            delete mapRule.type; // 出力用JSONに不要な内部識別子を削除
+            delete mapRule.type;
         } else {
-            aftrRule = result;   // DS-Lite確定、またはnull
+            aftrRule = result;
         }
 
-        // 3. DS-LiteもMap-E(横流し)も無ければ、直接Map-E判定へ
         if (!aftrRule && !mapRule) {
-            mapRule = checkMapERule(clientIPv6);
+            mapRule = checkMapERule(lookupIPv6);
         }
 
-        // 4. Map-E確定時の補完計算（横流し分も直接判定分も一括）
         if (mapRule) {
             mapRule = enrichMapRule(mapRule);
-            if (checkGlobalUnicastAddress(clientIPv6)) {
-                const guaPrefix = extractGUAPrefix(clientIPv6);
+            if (checkGlobalUnicastAddress(lookupIPv6)) {
+                const guaPrefix = extractGUAPrefix(lookupIPv6);
                 if (guaPrefix) mapRule.ipv6Prefix_gua = guaPrefix;
             }
         }
       }
 
-      // 言語・通知
       const lang = selectLang(request, cf);
       const notice = getNotice(lang);
 
-      // タイムゾーン処理
       const zonename = cf.timezone || null;
       const timezone = zonename ? getOpenwrtTimezone(zonename) : null;
 
-      // AFTRアドレスの選定ロジック
       if (aftrRule) {
         aftrRule.aftrAddress = aftrRule.aftrIpv6Address || aftrRule.aftrFqdn;
       }      
 
-      // レスポンス構築
       const responsePayload = {
         notice,
         language: lang,
         ipv4: clientIPv4 || null,
         ipv6: clientIPv6 || null,
+        lookupIPv6: queryIPv6 || null,
         country: cf.country || null,
         zonename,
         timezone,
