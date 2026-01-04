@@ -1337,7 +1337,7 @@ function getConnectionTypeFromApi(apiInfo) {
     return 'dhcp';
 }
 
-function handleRadioChange(e) {
+function XXXXX_handleRadioChange(e) {
     const name = e.target.name;
     const value = e.target.value;
     
@@ -1349,6 +1349,30 @@ function handleRadioChange(e) {
     
     updatePackagesForRadioGroup(name, value);
     
+    updateAllPackageState(`radio-${name}`);
+    
+    if (current_language_json) {
+        requestAnimationFrame(() => {
+            applyCustomTranslations(current_language_json);
+        });
+    }
+}
+
+function handleRadioChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+    
+    console.log(`Radio changed: ${name} = ${value}`);
+    
+    evaluateAllShowWhen();
+    applyRadioDependencies(name, value);
+    
+    if (name === 'connection_type' && value === 'auto') {
+        console.log('Connection type changed to AUTO, fetching API info without parameters');
+        fetchAndDisplayIspInfo();
+    }
+    
+    updatePackagesForRadioGroup(name, value);
     updateAllPackageState(`radio-${name}`);
     
     if (current_language_json) {
