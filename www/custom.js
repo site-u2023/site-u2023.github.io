@@ -2034,7 +2034,7 @@ function displayIspInfo(apiInfo) {
     }
 }
 
-function updateAutoConnectionInfo(apiInfo) {
+function XXXXX_updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
     
@@ -2104,6 +2104,143 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     autoInfo.innerHTML = infoText;
+    applyCustomTranslations(current_language_json);
+}
+
+function updateAutoConnectionInfo(apiInfo) {
+    const autoInfo = document.querySelector('#auto-info');
+    if (!autoInfo) return;
+    
+    autoInfo.innerHTML = '';
+    
+    const connectionType = getConnectionType(apiInfo);
+    
+    if (apiInfo?.isp) {
+        autoInfo.appendChild(document.createTextNode(`ISP: ${apiInfo.isp}`));
+        autoInfo.appendChild(document.createElement('br'));
+        if (apiInfo.as) {
+            autoInfo.appendChild(document.createTextNode(`AS: ${apiInfo.as}`));
+            autoInfo.appendChild(document.createElement('br'));
+        }
+    }
+    
+    if (connectionType === 'MAP-E') {
+        let gua = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+        if (!gua) {
+            const guaField = document.querySelector('#mape-gua-prefix');
+            if (guaField && guaField.value) gua = guaField.value;
+        }
+        
+        autoInfo.appendChild(document.createElement('hr'));
+        
+        const notice = document.createElement('p');
+        const noticeSpan = document.createElement('span');
+        noticeSpan.className = 'tr-mape-notice1';
+        noticeSpan.textContent = 'Note: Actual values may differ.';
+        notice.appendChild(noticeSpan);
+        autoInfo.appendChild(notice);
+        
+        autoInfo.appendChild(document.createTextNode(`option peeraddr ${apiInfo.mape.brIpv6Address}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option ipaddr ${apiInfo.mape.ipv4Prefix}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option ip6prefix ${apiInfo.mape.ipv6Prefix}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option ealen ${apiInfo.mape.eaBitLength}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option psidlen ${apiInfo.mape.psidlen}`));
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode(`option offset ${apiInfo.mape.psIdOffset}`));
+        autoInfo.appendChild(document.createElement('br'));
+        
+        if (gua) {
+            autoInfo.appendChild(document.createTextNode(`option ip6prefix_gua ${gua}`));
+            autoInfo.appendChild(document.createElement('br'));
+        }
+        
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createTextNode('export LEGACY=1'));
+        autoInfo.appendChild(document.createElement('br'));
+        
+        autoInfo.appendChild(document.createElement('hr'));
+        
+        const linkDiv = document.createElement('div');
+        linkDiv.style.textAlign = 'center';
+        
+        const link = document.createElement('a');
+        link.href = 'https://ipv4.web.fc2.com/map-e.html';
+        link.target = '_blank';
+        link.className = 'linked-title';
+        link.textContent = 'Powered by config-softwire';
+        
+        linkDiv.appendChild(link);
+        autoInfo.appendChild(linkDiv);
+    } else if (connectionType === 'DS-Lite') {
+        autoInfo.appendChild(document.createElement('hr'));
+        
+        const h4 = document.createElement('h4');
+        const noticeSpan = document.createElement('span');
+        noticeSpan.className = 'tr-dslite-notice1';
+        noticeSpan.textContent = 'Note: Actual values may differ.';
+        h4.appendChild(noticeSpan);
+        autoInfo.appendChild(h4);
+        
+        autoInfo.appendChild(document.createElement('hr'));
+        
+        if (apiInfo.aftr?.aftrType) {
+            const strong = document.createElement('strong');
+            strong.textContent = 'Service Type:';
+            autoInfo.appendChild(strong);
+            autoInfo.appendChild(document.createTextNode(` ${apiInfo.aftr.aftrType}`));
+            autoInfo.appendChild(document.createElement('br'));
+        }
+        
+        if (apiInfo.aftr?.jurisdiction) {
+            const strong = document.createElement('strong');
+            strong.textContent = 'Region:';
+            autoInfo.appendChild(strong);
+            autoInfo.appendChild(document.createTextNode(' '));
+            
+            const regionSpan = document.createElement('span');
+            regionSpan.className = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
+            autoInfo.appendChild(regionSpan);
+            autoInfo.appendChild(document.createElement('br'));
+        }
+        
+        if (apiInfo.aftr?.peeraddr) {
+            const strong = document.createElement('strong');
+            strong.textContent = 'FQDN:';
+            autoInfo.appendChild(strong);
+            autoInfo.appendChild(document.createTextNode(` ${apiInfo.aftr.peeraddr}`));
+            autoInfo.appendChild(document.createElement('br'));
+        }
+        
+        autoInfo.appendChild(document.createElement('hr'));
+        
+        const configStrong = document.createElement('strong');
+        configStrong.textContent = 'UCI Configuration:';
+        autoInfo.appendChild(configStrong);
+        autoInfo.appendChild(document.createElement('br'));
+        
+        const code = document.createElement('code');
+        if (apiInfo.aftr?.peeraddr) {
+            code.appendChild(document.createTextNode(`option peeraddr '${apiInfo.aftr.peeraddr}'`));
+            code.appendChild(document.createElement('br'));
+        }
+        autoInfo.appendChild(code);
+        
+        autoInfo.appendChild(document.createElement('hr'));
+    } else {
+        const span = document.createElement('span');
+        span.className = 'tr-standard-notice';
+        span.textContent = 'Standard connection will be used';
+        autoInfo.appendChild(span);
+    }
+    
     applyCustomTranslations(current_language_json);
 }
 
