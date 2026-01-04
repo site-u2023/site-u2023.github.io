@@ -673,7 +673,6 @@
               "label": "IPv6 Address for Lookup",
               "class": "tr-mape-lookup-ipv6",
               "fieldType": "text",
-              "variable": "mape_lookup_ipv6",
               "placeholder": "2400:xxxx:xxxx:xxxx::1",
               "description": "Enter IPv6 to auto-fetch MAP-E parameters"
             },
