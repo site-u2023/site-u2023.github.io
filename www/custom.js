@@ -1358,7 +1358,7 @@ function XXXXX_handleRadioChange(e) {
     }
 }
 
-function handleRadioChange(e) {
+function XXXXX_handleRadioChange(e) {
     const name = e.target.name;
     const value = e.target.value;
     
@@ -1370,6 +1370,30 @@ function handleRadioChange(e) {
     if (name === 'connection_type' && value === 'auto') {
         console.log('Connection type changed to AUTO, fetching API info without parameters');
         fetchAndDisplayIspInfo();
+    }
+    
+    updatePackagesForRadioGroup(name, value);
+    updateAllPackageState(`radio-${name}`);
+    
+    if (current_language_json) {
+        requestAnimationFrame(() => {
+            applyCustomTranslations(current_language_json);
+        });
+    }
+}
+
+function handleRadioChange(e) {
+    const name = e.target.name;
+    const value = e.target.value;
+    
+    console.log(`Radio changed: ${name} = ${value}`);
+    
+    evaluateAllShowWhen();
+    applyRadioDependencies(name, value);
+    
+    if (name === 'connection_type' && value === 'auto') {
+        console.log('Connection type changed to AUTO, fetching fresh API info');
+        fetchAndDisplayIspInfo(true);
     }
     
     updatePackagesForRadioGroup(name, value);
@@ -2158,7 +2182,7 @@ function getConnectionType(apiInfo) {
     return 'DHCP/PPPoE';
 }
 
-async function fetchAndDisplayIspInfo() {
+async function XXXXX_fetchAndDisplayIspInfo() {
     if (!config?.auto_config_api_url) {
         console.log('Auto config API URL not configured');
         return;
@@ -2166,6 +2190,29 @@ async function fetchAndDisplayIspInfo() {
     
     try {
         const response = await fetch(config.auto_config_api_url);
+        const apiInfo = await response.json();
+        state.apiInfo = apiInfo;
+        
+        console.log('ISP info fetched:', apiInfo);
+        
+        displayIspInfo(apiInfo);
+        updateAutoConnectionInfo(apiInfo);
+        CustomUtils.setGuaPrefixIfAvailable();
+
+    } catch (err) {
+        console.error('Failed to fetch ISP info:', err);
+    }
+}
+
+async function fetchAndDisplayIspInfo(forceRefresh = false) {
+    if (!config?.auto_config_api_url) {
+        console.log('Auto config API URL not configured');
+        return;
+    }
+    
+    try {
+        const options = forceRefresh ? { cache: 'no-store' } : {};
+        const response = await fetch(config.auto_config_api_url, options);
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
         
