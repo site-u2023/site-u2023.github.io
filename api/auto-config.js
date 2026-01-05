@@ -8,9 +8,7 @@
  */
 const JURISDICTION_PREFIXES = {
     east: [
-      { prefix: "2400:4050::", length: 32 },
-      { prefix: "2400:4051::", length: 32 },
-      { prefix: "2400:4052::", length: 32 },
+      { prefix: "2400:4050::", length: 30 },
       { prefix: "240b:10::", length: 32 },
       { prefix: "2001:380:a000::", length: 44 },
       { prefix: "2001:380:a100::", length: 44 },
@@ -18,9 +16,7 @@ const JURISDICTION_PREFIXES = {
       { prefix: "2001:380:a300::", length: 44 }
     ],
     west: [
-      { prefix: "2400:4150::", length: 32 },
-      { prefix: "2400:4151::", length: 32 },
-      { prefix: "2400:4152::", length: 32 },
+      { prefix: "2400:4150::", length: 30 },
       { prefix: "240b:11::", length: 32 },
       { prefix: "2001:380:b000::", length: 44 },
       { prefix: "2001:380:b100::", length: 44 },
