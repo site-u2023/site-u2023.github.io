@@ -852,6 +852,27 @@ reset_detected_conn_type() {
     fi
 }
 
+detect_ipv6_type() {
+    . /lib/functions/network.sh
+    network_flush_cache
+    
+    DETECTED_GUA=""
+    DETECTED_PD=""
+    
+    for iface in $(ubus call network.interface dump | jsonfilter -e '@.interface[*].interface'); do
+        ipv6_addr=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@["ipv6-address"][0].address' 2>/dev/null)
+        case "$ipv6_addr" in
+            fe80:*|FE80:*|"") ;;
+            2*|3*) [ -z "$DETECTED_GUA" ] && DETECTED_GUA="$ipv6_addr" ;;
+        esac
+        
+        ipv6_prefix=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@["ipv6-prefix"][0].address' 2>/dev/null)
+        case "$ipv6_prefix" in
+            2*|3*) [ -z "$DETECTED_PD" ] && DETECTED_PD="$ipv6_prefix" ;;
+        esac
+    done
+}
+
 # APIダウンロード
 download_api_with_retry() {
     echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >> "$CONFIG_DIR/debug.log"
@@ -951,7 +972,8 @@ get_extended_device_info() {
     _set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
     
     reset_detected_conn_type
-    
+    detect_ipv6_type
+	
     # デバイス情報（CPU, Storage, USB）
     DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
     [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
