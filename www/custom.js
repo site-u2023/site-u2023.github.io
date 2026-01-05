@@ -878,9 +878,6 @@ function buildField(field) {
             if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
                 setValue = apiValue;
             }
-        } else if (field.computeFrom === 'generateGuaPrefix' && state.apiInfo) {
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            if (guaPrefix) setValue = guaPrefix;
         }
         
         if (setValue !== null) {
@@ -911,6 +908,14 @@ function buildField(field) {
                             applyIspAutoConfig(apiInfo, { skipIds: ['mape-lookup-ipv6'] });
                             displayIspInfo(apiInfo);
                             updateAutoConnectionInfo(apiInfo);
+                            
+                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress({ ipv6: ipv6 });
+                            if (guaPrefix) {
+                                const guaField = document.getElementById('mape-gua-prefix');
+                                if (guaField) {
+                                    guaField.value = guaPrefix;
+                                }
+                            }
                         } catch (err) {
                             console.error('MAP-E lookup failed:', err);
                         }
@@ -1869,12 +1874,8 @@ function collectExclusiveVars(varsToCollect, values, useApiValues) {
         
         let value = null;
         
-        if (useApiValues && state.apiInfo) {
-            if (fieldConfig.computeFrom === 'generateGuaPrefix') {
-                value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            } else if (fieldConfig.apiSource) {
-                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
-            }
+        if (useApiValues && state.apiInfo && fieldConfig.apiSource) {
+            value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
         }
         
         if (value === null || value === undefined) {
@@ -1908,6 +1909,17 @@ function collectItemValue(item, values) {
             if (actualType && actualType !== 'dhcp') {
                 const actualVars = item.exclusiveVars?.[actualType] || [];
                 collectExclusiveVars(actualVars, values, true);
+                
+                if (actualType === 'mape') {
+                    const mapeType = getFieldValue('input[name="mape_type"]:checked') || 'gua';
+                    if (mapeType === 'gua' && state.apiInfo) {
+                        const guaValue = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua') ||
+                                         CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                        if (guaValue) {
+                            values['mape_gua_prefix'] = guaValue;
+                        }
+                    }
+                }
             }
             return;
         }
@@ -2584,10 +2596,6 @@ function applyIspAutoConfig(apiInfo, options = {}) {
                 const element = document.getElementById(item.id);
                 if (element) {
                     let value = null;
-                    
-                    if (item.computeFrom === 'generateGuaPrefix' && apiInfo.ipv6) {
-                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                    }
                     
                     if (item.apiSource) {
                         const apiValue = CustomUtils.getNestedValue(apiInfo, item.apiSource);
