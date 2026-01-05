@@ -7240,7 +7240,8 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         if (mapRule) {
             mapRule = enrichMapRule(mapRule);
             
-            const isMatchedPrefix = lookupIPv6.startsWith(mapRule.ipv6Prefix.split('::')[0]);
+            const ruleBasePrefix = mapRule.ipv6Prefix.split('::')[0];
+            const isMatchedPrefix = lookupIPv6.startsWith(ruleBasePrefix);
 
             if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
                 const guaPrefix = extractGUAPrefix(lookupIPv6);
