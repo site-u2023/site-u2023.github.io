@@ -6960,12 +6960,12 @@ function checkIPv6InRangeJS(ipv6, prefixStr, prefixLen) {
   }
   
 /**
- * DS-Lite / Map-E 統合判定関数
- * 1. DS-Lite (IPv6判定) -> 2. DS-Lite (AS判定キープ) -> 3. Map-E判定(v6優先)
- * * 戻り値の 'type' フィールドでメインハンドラーが振り分けを行う
+ * DS-Lite判定関数
+ * 1. IPv6プレフィックスで直接判定
+ * 2. IPv6でマッチしない場合、AS番号で判定
  * @param {string} ipv6 - 判定対象のIPv6アドレス
  * @param {number|null} userAsn - ユーザーのAS番号
- * @returns {object|null}
+ * @returns {object|null} DS-Liteルール、またはnull
  */
 function checkDSLiteRule(ipv6, userAsn = null) {
     if (!ipv6) return null;
