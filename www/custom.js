@@ -905,9 +905,10 @@ function buildField(field) {
                     
                     if (ipv6) {
                         try {
-                            const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
+                            const response = await fetch`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
-                            applyIspAutoConfig(apiInfo);
+                            state.apiInfo = apiInfo;
+                            applyIspAutoConfig(apiInfo, { skipIds: ['mape-lookup-ipv6'] });
                             displayIspInfo(apiInfo);
                             updateAutoConnectionInfo(apiInfo);
                         } catch (err) {
@@ -2564,13 +2565,15 @@ function XXXXX_applyIspAutoConfig(apiInfo) {
     return mutated;
 }
 
-function applyIspAutoConfig(apiInfo) {
+function applyIspAutoConfig(apiInfo, options = {}) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
+    const skipIds = options.skipIds || [];
 
     const processItems = (items) => {
         if (!items || !Array.isArray(items)) return;
         for (const item of items) {
+            if (skipIds.includes(item.id)) continue;
             
             if (item.id) {
                 const element = document.getElementById(item.id);
