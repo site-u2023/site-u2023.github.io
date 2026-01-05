@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R7.124.0931"
+VERSION="R8.0105.1223"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -858,6 +858,7 @@ detect_ipv6_type() {
     
     DETECTED_GUA=""
     DETECTED_PD=""
+    MAPE_GUA_PREFIX=""
     
     for iface in $(ubus call network.interface dump | jsonfilter -e '@.interface[*].interface'); do
         ipv6_addr=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@["ipv6-address"][0].address' 2>/dev/null)
@@ -871,6 +872,8 @@ detect_ipv6_type() {
             2*|3*) [ -z "$DETECTED_PD" ] && DETECTED_PD="$ipv6_prefix" ;;
         esac
     done
+    
+    [ -n "$DETECTED_GUA" ] && MAPE_GUA_PREFIX="$(echo "$DETECTED_GUA" | cut -d: -f1-4)::/64"
 }
 
 # APIダウンロード
@@ -964,7 +967,6 @@ get_extended_device_info() {
     _set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
     _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
     _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
-    _set_api_value 'MAPE_GUA_PREFIX'    'mape.ipv6Prefix_gua'
   
     # DS-Lite
     _set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
@@ -3100,8 +3102,8 @@ auto_add_conditional_packages() {
 
     # connection_typeが'mape'の場合、GUAプレフィックスの有無で mape_type を自動設定
     if [ "$effective_conn_type" = "mape" ]; then
-        local gua_prefix
-        gua_prefix=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.mape.ipv6Prefix_gua' 2>/dev/null)
+        local gua_prefix=""
+        gua_prefix="$MAPE_GUA_PREFIX"
         
         if [ -n "$gua_prefix" ]; then
             # GUAプレフィックスがある → mape_type='gua' をデフォルト設定
