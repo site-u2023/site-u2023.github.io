@@ -213,10 +213,14 @@ firewall_wan() {
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
-    [ -n "${mape_gua_prefix}" ] && _RA='none' _RP='no' || _RA='try' _RP='auto'
-    SET ${MAPE6}.reqaddress="${_RA}"
-    SET ${MAPE6}.reqprefix="${_RP}"
-    [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
+    [ -n "${mape_gua_prefix}" ] && {
+        SET ${MAPE6}.reqaddress='none'
+        SET ${MAPE6}.reqprefix='no'
+        SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
+    } || {
+        SET ${MAPE6}.reqaddress='try'
+        SET ${MAPE6}.reqprefix='auto'
+    }
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     MAP_SH="/lib/netifd/proto/map.sh"   
