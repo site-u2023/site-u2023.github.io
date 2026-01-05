@@ -29,17 +29,18 @@ const JURISDICTION_PREFIXES = {
     ]
   };
   
-  /**
-   * DS-Lite AFTRルールデータベース
-   * IPv6プレフィックスからAFTRタイプを判定
-   */
+/**
+ * DS-Lite AFTRルールデータベース
+ * IPv6プレフィックスからAFTRタイプを判定
+ */
 const dsliteRulesData = {
     aftrRules: [
       {
         aftrType: "xpass",
-        asn: [45062, 17964, 2516, 17506, 17932], 
+        asn: [2519, 17506], 
         ipv6PrefixRanges: [
-          "2001:f60::/32"
+          "2001:f60::/28",
+          "2001:f70::/29"
         ],
         aftrAddresses: {
           east: "2001:f60:0:200::1:1",
@@ -50,10 +51,10 @@ const dsliteRulesData = {
       },
       {
         aftrType: "v6connect",
-        asn: [131908, 7682, 4685, 2519],
+        asn: [4685],
         ipv6PrefixRanges: [
           "2405:6580::/29",
-          "2405:6584::/29"
+          "2001:c28::/32"
         ],
         aftrAddresses: null,
         aftrFqdn: "dslite.v6connect.net",
@@ -61,10 +62,8 @@ const dsliteRulesData = {
       },
       {
         aftrType: "transix",
-        asn: [7506, 2497, 2527, 7691, 18137, 2518, 2514, 2519, 17511],
+        asn: [55391, 55392],
         ipv6PrefixRanges: [
-            "2409:10::/30",
-            "2409:250::/30",
             "2404:8e00::/32",
             "2404:8e01::/32"
         ],
