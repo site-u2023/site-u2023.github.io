@@ -549,7 +549,7 @@
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
             "dslite": ["dslite_aftr_type", "dslite_aftr_address"],
-            "mape": ["mape_type", "mape_gua_prefix", "mape_br", "mape_ealen", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_psid_offset", "mape_psidlen"],
+            "mape": ["mape_br", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_ealen", "mape_psidlen", "mape_psid_offset"],
             "ap": ["ap_ip_address", "ap_gateway"],
             "disabled": []
           }
