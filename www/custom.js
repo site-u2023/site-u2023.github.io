@@ -905,7 +905,7 @@ function buildField(field) {
                     
                     if (ipv6) {
                         try {
-                            const response = await fetch`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
+                            const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
                             state.apiInfo = apiInfo;
                             applyIspAutoConfig(apiInfo, { skipIds: ['mape-lookup-ipv6'] });
