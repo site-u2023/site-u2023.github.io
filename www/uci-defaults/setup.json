@@ -1093,7 +1093,8 @@
           "variables": {
             "agh_dir": "/etc/adguardhome",
             "agh_yaml": "/etc/adguardhome/adguardhome.yaml",
-            "agh_yaml_old": "/etc/adguardhome.yaml"
+            "agh_yaml_old": "/etc/adguardhome.yaml",
+            "lan_ip_default": "192.168.1.1"
           },  
           "filterLanguageMap": {
             "_description": "AdGuard filter URL mapping by language code",
