@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0104.1955) loaded');
+console.log('custom.js (R8.0105.1749) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -374,6 +374,21 @@ const CustomUtils = {
         return path.split('.').reduce((current, key) => current?.[key], obj);
     }
 };
+
+function clearSectionFields(categoryId, sectionId, excludeIds = []) {
+    const category = state.config.setup?.categories?.find(cat => cat.id === categoryId);
+    if (!category) return;
+    
+    const section = category.items?.find(item => item.id === sectionId);
+    if (!section) return;
+    
+    section.items?.forEach(item => {
+        if (item.type === 'field' && !excludeIds.includes(item.id)) {
+            const el = document.getElementById(item.id);
+            if (el) el.value = '';
+        }
+    });
+}
 
 // ==================== DOM要素キャッシュ ====================
 function cacheFrequentlyUsedElements() {
@@ -898,6 +913,10 @@ function buildField(field) {
                         } catch (err) {
                             console.error('MAP-E lookup failed:', err);
                         }
+                    } else {
+                        state.apiInfo = null;
+                        clearSectionFields('internet-connection', 'mape-section', ['mape-lookup-ipv6']);
+                        updateAutoConnectionInfo(null);
                     }
                 }
             });
