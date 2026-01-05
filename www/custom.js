@@ -1465,6 +1465,11 @@ function evaluateAllShowWhen() {
             const condition = JSON.parse(element.getAttribute('data-show-when'));
             const shouldShow = evaluateShowWhen(condition);
             element.style.display = shouldShow ? '' : 'none';
+            
+            if (!shouldShow) {
+                const input = element.querySelector('input, select, textarea');
+                if (input) input.value = '';
+            }
         } catch (err) {
             console.error('Error evaluating showWhen:', err);
         }
