@@ -7128,11 +7128,42 @@ function checkDSLiteRule(ipv6, userAsn = null) {
    */
   function extractGUAPrefix(ipv6) {
     if (!ipv6) return null;
-  
-    const parts = ipv6.split(':');
-    if (parts.length < 4) return null;
-  
-    return `${parts[0]}:${parts[1]}:${parts[2]}:${parts[3]}::/64`;
+    
+    // IPv6アドレスを正規化
+    function normalizeIPv6(ip) {
+      const parts = ip.split(':');
+      const groups = [];
+      let zeroStart = -1;
+      
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '') {
+          if (zeroStart === -1) zeroStart = i;
+        } else {
+          groups.push(parts[i].padStart(4, '0'));
+        }
+      }
+      
+      if (zeroStart !== -1) {
+        const zeros = 8 - groups.length;
+        const before = groups.slice(0, zeroStart);
+        const after = groups.slice(zeroStart);
+        const fullGroups = [...before, ...Array(zeros).fill('0000'), ...after];
+        return fullGroups.slice(0, 8).join(':');
+      }
+      
+      return groups.join(':');
+    }
+    
+    try {
+      const normalized = normalizeIPv6(ipv6);
+      const parts = normalized.split(':');
+      
+      if (parts.length < 4) return null;
+      
+      return `${parts[0]}:${parts[1]}:${parts[2]}:${parts[3]}::/64`;
+    } catch (e) {
+      return null;
+    }
   }
   
   /**
@@ -7240,8 +7271,11 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         if (mapRule) {
             mapRule = enrichMapRule(mapRule);
             
-            const ruleBasePrefix = mapRule.ipv6Prefix.split('::')[0];
-            const isMatchedPrefix = lookupIPv6.startsWith(ruleBasePrefix);
+            const isMatchedPrefix = checkIPv6InRangeJS(
+              lookupIPv6,
+              mapRule.ipv6Prefix,
+              mapRule.ipv6PrefixLength
+            );
 
             if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
                 const guaPrefix = extractGUAPrefix(lookupIPv6);
