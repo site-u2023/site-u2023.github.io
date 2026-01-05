@@ -6987,10 +6987,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     }
 
     if (matchedAsRule) {
-        const mapeConfig = typeof checkMapERule === 'function' ? checkMapERule(ipv6) : null;
-        if (mapeConfig) {
-            return { type: "map-e", ...mapeConfig };
-        }
         return createResult(matchedAsRule, ipv6);
     }
 
@@ -7129,7 +7125,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   function extractGUAPrefix(ipv6) {
     if (!ipv6) return null;
     
-    // IPv6アドレスを正規化
     function normalizeIPv6(ip) {
       const parts = ip.split(':');
       const groups = [];
@@ -7255,32 +7250,25 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       let mapRule = null;
 
       if (lookupIPv6) {
-        const result = checkDSLiteRule(lookupIPv6, asn);
-
-        if (result && result.type === "map-e") {
-            mapRule = result;
-            delete mapRule.type;
-        } else {
-            aftrRule = result;
-        }
-
-        if (!aftrRule && !mapRule) {
-            mapRule = checkMapERule(lookupIPv6);
+        mapRule = checkMapERule(lookupIPv6);
+        
+        if (!mapRule) {
+          aftrRule = checkDSLiteRule(lookupIPv6, asn);
         }
 
         if (mapRule) {
-            mapRule = enrichMapRule(mapRule);
-            
-            const isMatchedPrefix = checkIPv6InRangeJS(
-              lookupIPv6,
-              mapRule.ipv6Prefix,
-              mapRule.ipv6PrefixLength
-            );
+          mapRule = enrichMapRule(mapRule);
+          
+          const isMatchedPrefix = checkIPv6InRangeJS(
+            lookupIPv6,
+            mapRule.ipv6Prefix,
+            mapRule.ipv6PrefixLength
+          );
 
-            if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
-                const guaPrefix = extractGUAPrefix(lookupIPv6);
-                if (guaPrefix) mapRule.ipv6Prefix_gua = guaPrefix;
-            }
+          if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
+            const guaPrefix = extractGUAPrefix(lookupIPv6);
+            if (guaPrefix) mapRule.ipv6Prefix_gua = guaPrefix;
+          }
         }
       }
 
