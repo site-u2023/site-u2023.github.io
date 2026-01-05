@@ -1904,29 +1904,21 @@ function collectItemValue(item, values) {
         
         const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
         
-        if (item.variable === 'connection_type' && selectedValue === 'auto') {
+        
             const actualType = getActualConnectionType();
             if (actualType && actualType !== 'dhcp') {
                 const actualVars = item.exclusiveVars?.[actualType] || [];
                 collectExclusiveVars(actualVars, values, true);
                 
-                if (actualType === 'mape') {
-                    const mapeType = getFieldValue('input[name="mape_type"]:checked') || 'gua';
-                    if (mapeType === 'gua' && state.apiInfo) {
-                        const guaValue = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua') ||
-                                         CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-                        if (guaValue) {
-                            values['mape_gua_prefix'] = guaValue;
-                        }
+                if (actualType === 'mape' && state.apiInfo) {
+                    const guaValue = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua');
+                    if (guaValue) {
+                        values['mape_gua_prefix'] = guaValue;
                     }
                 }
             }
             return;
         }
-        
-        collectExclusiveVars(varsToCollect, values, false);
-        return;
-    }
     
     if (item.type === 'field' && item.variable) {
         if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
