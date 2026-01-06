@@ -906,8 +906,10 @@ function buildField(field) {
                         try {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
-
+                            
                             if (field.targetFields && Array.isArray(field.targetFields)) {
+                                // state.lookupTargetFields = field.targetFields;
+                                
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
                                     if (!targetElement) continue;
@@ -933,16 +935,15 @@ function buildField(field) {
                                     }
                                 }
                             }
-                            
-                            const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
-                            applyIspAutoConfig(apiInfo, { skipIds: basicInfoFieldIds });
-                            
+
                             updateAutoConnectionInfo(apiInfo);
                             
                         } catch (err) {
                             console.error('Lookup failed:', err);
                         }
                     } else {
+                        // state.apiInfo = null;
+                        // state.lookupTargetFields = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
@@ -1449,7 +1450,8 @@ function handleRadioChange(e) {
     if (name === 'connection_type' && value === 'mape' && state.apiInfo) {
         console.log('Connection type changed to MAP-E, applying API info');
         requestAnimationFrame(() => {
-            applyIspAutoConfig(state.apiInfo);
+            const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
+            applyIspAutoConfig(state.apiInfo, { skipIds: basicInfoFieldIds });
         });
     }
     
