@@ -65,7 +65,7 @@ firewall_wan() {
     SET ${ZONE}.masq='1'
     SET ${ZONE}.mtu_fix='1'
 }
-[ -n "${enable_ntp}" ] && {
+[ -n "${ntp}" ] && {
     SEC=system
     IDX="$(ADD timeserver)"
     RENAME "$IDX"=ntp
@@ -78,12 +78,12 @@ firewall_wan() {
         ADDLIST ntp.server="${i}${ntp_domain}"
     done
 }
-[ -n "${enable_diag}" ] && {
+[ -n "${diag}" ] && {
     SEC=luci
     SET diag=diag
-    SET diag.ping="${DIAG}"
-    SET diag.route="${DIAG}"
-    SET diag.dns="${DIAG}"
+    SET diag.ping="${diag_address}"
+    SET diag.route="${diag_address}"
+    SET diag.dns="${diag_address}"
 }
 [ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
@@ -191,7 +191,7 @@ firewall_wan() {
     SET ${DSL6}.reqprefix='auto'
     SET ${DSL}=interface
     SET ${DSL}.proto='dslite'
-    SET ${DSL}.peeraddr="${peeraddr}
+    SET ${DSL}.peeraddr="${peeraddr}"
     SET ${DSL}.tunlink="${DSL6}"
     SET ${DSL}.mtu='1460'
     SET ${DSL}.encaplimit='ignore'
@@ -293,17 +293,17 @@ fi
     uci -q delete firewall
     [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
 }
-[ -n "${enable_ttyd}" ] && {
+[ -n "${ttyd}" ] && {
     SEC=ttyd
     SET @ttyd[0].command='/bin/login -f root'
     SET @ttyd[0].interface="${LAN}"
 }
-[ -n "${enable_irqbalance}" ] && {
+[ -n "${irqbalance}" ] && {
     SEC=irqbalance
     SET irqbalance=irqbalance
     SET irqbalance.enabled='1'
 }
-[ -n "${enable_samba4}" ] && {
+[ -n "${samba4}" ] && {
     SEC=samba4
     SET @samba[0]=samba
     SET @samba[0].workgroup='WORKGROUP'
@@ -321,12 +321,12 @@ fi
     SET sambashare.create_mask='0777'
     SET sambashare.dir_mask='0777'
 }
-[ -n "${enable_usb_rndis}" ] && {
+[ -n "${usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
     SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-[ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
+[ -n "${usb_gadget}" ] && [ -d /boot ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
@@ -359,23 +359,23 @@ fi
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
-[ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
+[ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
     SEC=dhcp    
-    [ "${enable_dnsmasq}" = "auto" ] && {
+    [ "${dnsmasq}" = "auto" ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
         NEG_CACHE=1
     }    
-    [ "${enable_dnsmasq}" = "manual" ] && {
+    [ "${dnsmasq}" = "manual" ] && {
         CACHE_SIZE="${dnsmasq_cache}"
         NEG_CACHE="${dnsmasq_negcache}"
     }    
     SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
     SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
 }
-[ -n "${enable_sd_resize}" ] && {
+[ -n "${sd_resize}" ] && {
     :
 }
 [ "${dns_adblock}" = "adblock_fast" ] && {
