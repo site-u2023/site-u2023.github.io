@@ -894,7 +894,7 @@ function buildField(field) {
         if (field.computed) {
             ctrl.setAttribute('data-computed', 'true');
         }
-        
+
         if (field.lookupTrigger) {
             ctrl.addEventListener('keydown', async (e) => {
                 if (e.key === 'Enter') {
@@ -907,6 +907,7 @@ function buildField(field) {
                             const apiInfo = await response.json();
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
+                                // state.lookupTargetFields = field.targetFields;
                                 
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
@@ -933,9 +934,9 @@ function buildField(field) {
                                     }
                                 }
                             }
-                            
-                            displayIspInfo(apiInfo);
+
                             updateAutoConnectionInfo(apiInfo);
+                            
                         } catch (err) {
                             console.error('Lookup failed:', err);
                         }
