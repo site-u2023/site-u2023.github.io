@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0106.0917) loaded');
+console.log('custom.js (R8.0106.1430) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -906,13 +906,20 @@ function buildField(field) {
                             const apiInfo = await response.json();
                             state.apiInfo = apiInfo;
                             
-                            const options = { skipIds: [field.id] };
                             if (field.targetFields && Array.isArray(field.targetFields)) {
-                                options.onlyIds = field.targetFields;
+                                for (const targetId of field.targetFields) {
+                                    const targetElement = document.getElementById(targetId);
+                                    if (!targetElement) continue;
+                                    
+                                    const targetConfig = findFieldConfig(targetId);
+                                    if (!targetConfig?.apiSource) continue;
+                                    
+                                    const value = CustomUtils.getNestedValue(apiInfo, targetConfig.apiSource);
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        targetElement.value = value;
+                                    }
+                                }
                             }
-                            applyIspAutoConfig(apiInfo, options);
-                            displayIspInfo(apiInfo);
-                            updateAutoConnectionInfo(apiInfo);
                             
                             if (field.computeField) {
                                 const computed = field.computeField.method === 'generateGuaPrefix'
@@ -925,6 +932,9 @@ function buildField(field) {
                                     }
                                 }
                             }
+                            
+                            displayIspInfo(apiInfo);
+                            updateAutoConnectionInfo(apiInfo);
                         } catch (err) {
                             console.error('Lookup failed:', err);
                         }
@@ -2589,17 +2599,11 @@ function applyIspAutoConfig(apiInfo, options = {}) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
     const skipIds = options.skipIds || [];
-    const onlyIds = options.onlyIds || null;
 
     const processItems = (items) => {
         if (!items || !Array.isArray(items)) return;
         for (const item of items) {
             if (skipIds.includes(item.id)) continue;
-            
-            if (onlyIds && item.id && !onlyIds.includes(item.id)) {
-                if (item.items) processItems(item.items);
-                continue;
-            }
             
             if (item.id) {
                 const element = document.getElementById(item.id);
