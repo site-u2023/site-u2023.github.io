@@ -2625,6 +2625,14 @@ function applyIspAutoConfig(apiInfo, options = {}) {
         for (const item of items) {
             if (skipIds.includes(item.id)) continue;
             
+            // lookupTargetFieldsが設定されている場合は、そのリストに含まれる項目のみ処理
+            if (state.lookupTargetFields && Array.isArray(state.lookupTargetFields)) {
+                if (!state.lookupTargetFields.includes(item.id)) {
+                    if (item.items) processItems(item.items);
+                    continue;
+                }
+            }
+            
             if (item.id) {
                 const element = document.getElementById(item.id);
                 if (element) {
