@@ -4,11 +4,15 @@
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() { cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}"; }
+
+RESET() { [ -f "/rom/etc/config/${SEC}" ] && cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}"; }
+
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
+lan_ip_address="${lan_ip_address:-${lan_ip}}"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
@@ -475,8 +479,7 @@ AGHEOF
         ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
         DEL lan.dhcp_option
         DEL lan.dhcp_option6
-        lan_ip="${lan_ip_address:-${lan_ip_default}}"
-        ADDLIST lan.dhcp_option="6,${lan_ip%%/*}"
+        ADDLIST lan.dhcp_option="6,${lan_ip_address%%/*}"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
         DEL "${agh_rule}" 2>/dev/null || true
