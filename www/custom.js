@@ -905,10 +905,8 @@ function buildField(field) {
                         try {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
-                            state.apiInfo = apiInfo;
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
-                                state.lookupTargetFields = field.targetFields;
                                 
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
@@ -942,8 +940,8 @@ function buildField(field) {
                             console.error('Lookup failed:', err);
                         }
                     } else {
-                        state.apiInfo = null;
-                        state.lookupTargetFields = null;
+                        // state.apiInfo = null;
+                        // state.lookupTargetFields = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
@@ -2063,22 +2061,6 @@ if (dnsAdblock === 'adguardhome') {
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
     }
-    
-    if (state.lookupTargetFields && Array.isArray(state.lookupTargetFields)) {
-        const allowedVars = new Set(['connection_type']);
-        for (const fieldId of state.lookupTargetFields) {
-            const fieldConfig = findFieldConfig(fieldId);
-            if (fieldConfig?.variable) {
-                allowedVars.add(fieldConfig.variable);
-            }
-        }
-        for (const key of Object.keys(values)) {
-            if (!allowedVars.has(key)) {
-                delete values[key];
-            }
-        }
-    }
-    
     return values;
 }
 
