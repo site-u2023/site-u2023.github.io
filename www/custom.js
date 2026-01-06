@@ -907,16 +907,7 @@ function buildField(field) {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
 
-                            const connectionType =
-                                document.querySelector('input[name="connection_type"]:checked')?.value;
-
-                            if (connectionType === 'mape') {
-                                return;
-                            }
-                            
                             if (field.targetFields && Array.isArray(field.targetFields)) {
-                                // state.lookupTargetFields = field.targetFields;
-                                
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
                                     if (!targetElement) continue;
@@ -942,15 +933,16 @@ function buildField(field) {
                                     }
                                 }
                             }
-
+                            
+                            const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
+                            applyIspAutoConfig(apiInfo, { skipIds: basicInfoFieldIds });
+                            
                             updateAutoConnectionInfo(apiInfo);
                             
                         } catch (err) {
                             console.error('Lookup failed:', err);
                         }
                     } else {
-                        // state.apiInfo = null;
-                        // state.lookupTargetFields = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
