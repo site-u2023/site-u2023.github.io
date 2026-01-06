@@ -2625,6 +2625,13 @@ function applyIspAutoConfig(apiInfo, options = {}) {
         for (const item of items) {
             if (skipIds.includes(item.id)) continue;
             
+            if (state.lookupTargetFields && Array.isArray(state.lookupTargetFields)) {
+                if (!state.lookupTargetFields.includes(item.id)) {
+                    if (item.items) processItems(item.items);
+                    continue;
+                }
+            }
+            
             if (item.id) {
                 const element = document.getElementById(item.id);
                 if (element) {
@@ -2637,7 +2644,7 @@ function applyIspAutoConfig(apiInfo, options = {}) {
                         }
                     }
 
-                    if (value !== null && value !== undefined && value !== '') {
+                    if (value !== null && value !== undefined && value !== '' {
                         if (element.value !== String(value)) {
                             UI.updateElement(element, { value: value });
                             mutated = true;
