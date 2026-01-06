@@ -1886,7 +1886,7 @@ function shouldIncludeVariable(value) {
     return value !== 'disabled' && value !== null && value !== undefined && value !== '';
 }
 
-function collectExclusiveVars(varsToCollect, values, useApiValues) {
+function collectExclusiveVars(varsToCollect, values) {
     if (!varsToCollect || !Array.isArray(varsToCollect)) return;
     
     for (const varName of varsToCollect) {
@@ -1895,7 +1895,7 @@ function collectExclusiveVars(varsToCollect, values, useApiValues) {
         
         let value = null;
         
-        if (useApiValues && state.apiInfo && fieldConfig.apiSource) {
+        if (state.apiInfo && fieldConfig.apiSource) {
             value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
         }
         
@@ -1923,18 +1923,8 @@ function collectItemValue(item, values) {
         
         if (selectedValue === 'disabled') return;
         
-        // JSON駆動: 選択されたオプションの変数を収集
         const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        const useApiValues = selectedValue === 'auto';
-        collectExclusiveVars(varsToCollect, values, useApiValues);
-        
-        // autoモードで検出されたタイプの変数も追加
-        if (selectedValue === 'auto' && item.exclusiveVars) {
-            const actualType = getActualConnectionType();
-            if (actualType && actualType !== 'dhcp' && item.exclusiveVars[actualType]) {
-                collectExclusiveVars(item.exclusiveVars[actualType], values, true);
-            }
-        }
+        collectExclusiveVars(varsToCollect, values);
         
         return;
     }
