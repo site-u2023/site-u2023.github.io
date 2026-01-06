@@ -174,7 +174,7 @@ firewall_wan() {
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${dslite_aftr_address}" ] && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${aftr}" ] && {
     SEC=network
     RESET
     disable_wan
@@ -185,14 +185,14 @@ firewall_wan() {
     SET ${DSL6}.reqprefix='auto'
     SET ${DSL}=interface
     SET ${DSL}.proto='dslite'
-    SET ${DSL}.peeraddr="${dslite_aftr_address}"
+    SET ${DSL}.peeraddr="${aftr}"
     SET ${DSL}.tunlink="${DSL6}"
     SET ${DSL}.mtu='1460'
     SET ${DSL}.encaplimit='ignore'
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${mape_br}" ] && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${peeraddr}" ] && {
     SEC=network
     RESET
     disable_wan
@@ -204,19 +204,19 @@ firewall_wan() {
     SET ${MAPE}=interface
     SET ${MAPE}.proto='map'
     SET ${MAPE}.maptype='map-e'
-    SET ${MAPE}.peeraddr="${mape_br}"
-    SET ${MAPE}.ipaddr="${mape_ipv4_prefix}"
-    SET ${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
-    SET ${MAPE}.ip6prefix="${mape_ipv6_prefix}"
-    SET ${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
-    SET ${MAPE}.ealen="${mape_ealen}"
-    SET ${MAPE}.psidlen="${mape_psidlen}"
-    SET ${MAPE}.offset="${mape_psid_offset}"
+    SET ${MAPE}.peeraddr="${peeraddr}"
+    SET ${MAPE}.ipaddr="${ipaddr}"
+    SET ${MAPE}.ip4prefixlen="${ip4prefixlen}"
+    SET ${MAPE}.ip6prefix="${ip6prefix}"
+    SET ${MAPE}.ip6prefixlen="${ip6prefixlen}"
+    SET ${MAPE}.ealen="${ealen}"
+    SET ${MAPE}.psidlen="${psidlen}"
+    SET ${MAPE}.offset="${offset}"
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
-    [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
+    [ -n "${ip6prefix_gua}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_gua}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     MAP_SH="/lib/netifd/proto/map.sh"   
@@ -258,7 +258,7 @@ firewall_wan() {
 \t  fi' "$MAP_SH"
 fi
 }
-[ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
+[ "${connection_type}" = "ap" ] && [ -n "${ipaddr}" ] && {
     disable_wan
     {
         SEC=network
@@ -266,9 +266,9 @@ fi
         SET ${AP}=interface
         SET ${AP}.proto='static'
         SET ${AP}.device="${LAN}"
-        SET ${AP}.ipaddr="${ap_ip_address}"
-        SET ${AP}.gateway="${ap_gateway}"
-        SET ${AP}.dns="${ap_gateway}"
+        SET ${AP}.ipaddr="${ipaddr}"
+        SET ${AP}.gateway="${gateway}"
+        SET ${AP}.dns="${gateway}"
         SET ${AP}.delegate='0'
         SET ${AP6}=interface
         SET ${AP6}.proto='dhcpv6'
