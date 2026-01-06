@@ -67,14 +67,15 @@ firewall_wan() {
 }
 [ -n "${enable_ntp}" ] && {
     SEC=system
-    SET ntp=timeserver
+    IDX="$(ADD timeserver)"
+    RENAME "$IDX"=ntp
     SET ntp.enabled='1'
     SET ntp.enable_server='1'
     SET ntp.interface='lan'
     DEL ntp.server
     for i in 0 1; do
-        ADDLIST ntp.server="${i}.${COUNTRY_LC}${NTPDOMAIN}"
-        ADDLIST ntp.server="${i}${NTPDOMAIN}"
+        ADDLIST ntp.server="${i}.${COUNTRY_LC}${ntp_domain}"
+        ADDLIST ntp.server="${i}${ntp_domain}"
     done
 }
 [ -n "${enable_diag}" ] && {
@@ -108,7 +109,8 @@ firewall_wan() {
         SET ${radio}.country="${country:-00}"     
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
-        [ -n "${snr}" ] && set -- ${snr} || set -- 30 15 5
+        S="30 15 5"
+        set -- ${snr:-$S}
         case "${band}" in
             2g) 
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk-mixed'
