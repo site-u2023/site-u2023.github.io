@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0106.1430) loaded');
+console.log('custom.js (R8.0106.0939) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -89,6 +89,7 @@ const state = {
     },
     
     apiInfo: null,
+    lookupTargetFields: null,
     
     packages: {
         json: null,
@@ -907,6 +908,8 @@ function buildField(field) {
                             state.apiInfo = apiInfo;
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
+                                state.lookupTargetFields = field.targetFields;
+                                
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
                                     if (!targetElement) continue;
@@ -940,6 +943,7 @@ function buildField(field) {
                         }
                     } else {
                         state.apiInfo = null;
+                        state.lookupTargetFields = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
@@ -2059,6 +2063,22 @@ if (dnsAdblock === 'adguardhome') {
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
     }
+    
+    if (state.lookupTargetFields && Array.isArray(state.lookupTargetFields)) {
+        const allowedVars = new Set(['connection_type']);
+        for (const fieldId of state.lookupTargetFields) {
+            const fieldConfig = findFieldConfig(fieldId);
+            if (fieldConfig?.variable) {
+                allowedVars.add(fieldConfig.variable);
+            }
+        }
+        for (const key of Object.keys(values)) {
+            if (!allowedVars.has(key)) {
+                delete values[key];
+            }
+        }
+    }
+    
     return values;
 }
 
