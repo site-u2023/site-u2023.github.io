@@ -357,6 +357,19 @@
         },
         {
           "type": "field",
+          "id": "ntp-enabled",
+          "label": "Enable NTP",
+          "class": "tr-ntp-enabled",
+          "fieldType": "select",
+          "variable": "ntp",
+          "default": "1",
+          "options": [
+            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
+            {"value": "", "label": "Disabled", "class": "tr-disabled"}
+          ]
+        },
+        {
+          "type": "field",
           "id": "ntp-domain",
           "label": "NTP Domain",
           "class": "tr-ntp-domain",
@@ -364,6 +377,19 @@
           "variable": "ntp_domain",
           "placeholder": "pool.ntp.org",
           "default": "pool.ntp.org"
+        },
+        {
+          "type": "field",
+          "id": "diag-enabled",
+          "label": "Enable Diagnostics",
+          "class": "tr-diag-enabled",
+          "fieldType": "select",
+          "variable": "diag",
+          "default": "1",
+          "options": [
+            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
+            {"value": "", "label": "Disabled", "class": "tr-disabled"}
+          ]
         },
         {
           "type": "field",
@@ -540,11 +566,19 @@
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
-            "auto": [],
+            "auto": [
+              "peeraddr", "ipaddr", "ip4prefixlen",
+              "ip6prefix", "ip6prefixlen", "ealen",
+              "psidlen", "offset", "ip6prefix_gua"
+            ],
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
             "dslite": ["peeraddr"],
-            "mape": ["peeraddr", "ipaddr", "ip4prefixlen", "ip6prefix", "ip6prefixlen", "ealen", "psidlen", "offset", "ip6prefix_gua"],
+            "mape": [
+              "peeraddr", "ipaddr", "ip4prefixlen",
+              "ip6prefix", "ip6prefixlen", "ealen",
+              "psidlen", "offset", "ip6prefix_gua"
+            ],
             "ap": ["ipaddr", "gateway"],
             "disabled": []
           }
@@ -985,7 +1019,7 @@
           "id": "dnsmasq-mode",
           "title": "DNS Server Settings",
           "class": "tr-dnsmasq-settings",
-          "variable": "enable_dnsmasq",
+          "variable": "dnsmasq",
           "default": "auto",
           "options": [
             {"value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto"},
@@ -1001,7 +1035,7 @@
         {
           "type": "section",
           "id": "dnsmasq-manual-section",
-          "showWhen": {"enable_dnsmasq": "manual"},
+          "showWhen": {"dnsmasq": "manual"},
           "items": [
             {
               "type": "field",
@@ -1030,7 +1064,7 @@
         {
           "type": "section",
           "id": "dnsmasq-auto-section",
-          "showWhen": {"enable_dnsmasq": "auto"},
+          "showWhen": {"dnsmasq": "auto"},
           "items": [
             {
               "type": "info-display",
@@ -1043,7 +1077,7 @@
         {
           "type": "section",
           "id": "dnsmasq-disabled-section",
-          "showWhen": {"enable_dnsmasq": "disabled"},
+          "showWhen": {"dnsmasq": "disabled"},
           "items": [
             {
               "type": "info-display",
@@ -1085,8 +1119,8 @@
           },
           "dependencies": {
             "adguardhome": {
-              "enable_htpasswd": "enabled",
-              "enable_adguardhome": "enabled"
+              "htpasswd": "1",
+              "adguardhome": "1"
             }
           },
           "variables": {
