@@ -178,7 +178,7 @@ firewall_wan() {
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${aftr}" ] && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${peeraddr}" ] && {
     SEC=network
     RESET
     disable_wan
@@ -189,7 +189,7 @@ firewall_wan() {
     SET ${DSL6}.reqprefix='auto'
     SET ${DSL}=interface
     SET ${DSL}.proto='dslite'
-    SET ${DSL}.peeraddr="${aftr}"
+    SET ${DSL}.peeraddr="${peeraddr}
     SET ${DSL}.tunlink="${DSL6}"
     SET ${DSL}.mtu='1460'
     SET ${DSL}.encaplimit='ignore'
@@ -262,7 +262,7 @@ firewall_wan() {
 \t  fi' "$MAP_SH"
 fi
 }
-[ "${connection_type}" = "ap" ] && [ -n "${ipaddr}" ] && {
+[ "${connection_type}" = "ap" ] && [ -n "${ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
     {
         SEC=network
