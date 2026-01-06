@@ -944,7 +944,6 @@ function buildField(field) {
                     } else {
                         // state.apiInfo = null;
                         // state.lookupTargetFields = null;
-                        state.apiInfo = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
