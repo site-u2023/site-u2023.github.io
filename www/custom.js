@@ -2644,7 +2644,7 @@ function applyIspAutoConfig(apiInfo, options = {}) {
                         }
                     }
 
-                    if (value !== null && value !== undefined && value !== '' {
+                    if (value !== null && value !== undefined && value !== '') {
                         if (element.value !== String(value)) {
                             UI.updateElement(element, { value: value });
                             mutated = true;
