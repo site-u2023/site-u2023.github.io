@@ -1495,19 +1495,7 @@ function evaluateAllShowWhen() {
         try {
             const condition = JSON.parse(element.getAttribute('data-show-when'));
             const shouldShow = evaluateShowWhen(condition);
-            const wasHidden = element.style.display === 'none';
             element.style.display = shouldShow ? '' : 'none';
-            
-            if (shouldShow && wasHidden) {
-                const input = element.querySelector('input, select, textarea');
-                if (input && !input.value) {
-                    const fieldId = input.id;
-                    const fieldConfig = findFieldConfig(fieldId);
-                    if (fieldConfig?.default) {
-                        input.value = fieldConfig.default;
-                    }
-                }
-            }
         } catch (err) {
             console.error('Error evaluating showWhen:', err);
         }
