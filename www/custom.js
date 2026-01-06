@@ -949,6 +949,8 @@ function buildField(field) {
                         }
                         updateAutoConnectionInfo(null);
                     }
+
+                    updateVariableDefinitions();
                 }
             });
         }
