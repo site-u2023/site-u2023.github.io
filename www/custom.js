@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0106.0939) loaded');
+console.log('custom.js (R8.0107.0842) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -944,12 +944,13 @@ function buildField(field) {
                     } else {
                         // state.apiInfo = null;
                         // state.lookupTargetFields = null;
+                        state.apiInfo = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
                         updateAutoConnectionInfo(null);
                     }
-
+                    
                     updateVariableDefinitions();
                 }
             });
