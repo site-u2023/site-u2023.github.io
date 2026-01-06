@@ -899,13 +899,6 @@ function buildField(field) {
             ctrl.addEventListener('keydown', async (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-
-                    const connectionType =
-                    document.querySelector('input[name="connection_type"]:checked')?.value;
-
-                    if (connectionType !== 'auto') {
-                        return;
-                    }
                     
                     const ipv6 = e.target.value.trim();
                     
@@ -913,6 +906,13 @@ function buildField(field) {
                         try {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
+
+                            const connectionType =
+                                document.querySelector('input[name="connection_type"]:checked')?.value;
+
+                            if (connectionType === 'mape') {
+                                return;
+                            }
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
                                 // state.lookupTargetFields = field.targetFields;
