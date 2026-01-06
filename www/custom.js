@@ -1900,7 +1900,13 @@ function collectExclusiveVars(varsToCollect, values, useApiValues) {
         let value = null;
         
         if (useApiValues && state.apiInfo && fieldConfig.apiSource) {
-            value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+            if (state.lookupTargetFields && Array.isArray(state.lookupTargetFields)) {
+                if (state.lookupTargetFields.includes(fieldConfig.id)) {
+                    value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+                }
+            } else {
+                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+            }
         }
         
         if (value === null || value === undefined) {
