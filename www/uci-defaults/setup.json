@@ -676,7 +676,10 @@
               "placeholder": "2400:xxxx:xxxx:xxxx::1",
               "description": "Enter IPv6 to auto-fetch MAP-E parameters",
               "apiSource": "ipv6",
-              "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"]
+              "lookupTrigger": true,
+              "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"],
+              "clearSection": {"category": "internet-connection", "section": "mape-section"},
+              "computeField": {"target": "mape-gua-prefix", "method": "generateGuaPrefix"}
             },
             {
               "type": "radio-group",
