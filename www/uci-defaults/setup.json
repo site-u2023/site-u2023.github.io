@@ -357,18 +357,6 @@
         },
         {
           "type": "field",
-          "id": "aios-ssh-port",
-          "label": "SSH Port",
-          "class": "tr-ssh-port",
-          "fieldType": "number",
-          "variable": "ssh_port",
-          "placeholder": "22",
-          "min": 1,
-          "max": 65535,
-          "description": "Port number for SSH access"
-        },
-        {
-          "type": "field",
           "id": "ntp-domain",
           "label": "NTP Domain",
           "class": "tr-ntp-domain",
