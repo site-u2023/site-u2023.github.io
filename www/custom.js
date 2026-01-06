@@ -899,6 +899,14 @@ function buildField(field) {
             ctrl.addEventListener('keydown', async (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
+
+                    const connectionType =
+                    document.querySelector('input[name="connection_type"]:checked')?.value;
+
+                    if (connectionType !== 'auto') {
+                        return;
+                    }
+                    
                     const ipv6 = e.target.value.trim();
                     
                     if (ipv6) {
