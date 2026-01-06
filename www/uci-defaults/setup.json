@@ -1,5 +1,5 @@
 {
-  "version": "R7.1225.1930",
+  "version": "R7.0106.1430",
   "description": "Simplified setup configuration - packages.json style",
   "reboot": true,
   "columns": 2,
@@ -675,7 +675,8 @@
               "fieldType": "text",
               "placeholder": "2400:xxxx:xxxx:xxxx::1",
               "description": "Enter IPv6 to auto-fetch MAP-E parameters",
-              "apiSource": "ipv6"
+              "apiSource": "ipv6",
+              "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"]
             },
             {
               "type": "radio-group",
