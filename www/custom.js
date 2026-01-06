@@ -1928,31 +1928,16 @@ function collectItemValue(item, values) {
         
         if (selectedValue === 'disabled') return;
         
-        if (selectedValue === 'auto') {
-            const autoVars = item.exclusiveVars?.['auto'] || [];
-            collectExclusiveVars(autoVars, values, true);
-            
+        // JSON駆動: 選択されたオプションの変数を収集
+        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
+        const useApiValues = selectedValue === 'auto';
+        collectExclusiveVars(varsToCollect, values, useApiValues);
+        
+        // autoモードで検出されたタイプの変数も追加
+        if (selectedValue === 'auto' && item.exclusiveVars) {
             const actualType = getActualConnectionType();
-            if (actualType && actualType !== 'dhcp') {
-                const actualVars = item.exclusiveVars?.[actualType] || [];
-                collectExclusiveVars(actualVars, values, true);
-                
-                if (actualType === 'mape' && state.apiInfo) {
-                    const guaValue = CustomUtils.getNestedValue(state.apiInfo, 'mape.ipv6Prefix_gua');
-                    if (guaValue) {
-                        values['mape_gua_prefix'] = guaValue;
-                    }
-                }
-            }
-        } else {
-            const selectedVars = item.exclusiveVars?.[selectedValue] || [];
-            collectExclusiveVars(selectedVars, values, false);
-            
-            if (selectedValue === 'mape') {
-                const guaField = document.getElementById('mape-gua-prefix');
-                if (guaField && guaField.value) {
-                    values['mape_gua_prefix'] = guaField.value;
-                }
+            if (actualType && actualType !== 'dhcp' && item.exclusiveVars[actualType]) {
+                collectExclusiveVars(item.exclusiveVars[actualType], values, true);
             }
         }
         
