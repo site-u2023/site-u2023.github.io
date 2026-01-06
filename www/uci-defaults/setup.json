@@ -1,5 +1,5 @@
 {
-  "version": "R7.0106.1430",
+  "version": "R7.0106.1800",
   "description": "Simplified setup configuration - packages.json style",
   "reboot": true,
   "columns": 2,
@@ -214,19 +214,15 @@
     "export_exclusions": {
       "connection_type": {
         "auto": [
-          "mape_br",
-          "mape_ealen",
-          "mape_ipv4_prefix",
-          "mape_ipv4_prefixlen",
-          "mape_ipv6_prefix",
-          "mape_ipv6_prefixlen",
-          "mape_psid_offset",
-          "mape_psidlen",
-          "mape_gua_prefix",
-          "mape_type",
-          "dslite_aftr_type",
-          "dslite_jurisdiction",
-          "dslite_aftr_address"
+          "peeraddr",
+          "ipaddr",
+          "ip4prefixlen",
+          "ip6prefix",
+          "ip6prefixlen",
+          "ealen",
+          "psidlen",
+          "offset",
+          "ip6prefix_gua"
         ]
       },
       "net_optimizer": {
@@ -548,9 +544,9 @@
             "auto": [],
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
-            "dslite": ["dslite_aftr_type", "dslite_aftr_address"],
-            "mape": ["mape_br", "mape_ipv4_prefix", "mape_ipv4_prefixlen", "mape_ipv6_prefix", "mape_ipv6_prefixlen", "mape_ealen", "mape_psidlen", "mape_psid_offset"],
-            "ap": ["ap_ip_address", "ap_gateway"],
+            "dslite": ["peeraddr"],
+            "mape": ["peeraddr", "ipaddr", "ip4prefixlen", "ip6prefix", "ip6prefixlen", "ealen", "psidlen", "offset", "ip6prefix_gua"],
+            "ap": ["ipaddr", "gateway"],
             "disabled": []
           }
         },
@@ -628,7 +624,7 @@
                 "xpass": [],
                 "v6connect": []
               },
-              "computeTarget": "dslite_aftr_address"
+              "computeTarget": "peeraddr"
             },
             {
               "type": "field",
@@ -642,7 +638,7 @@
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
               "apiSource": "aftr.jurisdiction",
-              "computeTarget": "dslite_aftr_address",
+              "computeTarget": "peeraddr",
               "showWhen": {"dslite_aftr_type": ["transix"]}
             },
             {
@@ -651,7 +647,7 @@
               "label": "AFTR Address",
               "class": "tr-dslite-aftr-ipv6-address",
               "fieldType": "text",
-              "variable": "dslite_aftr_address",
+              "variable": "peeraddr",
               "placeholder": "gw.transix.jp or IPv6 address",
               "default": "2404:8e00::feed:100",
               "apiSource": "aftr.aftrAddress",
@@ -694,7 +690,7 @@
                 {"value": "pd", "label": "PD"}
               ],
               "exclusiveVars": {
-                "gua": ["mape_gua_prefix"],
+                "gua": ["ip6prefix_gua"],
                 "pd": []
               }
             },
@@ -704,7 +700,7 @@
               "label": "GUA Prefix",
               "class": "tr-gua-prefix",
               "fieldType": "text",
-              "variable": "mape_gua_prefix",
+              "variable": "ip6prefix_gua",
               "placeholder": "optional for GUA",
               "description": "IPv6 GUA prefix with /64 suffix",
               "apiSource": "mape.ipv6Prefix_gua",
@@ -717,7 +713,7 @@
               "label": "Peer Address (BR)",
               "class": "tr-br",
               "fieldType": "text",
-              "variable": "mape_br",
+              "variable": "peeraddr",
               "placeholder": "2001:380:a120::9",
               "apiSource": "mape.brIpv6Address"
             },
@@ -727,7 +723,7 @@
               "label": "IPv4 Address",
               "class": "tr-ipv4-prefix",
               "fieldType": "text",
-              "variable": "mape_ipv4_prefix",
+              "variable": "ipaddr",
               "placeholder": "",
               "apiSource": "mape.ipv4Prefix"
             },
@@ -737,7 +733,7 @@
               "label": "IPv4 Prefix Length",
               "class": "tr-ipv4-prefix-length",
               "fieldType": "number",
-              "variable": "mape_ipv4_prefixlen",
+              "variable": "ip4prefixlen",
               "placeholder": "20",
               "apiSource": "mape.ipv4PrefixLength"
             },
@@ -747,7 +743,7 @@
               "label": "IPv6 Prefix",
               "class": "tr-ipv6-prefix",
               "fieldType": "text",
-              "variable": "mape_ipv6_prefix",
+              "variable": "ip6prefix",
               "placeholder": "",
               "apiSource": "mape.ipv6Prefix"
             },
@@ -757,7 +753,7 @@
               "label": "IPv6 Prefix Length",
               "class": "tr-ipv6-prefix-length",
               "fieldType": "number",
-              "variable": "mape_ipv6_prefixlen",
+              "variable": "ip6prefixlen",
               "placeholder": "38",
               "apiSource": "mape.ipv6PrefixLength"
             },
@@ -767,7 +763,7 @@
               "label": "EA-len",
               "class": "tr-ea-len",
               "fieldType": "number",
-              "variable": "mape_ealen",
+              "variable": "ealen",
               "placeholder": "18",
               "apiSource": "mape.eaBitLength"
             },
@@ -777,7 +773,7 @@
               "label": "PSID Length",
               "class": "tr-psid-length",
               "fieldType": "number",
-              "variable": "mape_psidlen",
+              "variable": "psidlen",
               "placeholder": "6",
               "apiSource": "mape.psidlen"
             },
@@ -787,7 +783,7 @@
               "label": "PSID Offset",
               "class": "tr-psid-offset",
               "fieldType": "number",
-              "variable": "mape_psid_offset",
+              "variable": "offset",
               "placeholder": "6",
               "apiSource": "mape.psIdOffset"
             },
@@ -812,7 +808,7 @@
               "label": "IP Address",
               "class": "tr-ap-ip-address",
               "fieldType": "text",
-              "variable": "ap_ip_address",
+              "variable": "ipaddr",
               "placeholder": "192.168.1.2/24",
               "default": "192.168.1.2/24"
             },
@@ -822,7 +818,7 @@
               "label": "Gateway",
               "class": "tr-ap-gateway",
               "fieldType": "text",
-              "variable": "ap_gateway",
+              "variable": "gateway",
               "placeholder": "192.168.1.1/24",
               "default": "192.168.1.1/24"
             }
