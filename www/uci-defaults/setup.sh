@@ -3,10 +3,7 @@
 # END_VARS
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
-RESET() { cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}"; }
-
-RESET() { [ -f "/rom/etc/config/${SEC}" ] && cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}"; }
-
+RESET() { cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}" 2>/dev/null; }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date +%F\ %H:%M)"
