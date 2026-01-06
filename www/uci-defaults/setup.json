@@ -357,16 +357,15 @@
         },
         {
           "type": "field",
-          "id": "ntp-enabled",
-          "label": "Enable NTP",
-          "class": "tr-ntp-enabled",
-          "fieldType": "select",
-          "variable": "ntp",
-          "default": "1",
-          "options": [
-            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
-            {"value": "", "label": "Disabled", "class": "tr-disabled"}
-          ]
+          "id": "aios-ssh-port",
+          "label": "SSH Port",
+          "class": "tr-ssh-port",
+          "fieldType": "number",
+          "variable": "ssh_port",
+          "placeholder": "22",
+          "min": 1,
+          "max": 65535,
+          "description": "Port number for SSH access"
         },
         {
           "type": "field",
@@ -377,19 +376,6 @@
           "variable": "ntp_domain",
           "placeholder": "pool.ntp.org",
           "default": "pool.ntp.org"
-        },
-        {
-          "type": "field",
-          "id": "diag-enabled",
-          "label": "Enable Diagnostics",
-          "class": "tr-diag-enabled",
-          "fieldType": "select",
-          "variable": "diag",
-          "default": "1",
-          "options": [
-            {"value": "1", "label": "Enabled", "class": "tr-enabled"},
-            {"value": "", "label": "Disabled", "class": "tr-disabled"}
-          ]
         },
         {
           "type": "field",
