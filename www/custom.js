@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0105.1749) loaded');
+console.log('custom.js (R8.0106.0902) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -905,7 +905,12 @@ function buildField(field) {
                             const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
                             const apiInfo = await response.json();
                             state.apiInfo = apiInfo;
-                            applyIspAutoConfig(apiInfo, { skipIds: ['mape-lookup-ipv6'] });
+                            
+                            const options = { skipIds: [field.id] };
+                            if (field.targetFields && Array.isArray(field.targetFields)) {
+                                options.onlyIds = field.targetFields;
+                            }
+                            applyIspAutoConfig(apiInfo, options);
                             displayIspInfo(apiInfo);
                             updateAutoConnectionInfo(apiInfo);
                             
@@ -2578,11 +2583,17 @@ function applyIspAutoConfig(apiInfo, options = {}) {
     if (!apiInfo || !state.config.setup) return false;
     let mutated = false;
     const skipIds = options.skipIds || [];
+    const onlyIds = options.onlyIds || null;
 
     const processItems = (items) => {
         if (!items || !Array.isArray(items)) return;
         for (const item of items) {
             if (skipIds.includes(item.id)) continue;
+            
+            if (onlyIds && item.id && !onlyIds.includes(item.id)) {
+                if (item.items) processItems(item.items);
+                continue;
+            }
             
             if (item.id) {
                 const element = document.getElementById(item.id);
