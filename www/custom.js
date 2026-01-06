@@ -1928,9 +1928,10 @@ function collectItemValue(item, values) {
         
         if (selectedValue === 'disabled') return;
         
-        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        
-        
+        if (selectedValue === 'auto') {
+            const autoVars = item.exclusiveVars?.['auto'] || [];
+            collectExclusiveVars(autoVars, values, true);
+            
             const actualType = getActualConnectionType();
             if (actualType && actualType !== 'dhcp') {
                 const actualVars = item.exclusiveVars?.[actualType] || [];
@@ -1943,8 +1944,20 @@ function collectItemValue(item, values) {
                     }
                 }
             }
-            return;
+        } else {
+            const selectedVars = item.exclusiveVars?.[selectedValue] || [];
+            collectExclusiveVars(selectedVars, values, false);
+            
+            if (selectedValue === 'mape') {
+                const guaField = document.getElementById('mape-gua-prefix');
+                if (guaField && guaField.value) {
+                    values['mape_gua_prefix'] = guaField.value;
+                }
+            }
         }
+        
+        return;
+    }
     
     if (item.type === 'field' && item.variable) {
         if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
