@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0106.0902) loaded');
+console.log('custom.js (R8.0106.0917) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -894,7 +894,7 @@ function buildField(field) {
             ctrl.setAttribute('data-computed', 'true');
         }
         
-        if (field.id === 'mape-lookup-ipv6') {
+        if (field.lookupTrigger) {
             ctrl.addEventListener('keydown', async (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
@@ -914,19 +914,25 @@ function buildField(field) {
                             displayIspInfo(apiInfo);
                             updateAutoConnectionInfo(apiInfo);
                             
-                            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress({ ipv6: ipv6 });
-                            if (guaPrefix) {
-                                const guaField = document.getElementById('mape-gua-prefix');
-                                if (guaField) {
-                                    guaField.value = guaPrefix;
+                            if (field.computeField) {
+                                const computed = field.computeField.method === 'generateGuaPrefix'
+                                    ? CustomUtils.generateGuaPrefixFromFullAddress({ ipv6: ipv6 })
+                                    : null;
+                                if (computed) {
+                                    const targetField = document.getElementById(field.computeField.target);
+                                    if (targetField) {
+                                        targetField.value = computed;
+                                    }
                                 }
                             }
                         } catch (err) {
-                            console.error('MAP-E lookup failed:', err);
+                            console.error('Lookup failed:', err);
                         }
                     } else {
                         state.apiInfo = null;
-                        clearSectionFields('internet-connection', 'mape-section', ['mape-lookup-ipv6']);
+                        if (field.clearSection) {
+                            clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
+                        }
                         updateAutoConnectionInfo(null);
                     }
                 }
