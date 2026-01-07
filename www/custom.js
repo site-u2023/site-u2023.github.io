@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0107.0928) loaded');
+console.log('custom.js (R8.0107.0946) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1099,7 +1099,7 @@ function computeFieldValue(targetVariable) {
     }
 }
 
-function findFieldByVariable(variableName) {
+function findFieldByVariable(variableName, context = {}) {
     if (!state.config.setup) return null;
 
     const candidates = [];
@@ -1121,9 +1121,19 @@ function findFieldByVariable(variableName) {
     }
     
     for (const candidate of candidates) {
-        if (!candidate.showWhen || evaluateShowWhen(candidate.showWhen)) {
-            return candidate;
+        if (!candidate.showWhen) return candidate;
+        
+        let matches = true;
+        for (const [key, expectedValue] of Object.entries(candidate.showWhen)) {
+            const actualValue = context[key] || getFieldValue(`input[name="${key}"]:checked`);
+            if (Array.isArray(expectedValue)) {
+                if (!expectedValue.includes(actualValue)) matches = false;
+            } else {
+                if (actualValue !== expectedValue) matches = false;
+            }
         }
+        
+        if (matches) return candidate;
     }
     
     return null;
@@ -1726,11 +1736,11 @@ function shouldIncludeVariable(value) {
     return value !== 'disabled' && value !== null && value !== undefined && value !== '';
 }
 
-function collectExclusiveVars(varsToCollect, values) {
+function collectExclusiveVars(varsToCollect, values, context = {}) {
     if (!varsToCollect || !Array.isArray(varsToCollect)) return;
     
     for (const varName of varsToCollect) {
-        const fieldConfig = findFieldByVariable(varName);
+        const fieldConfig = findFieldByVariable(varName, context);
         if (!fieldConfig) continue;
         
         const value = getFieldValue(`#${fieldConfig.id}`);
@@ -1756,7 +1766,7 @@ function collectItemValue(item, values) {
         if (selectedValue === 'disabled') return;
         
         const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        collectExclusiveVars(varsToCollect, values);
+        collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});  // ← context追加
         
         return;
     }
