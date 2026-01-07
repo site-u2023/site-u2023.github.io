@@ -670,129 +670,6 @@ function buildItem(item) {
     }
 }
 
-function XXXXX_buildField(field) {
-    const row = document.createElement('div');
-    row.className = 'form-row';
-    
-    if (field.hidden) {
-        row.style.display = 'none';
-    }
-    
-    if (field.showWhen) {
-        row.setAttribute('data-show-when', JSON.stringify(field.showWhen));
-        if (!field.hidden) {
-            row.style.display = 'none';
-        }
-    }
-
-    const group = document.createElement('div');
-    group.className = 'form-group';
-
-    const label = document.createElement('label');
-    label.appendChild(buildLinkOrSpan(field, field.label || field.id || ''));
-    
-    if (field.id) label.setAttribute('for', field.id);
-    
-    if (field.description || field.descriptionUrl) {
-        addTooltip(label, field.descriptionUrl || field.description);
-    }
-    
-    group.appendChild(label);
-
-    let ctrl;
-    if (field.fieldType === 'select') {
-        ctrl = document.createElement('select');
-        if (field.id) ctrl.id = field.id;
-        if (field.variable) ctrl.name = field.variable;
-        
-        let optionsSource = [];
-        if (field.source === 'browser-languages') {
-            const select = document.querySelector('#languages-select');
-            if (select) {
-                optionsSource = Array.from(select.querySelectorAll('option')).map(opt => ({
-                    value: opt.value,
-                    label: opt.textContent
-                }));
-            }
-        } else {
-            optionsSource = field.options || [];
-        }
-
-        optionsSource.forEach(opt => {
-            const option = document.createElement('option');
-            option.value = opt.value;
-            option.textContent = opt.label || opt.value;
-            if (opt.class) option.classList.add(opt.class);
-            if (opt.selected || (field.default && opt.value === field.default)) {
-                option.selected = true;
-            }
-            ctrl.appendChild(option);
-        });
-
-        if (field.computeTarget) {
-            ctrl.addEventListener('change', () => {
-                computeFieldValue(field.computeTarget);
-                evaluateAllShowWhen();
-                updateVariableDefinitions();
-            });
-        } else if (field.id !== 'device-language') {
-            ctrl.addEventListener('change', () => {
-                evaluateAllShowWhen();
-                updateAllPackageState('form-field');
-            });
-        }
-    } else {
-        ctrl = document.createElement('input');
-        ctrl.type = field.fieldType || 'text';
-        if (field.id) ctrl.id = field.id;
-        
-        if (field.placeholder) ctrl.placeholder = field.placeholder;
-        
-        let setValue = null;
-        if (field.default !== null && field.default !== undefined && field.default !== '') {
-            setValue = field.default;
-        } else if (field.apiSource && state.apiInfo) {
-            const apiValue = CustomUtils.getNestedValue(state.apiInfo, field.apiSource);
-            if (apiValue !== null && apiValue !== undefined && apiValue !== '') {
-                setValue = apiValue;
-            }
-        } else if (field.computeFrom === 'generateGuaPrefix' && state.apiInfo) {
-            const guaPrefix = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
-            if (guaPrefix) setValue = guaPrefix;
-        }
-        
-        if (setValue !== null) {
-            UI.updateElement(ctrl, { value: setValue });
-        }
-        
-        if (field.min != null) ctrl.min = field.min;
-        if (field.max != null) ctrl.max = field.max;
-        if (field.maxlength != null) ctrl.maxLength = field.maxlength;
-        if (field.minlength != null) ctrl.minLength = field.minlength;
-        if (field.pattern != null) ctrl.pattern = field.pattern;
-        
-        if (field.computed) {
-            ctrl.setAttribute('data-computed', 'true');
-        }
-        
-        if (field.id !== 'device-language') {
-            ctrl.addEventListener('blur', () => updateAllPackageState('form-field'));
-        }
-    }
-    
-    group.appendChild(ctrl);
-
-    if (field.description && !field.descriptionUrl) {
-        const small = document.createElement('small');
-        small.className = 'text-muted';
-        small.textContent = field.description;
-        group.appendChild(small);
-    }
-
-    row.appendChild(group);
-    return row;
-}
-
 function buildField(field) {
     const row = document.createElement('div');
     row.className = 'form-row';
@@ -1389,51 +1266,6 @@ function getConnectionTypeFromApi(apiInfo) {
     return 'dhcp';
 }
 
-function XXXXX_handleRadioChange(e) {
-    const name = e.target.name;
-    const value = e.target.value;
-    
-    console.log(`Radio changed: ${name} = ${value}`);
-    
-    evaluateAllShowWhen();
-    
-    applyRadioDependencies(name, value);
-    
-    updatePackagesForRadioGroup(name, value);
-    
-    updateAllPackageState(`radio-${name}`);
-    
-    if (current_language_json) {
-        requestAnimationFrame(() => {
-            applyCustomTranslations(current_language_json);
-        });
-    }
-}
-
-function XXXXX_handleRadioChange(e) {
-    const name = e.target.name;
-    const value = e.target.value;
-    
-    console.log(`Radio changed: ${name} = ${value}`);
-    
-    evaluateAllShowWhen();
-    applyRadioDependencies(name, value);
-    
-    if (name === 'connection_type' && value === 'auto') {
-        console.log('Connection type changed to AUTO, fetching fresh API info');
-        fetchAndDisplayIspInfo(true);
-    }
-    
-    updatePackagesForRadioGroup(name, value);
-    updateAllPackageState(`radio-${name}`);
-    
-    if (current_language_json) {
-        requestAnimationFrame(() => {
-            applyCustomTranslations(current_language_json);
-        });
-    }
-}
-
 function handleRadioChange(e) {
     const name = e.target.name;
     const value = e.target.value;
@@ -1895,15 +1727,7 @@ function collectExclusiveVars(varsToCollect, values) {
         const fieldConfig = findFieldByVariable(varName);
         if (!fieldConfig) continue;
         
-        let value = null;
-        
-        if (state.apiInfo && fieldConfig.apiSource) {
-            value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
-        }
-        
-        if (value === null || value === undefined) {
-            value = getFieldValue(`#${fieldConfig.id}`);
-        }
+        const value = getFieldValue(`#${fieldConfig.id}`);
         
         if (shouldIncludeVariable(value)) {
             values[varName] = value;
@@ -2231,28 +2055,6 @@ function getConnectionType(apiInfo) {
     return 'DHCP/PPPoE';
 }
 
-async function XXXXX_fetchAndDisplayIspInfo() {
-    if (!config?.auto_config_api_url) {
-        console.log('Auto config API URL not configured');
-        return;
-    }
-    
-    try {
-        const response = await fetch(config.auto_config_api_url);
-        const apiInfo = await response.json();
-        state.apiInfo = apiInfo;
-        
-        console.log('ISP info fetched:', apiInfo);
-        
-        displayIspInfo(apiInfo);
-        updateAutoConnectionInfo(apiInfo);
-        CustomUtils.setGuaPrefixIfAvailable();
-
-    } catch (err) {
-        console.error('Failed to fetch ISP info:', err);
-    }
-}
-
 async function fetchAndDisplayIspInfo(forceRefresh = false) {
     if (!config?.auto_config_api_url) {
         console.log('Auto config API URL not configured');
@@ -2296,79 +2098,6 @@ function displayIspInfo(apiInfo) {
         extendedInfo.style.display = '';
         console.log('Extended build info shown');
     }
-}
-
-function XXXXX_updateAutoConnectionInfo(apiInfo) {
-    const autoInfo = document.querySelector('#auto-info');
-    if (!autoInfo) return;
-    
-    const connectionType = getConnectionType(apiInfo);
-    
-    let infoText = '';
-    if (apiInfo?.isp) {
-        infoText += `ISP: ${apiInfo.isp}<br>`;
-        if (apiInfo.as) {
-            infoText += `AS: ${apiInfo.as}<br>`;
-        }
-    }
-    
-    if (connectionType === 'MAP-E') {
-        let gua = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-        if (!gua) {
-            const guaField = document.querySelector('#mape-gua-prefix');
-            if (guaField && guaField.value) gua = guaField.value;
-        }
-        
-        infoText += `<hr>`;
-        infoText += `<p><span class="tr-mape-notice1">Note: Actual values may differ.</span></p>`;
-        infoText += `option peeraddr ${apiInfo.mape.brIpv6Address}<br>`;
-        infoText += `option ipaddr ${apiInfo.mape.ipv4Prefix}<br>`;
-        infoText += `option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}<br>`;
-        infoText += `option ip6prefix ${apiInfo.mape.ipv6Prefix}<br>`;
-        infoText += `option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}<br>`;
-        infoText += `option ealen ${apiInfo.mape.eaBitLength}<br>`;
-        infoText += `option psidlen ${apiInfo.mape.psidlen}<br>`;
-        infoText += `option offset ${apiInfo.mape.psIdOffset}<br>`;
-        if (gua) {
-            infoText += `option ip6prefix_gua ${gua}<br>`;
-        }
-        infoText += `<br>`;
-        infoText += `export LEGACY=1<br>`;
-        infoText += `<hr>`;
-        infoText += `<div style="text-align: center;"><a href="https://ipv4.web.fc2.com/map-e.html" target="_blank">Powered by config-softwire</a></div>`;     
-    } else if (connectionType === 'DS-Lite') {
-        infoText += `<hr>`;
-        infoText += `<h4><span class="tr-dslite-notice1">Note: Actual values may differ.</span></h4>`;
-        infoText += `<hr>`;
-        
-        if (apiInfo.aftr?.aftrType) {
-            infoText += `<strong>Service Type:</strong> ${apiInfo.aftr.aftrType}<br>`;
-        }
-        if (apiInfo.aftr?.jurisdiction) {
-            const regionClass = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
-            infoText += `<strong>Region:</strong> <span class="${regionClass}"></span><br>`;
-        }
-        
-        if (apiInfo.aftr?.peeraddr) {
-            infoText += `<strong>FQDN:</strong> ${apiInfo.aftr.peeraddr}<br>`;
-        }
-        
-        infoText += `<hr>`;
-        infoText += `<strong>UCI Configuration:</strong><br>`;
-        infoText += `<code>`;
-        
-        if (apiInfo.aftr?.peeraddr) {
-            infoText += `option peeraddr '${apiInfo.aftr.peeraddr}'<br>`;
-        }
-        
-        infoText += `</code>`;
-        infoText += `<hr>`;
-    } else {
-        infoText += `<span class="tr-standard-notice">Standard connection will be used</span>`;
-    }
-    
-    autoInfo.innerHTML = infoText;
-    applyCustomTranslations(current_language_json);
 }
 
 function updateAutoConnectionInfo(apiInfo) {
@@ -2506,83 +2235,6 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     applyCustomTranslations(current_language_json);
-}
-
-function XXXXX_applyIspAutoConfig(apiInfo) {
-    if (!apiInfo || !state.config.setup) return false;
-    let mutated = false;
-
-    const processItems = (items) => {
-        if (!items || !Array.isArray(items)) return;
-        for (const item of items) {
-            if (item.id) {
-                const element = document.getElementById(item.id);
-                if (element) {
-                    let value = null;
-                    if (item.computeFrom === 'generateGuaPrefix') {
-                        value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-                    } else if (item.apiSource) {
-                        value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
-                    }
-
-                    if (value !== null && value !== undefined && value !== '') {
-                        if (element.value !== String(value)) {
-                            UI.updateElement(element, { value: value });
-                            mutated = true;
-                        }
-                    }
-                }
-            }
-            if (item.items) processItems(item.items);
-        }
-    };
-
-    state.config.setup.categories.forEach(cat => processItems(cat.items));
-
-    if (mutated) {
-        CustomUtils.setGuaPrefixIfAvailable();
-        updateAutoConnectionInfo(apiInfo);
-    }
-    return mutated;
-}
-
-function XXXXX_applyIspAutoConfig(apiInfo) {
-    if (!apiInfo || !state.config.setup) return false;
-    let mutated = false;
-
-    const processItems = (items) => {
-        if (!items || !Array.isArray(items)) return;
-        for (const item of items) {
-            if (item.id === 'mape-lookup-ipv6') {
-                continue;
-            }
-            
-            if (item.id) {
-                const element = document.getElementById(item.id);
-                if (element) {
-                    let value = null;
-                    if (item.apiSource) {
-                        value = CustomUtils.getNestedValue(apiInfo, item.apiSource);
-                    }
-
-                    if (value !== null && value !== undefined && value !== '') {
-                        if (element.value !== String(value)) {
-                            UI.updateElement(element, { value: value });
-                            mutated = true;
-                        }
-                    }
-                }
-            }
-            if (item.items) processItems(item.items);
-        }
-    };
-
-    state.config.setup.categories.forEach(cat => processItems(cat.items));
-
-    if (mutated) {
-        updateAutoConnectionInfo(apiInfo);
-    }
-    return mutated;
 }
 
 function applyIspAutoConfig(apiInfo, options = {}) {
