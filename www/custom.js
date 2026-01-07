@@ -639,6 +639,9 @@ function evaluateAllComputedFields() {
                 console.log(`Found computed field: ${item.id}`);
                 computeFieldValue(item.variable);
             } else if (item.type === 'section' && item.items) {
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    continue;
+                }
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.computed) {
                         console.log(`Found computed field in section: ${subItem.id}`);
