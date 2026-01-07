@@ -523,7 +523,7 @@
       "requiresUpdate": true,
       
       "items": [
-        {
+                {
           "type": "radio-group",
           "id": "connection-type",
           "title": "Connection type",
@@ -540,11 +540,7 @@
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
-            "auto": [
-              "peeraddr", "ipaddr", "ip4prefixlen",
-              "ip6prefix", "ip6prefixlen", "ealen",
-              "psidlen", "offset", "ip6prefix_gua"
-            ],
+            "auto": [],
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
             "dslite": ["peeraddr"],
