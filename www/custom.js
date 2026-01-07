@@ -1964,15 +1964,19 @@ function updateVariableDefinitions() {
 
 function generateVariableDefinitions(values) {
     const lines = [];
+    const deferred = [];
     
     Object.entries(values).forEach(([key, value]) => {
         if (value === '' || value === null || value === undefined) {
             return;
         }
         const escapedValue = value.toString().replace(/'/g, "'\"'\"'");
-        lines.push(`${key}='${escapedValue}'`);
+        const line = `${key}='${escapedValue}'`;
+        
+        (key === 'peeraddr' ? deferred : lines).push(line);
     });
-    return lines.join('\n');
+    
+    return [...lines, ...deferred].join('\n');
 }
 
 function updateTextareaContent(textarea, variableDefinitions) {
