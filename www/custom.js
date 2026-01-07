@@ -1305,6 +1305,14 @@ function handleRadioChange(e) {
     if (name === 'connection_type' && value === 'auto') {
         console.log('Connection type changed to AUTO, fetching API info');
         fetchAndDisplayIspInfo();
+        
+        if (state.apiInfo) {
+            requestAnimationFrame(() => {
+                const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
+                applyIspAutoConfig(state.apiInfo, { skipIds: basicInfoFieldIds });
+                updateVariableDefinitions();
+            });
+        }
     }
     
     if (name === 'connection_type' && value === 'mape' && state.apiInfo) {
@@ -1312,6 +1320,7 @@ function handleRadioChange(e) {
         requestAnimationFrame(() => {
             const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
             applyIspAutoConfig(state.apiInfo, { skipIds: basicInfoFieldIds });
+            updateVariableDefinitions();
         });
     }
     
@@ -2169,6 +2178,16 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
         displayIspInfo(apiInfo);
         updateAutoConnectionInfo(apiInfo);
         CustomUtils.setGuaPrefixIfAvailable();
+        
+        const connectionType = getFieldValue('input[name="connection_type"]:checked');
+        if (connectionType === 'auto') {
+            console.log('AUTO mode active, applying API values to fields');
+            requestAnimationFrame(() => {
+                const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
+                applyIspAutoConfig(apiInfo, { skipIds: basicInfoFieldIds });
+                updateVariableDefinitions();
+            });
+        }
 
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
