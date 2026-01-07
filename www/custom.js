@@ -1102,24 +1102,30 @@ function computeFieldValue(targetVariable) {
 function findFieldByVariable(variableName) {
     if (!state.config.setup) return null;
 
+    const candidates = [];
+    
     const search = (items) => {
-        if (!items || !Array.isArray(items)) return null;
+        if (!items || !Array.isArray(items)) return;
         for (const item of items) {
             if (item.variable === variableName) {
-                return item;
+                candidates.push(item);
             }
             if (item.items) {
-                const found = search(item.items);
-                if (found) return found;
+                search(item.items);
             }
         }
-        return null;
     };
 
     for (const category of state.config.setup.categories) {
-        const result = search(category.items);
-        if (result) return result;
+        search(category.items);
     }
+    
+    for (const candidate of candidates) {
+        if (!candidate.showWhen || evaluateShowWhen(candidate.showWhen)) {
+            return candidate;
+        }
+    }
+    
     return null;
 }
 
@@ -1726,10 +1732,6 @@ function collectExclusiveVars(varsToCollect, values) {
     for (const varName of varsToCollect) {
         const fieldConfig = findFieldByVariable(varName);
         if (!fieldConfig) continue;
-        
-        if (fieldConfig.showWhen && !evaluateShowWhen(fieldConfig.showWhen)) {
-            continue;
-        }
         
         const value = getFieldValue(`#${fieldConfig.id}`);
         
