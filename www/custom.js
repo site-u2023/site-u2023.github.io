@@ -1092,7 +1092,10 @@ function computeFieldValue(targetVariable) {
     
     console.log(`  map[${value1}][${value2}]`);
     
-    targetField.value = map[value1]?.[value2] || map[value1] || '';
+    const result = map[value1]?.[value2];
+    if (result !== undefined) {
+        targetField.value = result;
+    }
     console.log(`  → ${targetField.value}`);
     if (state.ui.initialized) {
         updateVariableDefinitions();
