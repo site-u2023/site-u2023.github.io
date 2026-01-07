@@ -1104,14 +1104,15 @@ function findFieldByVariable(variableName, context = {}) {
 
     const candidates = [];
     
-    const search = (items) => {
+    const search = (items, parentShowWhen = null) => {
         if (!items || !Array.isArray(items)) return;
         for (const item of items) {
             if (item.variable === variableName) {
-                candidates.push(item);
+                candidates.push({ field: item, parentShowWhen });
             }
             if (item.items) {
-                search(item.items);
+                const newParentShowWhen = item.type === 'section' && item.showWhen ? item.showWhen : parentShowWhen;
+                search(item.items, newParentShowWhen);
             }
         }
     };
@@ -1121,10 +1122,14 @@ function findFieldByVariable(variableName, context = {}) {
     }
     
     for (const candidate of candidates) {
-        if (!candidate.showWhen) return candidate;
+        if (candidate.parentShowWhen && !evaluateShowWhen(candidate.parentShowWhen)) {
+            continue;
+        }
+        
+        if (!candidate.field.showWhen) return candidate.field;
         
         let matches = true;
-        for (const [key, expectedValue] of Object.entries(candidate.showWhen)) {
+        for (const [key, expectedValue] of Object.entries(candidate.field.showWhen)) {
             const actualValue = context[key] || getFieldValue(`input[name="${key}"]:checked`);
             if (Array.isArray(expectedValue)) {
                 if (!expectedValue.includes(actualValue)) matches = false;
@@ -1133,7 +1138,7 @@ function findFieldByVariable(variableName, context = {}) {
             }
         }
         
-        if (matches) return candidate;
+        if (matches) return candidate.field;
     }
     
     return null;
