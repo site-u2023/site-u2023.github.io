@@ -610,63 +610,6 @@
         },
         {
           "type": "section",
-          "id": "dslite-section",
-          "showWhen": {"connection_type": "dslite"},
-          "items": [
-            {
-              "type": "field",
-              "id": "dslite-aftr-type",
-              "label": "AFTR Type",
-              "class": "tr-dslite-aftr-type",
-              "fieldType": "select",
-              "variable": "dslite_aftr_type",
-              "default": "transix",
-              "options": [
-                {"value": "transix", "label": "transix", "class": "tr-transix"},
-                {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
-                {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"}
-              ],
-              "exclusiveVars": {
-                "transix": ["dslite_jurisdiction"],
-                "xpass": [],
-                "v6connect": []
-              },
-              "computeTarget": "peeraddr"
-            },
-            {
-              "type": "field",
-              "id": "dslite-jurisdiction",
-              "label": "Area",
-              "class": "tr-dslite-area",
-              "fieldType": "select",
-              "variable": "dslite_jurisdiction",
-              "options": [
-                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
-                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
-              ],
-              "apiSource": "aftr.jurisdiction",
-              "computeTarget": "peeraddr",
-              "showWhen": {"dslite_aftr_type": ["transix"]}
-            },
-            {
-              "type": "field",
-              "id": "dslite-aftr-address",
-              "label": "AFTR Address",
-              "class": "tr-dslite-aftr-ipv6-address",
-              "fieldType": "text",
-              "variable": "peeraddr",
-              "placeholder": "gw.transix.jp or IPv6 address",
-              "default": "2404:8e00::feed:100",
-              "apiSource": "aftr.aftrAddress",
-              "computed": {
-                "from": ["dslite_aftr_type", "dslite_jurisdiction"],
-                "map": "aftr_map"
-              }
-            }
-          ]
-        },
-        {
-          "type": "section",
           "id": "mape-section",
           "showWhen": {"connection_type": "mape"},
           "items": [
@@ -801,6 +744,63 @@
               "link": "https://ipv4.web.fc2.com/map-e.html",
               "centered": "true",
               "linkOnly": "true"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dslite-section",
+          "showWhen": {"connection_type": "dslite"},
+          "items": [
+            {
+              "type": "field",
+              "id": "dslite-aftr-type",
+              "label": "AFTR Type",
+              "class": "tr-dslite-aftr-type",
+              "fieldType": "select",
+              "variable": "dslite_aftr_type",
+              "default": "transix",
+              "options": [
+                {"value": "transix", "label": "transix", "class": "tr-transix"},
+                {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
+                {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"}
+              ],
+              "exclusiveVars": {
+                "transix": ["dslite_jurisdiction"],
+                "xpass": [],
+                "v6connect": []
+              },
+              "computeTarget": "peeraddr"
+            },
+            {
+              "type": "field",
+              "id": "dslite-jurisdiction",
+              "label": "Area",
+              "class": "tr-dslite-area",
+              "fieldType": "select",
+              "variable": "dslite_jurisdiction",
+              "options": [
+                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
+                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
+              ],
+              "apiSource": "aftr.jurisdiction",
+              "computeTarget": "peeraddr",
+              "showWhen": {"dslite_aftr_type": ["transix"]}
+            },
+            {
+              "type": "field",
+              "id": "dslite-aftr-address",
+              "label": "AFTR Address",
+              "class": "tr-dslite-aftr-ipv6-address",
+              "fieldType": "text",
+              "variable": "peeraddr",
+              "placeholder": "gw.transix.jp or IPv6 address",
+              "default": "2404:8e00::feed:100",
+              "apiSource": "aftr.aftrAddress",
+              "computed": {
+                "from": ["dslite_aftr_type", "dslite_jurisdiction"],
+                "map": "aftr_map"
+              }
             }
           ]
         },
