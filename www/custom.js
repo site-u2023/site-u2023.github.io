@@ -1795,6 +1795,9 @@ function collectItemValue(item, values) {
         }
         
         for (const subItem of item.items) {
+            if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
+                continue;
+            }
             collectItemValue(subItem, values);
         }
     }
