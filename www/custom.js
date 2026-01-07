@@ -2314,6 +2314,7 @@ function applyIspAutoConfig(apiInfo, options = {}) {
 
     if (mutated) {
         updateAutoConnectionInfo(apiInfo);
+        updateVariableDefinitions();
     }
     return mutated;
 }
