@@ -1092,10 +1092,7 @@ function computeFieldValue(targetVariable) {
     
     console.log(`  map[${value1}][${value2}]`);
     
-    const result = map[value1]?.[value2];
-    if (result !== undefined) {
-        targetField.value = result;
-    }
+    targetField.value = map[value1]?.[value2] || map[value1] || '';
     console.log(`  → ${targetField.value}`);
     if (state.ui.initialized) {
         updateVariableDefinitions();
@@ -1133,7 +1130,12 @@ function findFieldByVariable(variableName, context = {}) {
         
         let matches = true;
         for (const [key, expectedValue] of Object.entries(candidate.field.showWhen)) {
-            const actualValue = context[key] || getFieldValue(`input[name="${key}"]:checked`);
+            let actualValue = context[key];
+            if (!actualValue) {
+                actualValue = getFieldValue(`input[name="${key}"]:checked`) || 
+                             getFieldValue(`select[name="${key}"]`) ||
+                             getFieldValue(`[name="${key}"]`);
+            }
             if (Array.isArray(expectedValue)) {
                 if (!expectedValue.includes(actualValue)) matches = false;
             } else {
