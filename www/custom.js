@@ -1122,8 +1122,22 @@ function findFieldByVariable(variableName, context = {}) {
     }
     
     for (const candidate of candidates) {
-        if (candidate.parentShowWhen && !evaluateShowWhen(candidate.parentShowWhen)) {
-            continue;
+        if (candidate.parentShowWhen) {
+            let matches = true;
+            for (const [key, expectedValue] of Object.entries(candidate.parentShowWhen)) {
+                let actualValue = context[key];  // ← まずcontextから
+                if (!actualValue) {
+                    actualValue = getFieldValue(`input[name="${key}"]:checked`) || 
+                                 getFieldValue(`select[name="${key}"]`) ||
+                                 getFieldValue(`[name="${key}"]`);
+                }
+                if (Array.isArray(expectedValue)) {
+                    if (!expectedValue.includes(actualValue)) matches = false;
+                } else {
+                    if (actualValue !== expectedValue) matches = false;
+                }
+            }
+            if (!matches) continue;
         }
         
         if (!candidate.field.showWhen) return candidate.field;
