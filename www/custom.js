@@ -636,11 +636,20 @@ function evaluateAllComputedFields() {
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.computed) {
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    continue;
+                }
                 console.log(`Found computed field: ${item.id}`);
                 computeFieldValue(item.variable);
             } else if (item.type === 'section' && item.items) {
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    continue;
+                }
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.computed) {
+                        if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
+                            continue;
+                        }
                         console.log(`Found computed field in section: ${subItem.id}`);
                         computeFieldValue(subItem.variable);
                     }
