@@ -1727,6 +1727,10 @@ function collectExclusiveVars(varsToCollect, values) {
         const fieldConfig = findFieldByVariable(varName);
         if (!fieldConfig) continue;
         
+        if (fieldConfig.showWhen && !evaluateShowWhen(fieldConfig.showWhen)) {
+            continue;
+        }
+        
         const value = getFieldValue(`#${fieldConfig.id}`);
         
         if (shouldIncludeVariable(value)) {
