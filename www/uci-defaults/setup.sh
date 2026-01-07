@@ -67,8 +67,8 @@ firewall_wan() {
 }
 [ -n "${ntp}" ] && {
     SEC=system
-    IDX="$(ADD timeserver)"
-    RENAME "$IDX"=ntp
+    DEL ntp
+    SET ntp=timeserver
     SET ntp.enabled='1'
     SET ntp.enable_server='1'
     SET ntp.interface='lan'
