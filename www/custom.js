@@ -1776,7 +1776,15 @@ function collectItemValue(item, values) {
         if (selectedValue === 'disabled') return;
         
         const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});  // ← context追加
+        
+        let context = {[item.variable]: selectedValue};
+        
+        if (item.variable === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
+            const detectedType = getConnectionTypeFromApi(state.apiInfo);
+            context = {connection_type: detectedType};
+        }
+        
+        collectExclusiveVars(varsToCollect, values, context);
         
         return;
     }
