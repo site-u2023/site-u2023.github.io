@@ -12,7 +12,7 @@ DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
-lan_ip_address="${lan_ip_address:-${lan_ip}}"
+lan_ip_address="${lan_ip_address:-192.168.1.1/24}"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
