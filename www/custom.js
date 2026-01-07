@@ -2314,6 +2314,14 @@ function applyIspAutoConfig(apiInfo, options = {}) {
 
     if (mutated) {
         updateAutoConnectionInfo(apiInfo);
+        
+        if (apiInfo.mape) {
+            if (apiInfo.mape.brIpv6Address) {
+                const brAddrField = document.getElementById('mape-br-address');
+                if (brAddrField) brAddrField.value = apiInfo.mape.brIpv6Address;
+            }
+        }
+        
         updateVariableDefinitions();
     }
     return mutated;
