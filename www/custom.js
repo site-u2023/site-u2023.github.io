@@ -1778,10 +1778,14 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
         
         let value;
         
-        if (fieldConfig.apiSource && state.apiInfo) {
-            value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+        const fieldElement = document.getElementById(fieldConfig.id);
+        
+        if (fieldElement && fieldElement.offsetParent !== null) {
+            value = fieldElement.value;
         } else {
-            value = getFieldValue(`#${fieldConfig.id}`);
+            if (fieldConfig.apiSource && state.apiInfo) {
+                value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+            }
         }
         
         if (shouldIncludeVariable(value)) {
