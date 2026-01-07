@@ -540,7 +540,11 @@
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
-            "auto": [],
+            "auto": [
+              "peeraddr", "ipaddr", "ip4prefixlen",
+              "ip6prefix", "ip6prefixlen", "ealen",
+              "psidlen", "offset", "ip6prefix_gua"
+            ],
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
             "dslite": ["peeraddr"],
