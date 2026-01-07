@@ -1842,14 +1842,8 @@ function collectItemValue(item, values) {
         
         if (selectedValue === 'disabled') return;
         
-        let effectiveValue = selectedValue;
-        if (item.variable === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
-            effectiveValue = getConnectionTypeFromApi(state.apiInfo);
-            console.log(`AUTO mode in collectItemValue: Using effective type = ${effectiveValue}`);
-        }
-
-        const varsToCollect = item.exclusiveVars?.[effectiveValue] || [];
-        collectExclusiveVars(varsToCollect, values, {[item.variable]: effectiveValue});
+        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
+        collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});
         
         return;
     }
