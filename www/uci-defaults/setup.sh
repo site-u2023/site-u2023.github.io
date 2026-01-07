@@ -180,7 +180,7 @@ firewall_wan() {
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && [ -n "${peeraddr}" ] && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && {
     SEC=network
     RESET
     disable_wan
@@ -198,7 +198,7 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && [ -n "${peeraddr}" ] && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "mape" ]; } && {
     SEC=network
     RESET
     disable_wan
