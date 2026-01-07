@@ -795,7 +795,6 @@
               "fieldType": "text",
               "variable": "peeraddr",
               "placeholder": "gw.transix.jp or IPv6 address",
-              "default": "2404:8e00::feed:100",
               "apiSource": "aftr.aftrAddress",
               "computed": {
                 "from": ["dslite_aftr_type", "dslite_jurisdiction"],
