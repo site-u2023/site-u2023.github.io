@@ -636,13 +636,26 @@ function evaluateAllComputedFields() {
     for (const category of state.config.setup.categories) {
         for (const item of category.items) {
             if (item.type === 'field' && item.computed) {
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    console.log(`Skipping computed field (hidden): ${item.id}`);
+                    continue;
+                }
                 console.log(`Found computed field: ${item.id}`);
-                computeFieldValue(item.variable);  // ← variable に変更
+                computeFieldValue(item.variable);
             } else if (item.type === 'section' && item.items) {
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    console.log(`Skipping section (hidden): ${item.id}`);
+                    continue;
+                }
+                
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.computed) {
+                        if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
+                            console.log(`Skipping computed field in section (hidden): ${subItem.id}`);
+                            continue;
+                        }
                         console.log(`Found computed field in section: ${subItem.id}`);
-                        computeFieldValue(subItem.variable);  // ← variable に変更
+                        computeFieldValue(subItem.variable);
                     }
                 }
             }
