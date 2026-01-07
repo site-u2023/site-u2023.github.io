@@ -1767,7 +1767,7 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
     }
 }
 
-function XXXXX_collectItemValue(item, values) {
+function collectItemValue(item, values) {
     if (!item) return;
     
     if (item.type === 'radio-group' && item.variable) {
@@ -1783,64 +1783,6 @@ function XXXXX_collectItemValue(item, values) {
         
         const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
         collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});  // ← context追加
-        
-        return;
-    }
-    
-    if (item.type === 'field' && item.variable) {
-        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
-            return;
-        }
-        
-        const value = getFieldValue(`#${item.id}`);
-        
-        if (!shouldIncludeVariable(value)) return;
-        
-        const fallbackLang = config.fallback_language || 'en';
-        if (item.variable === 'language' && value === fallbackLang) {
-            return;
-        }
-        
-        values[item.variable] = value;
-        return;
-    }
-    
-    if (item.type === 'section' && item.items) {
-        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
-            return;
-        }
-        
-        for (const subItem of item.items) {
-            if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
-                continue;
-            }
-            collectItemValue(subItem, values);
-        }
-    }
-}
-
-function collectItemValue(item, values) {
-    if (!item) return;
-    
-    if (item.type === 'radio-group' && item.variable) {
-        const selectedValue = getFieldValue(`input[name="${item.variable}"]:checked`);
-        
-        if (!shouldIncludeVariable(selectedValue)) return;
-        
-        if (!item.ui_variable) {
-            values[item.variable] = selectedValue;
-        }
-        
-        if (selectedValue === 'disabled') return;
-        
-        let effectiveValue = selectedValue;
-        if (item.variable === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
-            effectiveValue = getConnectionTypeFromApi(state.apiInfo);
-            console.log(`AUTO mode in collectItemValue: Using effective type = ${effectiveValue}`);
-        }
-
-        const varsToCollect = item.exclusiveVars?.[effectiveValue] || [];
-        collectExclusiveVars(varsToCollect, values, {[item.variable]: effectiveValue});
         
         return;
     }
