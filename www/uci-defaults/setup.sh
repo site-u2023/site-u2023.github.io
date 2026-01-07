@@ -1,22 +1,6 @@
 #!/bin/sh
 # BEGIN_VARS
 # END_VARS
-SET() { uci -q set "${SEC}${SEC:+.}$*"; }
-DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
-RESET() {
-    [ -f "/rom/etc/config/${SEC}" ] && cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}" && return
-    [ "$SEC" = "network" ] && { DEL dsl; DEL dsl6; DEL mape; DEL mape6; DEL ap; DEL ap6; }
-}
-ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
-DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-DATE="$(date +%F\ %H:%M)"
-LAN="$(uci -q get network.lan.device || echo lan)"
-WAN="$(uci -q get network.wan.device || echo wan)"
-lan_ip_address="${lan_ip_address:-192.168.1.1/24}"
-ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
-ZONE="${ZONE:-@zone[1]}"
-PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-COUNTRY_LC=$(printf '%s' "${country:-00}" | tr 'A-Z' 'a-z')
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -25,6 +9,22 @@ AP="ap"
 AP6="ap6"
 NAS="openwrt"
 MNT="/mnt/sda"
+SET() { uci -q set "${SEC}${SEC:+.}$*"; }
+DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
+RESET() {
+    [ -f "/rom/etc/config/${SEC}" ] && cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}" && return
+    [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
+}
+ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
+DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
+lan_ip_address="${lan_ip_address:-192.168.1.1/24}"
+DATE="$(date +%F\ %H:%M)"
+LAN="$(uci -q get network.lan.device || echo lan)"
+WAN="$(uci -q get network.wan.device || echo wan)"
+ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
+ZONE="${ZONE:-@zone[1]}"
+PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
+COUNTRY_LC=$(printf '%s' "${country:-00}" | tr 'A-Z' 'a-z')
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
