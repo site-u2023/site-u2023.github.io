@@ -1753,7 +1753,13 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
         const fieldConfig = findFieldByVariable(varName, context);
         if (!fieldConfig) continue;
         
-        const value = getFieldValue(`#${fieldConfig.id}`);
+        let value;
+        
+        if (fieldConfig.apiSource && state.apiInfo) {
+            value = CustomUtils.getNestedValue(state.apiInfo, fieldConfig.apiSource);
+        } else {
+            value = getFieldValue(`#${fieldConfig.id}`);
+        }
         
         if (shouldIncludeVariable(value)) {
             values[varName] = value;
