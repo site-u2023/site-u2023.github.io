@@ -1165,7 +1165,7 @@ generate_password_hash() {
 # =============================================================================
 
 generate_yaml() {
-    local yaml_path yaml_template_url yaml_tmp
+    local yaml_path yaml_template_url yaml_tmp ntp_domain
   
     if [ "$SERVICE_NAME" = "AdGuardHome" ]; then
         yaml_path="/etc/AdGuardHome/AdGuardHome.yaml"
@@ -1191,12 +1191,22 @@ generate_yaml() {
         return 1
     fi
     
+    # Get NTP domain from system configuration
+    ntp_domain=$(uci -q get system.ntp.server | head -n1 | cut -d. -f2-)
+    
     # Replace placeholders
     sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
     sed -i "s|{{AGH_PASS_HASH}}|${AGH_PASS_HASH}|g" "$yaml_tmp"
     sed -i "s|{{DNS_PORT}}|${DNS_PORT}|g" "$yaml_tmp"
     sed -i "s|{{DNS_BACKUP_PORT}}|${DNS_BACKUP_PORT}|g" "$yaml_tmp"
     sed -i "s|{{WEB_PORT}}|${WEB_PORT}|g" "$yaml_tmp"
+    
+    # Handle NTP domain: replace if configured, remove lines if not
+    if [ -n "$ntp_domain" ]; then
+        sed -i "s|{{NTP_DOMAIN}}|${ntp_domain}|g" "$yaml_tmp"
+    else
+        sed -i "/{{NTP_DOMAIN}}/d" "$yaml_tmp"
+    fi
     
     # Move to final location
     if ! mv "$yaml_tmp" "$yaml_path"; then
