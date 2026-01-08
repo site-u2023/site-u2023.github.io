@@ -333,7 +333,7 @@ fi
     SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
+[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)    
     [ "${net_optimizer}" = "auto" ] && {
@@ -361,7 +361,7 @@ fi
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
     SEC=dhcp    
-    [ "${dnsmasq}" = "auto" ] && {
+    [ "${dnsmasq}" = "auto" ] && [ $MEM -ge 200 ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
