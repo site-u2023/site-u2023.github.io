@@ -180,7 +180,7 @@ firewall_wan() {
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-{ [ "${connection_type}" = "dslite" ] || [ "${connection_type}" = "dslite" ]; } && {
+{ [ "${connection_type}" = "auto" ] || [ "${connection_type}" = "dslite" ]; } && {
     SEC=network
     RESET
     disable_wan
