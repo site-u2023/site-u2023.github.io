@@ -361,7 +361,7 @@ fi
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
     SEC=dhcp    
-    [ "${dnsmasq}" = "auto" ] && [ $MEM -ge 200 ] && {
+    [ "${dnsmasq}" = "auto" ] && [ "$MEM" -ge 200 ] && {
         if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
