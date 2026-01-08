@@ -398,7 +398,7 @@
           "placeholder": "/root/backup.tar.gz",
           "default": "/root/backup.tar.gz",
           "description": "Path to backup file for restore",
-          "guiOnly": true
+          "guiOnly": "true"
         }
       ]
     },
@@ -768,6 +768,7 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "default": "transix",
+              "guiOnly": "true",
               "options": [
                 {"value": "transix", "label": "transix", "class": "tr-transix"},
                 {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
@@ -787,6 +788,7 @@
               "class": "tr-dslite-area",
               "fieldType": "select",
               "variable": "dslite_jurisdiction",
+              "guiOnly": "true",
               "options": [
                 {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
@@ -1077,7 +1079,7 @@
       "title": "Custom Script",
       "class": "tr-customscripts-title",
       "description": "User-defined custom scripts for system configuration",
-      "guiOnly": true,
+      "guiOnly": "true",
       
       "items": [
         {
