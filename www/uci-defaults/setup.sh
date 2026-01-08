@@ -180,7 +180,7 @@ firewall_wan() {
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
-[ "${connection_type:-${connection_auto}}" = "dslite" ] && {
+[ "${connection_type:-${connection_auto}}" = "dslite" ] && [ -n "${peeraddr}" ] && {
     SEC=network
     RESET
     disable_wan
@@ -229,11 +229,11 @@ firewall_wan() {
     EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
     ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
     if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
-    cp "$MAP_SH" "$MAP_SH".bak
-    sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
-    sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
-    sed -i '137,158d' "$MAP_SH"
-    sed -i '136a\
+        cp "$MAP_SH" "$MAP_SH".bak
+        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
+        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
+        sed -i '137,158d' "$MAP_SH"
+        sed -i '136a\
 \t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 \t    json_add_object ""\
 \t      json_add_string type nat\
