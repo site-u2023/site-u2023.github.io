@@ -410,6 +410,7 @@ fi
     fi
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
+    lan_ip_address=$(uci -q get network.lan.ipaddr | cut -d/ -f1)
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         mkdir -p "${agh_dir}"
         cfg_dhcp="/etc/config/dhcp"
@@ -429,8 +430,8 @@ dns:
   refuse_any: true
   upstream_dns:
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
-    - '[/*.pool.ntp.org/]1.1.1.1'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
+    - '[/*{{NTP_DOMAIN}}/]1.1.1.1'
+    - '[/*{{NTP_DOMAIN}}/]2606:4700:4700::1111'
     - quic://unfiltered.adguard-dns.com
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
@@ -466,6 +467,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|.$(uci -q get system.ntp.server | head -n1 | cut -d. -f2-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
@@ -480,7 +482,7 @@ AGHEOF
         ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
         DEL lan.dhcp_option
         DEL lan.dhcp_option6
-        ADDLIST lan.dhcp_option="6,$(uci -q get network.lan.ipaddr | cut -d/ -f1)"
+        ADDLIST lan.dhcp_option="6,${lan_ip_address}"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
         DEL "${agh_rule}" 2>/dev/null || true
@@ -498,7 +500,7 @@ AGHEOF
     else
         /etc/init.d/adguardhome stop 2>/dev/null
         /etc/init.d/adguardhome disable 2>/dev/null
-        echo "AdGuardHome: /etc/init.d/adguardhome start then ${lan_ip_address%%/*}:3000"
+        echo "AdGuardHome: /etc/init.d/adguardhome start then ${lan_ip_address}:3000"
     fi
 }
 # BEGIN_CMDS
