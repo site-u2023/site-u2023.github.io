@@ -198,7 +198,7 @@ firewall_wan() {
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
 }
-[ "${connection_type:-${connection_auto}}" = "mape" ] && {
+[ "${connection_type:-${connection_auto}}" = "mape" ] && [ -n "${peeraddr}" ] && {
     SEC=network
     RESET
     disable_wan
