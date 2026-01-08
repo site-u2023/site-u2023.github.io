@@ -270,7 +270,6 @@
           "fieldType": "text",
           "variable": "country",
           "placeholder": "00",
-          "default": "00",
           "maxlength": 2,
           "apiSource": "country"
         },
