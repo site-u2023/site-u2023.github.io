@@ -361,7 +361,7 @@
           "label": "NTP Domain",
           "class": "tr-ntp-domain",
           "fieldType": "text",
-          "variable": "ntp_domain",
+          "variable": "ntp",
           "placeholder": "pool.ntp.org",
           "default": "pool.ntp.org"
         },
@@ -371,7 +371,7 @@
           "label": "Diagnostic Address",
           "class": "tr-diagnostic-address",
           "fieldType": "text",
-          "variable": "diag_address",
+          "variable": "diag",
           "placeholder": "one.one.one.one",
           "default": "one.one.one.one"
         },
