@@ -521,7 +521,6 @@
       "link": "https://openwrt.org/docs/guide-user/network/start",
       "description": "Configure your internet connection type",
       "requiresUpdate": true,
-      
       "items": [
                 {
           "type": "radio-group",
@@ -557,6 +556,15 @@
             "disabled": []
           }
         },
+        {
+        "type": "field",
+        "id": "connection-auto-type",
+        "label": "Auto-detected type",
+        "fieldType": "text",
+        "variable": "connection_auto",
+        "hidden": true,
+        "description": "Auto-detected connection type (mape/dslite/dhcp)"
+      },      
         {
           "type": "section",
           "id": "auto-section",
