@@ -557,14 +557,14 @@
           }
         },
         {
-        "type": "field",
-        "id": "connection-auto-type",
-        "label": "Auto-detected type",
-        "fieldType": "text",
-        "variable": "connection_auto",
-        "hidden": true,
-        "description": "Auto-detected connection type (mape/dslite/dhcp)"
-      },      
+          "type": "field",
+          "id": "connection-auto-type",
+          "label": "Auto-detected type",
+          "fieldType": "text",
+          "variable": "connection_auto",
+          "hidden": true,
+          "description": "Auto-detected connection type (mape/dslite/dhcp)"
+        },      
         {
           "type": "section",
           "id": "auto-section",
