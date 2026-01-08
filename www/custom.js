@@ -4399,6 +4399,7 @@ function applyImportedSettings(data) {
             versionSelect.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
+    
     if (data.metadata.device_model) {
         const modelsInput = document.querySelector('#models');
         if (modelsInput) {
@@ -4406,12 +4407,14 @@ function applyImportedSettings(data) {
             modelsInput.onkeyup({ key: 'Enter', keyCode: 13 });
         }
     }
+    
     if (data.metadata.device_name) {
         const deviceNameField = document.getElementById('aios-device-name');
         if (deviceNameField) {
             deviceNameField.value = data.metadata.device_name;
         }
     }
+    
     if (data.metadata.language) {
         const languageField = document.getElementById('device-language');
         if (languageField) {
@@ -4428,6 +4431,7 @@ function applyImportedSettings(data) {
             const allPackages = [...new Set([...currentPackages, ...data.packages])];
             textarea.value = allPackages.join(' ');
         }
+        
         for (const pkg of data.packages) {
             const checkbox = document.querySelector(`[data-package="${pkg}"]`);
             if (checkbox && checkbox.type === 'checkbox') {
@@ -4447,6 +4451,24 @@ function applyImportedSettings(data) {
                 radio.checked = true;
                 radio.dispatchEvent(new Event('change', { bubbles: true }));
                 handled = true;
+                
+                if (variableName === 'connection_type' && value === 'auto') {
+                    const category = state.config.setup?.categories?.find(cat => 
+                        cat.items?.some(item => item.variable === 'connection_type')
+                    );
+                    const radioGroup = category?.items?.find(item => item.variable === 'connection_type');
+                    const exclusiveVars = radioGroup?.exclusiveVars?.['auto'] || [];
+                    
+                    exclusiveVars.forEach(varName => {
+                        const varFieldId = variableToFieldMap[varName];
+                        const varField = varFieldId ? document.getElementById(varFieldId) : null;
+                        if (varField) {
+                            varField.value = '';
+                            console.log(`Cleared exclusive var: ${varName}`);
+                        }
+                    });
+                }
+                
                 continue;
             }
 
