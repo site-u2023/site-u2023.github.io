@@ -507,7 +507,7 @@ AGHEOF
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 [ ! -f "/etc/uci-defaults/setup.sh" ] && {
-    [ -n "${connection_type:-${connection_auto}}" ] && {
+    [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
         for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
             /etc/init.d/$s restart 2>/dev/null
         done
