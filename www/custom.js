@@ -1873,14 +1873,18 @@ function collectFormValues() {
     }
     collectPackageEnableVars(values);
     
-    if (state.apiInfo?.mape?.brIpv6Address) {
-        values.connection_auto = 'mape';
-    } else if (state.apiInfo?.aftr?.aftrAddress) {
-        values.connection_auto = 'dslite';
-    } else if (values.connection_type) {
-        values.connection_auto = values.connection_type;
+    if (values.connection_type === 'auto') { 
+        delete values.connection_type;
+        
+        if (state.apiInfo?.mape?.brIpv6Address) {
+            values.connection_auto = 'mape';
+        } else if (state.apiInfo?.aftr?.aftrAddress) {
+            values.connection_auto = 'dslite';
+        } else {
+            values.connection_auto = 'dhcp';
+        }
     } else {
-        values.connection_auto = 'dhcp';
+        delete values.connection_auto;
     }
     
     const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
