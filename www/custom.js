@@ -1794,58 +1794,6 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
     }
 }
 
-function XXXXX_collectItemValue(item, values) {
-    if (!item) return;
-    
-    if (item.type === 'radio-group' && item.variable) {
-        const selectedValue = getFieldValue(`input[name="${item.variable}"]:checked`);
-        
-        if (!shouldIncludeVariable(selectedValue)) return;
-        
-        if (!item.ui_variable) {
-            values[item.variable] = selectedValue;
-        }
-        
-        if (selectedValue === 'disabled') return;
-        
-        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});  // ← context追加
-        
-        return;
-    }
-    
-    if (item.type === 'field' && item.variable) {
-        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
-            return;
-        }
-        
-        const value = getFieldValue(`#${item.id}`);
-        
-        if (!shouldIncludeVariable(value)) return;
-        
-        const fallbackLang = config.fallback_language || 'en';
-        if (item.variable === 'language' && value === fallbackLang) {
-            return;
-        }
-        
-        values[item.variable] = value;
-        return;
-    }
-    
-    if (item.type === 'section' && item.items) {
-        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
-            return;
-        }
-        
-        for (const subItem of item.items) {
-            if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
-                continue;
-            }
-            collectItemValue(subItem, values);
-        }
-    }
-}
-
 function collectItemValue(item, values) {
     if (!item) return;
     
@@ -1919,10 +1867,21 @@ function collectFormValues() {
     if (!state.config.setup || !state.config.setup.categories) {
         return values;
     }
+    
     for (const category of state.config.setup.categories) {
         collectCategoryValues(category.id, values);
     }
     collectPackageEnableVars(values);
+    
+    if (state.apiInfo?.mape?.brIpv6Address) {
+        values.connection_detected = 'mape';
+    } else if (state.apiInfo?.aftr?.aftrAddress) {
+        values.connection_detected = 'dslite';
+    } else if (values.connection_type) {
+        values.connection_detected = values.connection_type;
+    } else {
+        values.connection_detected = 'dhcp';
+    }
     
     const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
     if (dnsAdblock === 'adguardhome' || dnsAdblock === 'adblock_fast') {
@@ -1945,7 +1904,7 @@ function collectFormValues() {
         }
     }
     
-if (dnsAdblock === 'adguardhome') {
+    if (dnsAdblock === 'adguardhome') {
         for (const category of state.config.setup.categories) {
             for (const item of category.items) {
                 if (item.type === 'section' && item.id === 'adguardhome-section') {
@@ -1961,7 +1920,6 @@ if (dnsAdblock === 'adguardhome') {
         }
     }
     
-    // AdGuard Home YAML path resolution based on package manager
     if (dnsAdblock === 'adguardhome') {
         let aghVariables = null;
         for (const category of state.config.setup.categories) {
@@ -1978,13 +1936,11 @@ if (dnsAdblock === 'adguardhome') {
             const packageManager = state.packageManager?.activeManager || 'opkg';
             
             if (packageManager === 'apk') {
-                // New path for apk (SNAPSHOT / 25.12+)
                 values.agh_yaml = aghVariables.agh_yaml;
                 values.agh_dir = aghVariables.agh_dir;
             } else {
-                // Old path for opkg (24.10 and earlier)
                 values.agh_yaml = aghVariables.agh_yaml_old;
-                values.agh_dir = ':';  // no-op - /etc already exists
+                values.agh_dir = ':';
             }
             
             console.log(`AdGuard Home YAML path resolved: ${packageManager} -> ${values.agh_yaml}`);
@@ -1994,6 +1950,7 @@ if (dnsAdblock === 'adguardhome') {
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
     }
+    
     return values;
 }
 
