@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0108.0918) loaded');
+console.log('custom.js (R8.0107.1557) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -1919,29 +1919,10 @@ function collectFormValues() {
     if (!state.config.setup || !state.config.setup.categories) {
         return values;
     }
-    
     for (const category of state.config.setup.categories) {
         collectCategoryValues(category.id, values);
     }
     collectPackageEnableVars(values);
-    
-    if (values.connection_type === 'auto') {
-        if (state.apiInfo) {
-            if (state.apiInfo.mape?.brIpv6Address) {
-                values.connection_type = 'mape';
-                console.log('AUTO detected: MAP-E');
-            } else if (state.apiInfo.aftr?.aftrAddress) {
-                values.connection_type = 'dslite';
-                console.log('AUTO detected: DS-Lite');
-            } else {
-                values.connection_type = 'dhcp';
-                console.log('AUTO detected: DHCP');
-            }
-        } else {
-            values.connection_type = 'dhcp';
-            console.warn('AUTO mode: No API info, fallback to DHCP');
-        }
-    }
     
     const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
     if (dnsAdblock === 'adguardhome' || dnsAdblock === 'adblock_fast') {
@@ -1964,7 +1945,7 @@ function collectFormValues() {
         }
     }
     
-    if (dnsAdblock === 'adguardhome') {
+if (dnsAdblock === 'adguardhome') {
         for (const category of state.config.setup.categories) {
             for (const item of category.items) {
                 if (item.type === 'section' && item.id === 'adguardhome-section') {
@@ -1980,6 +1961,7 @@ function collectFormValues() {
         }
     }
     
+    // AdGuard Home YAML path resolution based on package manager
     if (dnsAdblock === 'adguardhome') {
         let aghVariables = null;
         for (const category of state.config.setup.categories) {
@@ -2012,7 +1994,6 @@ function collectFormValues() {
     if (state.importedVariables && typeof state.importedVariables === 'object') {
         Object.assign(values, state.importedVariables);
     }
-    
     return values;
 }
 
