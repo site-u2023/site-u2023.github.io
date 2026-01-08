@@ -17,7 +17,6 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-lan_ip_address="${lan_ip_address:-192.168.1.1/24}"
 DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
@@ -481,7 +480,7 @@ AGHEOF
         ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
         DEL lan.dhcp_option
         DEL lan.dhcp_option6
-        ADDLIST lan.dhcp_option="6,${lan_ip_address%%/*}"
+        ADDLIST lan.dhcp_option="6,$(uci -q get network.lan.ipaddr | cut -d/ -f1)"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
         DEL "${agh_rule}" 2>/dev/null || true
