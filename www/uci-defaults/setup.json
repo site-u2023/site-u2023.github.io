@@ -351,8 +351,8 @@
           "fieldType": "number",
           "variable": "ssh_port",
           "placeholder": "22",
-          "min": 1,
-          "max": 65535,
+          "min": "1",
+          "max": "65535",
           "description": "Port number for SSH access"
         },
         {
@@ -562,7 +562,7 @@
           "label": "Auto-detected type",
           "fieldType": "text",
           "variable": "connection_auto",
-          "hidden": true,
+          "hidden": "true",
           "description": "Auto-detected connection type (mape/dslite/dhcp)"
         },      
         {
@@ -1175,7 +1175,7 @@
               "variable": "agh_web_port",
               "placeholder": "8000",
               "default": "8000",
-              "min": 1,
+              "min": "1",
               "max": 65535
             },
             {
@@ -1187,8 +1187,8 @@
               "variable": "agh_dns_port",
               "placeholder": "53",
               "default": "53",
-              "min": 1,
-              "max": 65535
+              "min": "1",
+              "max": "65535"
             },
             {
               "type": "field",
@@ -1199,9 +1199,9 @@
               "variable": "agh_dns_backup_port",
               "placeholder": "54",
               "default": "54",
-              "min": 1,
-              "max": 65535,
-              "hidden": true
+              "min": "1",
+              "max": "65535",
+              "hidden": "true"
             }
           ]
         },
