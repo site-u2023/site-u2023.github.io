@@ -1874,13 +1874,13 @@ function collectFormValues() {
     collectPackageEnableVars(values);
     
     if (state.apiInfo?.mape?.brIpv6Address) {
-        values.connection_detected = 'mape';
+        values.connection_auto = 'mape';
     } else if (state.apiInfo?.aftr?.aftrAddress) {
-        values.connection_detected = 'dslite';
+        values.connection_auto = 'dslite';
     } else if (values.connection_type) {
-        values.connection_detected = values.connection_type;
+        values.connection_auto = values.connection_type;
     } else {
-        values.connection_detected = 'dhcp';
+        values.connection_auto = 'dhcp';
     }
     
     const dnsAdblock = getFieldValue('input[name="dns_adblock"]:checked');
