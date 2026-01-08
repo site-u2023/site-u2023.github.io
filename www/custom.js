@@ -1826,6 +1826,10 @@ function collectItemValue(item, values) {
             return;
         }
         
+        if (item.variable === 'dslite_aftr_type' || item.variable === 'dslite_jurisdiction') {
+            return;
+        }
+        
         const value = getFieldValue(`#${item.id}`);
         
         if (!shouldIncludeVariable(value)) return;
