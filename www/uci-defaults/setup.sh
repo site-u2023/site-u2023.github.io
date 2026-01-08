@@ -24,7 +24,7 @@ WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-COUNTRY_LC=$(printf '%s' "${country:-00}" | tr 'A-Z' 'a-z')
+COUNTRY_LC=$(printf '%s' "${country}" | tr 'A-Z' 'a-z')
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
@@ -106,7 +106,7 @@ firewall_wan() {
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
-        SET ${radio}.country="${country:-00}"     
+        SET ${radio}.country="${country}"
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
         band=$(uci -q get wireless.${radio}.band)
         S="30 15 5"
