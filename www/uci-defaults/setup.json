@@ -768,7 +768,6 @@
               "fieldType": "select",
               "variable": "dslite_aftr_type",
               "default": "transix",
-              "guiOnly": "true",
               "options": [
                 {"value": "transix", "label": "transix", "class": "tr-transix"},
                 {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
@@ -788,7 +787,6 @@
               "class": "tr-dslite-area",
               "fieldType": "select",
               "variable": "dslite_jurisdiction",
-              "guiOnly": "true",
               "options": [
                 {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
