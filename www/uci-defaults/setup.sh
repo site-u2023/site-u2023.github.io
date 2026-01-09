@@ -7,6 +7,7 @@ MAPE="mape"
 MAPE6="mape6"
 AP="ap"
 AP6="ap6"
+INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
@@ -287,10 +288,10 @@ fi
             [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
     }
-    /etc/init.d/odhcpd disable 2>/dev/null
-    /etc/init.d/dnsmasq disable 2>/dev/null
+    ${INIT}/odhcpd disable 2>/dev/null
+    ${INIT}/dnsmasq disable 2>/dev/null
     uci -q delete firewall
-    /etc/init.d/firewall disable 2>/dev/null
+    ${INIT}/firewall disable 2>/dev/null
 }
 [ -n "${ttyd}" ] && {
     SEC=ttyd
@@ -392,7 +393,7 @@ fi
 [ "${dns_adblock}" = "adguardhome" ] && {
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ -z "${apache_keep}" ] && {
-            /etc/init.d/apache stop 2>/dev/null || true
+            ${INIT}/apache stop 2>/dev/null || true
             htpasswd_bin="/usr/bin/htpasswd"
             htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
             tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
@@ -498,9 +499,9 @@ AGHEOF
         SET ${agh_rule}.target='DNAT'
         }
     else
-        /etc/init.d/adguardhome stop 2>/dev/null
-        /etc/init.d/adguardhome disable 2>/dev/null
-        echo "AdGuardHome: /etc/init.d/adguardhome start then ${lan_ip_address}:3000"
+        ${INIT}/adguardhome stop 2>/dev/null
+        ${INIT}/adguardhome disable 2>/dev/null
+        echo "AdGuardHome: ${INIT}/adguardhome start then ${lan_ip_address}:3000"
     fi
 }
 # BEGIN_CMDS
@@ -510,12 +511,12 @@ uci commit 2>/dev/null
 [ ! -f "/etc/uci-defaults/setup.sh" ] && {
     [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
         for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
-            /etc/init.d/$s restart 2>/dev/null
+            ${INIT}/$s restart 2>/dev/null
         done
     }
     [ -n "${wifi_mode}" ] && [ "${wifi_mode}" != "disabled" ] && {
         wifi reload 2>/dev/null
-        /etc/init.d/usteer restart 2>/dev/null
+        ${INIT}/usteer restart 2>/dev/null
     }
 }
 [ -n "${usb_gadget}" ] && {
