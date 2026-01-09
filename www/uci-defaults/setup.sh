@@ -519,7 +519,7 @@ uci commit 2>/dev/null
     }
 }
 [ -n "${usb_gadget}" ] && {
-    [ -f "/etc/uci-defaults/setup.sh" ] && rm -f /etc/uci-defaults/setup.sh
+    rm -f /etc/uci-defaults/setup.sh
     sync
     reboot
 }
