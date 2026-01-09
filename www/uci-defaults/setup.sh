@@ -7,14 +7,18 @@ MAPE="mape"
 MAPE6="mape6"
 AP="ap"
 AP6="ap6"
+CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
+cp -f ${CONF}/network ${CONF}/network.default
+cp -f ${CONF}/wireless ${CONF}/wireless.default
+cp -f ${CONF}/system ${CONF}/system.default
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
-    [ -f "/rom/etc/config/${SEC}" ] && cp -f "/rom/etc/config/${SEC}" "/etc/config/${SEC}" && return
-    [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
+    [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
+    [ -f "${CONF}/${SEC}.default" ] && cp -f "${CONF}/${SEC}.default" "${CONF}/${SEC}" && return
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
@@ -411,8 +415,8 @@ fi
     lan_ip_address=$(uci -q get network.lan.ipaddr | cut -d/ -f1)
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         mkdir -p "${agh_dir}"
-        cfg_dhcp="/etc/config/dhcp"
-        cfg_fw="/etc/config/firewall"
+        cfg_dhcp="${CONF}/dhcp"
+        cfg_fw="${CONF}/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
         agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
