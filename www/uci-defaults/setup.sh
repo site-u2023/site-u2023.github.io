@@ -18,19 +18,16 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-DATE="$(date +%F\ %H:%M)"
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
-PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-COUNTRY_LC=$(printf '%s' "${country}" | tr 'A-Z' 'a-z')
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
 exec > >(tee -a /tmp/aios2/debug.log) 2>&1
 SEC=system
-SET @system[0].description="${DATE} site-u"
+SET @system[0].description="$(date +%F\ %H:%M) site-u"
 disable_wan() {
     SEC=network
     SET wan.disabled='1'
@@ -74,7 +71,7 @@ firewall_wan() {
     SET ntp.interface='lan'
     DEL ntp.server
     for i in 0 1; do
-        ADDLIST ntp.server="${i}.${COUNTRY_LC}${ntp_domain}"
+        ADDLIST ntp.server="${i}.$(printf '%s' "${country}" | tr 'A-Z' 'a-z')${ntp_domain}"
         ADDLIST ntp.server="${i}${ntp_domain}"
     done
 }
