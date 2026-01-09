@@ -516,10 +516,5 @@ uci commit 2>/dev/null
         ${INIT}/usteer restart 2>/dev/null
     }
 }
-[ -n "${usb_gadget}" ] && {
-    rm -f /etc/uci-defaults/setup.sh
-    sync
-    reboot
-}
 echo "[setup.sh] All done!"
 exit 0
