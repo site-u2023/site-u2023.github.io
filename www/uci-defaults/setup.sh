@@ -287,10 +287,10 @@ fi
             [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
     }
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable
+    /etc/init.d/odhcpd disable 2>/dev/null
+    /etc/init.d/dnsmasq disable 2>/dev/null
     uci -q delete firewall
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
+    /etc/init.d/firewall disable 2>/dev/null
 }
 [ -n "${ttyd}" ] && {
     SEC=ttyd
