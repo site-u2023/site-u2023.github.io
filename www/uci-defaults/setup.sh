@@ -13,7 +13,6 @@ NAS="openwrt"
 MNT="/mnt/sda"
 cp -f ${CONF}/network ${CONF}/network.default
 cp -f ${CONF}/wireless ${CONF}/wireless.default
-cp -f ${CONF}/system ${CONF}/system.default
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
