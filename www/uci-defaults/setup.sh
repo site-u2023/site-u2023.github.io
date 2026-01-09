@@ -325,7 +325,7 @@ fi
     SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-[ -n "${usb_gadget}" ] && [ -d /boot ] && {
+[ -n "${usb_gadget}" ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
@@ -517,6 +517,11 @@ uci commit 2>/dev/null
         wifi reload 2>/dev/null
         /etc/init.d/usteer restart 2>/dev/null
     }
+}
+[ -n "${usb_gadget}" ] && {
+    [ -f "/etc/uci-defaults/setup.sh" ] && rm -f /etc/uci-defaults/setup.sh
+    sync
+    reboot
 }
 echo "[setup.sh] All done!"
 exit 0
