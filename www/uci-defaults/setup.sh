@@ -71,8 +71,8 @@ firewall_wan() {
     SET ntp.interface='lan'
     DEL ntp.server
     for i in 0 1; do
-        ADDLIST ntp.server="${i}.$(printf '%s' "${country}" | tr 'A-Z' 'a-z')${ntp_domain}"
-        ADDLIST ntp.server="${i}${ntp_domain}"
+        ADDLIST ntp.server="${i}.$(echo "${country}" | tr 'A-Z' 'a-z').${ntp}"
+        ADDLIST ntp.server="${i}.${ntp}"
     done
 }
 [ -n "${diag}" ] && {
