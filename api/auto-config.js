@@ -7284,9 +7284,9 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       const responsePayload = {
         notice,
         language: lang,
+        detection: hasIPv6Param ? 'manual' : 'auto',
         ipv4: clientIPv4 || null,
-        ipv6: clientIPv6 || null,
-        lookupIPv6: queryIPv6 || null,
+        ipv6: hasIPv6Param ? (queryIPv6 || null) : (clientIPv6 || null),
         country: cf.country || null,
         zonename,
         timezone,
