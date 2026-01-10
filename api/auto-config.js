@@ -7189,7 +7189,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     return COUNTRY_TO_LANGUAGE[country] || 'en';
   }
   
-  // ========================================
+// ========================================
   // メインハンドラー
   // ========================================
   
@@ -7219,6 +7219,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     
       const url = new URL(request.url);
       const queryIPv6 = url.searchParams.get('ipv6');
+      const hasIPv6Param = url.searchParams.has('ipv6');
 
       const ipHeaders = [
         request.headers.get('CF-Connecting-IPv6'),
