@@ -1192,7 +1192,8 @@ generate_yaml() {
     fi
     
     # Get NTP domain from system configuration
-    ntp_domain=$(uci -q get system.ntp.server | head -n1 | cut -d. -f2-)
+    ntp_server=$(uci -q get system.ntp.server | head -n1)
+    ntp_domain="${ntp_server#*.}"
     
     # Replace placeholders
     sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
