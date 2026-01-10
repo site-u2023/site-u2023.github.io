@@ -7293,7 +7293,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         language: lang,
         detection: hasIPv6Param ? 'manual' : 'auto',
         ipv4: clientIPv4 || null,
-        ipv6: hasIPv6Param ? (queryIPv6 || null) : (clientIPv6 || null),
+        ipv6: hasIPv6Param ? (queryIPv6 ? queryIPv6.split('/')[0] : null) : (clientIPv6 || null),
         country: cf.country || null,
         zonename,
         timezone,
