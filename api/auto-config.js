@@ -7236,7 +7236,13 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         if (!clientIPv4 && ip.includes('.')) clientIPv4 = ip;
       }
 
-      let lookupIPv6 = queryIPv6 || clientIPv6;
+      let lookupIPv6;
+
+      if (hasIPv6Param) {
+        lookupIPv6 = queryIPv6 || null;
+      } else {
+        lookupIPv6 = clientIPv6;
+      }
 
       if (lookupIPv6 && lookupIPv6.includes('/')) {
         lookupIPv6 = lookupIPv6.split('/')[0];
