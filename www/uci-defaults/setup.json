@@ -635,7 +635,7 @@
               "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"],
               "clearSection": {"category": "internet-connection", "section": "mape-section"},
               "computeField": {"target": "mape-gua-prefix", "method": "generateGuaPrefix"},
-              "fullWidth": true
+              "fullWidth": "true"
             },
             {
               "type": "radio-group",
@@ -665,7 +665,8 @@
               "description": "IPv6 GUA prefix with /64 suffix",
               "apiSource": "mape.ipv6Prefix_gua",
               "computeFrom": "generateGuaPrefix",
-              "showWhen": {"mape_type": "gua"}
+              "showWhen": {"mape_type": "gua"},
+              "fullWidth": "true"
             },
             {
               "type": "field",
