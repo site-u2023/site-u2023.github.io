@@ -957,7 +957,8 @@ function buildSection(section) {
     }
 
     if (section.title || section.class) {
-        const h4 = document.createElement('h4');
+        const label = document.createElement('label');
+        label.className = 'form-label';
         
         if (section.link) {
             const a = document.createElement('a');
@@ -971,7 +972,7 @@ function buildSection(section) {
             } else {
                 a.textContent = section.title;
             }
-            h4.appendChild(a);
+            label.appendChild(a);
         } else {
             const span = document.createElement('span');
             if (section.class) {
@@ -980,14 +981,14 @@ function buildSection(section) {
             } else {
                 span.textContent = section.title;
             }
-            h4.appendChild(span);
+            label.appendChild(span);
         }
         
         if (section.description || section.descriptionUrl) {
-            addTooltip(h4, section.descriptionUrl || section.description);
+            addTooltip(label, section.descriptionUrl || section.description);
         }
         
-        wrapper.appendChild(h4);
+        wrapper.appendChild(label);
     }
 
     const columns = state.config.setup.columns || 1;
