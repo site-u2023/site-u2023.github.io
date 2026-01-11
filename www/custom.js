@@ -949,7 +949,7 @@ function buildRadioGroup(item) {
 function buildSection(section) {
     const wrapper = document.createElement('div');
     wrapper.id = section.id;
-    wrapper.className = 'conditional-section config-section';
+    wrapper.className = 'conditional-section';
     
     if (section.showWhen) {
         wrapper.setAttribute('data-show-when', JSON.stringify(section.showWhen));
