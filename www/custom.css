@@ -608,11 +608,6 @@ details summary::-webkit-details-marker {
   color: var(--text-main);
 }
 
-.conditional-section {
-  margin: 0;
-  padding: 0;
-}
-
 .config-section h4,
 .package-category h4,
 #postinst-details h4,
