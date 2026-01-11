@@ -120,6 +120,18 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 | Hosting | OpenWrt Official | Cloudflare Pages |
 | Open Source | GitHub Public | GitHub Public |
 
+<details><summary><b>When MAP-E/DS-LITE auto-detection doesn't work</b></summary>
+    
+Enable DHCPv6-PD (IPv6 prefix delegation) on the upstream router
+IPv6 bridge/passthrough function settings for each manufacturer:
+- [TP-Link](https://www.tp-link.com/us/support/faq/1525/)
+- [ASUS](https://www.asus.com/support/faq/1030921/)
+- [NETGEAR](https://kb.netgear.com/24006/How-do-I-set-up-an-IPv6-Internet-connection-on-my-NETGEAR-router)
+- [Linksys](https://support.linksys.com/kb/article/448-en/)
+
+---
+</details>
+
 ### Console Tool
 [aios2 TUI Version (whiptail)](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2.sh)
 
