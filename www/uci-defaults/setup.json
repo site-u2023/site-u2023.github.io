@@ -569,6 +569,7 @@
           "type": "section",
           "id": "auto-section",
           "title": "AUTO Detection",
+          "class": "tr-auto-detection",
           "showWhen": {"connection_type": "auto"},
           "items": [
             {
