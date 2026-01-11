@@ -75,7 +75,7 @@
     "tr-mape": "MAP-E",
     "tr-ap": "Dumb AP",
     "tr-auto-detection": "AUTO Detection",
-    "tr-ipv6-warning-auto": "IPv6 address not detected. Please enable IPv6 bridge (pass-through) feature on your upstream router.",
+    "tr-ipv6-warning-auto": "IPv6 address not detected: IPv6 connection required for auto-detection",
     "tr-dhcp": "DHCP",
     "tr-internet-optimization-disabled": "Internet Disabled",
 
