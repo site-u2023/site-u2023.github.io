@@ -634,7 +634,8 @@
               "lookupTrigger": true,
               "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"],
               "clearSection": {"category": "internet-connection", "section": "mape-section"},
-              "computeField": {"target": "mape-gua-prefix", "method": "generateGuaPrefix"}
+              "computeField": {"target": "mape-gua-prefix", "method": "generateGuaPrefix"},
+              "fullWidth": true
             },
             {
               "type": "radio-group",
