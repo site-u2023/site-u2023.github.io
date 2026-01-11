@@ -75,7 +75,7 @@
     "tr-mape": "MAP-E",
     "tr-ap": "Dumb AP",
     "tr-auto-detection": "自動検出",
-    "tr-ipv6-warning-auto": "IPv6アドレスが検出されません。上位ルーターのIPv6ブリッジ機能（パススルー機能）を有効にしてください。",
+    "tr-ipv6-warning-auto": "IPv6アドレス未検出：自動判定にはIPv6接続が必要です",
     "tr-dhcp": "DHCP",
     "tr-internet-optimization-disabled": "インターネット無効",
     
