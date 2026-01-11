@@ -785,8 +785,6 @@ function buildField(field) {
                             const apiInfo = await response.json();
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
-                                // state.lookupTargetFields = field.targetFields;
-                                
                                 for (const targetId of field.targetFields) {
                                     const targetElement = document.getElementById(targetId);
                                     if (!targetElement) continue;
@@ -819,8 +817,6 @@ function buildField(field) {
                             console.error('Lookup failed:', err);
                         }
                     } else {
-                        // state.apiInfo = null;
-                        // state.lookupTargetFields = null;
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
@@ -847,6 +843,11 @@ function buildField(field) {
     }
 
     row.appendChild(group);
+    
+    if (field.fullWidth) {
+        row.style.gridColumn = '1 / -1';
+    }
+    
     return row;
 }
 
