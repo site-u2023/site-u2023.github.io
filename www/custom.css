@@ -766,7 +766,6 @@ details summary::-webkit-details-marker {
   margin-top: 1em;
   padding: 1em;
   background-color: transparent;
-  border: 1px solid var(--border-connection);
   border-radius: 0.25em;
 }
 
