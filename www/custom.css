@@ -596,8 +596,7 @@ details summary::-webkit-details-marker {
 
 /* ===== Section Containers ===== */
 .config-section,
-.package-category,
-.conditional-section {
+.package-category {
   margin: 0 0 1.5em 0;
   padding: 0 1em 1em 1em;
   background-color: var(--bg-section);
