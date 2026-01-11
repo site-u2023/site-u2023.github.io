@@ -617,11 +617,6 @@ details summary::-webkit-details-marker {
   color: inherit;
 }
 
-.conditional-section h4 {
-  margin-top: 0;
-  margin-bottom: 0;
-}
-
 .package-category-description,
 .package-description {
   margin-bottom: 1em;
