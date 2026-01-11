@@ -957,7 +957,7 @@ function buildSection(section) {
     }
 
     if (section.title || section.class) {
-        const h4 = document.createElement('h4');
+        const h4 = document.createElement('div');
         
         if (section.link) {
             const a = document.createElement('a');
