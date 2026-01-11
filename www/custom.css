@@ -757,18 +757,6 @@ details summary::-webkit-details-marker {
   border-radius: 0.25em;
 }
 
-#auto-section,
-#dhcp-section,
-#pppoe-section,
-#dslite-section,
-#mape-section,
-#ap-section {
-  margin-top: 1em;
-  padding: 1em;
-  background-color: transparent;
-  border-radius: 0.25em;
-}
-
 #internet-config {
   display: flex;
   flex-direction: column;
