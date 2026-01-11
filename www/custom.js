@@ -2207,7 +2207,15 @@ function updateAutoConnectionInfo(apiInfo) {
     autoInfo.innerHTML = '';
     
     const connectionType = getConnectionType(apiInfo);
-    
+
+    if (apiInfo && apiInfo.ipv6 === null) {
+        const warningSpan = document.createElement('span');
+        warningSpan.className = 'tr-ipv6-warning-auto';
+        autoInfo.appendChild(warningSpan);
+        autoInfo.appendChild(document.createElement('br'));
+        autoInfo.appendChild(document.createElement('br'));
+    }
+
     if (apiInfo?.isp) {
         autoInfo.appendChild(document.createTextNode(`ISP: ${apiInfo.isp}`));
         autoInfo.appendChild(document.createElement('br'));
