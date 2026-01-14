@@ -133,6 +133,60 @@ const mapRulesData = {
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.128.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:0000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.144.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:1000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.160.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:2000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.176.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:3000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.138.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:a000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
+        {
+            "brIpv6Address": "2001:3b8:200:ff9::1",
+            "eaBitLength": "20",
+            "ipv4Prefix": "219.104.141.0",
+            "ipv4PrefixLength": "20",
+            "ipv6Prefix": "240d:000f:d000::",
+            "ipv6PrefixLength": "36",
+            "psIdOffset": "4"
+        },
     {
       "brIpv6Address": "",
       "eaBitLength": "18",
