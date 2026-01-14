@@ -6350,48 +6350,48 @@ const mapRulesData = {
     // 追加分
     {
       "brIpv6Address": "2001:380:a120::9",
-      "eaBitLength": "6",
+      "eaBitLength": "17",
       "ipv4Prefix": "123.226.64.0",
       "ipv4PrefixLength": "21",
       "ipv6Prefix": "2400:4152:c400::",
       "ipv6PrefixLength": "39",
-      "psIdOffset": "17"
+      "psIdOffset": "6"
     },
     {
       "brIpv6Address": "2001:380:a120::9",
-      "eaBitLength": "6",
+      "eaBitLength": "17",
       "ipv4Prefix": "123.226.72.0",
       "ipv4PrefixLength": "21",
       "ipv6Prefix": "2400:4152:c800::",
       "ipv6PrefixLength": "39",
-      "psIdOffset": "17"
+      "psIdOffset": "6"
     },
     {
       "brIpv6Address": "2001:380:a120::9",
-      "eaBitLength": "6",
+      "eaBitLength": "17",
       "ipv4Prefix": "123.226.88.0",
       "ipv4PrefixLength": "21",
       "ipv6Prefix": "2400:4152:ea00::",
       "ipv6PrefixLength": "39",
-      "psIdOffset": "17"
+      "psIdOffset": "6"
     },
     {
       "brIpv6Address": "2001:380:a120::9",
-      "eaBitLength": "6",
+      "eaBitLength": "18",
       "ipv4Prefix": "124.98.48.0",
       "ipv4PrefixLength": "20",
       "ipv6Prefix": "2400:4152:ec00::",
       "ipv6PrefixLength": "38",
-      "psIdOffset": "18"
+      "psIdOffset": "6"
     },
     {
       "brIpv6Address": "2001:380:a120::9",
-      "eaBitLength": "6",
+      "eaBitLength": "17",
       "ipv4Prefix": "123.226.80.0",
       "ipv4PrefixLength": "21",
       "ipv6Prefix": "2400:4152:f200::",
       "ipv6PrefixLength": "39",
-      "psIdOffset": "17"
+      "psIdOffset": "6"
     }
   ]
 }
