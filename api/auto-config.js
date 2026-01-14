@@ -187,13 +187,14 @@ const mapRulesData = {
             "ipv6PrefixLength": "36",
             "psIdOffset": "4"
         },
-// renew
+      
+    // renew
     {
       "brIpv6Address": "2404:9200:225:100::64",
       "eaBitLength": "25",
       "ipv4Prefix": "106.72.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:0010:0000::",
+      "ipv6Prefix": "240b:10::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
@@ -202,7 +203,7 @@ const mapRulesData = {
       "eaBitLength": "25",
       "ipv4Prefix": "14.8.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:0012:0000::",
+      "ipv6Prefix": "240b:12::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
@@ -211,7 +212,7 @@ const mapRulesData = {
       "eaBitLength": "25",
       "ipv4Prefix": "14.10.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:0250:0000::",
+      "ipv6Prefix": "240b:250::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
@@ -220,7 +221,7 @@ const mapRulesData = {
       "eaBitLength": "25",
       "ipv4Prefix": "14.12.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:0252:0000::",
+      "ipv6Prefix": "240b:252::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
@@ -229,7 +230,7 @@ const mapRulesData = {
       "eaBitLength": "25",
       "ipv4Prefix": "133.200.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "2404:7a80:0000::",
+      "ipv6Prefix": "2404:7a80::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
@@ -238,7 +239,7 @@ const mapRulesData = {
       "eaBitLength": "25",
       "ipv4Prefix": "133.206.0.0",
       "ipv4PrefixLength": "15",
-      "ipv6Prefix": "2404:7a84:0000::",
+      "ipv6Prefix": "2404:7a84::",
       "ipv6PrefixLength": "31",
       "psIdOffset": "4"
     },
