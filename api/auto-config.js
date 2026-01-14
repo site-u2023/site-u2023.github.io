@@ -79,60 +79,7 @@ const dsliteRulesData = {
    */
 const mapRulesData = {
   "basicMapRules": [
-    {
-      "brIpv6Address": "2404:9200:225:100::64",
-      "eaBitLength": "25",
-      "ipv4Prefix": "106.72.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:10:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
-    {
-      "brIpv6Address": "2404:9200:225:100::64",
-      "eaBitLength": "25",
-      "ipv4Prefix": "14.8.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:12:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
-    {
-      "brIpv6Address": "2404:9200:225:100::64",
-      "eaBitLength": "25",
-      "ipv4Prefix": "14.10.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:250:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
-    {
-      "brIpv6Address": "2404:9200:225:100::64",
-      "eaBitLength": "25",
-      "ipv4Prefix": "14.12.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "240b:252:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
-    {
-      "brIpv6Address": "2001:260:700:1::1:275",
-      "eaBitLength": "25",
-      "ipv4Prefix": "133.200.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "2404:7a80:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
-    {
-      "brIpv6Address": "2001:260:700:1::1:276",
-      "eaBitLength": "25",
-      "ipv4Prefix": "133.206.0.0",
-      "ipv4PrefixLength": "15",
-      "ipv6Prefix": "2404:7a84:0000::",
-      "ipv6PrefixLength": "31",
-      "psIdOffset": "4"
-    },
+        // nuro
         {
             "brIpv6Address": "2001:3b8:200:ff9::1",
             "eaBitLength": "20",
@@ -187,8 +134,8 @@ const mapRulesData = {
             "ipv6PrefixLength": "36",
             "psIdOffset": "4"
         },
-      
-    // renew
+ 
+    // ocnなど
     {
       "brIpv6Address": "2404:9200:225:100::64",
       "eaBitLength": "25",
