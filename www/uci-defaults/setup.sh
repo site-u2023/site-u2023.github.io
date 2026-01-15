@@ -11,8 +11,8 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
-cp -f ${CONF}/network ${CONF}/network.default
-cp -f ${CONF}/wireless ${CONF}/wireless.default
+[ ! -f ${CONF}/network.default ] && cp -f ${CONF}/network ${CONF}/network.default
+[ ! -f ${CONF}/wireless.default ] && cp -f ${CONF}/wireless ${CONF}/wireless.default
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
