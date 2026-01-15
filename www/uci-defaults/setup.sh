@@ -33,7 +33,7 @@ FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
 exec > >(tee -a /tmp/aios2/debug.log) 2>&1
 SEC=system
-SET @system[0].description="$(date +%F\ %H:%M) site-u"
+SET @system[0].description="$(date +%F\ %H:%M) siteU"
 disable_wan() {
     SEC=network
     SET wan.disabled='1'
