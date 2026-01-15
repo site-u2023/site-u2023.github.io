@@ -229,14 +229,13 @@ firewall_wan() {
     [ -n "${ip6prefix_gua}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_gua}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
-    MAP_SH="/lib/netifd/proto/map.sh"   
-    EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
-    if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
-        cp "$MAP_SH" "$MAP_SH".bak
-        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
-        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
-        sed -i '137,158d' "$MAP_SH"
+    MAPSH="/lib/netifd/proto/map.sh"
+    HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+    [ "$(sha1sum "$MAPSH" | awk '{print $1}')" = "$HASH" ] && {
+        cp "$MAPSH" "$MAPSH".bak
+        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
+        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
+        sed -i '137,158d' "$MAPSH"
         sed -i '136a\
 \t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 \t    json_add_object ""\
@@ -265,8 +264,8 @@ firewall_wan() {
 \t    for proto in icmp tcp udp; do\
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
 \t    done\
-\t  fi' "$MAP_SH"
-fi
+\t  fi' "$MAPSH"
+    }
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
@@ -292,10 +291,10 @@ fi
             [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
     }
-    ${INIT}/odhcpd disable 2>/dev/null
-    ${INIT}/dnsmasq disable 2>/dev/null
+    ${INIT}/odhcpd disable 2>&-
+    ${INIT}/dnsmasq disable 2>&-
     uci -q delete firewall
-    ${INIT}/firewall disable 2>/dev/null
+    ${INIT}/firewall disable 2>&-
 }
 [ -n "${ttyd}" ] && {
     SEC=ttyd
@@ -397,7 +396,7 @@ fi
 [ "${dns_adblock}" = "adguardhome" ] && {
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         [ -z "${apache_keep}" ] && {
-            ${INIT}/apache stop 2>/dev/null || true
+            ${INIT}/apache stop 2>&- || true
             htpasswd_bin="/usr/bin/htpasswd"
             htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
             tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
@@ -422,7 +421,7 @@ fi
         cfg_fw="${CONF}/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
-        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
+        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>&- | cut -d: -f2)
         [ -n "$agh_hash" ] && {
         cat > "$agh_yaml" << 'AGHEOF'
 http:
@@ -490,7 +489,7 @@ AGHEOF
         ADDLIST lan.dhcp_option="6,${lan_ip_address}"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
-        DEL "${agh_rule}" 2>/dev/null || true
+        DEL "${agh_rule}" 2>&- || true
         SET ${agh_rule}=redirect
         SET ${agh_rule}.name="AdGuard Home DNS Redirect"
         SET ${agh_rule}.family='any'
@@ -503,25 +502,25 @@ AGHEOF
         SET ${agh_rule}.target='DNAT'
         }
     else
-        ${INIT}/adguardhome stop 2>/dev/null
-        ${INIT}/adguardhome disable 2>/dev/null
+        ${INIT}/adguardhome stop 2>&-
+        ${INIT}/adguardhome disable 2>&-
         echo "AdGuardHome: ${INIT}/adguardhome start then ${lan_ip_address}:3000"
     fi
 }
 # BEGIN_CMDS
 # END_CMDS
-uci commit 2>/dev/null
+uci commit 2>&-
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 [ ! -f "/etc/uci-defaults/setup.sh" ] && {
     [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
         for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
-            ${INIT}/$s restart 2>/dev/null
+            ${INIT}/$s restart 2>&-
         done
     }
     [ -n "${wifi_mode}" ] && [ "${wifi_mode}" != "disabled" ] && {
-        wifi reload 2>/dev/null
-        ${INIT}/usteer restart 2>/dev/null
+        wifi reload 2>&-
+        ${INIT}/usteer restart 2>&-
     }
 }
-echo "[setup.sh] All done!"
+echo "All done!"
 exit 0
