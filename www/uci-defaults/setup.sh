@@ -265,6 +265,7 @@ firewall_wan() {
 \t\tlocal counter=0\
 \t    for proto in icmp tcp udp; do\
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
+\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
 \t    done\
 \t  fi' "$MAPSH"
     }
