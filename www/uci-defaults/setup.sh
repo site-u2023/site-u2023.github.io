@@ -141,6 +141,8 @@ firewall_wan() {
         { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"        
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
+            for o in rnr background_radar; do DEL ${radio}.$o; done
+            for o in isolate ieee80211r mobility_domain ft_over_ds nasid ieee80211k ieee80211v usteer_min_snr ieee80211w mlo mld_id mlo_link_id; do DEL ${iface}.$o; done
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
