@@ -18,7 +18,11 @@ DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
     [ -f "${CONF}/${SEC}.default" ] && cp -f "${CONF}/${SEC}.default" "${CONF}/${SEC}" && return
-    [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
+    [ "$SEC" = "network" ] && {
+        for i in ${DSL} ${DSL6} ${MAPE} ${MAPE6} ${AP} ${AP6}; do
+            DEL $i
+        done
+    }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
