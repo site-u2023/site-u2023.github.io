@@ -97,6 +97,7 @@ firewall_wan() {
 [ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
 [ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
 [ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
+[ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
 [ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
 [ -n "${flow_offloading_type}" ] && {
     SEC=firewall
