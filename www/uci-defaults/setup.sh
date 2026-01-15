@@ -12,14 +12,14 @@ INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
 [ -f "/etc/uci-defaults/setup.sh" ] && {
-    cp -f ${CONF}/network ${CONF}/network.default
-    cp -f ${CONF}/wireless ${CONF}/wireless.default
+    cp -f ${CONF}/network ${CONF}/network.def
+    cp -f ${CONF}/wireless ${CONF}/wireless.def
 }
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
-    [ -f "${CONF}/${SEC}.default" ] && cp -f "${CONF}/${SEC}.default" "${CONF}/${SEC}" && return
+    [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
