@@ -334,17 +334,6 @@
         },
         {
           "type": "field",
-          "id": "aios-ssh-interface",
-          "label": "SSH Interface",
-          "class": "tr-ssh-interface",
-          "fieldType": "text",
-          "variable": "ssh_interface",
-          "placeholder": "lan",
-          "default": "lan",
-          "description": "Network interface for SSH access"
-        },
-        {
-          "type": "field",
           "id": "aios-ssh-port",
           "label": "SSH Port",
           "class": "tr-ssh-port",
