@@ -68,7 +68,7 @@ firewall_wan() {
     SET ${ZONE}.masq='1'
     SET ${ZONE}.mtu_fix='1'
 }
-[ -n "${ntp}" ] && {
+[ [ -n "${ntp}" ] && {
     SEC=system
     DEL ntp
     SET ntp=timeserver
@@ -77,16 +77,16 @@ firewall_wan() {
     SET ntp.interface='lan'
     DEL ntp.server
     for i in 0 1; do
-        ADDLIST ntp.server="${i}.$(echo "${country}" | tr 'A-Z' 'a-z').${ntp}"
         ADDLIST ntp.server="${i}.${ntp}"
+        ADDLIST ntp.server="${i}.$(echo "${country}" | tr 'A-Z' 'a-z').${ntp}"
     done
 }
 [ -n "${diag}" ] && {
     SEC=luci
     SET diag=diag
-    SET diag.ping="${diag_address}"
-    SET diag.route="${diag_address}"
-    SET diag.dns="${diag_address}"
+    SET diag.ping="${diag}"
+    SET diag.route="${diag}"
+    SET diag.dns="${diag}"
 }
 [ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
 [ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
