@@ -971,7 +971,7 @@
               "default": "16384",
               "min": 128
             },
-{
+            {
               "type": "field",
               "id": "netopt-congestion",
               "label": "TCP Congestion Control",
