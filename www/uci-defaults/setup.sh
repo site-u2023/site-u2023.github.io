@@ -99,10 +99,10 @@ firewall_wan() {
 [ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
 [ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
 [ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
-[ -n "${flow_offloading_type}" ] && {
+[ -n "${offload}" ] && {
     SEC=firewall
     SET @defaults[0].flow_offloading='1'
-    [ "${flow_offloading_type}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
+    [ "${offload}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
