@@ -464,7 +464,13 @@ log:
   file: ""
 schema_version: 29
 AGHEOF
-        sed -i "s|{{AGH_USER}}|${agh_user}|g;s|{{AGH_HASH}}|${agh_hash}|g;s|{{WEB_PORT}}|${agh_web_port}|g;s|{{DNS_PORT}}|${agh_dns_port}|g;s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g;s|{{FILTER_URL}}|${filter_url}|g;s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | awk '{print $1}' | cut -d. -f3-)|g" "$agh_yaml"
+        sed -i "s|{{AGH_USER}}|${agh_user}|g" "$agh_yaml"
+        sed -i "s|{{AGH_HASH}}|${agh_hash}|g" "$agh_yaml"
+        sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
+        sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
+        sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
+        sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | awk '{print $1}' | cut -d. -f3-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
