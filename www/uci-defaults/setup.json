@@ -976,11 +976,12 @@
               "id": "netopt-congestion",
               "label": "TCP Congestion Control",
               "class": "tr-tcp-congestion-control",
+              "description": "BBR selection installs kmod-tcp-bbr",
               "fieldType": "select",
               "variable": "netopt_congestion",
               "options": [
                 {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
-                {"value": "bbr", "label": "bbr", "class": "tr-bbr"}
+                {"value": "bbr", "label": "BBR", "class": "tr-bbr"}
               ]
             }
           ]
