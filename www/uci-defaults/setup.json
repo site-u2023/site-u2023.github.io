@@ -1071,6 +1071,12 @@
             }
           ]
         }
+      ],
+      "packages": [
+        {
+          "id": "kmod-tcp-bbr",
+          "when": {"netopt_congestion": "bbr"}
+        }
       ]
     },
     
@@ -1080,7 +1086,6 @@
       "class": "tr-customscripts-title",
       "description": "User-defined custom scripts for system configuration",
       "guiOnly": "true",
-      
       "items": [
         {
           "type": "radio-group",
