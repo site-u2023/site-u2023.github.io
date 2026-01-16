@@ -1268,7 +1268,7 @@ function evaluateInitialPackages() {
         
         collectFormValues(category.items);
         
-        let effectiveConnectionType = radioValues.connection_type;
+        let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
             effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
@@ -1278,9 +1278,9 @@ function evaluateInitialPackages() {
             if (!pkg.when) return;
             
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                let actualValue = radioValues[key];
+                let actualValue = formValues[key];
                 
-                if (key === 'connection_type' && radioValues.connection_type === 'auto') {
+                if (key === 'connection_type' && formValues.connection_type === 'auto') {
                     actualValue = effectiveConnectionType;
                 }
                 
