@@ -31,7 +31,7 @@
       "uniqueId": "htpasswd-from-apache",
       "description": "Password hash tool (extracted from apache)",
       "dependencies": ["libaprutil", "libapr"],
-      "enableVar": "enable_htpasswd",
+      "enableVar": "htpasswd",
       "installOptions": "ignoreDeps",
       "hidden": "false",
       "virtual": "false",
@@ -720,7 +720,6 @@
           "id": "adguardhome",
           "name": "adguardhome",
           "hidden": "true",
-          "enableVar": "enable_adguardhome",
           "description": "AdGuard Home DNS server (managed by Custom Scripts)"
         },
         {
@@ -729,7 +728,6 @@
           "uniqueId": "htpasswd-from-apache",
           "hidden": "true",
           "description": "Password hash tool for AdGuard Home (extracted from apache)",
-          "enableVar": "enable_htpasswd",
           "installOptions": "ignoreDeps",
           "extractOnly": "true",
           "binaryPath": "/usr/bin/htpasswd"
