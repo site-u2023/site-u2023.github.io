@@ -971,7 +971,7 @@
               "default": "16384",
               "min": 128
             },
-            {
+{
               "type": "field",
               "id": "netopt-congestion",
               "label": "TCP Congestion Control",
@@ -980,8 +980,7 @@
               "variable": "netopt_congestion",
               "options": [
                 {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
-                {"value": "bbr", "label": "bbr", "class": "tr-bbr"},
-                {"value": "reno", "label": "reno", "class": "tr-reno"}
+                {"value": "bbr", "label": "bbr", "class": "tr-bbr"}
               ]
             }
           ]
