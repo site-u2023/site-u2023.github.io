@@ -125,8 +125,8 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 Enable DHCPv6-PD (IPv6 prefix delegation) on the upstream router
 IPv6 bridge/passthrough function settings for each manufacturer:
 - [TP-Link](https://www.tp-link.com/us/support/faq/1525/)
-- [ASUS](https://www.asus.com/support/faq/1030921/)
 - [NETGEAR](https://kb.netgear.com/24006/How-do-I-set-up-an-IPv6-Internet-connection-on-my-NETGEAR-router)
+- [ASUS](https://www.asus.com/support/faq/1030921/)
 - [Linksys](https://support.linksys.com/kb/article/448-en/)
 
 ---
