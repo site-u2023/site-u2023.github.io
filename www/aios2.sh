@@ -3106,14 +3106,12 @@ auto_add_conditional_packages() {
         gua_prefix="$MAPE_GUA_PREFIX"
         
         if [ -n "$gua_prefix" ]; then
-            # GUAプレフィックスがある → mape_type='gua' をデフォルト設定
             if ! grep -q "^mape_type='gua'$" "$SETUP_VARS" 2>/dev/null; then
                 sed -i "/^mape_type=/d" "$SETUP_VARS" 2>/dev/null
                 echo "mape_type='gua'" >> "$SETUP_VARS"
                 debug_log "[AUTO] Set mape_type='gua' (API provides GUA prefix)"
             fi
         else
-            # GUAプレフィックスがない → mape_type='pd' をデフォルト設定
             if ! grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null; then
                 echo "mape_type='pd'" >> "$SETUP_VARS"
                 debug_log "[AUTO] Set mape_type='pd' (no GUA prefix in API)"
@@ -3142,6 +3140,34 @@ auto_add_conditional_packages() {
                     echo "${pkg_id}|connection_type|${val}"
                 done
             done
+            
+            # netopt_congestion (文字列) - 追加
+            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].id' 2>/dev/null)
+            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].when.netopt_congestion' 2>/dev/null)
+            if [ -n "$pkg_id" ]; then
+                echo "${pkg_id}|netopt_congestion|${when_val}"
+            fi
+            
+            # net_optimizer + connection_type の複合条件 - 追加
+            # when: { "net_optimizer": "auto", "connection_type": ["dhcp", "pppoe", "ap"] }
+            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
+            echo "$pkg_ids" | while read -r pkg_id; do
+                [ -z "$pkg_id" ] && continue
+                
+                # net_optimizer の値を取得
+                net_opt_val=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.net_optimizer" 2>/dev/null)
+                
+                # connection_type の配列を取得
+                conn_types=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
+                
+                if [ -n "$conn_types" ]; then
+                    # 複合条件: net_optimizer=auto AND connection_type in [dhcp,pppoe,ap]
+                    echo "$conn_types" | while read -r conn_val; do
+                        [ -z "$conn_val" ] && continue
+                        echo "${pkg_id}|net_optimizer_and_connection|${net_opt_val}:${conn_val}"
+                    done
+                fi
+            done
         )
         _CONDITIONAL_PACKAGES_LOADED=1
         debug_log "Conditional packages cache built:"
@@ -3154,7 +3180,44 @@ auto_add_conditional_packages() {
         
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
-        # 現在値取得（connection_type の場合は実効値を使用）
+        # 複合条件の処理
+        if [ "$when_var" = "net_optimizer_and_connection" ]; then
+            local net_opt_expected conn_expected
+            net_opt_expected=$(echo "$expected" | cut -d: -f1)
+            conn_expected=$(echo "$expected" | cut -d: -f2)
+            
+            local net_opt_current
+            net_opt_current=$(grep "^net_optimizer=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            
+            debug_log "Complex condition: net_optimizer=$net_opt_current (expected=$net_opt_expected), connection=$effective_conn_type (expected=$conn_expected)"
+            
+            if [ "$net_opt_current" = "$net_opt_expected" ] && [ "$effective_conn_type" = "$conn_expected" ]; then
+                if pkg_add "$pkg_id" "auto"; then
+                    debug_log "[AUTO] Added package: $pkg_id (condition: net_optimizer=$net_opt_expected AND connection_type=$conn_expected)"
+                    
+                    local enable_var
+                    enable_var=$(get_package_enablevar "$pkg_id" "")
+                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
+                        echo "${enable_var}='1'" >> "$SETUP_VARS"
+                        debug_log "Added enableVar: $enable_var"
+                    fi
+                fi
+            else
+                if pkg_remove "$pkg_id" "auto"; then
+                    debug_log "[AUTO] Removed package: $pkg_id (complex condition not met)"
+                    
+                    local enable_var
+                    enable_var=$(get_package_enablevar "$pkg_id" "")
+                    if [ -n "$enable_var" ]; then
+                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
+                        debug_log "Removed enableVar: $enable_var"
+                    fi
+                fi
+            fi
+            continue
+        fi
+        
+        # 単純条件の処理（既存ロジック）
         local current_val
         if [ "$when_var" = "connection_type" ]; then
             current_val="$effective_conn_type"
@@ -3165,20 +3228,16 @@ auto_add_conditional_packages() {
         
         debug_log "current_val=$current_val"
         
-        # 条件判定
         local should_add=0
         if [ "$current_val" = "$expected" ]; then
             should_add=1
             debug_log "Match found!"
         fi
         
-        # パッケージ追加/削除
         if [ "$should_add" -eq 1 ]; then
-            # ヘルパー関数で追加（重複チェック込み）
             if pkg_add "$pkg_id" "auto"; then
                 debug_log "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})"
                 
-                # enableVar追加
                 local enable_var
                 enable_var=$(get_package_enablevar "$pkg_id" "")
                 if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
@@ -3187,14 +3246,12 @@ auto_add_conditional_packages() {
                 fi
             fi
         else
-            # disabled の場合も削除対象とする
             local force_remove=0
             if [ "$current_val" = "disabled" ]; then
                 force_remove=1
                 debug_log "${when_var} disabled, force removing $pkg_id"
             fi
             
-            # 削除する前に他の条件でマッチしないか確認
             local has_other_match=0
             if [ "$force_remove" -eq 0 ]; then
                 while IFS='|' read -r check_pkg check_var check_val; do
@@ -3219,11 +3276,9 @@ CHECK
             fi
             
             if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
-                # ヘルパー関数で削除（owner=auto のみ対象）
                 if pkg_remove "$pkg_id" "auto"; then
                     debug_log "[AUTO] Removed package: $pkg_id (owner=auto, no matching conditions)"
                     
-                    # enableVar削除
                     local enable_var
                     enable_var=$(get_package_enablevar "$pkg_id" "")
                     if [ -n "$enable_var" ]; then
