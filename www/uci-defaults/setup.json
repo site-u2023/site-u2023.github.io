@@ -480,7 +480,7 @@
           "variable": "snr",
           "placeholder": "30 15 5",
           "default": "30 15 5",
-          "description": "SNR values in band order",
+          "description": "SNR thresholds: 2.4GHz 5GHz 6GHz (e.g. '30 15 5')",
           "showWhen": {"wifi_mode": ["usteer"]}
         },
         {
