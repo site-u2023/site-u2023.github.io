@@ -11,7 +11,7 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
-[ -f "/etc/uci-defaults/setup.sh" ] && {
+[ -f "/etc/uci-defaults/99-asu-defaults" ] && {
     cp -f ${CONF}/network ${CONF}/network.def
     cp -f ${CONF}/wireless ${CONF}/wireless.def
 }
@@ -509,7 +509,7 @@ AGHEOF
 # END_CMDS
 uci commit 2>&-
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ ! -f "/etc/uci-defaults/setup.sh" ] && {
+[ ! -f "/etc/uci-defaults/99-asu-defaults" ] && {
     [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
         for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
             ${INIT}/$s restart 2>&-
