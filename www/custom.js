@@ -738,6 +738,9 @@ function buildField(field) {
         } else if (field.id !== 'device-language') {
             ctrl.addEventListener('change', () => {
                 evaluateAllShowWhen();
+                if (field.variable) {
+                    updatePackagesForRadioGroup(field.variable);
+                }
                 updateAllPackageState('form-field');
             });
         }
@@ -1240,16 +1243,30 @@ function evaluateInitialPackages() {
         
         console.log(`Evaluating packages for category: ${category.id}`);
         
-        const radioValues = {};
-        category.items.forEach(item => {
-            if (item.type === 'radio-group' && item.variable) {
-                const checkedRadio = document.querySelector(`input[name="${item.variable}"]:checked`);
-                if (checkedRadio) {
-                    radioValues[item.variable] = checkedRadio.value;
-                    console.log(`  Radio value: ${item.variable} = ${checkedRadio.value}`);
+        const formValues = {};
+        
+        const collectFormValues = (items) => {
+            if (!items) return;
+            items.forEach(item => {
+                if (item.type === 'radio-group' && item.variable) {
+                    const checkedRadio = document.querySelector(`input[name="${item.variable}"]:checked`);
+                    if (checkedRadio) {
+                        formValues[item.variable] = checkedRadio.value;
+                        console.log(`  Radio value: ${item.variable} = ${checkedRadio.value}`);
+                    }
+                } else if (item.type === 'field' && item.fieldType === 'select' && item.variable) {
+                    const select = document.getElementById(item.id);
+                    if (select) {
+                        formValues[item.variable] = select.value;
+                        console.log(`  Select value: ${item.variable} = ${select.value}`);
+                    }
+                } else if (item.type === 'section' && item.items) {
+                    collectFormValues(item.items);
                 }
-            }
-        });
+            });
+        };
+        
+        collectFormValues(category.items);
         
         let effectiveConnectionType = radioValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
