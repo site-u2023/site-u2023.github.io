@@ -1087,8 +1087,8 @@
             "connection_type": ["dhcp", "pppoe", "ap"]
           }
         }
-      ],
-    
+      ]
+    },
     {
       "id": "custom-scripts",
       "title": "Custom Script",
