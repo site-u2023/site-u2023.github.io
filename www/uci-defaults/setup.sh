@@ -348,7 +348,6 @@ firewall_wan() {
         fi
         [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-        CONG=cubic
     }
     [ "${net_optimizer}" = "manual" ] && {
         R=$(echo "${netopt_rmem}" | awk '{print $3}')
@@ -360,8 +359,8 @@ firewall_wan() {
         SC="${netopt_somaxconn}"
         CONG="${netopt_congestion:-cubic}"
     }
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
-    "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+    "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
