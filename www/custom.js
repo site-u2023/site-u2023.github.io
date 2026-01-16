@@ -1449,35 +1449,46 @@ function updatePackagesForRadioGroup(variableName) {
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
+        const packageConditions = new Map();
         category.packages.forEach(pkg => {
-            if (!pkg.when) return;
-            
-            const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                let actualValue = formValues[key];
+            const pkgId = pkg.uniqueId || pkg.id;
+            if (!packageConditions.has(pkgId)) {
+                packageConditions.set(pkgId, []);
+            }
+            packageConditions.get(pkgId).push(pkg.when);
+        });
+        
+        packageConditions.forEach((conditions, pkgId) => {
+            const shouldEnable = conditions.some(when => {
+                if (!when) return false;
                 
-                if (key === 'connection_type' && formValues.connection_type === 'auto') {
-                    actualValue = effectiveConnectionType;
-                }
-                
-                if (!actualValue) return false;
-                
-                let result;
-                if (Array.isArray(value)) {
-                    result = value.includes(actualValue);
-                } else {
-                    result = value === actualValue;
-                }
-                
-                console.log(`    Package ${pkg.id}: ${key}=${actualValue} matches ${JSON.stringify(value)}? ${result}`);
-                return result;
+                return Object.entries(when).every(([key, value]) => {
+                    let actualValue = formValues[key];
+                    
+                    if (key === 'connection_type' && formValues.connection_type === 'auto') {
+                        actualValue = effectiveConnectionType;
+                    }
+                    
+                    if (!actualValue) return false;
+                    
+                    let result;
+                    if (Array.isArray(value)) {
+                        result = value.includes(actualValue);
+                    } else {
+                        result = value === actualValue;
+                    }
+                    
+                    console.log(`    Package ${pkgId}: ${key}=${actualValue} matches ${JSON.stringify(value)}? ${result}`);
+                    return result;
+                });
             });
             
             if (shouldEnable) {
-                console.log(`  ✓ Enabling package: ${pkg.id}`);
-                toggleVirtualPackage(pkg.uniqueId || pkg.id, true);
+                console.log(`  ✓ Enabling package: ${pkgId}`);
+                toggleVirtualPackage(pkgId, true);
             } else {
-                console.log(`  ✗ Disabling package: ${pkg.id}`);
-                toggleVirtualPackage(pkg.uniqueId || pkg.id, false);
+                console.log(`  ✗ Disabling package: ${pkgId}`);
+                toggleVirtualPackage(pkgId, false);
             }
         });
     }
