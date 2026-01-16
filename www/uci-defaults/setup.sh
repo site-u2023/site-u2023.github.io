@@ -50,8 +50,8 @@ dhcp_relay() {
     SET $1.ra='relay'
     SET $1.dhcpv6='relay'
     SET $1.ndp='relay'
-    SET $1.ignore='1' 
-    SET lan.dhcpv4='server'  
+    SET $1.ignore='1'
+    SET lan.dhcpv4='server'
     SET lan.ra='relay'
     SET lan.dhcpv6='relay'
     SET lan.ndp='relay'
@@ -82,7 +82,7 @@ firewall_wan() {
     for i in 0 1; do
         ADDLIST ntp.server="${i}.${ntp}"
     done
-} 
+}
 [ -n "${diag}" ] && {
     SEC=luci
     SET diag=diag
@@ -106,40 +106,40 @@ firewall_wan() {
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
-    wireless_cfg=$(uci -q show wireless)       
+    wireless_cfg=$(uci -q show wireless)
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
         SET ${radio}.country="${country}"
-        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'        
+        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
         band=$(uci -q get wireless.${radio}.band)
         S="30 15 5"
         set -- ${snr:-$S}
         case "${band}" in
-            2g) 
+            2g)
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk-mixed'
                 nasid_suffix='-2g'
                 band_snr=$1
                 ;;
-            5g) 
+            5g)
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='sae-mixed'
                 nasid_suffix='-5g'
                 band_snr=$2
                 [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1'
                 ;;
-            6g) 
+            6g)
                 encryption='sae'
                 nasid_suffix='-6g'
                 band_snr=$3
                 ;;
-            *)  
+            *)
                 encryption='psk-mixed'
                 nasid_suffix=''
                 band_snr=20
                 ;;
-        esac        
+        esac
         suffix=${band:+-$band}
-        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"        
+        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
         iface="default_${radio}"
         [ -n "$(uci -q get wireless.${iface})" ] && {
             for o in rnr background_radar; do DEL ${radio}.$o; done
@@ -147,9 +147,9 @@ firewall_wan() {
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
-            SET ${iface}.key="${wlan_password}"           
+            SET ${iface}.key="${wlan_password}"
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
-                SET ${iface}.isolate='1'               
+                SET ${iface}.isolate='1'
                 [ "${wifi_mode}" = "usteer" ] && {
                     SET ${iface}.ieee80211r='1'
                     SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
@@ -157,18 +157,18 @@ firewall_wan() {
                     SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
                     SET ${iface}.ieee80211k='1'
                     SET ${iface}.ieee80211v='1'
-                }               
+                }
                 [ "${wifi_mode}" = "usteer" ] && SET ${iface}.usteer_min_snr="${band_snr}"
-            }           
+            }
             [ "${wifi_mode}" = "mlo" ] && {
                 SET ${iface}.ieee80211w='2'
                 SET ${iface}.mlo='1'
                 SET ${iface}.mld_id="${mld_id:-4f575254}"
                 SET ${iface}.mlo_link_id="${link_id}"
             }
-        }        
+        }
         link_id=$((link_id + 1))
-    done    
+    done
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0].band_steering='1'
@@ -340,16 +340,16 @@ firewall_wan() {
 }
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
-    P=$(grep -c ^processor /proc/cpuinfo)    
+    P=$(grep -c ^processor /proc/cpuinfo)
     [ "${net_optimizer}" = "auto" ] && {
-        if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-        elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
-        elif [ $MEM -ge  400 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
+        if [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ $MEM -ge 400 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
         fi
-        [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
+        [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
         CONG=cubic
-    }    
+    }
     [ "${net_optimizer}" = "manual" ] && {
         R=$(echo "${netopt_rmem}" | awk '{print $3}')
         W=$(echo "${netopt_wmem}" | awk '{print $3}')
@@ -359,29 +359,26 @@ firewall_wan() {
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
         CONG="${netopt_congestion:-cubic}"
-    }    
+    }
     printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
     "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
-    SEC=dhcp    
+    SEC=dhcp
     [ "${dnsmasq}" = "auto" ] && [ "$MEM" -ge 200 ] && {
-        if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
+        if [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
         elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
         elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
         fi
         NEG_CACHE=1
-    }    
+    }
     [ "${dnsmasq}" = "manual" ] && {
         CACHE_SIZE="${dnsmasq_cache}"
         NEG_CACHE="${dnsmasq_negcache}"
-    }    
+    }
     SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
     SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
-}
-[ -n "${sd_resize}" ] && {
-    :
 }
 [ "${dns_adblock}" = "adblock_fast" ] && {
     SEC=adblock-fast
@@ -467,13 +464,7 @@ log:
   file: ""
 schema_version: 29
 AGHEOF
-        sed -i "s|{{AGH_USER}}|${agh_user}|g" "$agh_yaml"
-        sed -i "s|{{AGH_HASH}}|${agh_hash}|g" "$agh_yaml"
-        sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
-        sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
-        sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
-        sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | awk '{print $1}' | cut -d. -f3-)|g" "$agh_yaml"
+        sed -i "s|{{AGH_USER}}|${agh_user}|g;s|{{AGH_HASH}}|${agh_hash}|g;s|{{WEB_PORT}}|${agh_web_port}|g;s|{{DNS_PORT}}|${agh_dns_port}|g;s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g;s|{{FILTER_URL}}|${filter_url}|g;s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | awk '{print $1}' | cut -d. -f3-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
