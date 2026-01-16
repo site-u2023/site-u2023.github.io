@@ -742,6 +742,13 @@
           "name": "luci-app-nextdns",
           "hidden": "true",
           "description": "NextDNS (managed by Custom Scripts)"
+        },
+        {
+          "id": "kmod-tcp-bbr",
+          "name": "kmod-tcp-bbr",
+          "hidden": "true",
+          "description": "BBR TCP congestion control kernel module",
+          "reboot": "true"
         }
       ]
     }
