@@ -381,7 +381,7 @@
           "label": "Flow offloading type",
           "class": "tr-flow-offloading-type",
           "fieldType": "select",
-          "variable": "flow_offloading_type",
+          "variable": "offload",
           "options": [
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"},
             {"value": "software", "label": "Software flow offloading", "class": "tr-software-flow-offloading"},
