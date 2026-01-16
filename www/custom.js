@@ -1441,7 +1441,9 @@ function updatePackagesForRadioGroup(variableName) {
             });
         };
         
-        collectFormValues(category.items);
+        state.config.setup.categories.forEach(cat => {
+            collectFormValues(cat.items);
+        });
         
         let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
