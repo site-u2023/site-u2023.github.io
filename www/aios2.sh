@@ -1428,11 +1428,12 @@ get_setup_categories() {
             gui_only=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].guiOnly" 2>/dev/null | head -1 | tr -d ' \n\r')
             echo "[DEBUG] cat_id='$cat_id' gui_only='$gui_only'" >> "$CONFIG_DIR/debug.log"
             
-            # 明示的にtrueと比較
             if [ "$gui_only" = "true" ]; then
                 echo "[DEBUG] Skipping $cat_id (guiOnly)" >> "$CONFIG_DIR/debug.log"
                 continue
             fi
+            
+            echo "[DEBUG] Adding $cat_id to cache" >> "$CONFIG_DIR/debug.log"
             
             _SETUP_CATEGORIES_CACHE="${_SETUP_CATEGORIES_CACHE}${cat_id}
 "
