@@ -1404,47 +1404,85 @@ function evaluateAllShowWhen() {
     });
 }
 
-function updatePackagesForRadioGroup(radioName, selectedValue) {
-    if (!state.config.setup) return;
+function updatePackagesForRadioGroup(variableName) {
+    if (!state.config.setup || !variableName) return;
     
-    let effectiveValue = selectedValue;
-    if (radioName === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
-        effectiveValue = getConnectionTypeFromApi(state.apiInfo);
-        console.log(`AUTO mode in radio change: Using effective type = ${effectiveValue}`);
-    }
+    console.log(`=== updatePackagesForRadioGroup(${variableName}) START ===`);
     
     for (const category of state.config.setup.categories) {
-        if (!category.packages) continue;
+        if (!category.packages || category.packages.length === 0) continue;
+        
+        const hasRelatedPackage = category.packages.some(pkg => 
+            pkg.when && Object.keys(pkg.when).includes(variableName)
+        );
+        
+        if (!hasRelatedPackage) continue;
+        
+        const formValues = {};
+        
+        const collectFormValues = (items) => {
+            if (!items) return;
+            items.forEach(item => {
+                if (item.type === 'radio-group' && item.variable) {
+                    const checkedRadio = document.querySelector(`input[name="${item.variable}"]:checked`);
+                    if (checkedRadio) {
+                        formValues[item.variable] = checkedRadio.value;
+                        console.log(`  Radio value: ${item.variable} = ${checkedRadio.value}`);
+                    }
+                } else if (item.type === 'field' && item.fieldType === 'select' && item.variable) {
+                    const select = document.getElementById(item.id);
+                    if (select) {
+                        formValues[item.variable] = select.value;
+                        console.log(`  Select value: ${item.variable} = ${select.value}`);
+                    }
+                } else if (item.type === 'section' && item.items) {
+                    collectFormValues(item.items);
+                }
+            });
+        };
+        
+        collectFormValues(category.items);
+        
+        let effectiveConnectionType = formValues.connection_type;
+        if (effectiveConnectionType === 'auto' && state.apiInfo) {
+            effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
+            console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
+        }
         
         category.packages.forEach(pkg => {
             if (!pkg.when) return;
             
-            const isRelatedToThisRadio = Object.keys(pkg.when).includes(radioName);
-            
-            if (!isRelatedToThisRadio) {
-                return;
-            }
-            
             const shouldEnable = Object.entries(pkg.when).every(([key, value]) => {
-                const valueToCheck = (key === 'connection_type' && selectedValue === 'auto') 
-                    ? effectiveValue 
-                    : selectedValue;
+                let actualValue = formValues[key];
                 
-                if (Array.isArray(value)) {
-                    return value.includes(valueToCheck);
+                if (key === 'connection_type' && formValues.connection_type === 'auto') {
+                    actualValue = effectiveConnectionType;
                 }
-                return value === valueToCheck;
+                
+                if (!actualValue) return false;
+                
+                let result;
+                if (Array.isArray(value)) {
+                    result = value.includes(actualValue);
+                } else {
+                    result = value === actualValue;
+                }
+                
+                console.log(`    Package ${pkg.id}: ${key}=${actualValue} matches ${JSON.stringify(value)}? ${result}`);
+                return result;
             });
             
             if (shouldEnable) {
-                console.log(`Package enabled by radio: ${pkg.id} for ${radioName}=${effectiveValue}`);
+                console.log(`  ✓ Enabling package: ${pkg.id}`);
+                toggleVirtualPackage(pkg.uniqueId || pkg.id, true);
             } else {
-                console.log(`Package disabled by radio: ${pkg.id} for ${radioName}=${effectiveValue}`);
+                console.log(`  ✗ Disabling package: ${pkg.id}`);
+                toggleVirtualPackage(pkg.uniqueId || pkg.id, false);
             }
-            
-            toggleVirtualPackage(pkg.uniqueId || pkg.id, shouldEnable);
         });
     }
+    
+    console.log(`=== updatePackagesForRadioGroup(${variableName}) END ===`);
 }
 
 function toggleVirtualPackage(packageId, enabled) {
