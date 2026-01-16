@@ -1076,10 +1076,18 @@
       "packages": [
         {
           "id": "kmod-tcp-bbr",
-          "when": {"netopt_congestion": "bbr"}
+          "when": {
+            "netopt_congestion": "bbr"
+          }
+        },
+        {
+          "id": "kmod-tcp-bbr",
+          "when": {
+            "net_optimizer": "auto",
+            "connection_type": ["dhcp", "pppoe", "ap"]
+          }
         }
-      ]
-    },
+      ],
     
     {
       "id": "custom-scripts",
