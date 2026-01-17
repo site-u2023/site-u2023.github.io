@@ -971,6 +971,9 @@ category_config() {
     # 成功: バックアップを削除
     rm -f "$temp_vars"
     
+    # ★ デバッグ追加
+    echo "[WHIPTAIL-DEBUG] About to call auto_add_conditional_packages for cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
     auto_add_conditional_packages "$cat_id"
     auto_cleanup_conditional_variables "$cat_id"
     cleanup_orphaned_enablevars "$cat_id"
