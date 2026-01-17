@@ -516,7 +516,9 @@ load_package_manager_config() {
 
     [ ! -f "$config_json" ] && return 1
 
+    # ========================================
     # パッケージマネージャー検出
+    # ========================================
     if command -v opkg >/dev/null 2>&1; then
         PKG_MGR="opkg"
     elif command -v apk >/dev/null 2>&1; then
@@ -527,11 +529,37 @@ load_package_manager_config() {
     fi
 
     debug_log "PKG_MGR detected: $PKG_MGR"
+
+    # ========================================
+    # チャンネル自動判定（DISTRIB_RELEASE ベース）
+    # ========================================
+    if [ -z "$PKG_CHANNEL" ]; then
+        local distrib_release=""
+        if [ -f /etc/openwrt_release ]; then
+            distrib_release=$(grep 'DISTRIB_RELEASE=' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        # SNAPSHOT判定
+        if [ "$distrib_release" = "SNAPSHOT" ] || echo "$distrib_release" | grep -qi "snapshot"; then
+            # APKかつSNAPSHOT → snapshotBare
+            if [ "$PKG_MGR" = "apk" ]; then
+                PKG_CHANNEL="snapshotBare"
+            else
+                PKG_CHANNEL="snapshot"
+            fi
+        else
+            # 通常リリース
+            PKG_CHANNEL="release"
+        fi
+        
+        debug_log "Auto-detected PKG_CHANNEL: $PKG_CHANNEL (DISTRIB_RELEASE=$distrib_release)"
+    fi
+
     debug_log "PKG_CHANNEL: $PKG_CHANNEL"
 
-    #
+    # ========================================
     # packageManagers 配下
-    #
+    # ========================================
     PKG_EXT=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.ext")
 
@@ -565,9 +593,9 @@ load_package_manager_config() {
     PKG_LIST_INSTALLED_CMD=$(jsonfilter -i "$config_json" \
         -e "@.packageManagers.${PKG_MGR}.listInstalledCommand")
 
-    #
-    # channels 配下（release / snapshot）
-    #
+    # ========================================
+    # channels 配下（release / snapshot / snapshotBare）
+    # ========================================
     PKG_PACKAGE_INDEX_URL=$(jsonfilter -i "$config_json" \
         -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.packageIndexUrl")
 
@@ -580,9 +608,9 @@ load_package_manager_config() {
     PKG_KMODS_INDEX_URL=$(jsonfilter -i "$config_json" \
         -e "@.channels.${PKG_CHANNEL}.${PKG_MGR}.kmodsIndexUrl")
 
-    #
+    # ========================================
     # コマンドテンプレート
-    #
+    # ========================================
     local install_template remove_template update_template upgrade_template
 
     install_template=$(jsonfilter -i "$config_json" \
@@ -604,7 +632,7 @@ load_package_manager_config() {
     PKG_UPDATE_CMD=$(expand_template "$update_template")
     PKG_UPGRADE_CMD=$(expand_template "$upgrade_template")
 
-    export PKG_MGR PKG_EXT
+    export PKG_MGR PKG_EXT PKG_CHANNEL
     export PKG_INSTALL_CMD_TEMPLATE PKG_REMOVE_CMD_TEMPLATE
     export PKG_UPDATE_CMD PKG_UPGRADE_CMD
     export PKG_OPTION_IGNORE_DEPS PKG_OPTION_FORCE_OVERWRITE PKG_OPTION_ALLOW_UNTRUSTED
@@ -688,30 +716,6 @@ init() {
         echo "Fatal: Cannot load package manager configuration"
         return 1
     }
-    
-    # チャンネル自動判定（load_package_manager_config後に実行）
-    if [ -z "$PKG_CHANNEL" ]; then
-        # バージョン情報取得
-        local distrib_release=""
-        if [ -f /etc/openwrt_release ]; then
-            distrib_release=$(grep 'DISTRIB_RELEASE=' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-        fi
-        
-        # SNAPSHOT判定
-        if [ "$distrib_release" = "SNAPSHOT" ] || echo "$distrib_release" | grep -qi "snapshot"; then
-            # APKかつSNAPSHOT → snapshotBare
-            if command -v apk >/dev/null 2>&1; then
-                PKG_CHANNEL="snapshotBare"
-            else
-                PKG_CHANNEL="snapshot"
-            fi
-        else
-            # 通常リリース
-            PKG_CHANNEL="release"
-        fi
-        
-        echo "[DEBUG] Auto-detected PKG_CHANNEL: $PKG_CHANNEL (DISTRIB_RELEASE=$distrib_release)" >> "$CONFIG_DIR/debug.log"
-    fi
 
     # キャッシュ変数の完全初期化
     unset _PACKAGE_NAME_CACHE
