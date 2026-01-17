@@ -3491,7 +3491,23 @@ cleanup_radio_group_exclusive_vars() {
     
     echo "[DEBUG] === cleanup_radio_group_exclusive_vars ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] item_id=$item_id, current_value=$current_value" >> "$CONFIG_DIR/debug.log"
-    
+
+    # connection-type 変更時はAPI生データ変数も削除
+    if [ "$item_id" = "connection-type" ]; then
+        [ "$current_value" != "mape" ] && [ "$current_value" != "auto" ] && {
+            sed -i '/^mape_/d' "$SETUP_VARS"
+            echo "[EXCLUSIVE] Removed mape_* variables" >> "$CONFIG_DIR/debug.log"
+        }
+        [ "$current_value" != "dslite" ] && [ "$current_value" != "auto" ] && {
+            sed -i '/^dslite_/d' "$SETUP_VARS"
+            echo "[EXCLUSIVE] Removed dslite_* variables" >> "$CONFIG_DIR/debug.log"
+        }
+        [ "$current_value" != "auto" ] && {
+            sed -i '/^connection_auto=/d' "$SETUP_VARS"
+            echo "[EXCLUSIVE] Removed connection_auto variable" >> "$CONFIG_DIR/debug.log"
+        }
+    fi
+	
     # exclusiveVars の存在確認
     local has_exclusive
     has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
