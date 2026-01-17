@@ -754,7 +754,9 @@ init() {
 
     download_postinst_json >/dev/null 2>&1
     download_customfeeds_json >/dev/null 2>&1
-    
+
+	build_conditional_packages_cache
+	
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
 }
 
@@ -3126,24 +3128,93 @@ add_auto_package_smart() {
     fi
 }
 
+# =============================================================================
+# Build conditional packages cache
+# Extracts packages with "showWhen" conditions from postinst.json
+# Format: pkg_id|when_var|expected_value
+# =============================================================================
+build_conditional_packages_cache() {
+    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 1 ]; then
+        return 0
+    fi
+    
+    debug_log "Building conditional packages cache..."
+    
+    _CONDITIONAL_PACKAGES_CACHE=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].packages[*]' 2>/dev/null | \
+        awk -F'"' '
+        BEGIN { in_showwhen=0 }
+        {
+            id=""; when_var=""; when_val="";
+            
+            for(i=1;i<=NF;i++){
+                if($i=="id") id=$(i+2);
+                
+                if($i=="showWhen") {
+                    in_showwhen=1;
+                    # Extract variable name (first key after "showWhen")
+                    for(j=i+2;j<=NF;j++){
+                        if($j ~ /^[a-z_]+$/ && $j != "showWhen") {
+                            when_var=$j;
+                            break;
+                        }
+                    }
+                    # Extract expected value(s) from array
+                    for(j=i+2;j<=NF;j++){
+                        if($j=="]" || $j=="}") { in_showwhen=0; break; }
+                        if($j ~ /^[a-z0-9_-]+$/ && $j != when_var && $j != "showWhen") {
+                            when_val=when_val$j",";
+                        }
+                    }
+                    sub(/,$/, "", when_val);
+                }
+            }
+            
+            if(id && when_var) {
+                # Split comma-separated values into separate lines
+                split(when_val, vals, ",");
+                for(v in vals) {
+                    if(vals[v]) print id "|" when_var "|" vals[v];
+                }
+            }
+        }')
+    
+    _CONDITIONAL_PACKAGES_LOADED=1
+    
+    local count=$(echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -c '|' 2>/dev/null || echo 0)
+    debug_log "Conditional packages cache built: $count entries"
+    
+    if [ "$count" -gt 0 ]; then
+        debug_log "Sample entries:"
+        echo "$_CONDITIONAL_PACKAGES_CACHE" | head -5 >> "$CONFIG_DIR/debug.log"
+    fi
+}
+
 auto_add_conditional_packages() {
     local cat_id="$1"
     debug_log "=== auto_add_conditional_packages called === ($cat_id)"
     
-    [ -z "$_CONDITIONAL_PACKAGES_CACHE" ] && return
+    # キャッシュ構築（初回のみ）
+    build_conditional_packages_cache
+    
+    [ -z "$_CONDITIONAL_PACKAGES_CACHE" ] && {
+        debug_log "No conditional packages defined"
+        return 0
+    }
     
     local effective_conn_type
     effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     [ -z "$effective_conn_type" ] && effective_conn_type="auto"
 
-    # ★ 修正: パイプ( | while )を使わずヒアドキュメント( << EOF )にすることで
-    # ループ内の変数変更が消えないようにし、サブシェルの不具合を回避します
+    debug_log "Effective connection type: $effective_conn_type"
+
+    # ヒアドキュメントを使ってサブシェル回避
     while IFS='|' read -r pkg_id when_var expected; do
         [ -z "$pkg_id" ] && continue
         
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
         local is_match=0
+        
         # --- 条件判定フェーズ ---
         if [ "$when_var" = "net_optimizer_and_connection" ]; then
             # 複合条件 (例: net_optimizerがauto かつ 接続がdhcp)
@@ -3156,20 +3227,27 @@ auto_add_conditional_packages() {
             local current_val
             [ "$when_var" = "connection_type" ] && current_val="$effective_conn_type" || \
                 current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            
             [ "$current_val" = "$expected" ] && is_match=1
         fi
 
+        debug_log "Match result: is_match=$is_match"
+
         # --- アクションフェーズ ---
         if [ "$is_match" -eq 1 ]; then
-            # 条件に一致：スマート追加を実行
-            if add_auto_package_smart "$pkg_id"; then
-                debug_log "[AUTO] Added package: $pkg_id (condition match)"
+            # 条件に一致：追加
+            if pkg_add "$pkg_id" "auto"; then
+                debug_log "[AUTO] Added package: $pkg_id (condition match: $when_var=$expected)"
+                
+                # enableVar処理
                 local evar=$(get_package_enablevar "$pkg_id" "")
-                [ -n "$evar" ] && ! grep -q "^${evar}=" "$SETUP_VARS" 2>/dev/null && \
+                if [ -n "$evar" ] && ! grep -q "^${evar}=" "$SETUP_VARS" 2>/dev/null; then
                     echo "${evar}='1'" >> "$SETUP_VARS"
+                    debug_log "[AUTO] Set enableVar: $evar='1'"
+                fi
             fi
         else
-            # 条件に不一致：ただし「他に一致する条件が一つでもある」なら削除しない
+            # 条件に不一致：他に一致する条件があるかチェック
             local has_any_match=0
             local old_ifs="$IFS"; IFS='
 '
