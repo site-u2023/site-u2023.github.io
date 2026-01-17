@@ -106,7 +106,7 @@
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-remove",
+          "label": "tr-tui-customscript-adguardhome",
           "requiresUpdate": "false",
           "requiresConfirmation": "true",
           "envVars": {
@@ -175,7 +175,7 @@
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-filebrowser-remove",
+          "label": "tr-tui-customscript-filebrowser",
           "requiresUpdate": "false",
           "requiresConfirmation": "true",
           "envVars": {
