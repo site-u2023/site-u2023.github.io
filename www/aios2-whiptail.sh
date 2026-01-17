@@ -641,6 +641,46 @@ process_items() {
                 selected_opt=$(echo "$options" | sed -n "${value}p")
                 echo "[DEBUG] Selected: $selected_opt" >> "$CONFIG_DIR/debug.log"
                 
+                # 値が変更された場合のみクリーンアップを実行
+                if [ "$selected_opt" != "$current" ]; then
+                    echo "[DEBUG] Value changed from '$current' to '$selected_opt', cleaning up exclusive vars" >> "$CONFIG_DIR/debug.log"
+                    cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
+                    
+                    # connection_type の場合は条件付きパッケージもクリーンアップ
+                    if [ "$item_id" = "connection-type" ]; then
+                        echo "[DEBUG] Cleaning up conditional packages for connection_type change" >> "$CONFIG_DIR/debug.log"
+                        
+                        # 以前の接続タイプに基づくパッケージを削除
+                        case "$current" in
+                            mape)
+                                pkg_remove "map" "auto" "normal"
+                                pkg_remove "coreutils-sha1sum" "auto" "normal"
+                                echo "[DEBUG] Removed MAP-E packages" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            dslite)
+                                pkg_remove "ds-lite" "auto" "normal"
+                                echo "[DEBUG] Removed DS-Lite package" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            auto)
+                                # autoから他への変更時は、autoで追加された全てを削除
+                                local auto_type
+                                auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                                case "$auto_type" in
+                                    mape)
+                                        pkg_remove "map" "auto" "normal"
+                                        pkg_remove "coreutils-sha1sum" "auto" "normal"
+                                        echo "[DEBUG] Removed auto-added MAP-E packages" >> "$CONFIG_DIR/debug.log"
+                                        ;;
+                                    dslite)
+                                        pkg_remove "ds-lite" "auto" "normal"
+                                        echo "[DEBUG] Removed auto-added DS-Lite package" >> "$CONFIG_DIR/debug.log"
+                                        ;;
+                                esac
+                                ;;
+                        esac
+                    fi
+                fi
+                
                 # disabledの場合は変数を削除
                 if [ "$selected_opt" = "disabled" ]; then
                     sed -i "/^${variable}=/d" "$SETUP_VARS"
@@ -651,9 +691,10 @@ process_items() {
                     echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
                 fi
 
-                cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
+                # 既存の cleanup_radio_group_exclusive_vars 呼び出しを削除
+                # （上記の「値が変更された場合のみ」の条件内に移動したため）
                 
-                # ★ 追加: option配下のitemsを処理
+                # option配下のitemsを処理
                 local opt_label option_breadcrumb option_items opt_child_id
                 opt_label=$(get_setup_item_option_label "$item_id" "$selected_opt")
                 option_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${opt_label}"
