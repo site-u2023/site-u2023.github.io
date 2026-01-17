@@ -3122,7 +3122,7 @@ auto_add_conditional_packages() {
         fi
     fi
 
-    # ★ 修正：キャッシュを毎回構築（_CONDITIONAL_PACKAGES_LOADED チェックを削除）
+    # キャッシュを毎回構築
     _CONDITIONAL_PACKAGES_CACHE=$(
         # wifi_mode (文字列)
         pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
@@ -3173,8 +3173,8 @@ auto_add_conditional_packages() {
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
     
-    # ★ 修正：grep で空行を除外してからループ
-    echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
+    # ★ 修正：heredoc使用でサブシェル回避
+    while IFS='|' read -r pkg_id when_var expected; do
         echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
         
         [ -z "$pkg_id" ] && {
@@ -3258,7 +3258,7 @@ auto_add_conditional_packages() {
             
             local has_other_match=0
             if [ "$force_remove" -eq 0 ]; then
-                echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r check_pkg check_var check_val; do
+                while IFS='|' read -r check_pkg check_var check_val; do
                     [ "$check_pkg" != "$pkg_id" ] && continue
                     [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
                     
@@ -3274,7 +3274,9 @@ auto_add_conditional_packages() {
                         debug_log "Found other matching condition: ${check_var}=${check_current}"
                         break
                     fi
-                done
+                done <<CHECK
+$_CONDITIONAL_PACKAGES_CACHE
+CHECK
             fi
             
             if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
@@ -3292,7 +3294,9 @@ auto_add_conditional_packages() {
                 fi
             fi
         fi
-    done
+    done <<EOF
+$(echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$')
+EOF
 
     debug_log "=== auto_add_conditional_packages finished ==="
 }
