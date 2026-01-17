@@ -3129,9 +3129,10 @@ add_auto_package_smart() {
 }
 
 # =============================================================================
-# Build conditional packages cache (FIXED VERSION)
+# Build conditional packages cache (FIXED VERSION v2)
 # Extracts packages with "when" conditions from setup.json (NOT postinst.json)
 # Format: pkg_id|when_var|expected_value|uniqueId
+# Uses jsonfilter index access for reliable parsing
 # =============================================================================
 build_conditional_packages_cache() {
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 1 ]; then
@@ -3140,7 +3141,13 @@ build_conditional_packages_cache() {
     
     debug_log "Building conditional packages cache..."
     
-    # setup.json の各カテゴリの packages 配列から when 条件を抽出
+    # SETUP_JSON が存在するか確認（存在しない場合は後で再試行）
+    if [ ! -f "$SETUP_JSON" ]; then
+        debug_log "SETUP_JSON not found yet, will retry later: $SETUP_JSON"
+        # _CONDITIONAL_PACKAGES_LOADED は 0 のままにして、後で再試行可能にする
+        return 0
+    fi
+    
     _CONDITIONAL_PACKAGES_CACHE=""
     
     local categories
@@ -3149,55 +3156,54 @@ build_conditional_packages_cache() {
     for cat_id in $categories; do
         [ -z "$cat_id" ] && continue
         
-        # このカテゴリの packages 配列内の全パッケージを処理
-        local packages_raw
-        packages_raw=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[*]" 2>/dev/null)
-        
-        [ -z "$packages_raw" ] && continue
-        
-        # packages配列の各要素を処理（awkで一括抽出）
-        local extracted
-        extracted=$(echo "$packages_raw" | awk -F'"' '
-        {
-            id=""; uid=""; when_var=""; when_vals="";
-            in_when=0; in_array=0;
+        # このカテゴリの packages 配列をインデックスでアクセス
+        local pkg_idx=0
+        while true; do
+            local pkg_id unique_id when_json
             
-            for(i=1; i<=NF; i++) {
-                if($i == "id" && $(i+1) ~ /^:/) {
-                    id = $(i+2)
-                }
-                if($i == "uniqueId" && $(i+1) ~ /^:/) {
-                    uid = $(i+2)
-                }
-                if($i == "when" && $(i+1) ~ /^:/) {
-                    in_when = 1
-                }
-                if(in_when && $i ~ /^[a-z_]+$/ && $i != "when" && when_var == "") {
-                    when_var = $i
-                }
-                if(in_when && when_var != "" && $i ~ /^[a-z0-9_-]+$/ && $i != when_var && $i != "when") {
-                    if(when_vals != "") when_vals = when_vals ","
-                    when_vals = when_vals $i
-                }
-                if(in_when && $i ~ /}/) {
-                    in_when = 0
-                }
-            }
+            # パッケージIDを取得（存在しなければループ終了）
+            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].id" 2>/dev/null)
+            [ -z "$pkg_id" ] && break
             
-            if(id != "" && when_var != "" && when_vals != "") {
-                n = split(when_vals, vals, ",")
-                for(j=1; j<=n; j++) {
-                    if(vals[j] != "") {
-                        print id "|" when_var "|" vals[j] "|" uid
-                    }
-                }
-            }
-        }')
-        
-        if [ -n "$extracted" ]; then
-            _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${extracted}
+            # uniqueIdとwhenを取得
+            unique_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].uniqueId" 2>/dev/null)
+            when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].when" 2>/dev/null)
+            
+            if [ -n "$when_json" ]; then
+                debug_log "Found package with when: $pkg_id, when=$when_json"
+                
+                # when オブジェクトのキーを取得（最初のキーのみ処理）
+                local when_var
+                when_var=$(echo "$when_json" | grep -oE '"[a-z_]+":' | head -1 | tr -d '":')
+                
+                if [ -n "$when_var" ]; then
+                    # 値を取得（配列または単一値）
+                    local when_values
+                    when_values=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
+$when_json
+EOF
+)
+                    
+                    # 配列でない場合は単一値として取得
+                    if [ -z "$when_values" ]; then
+                        when_values=$(jsonfilter -e "@.${when_var}" 2>/dev/null <<EOF
+$when_json
+EOF
+)
+                    fi
+                    
+                    # 各値に対してエントリを追加
+                    for expected in $when_values; do
+                        [ -z "$expected" ] && continue
+                        _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${pkg_id}|${when_var}|${expected}|${unique_id}
 "
-        fi
+                        debug_log "Added cache entry: ${pkg_id}|${when_var}|${expected}|${unique_id}"
+                    done
+                fi
+            fi
+            
+            pkg_idx=$((pkg_idx + 1))
+        done
     done
     
     _CONDITIONAL_PACKAGES_LOADED=1
@@ -3205,9 +3211,7 @@ build_conditional_packages_cache() {
     # カウント計算（安全な方法で空行を除外）
     local count=0
     if [ -n "$_CONDITIONAL_PACKAGES_CACHE" ]; then
-        # grep -c が空の場合や改行を含む場合に対応
         count=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep -c '|' 2>/dev/null || true)
-        # 数値のみを抽出し、空の場合は0にする
         count=$(printf '%s' "$count" | tr -cd '0-9')
         count=${count:-0}
     fi
