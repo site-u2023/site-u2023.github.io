@@ -641,19 +641,14 @@ process_items() {
                 selected_opt=$(echo "$options" | sed -n "${value}p")
                 echo "[DEBUG] Selected: $selected_opt" >> "$CONFIG_DIR/debug.log"
                 
-                # disabledの場合は変数を削除
-                if [ "$selected_opt" = "disabled" ]; then
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
-                else
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-                fi
+                # 変数を保存（disabled含む全オプション共通）
+                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                echo "[DEBUG] Saved ${variable}='${selected_opt}' to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
 
                 cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
                 
-                # ★ 追加: option配下のitemsを処理
+                # option配下のitemsを処理
                 local opt_label option_breadcrumb option_items opt_child_id
                 opt_label=$(get_setup_item_option_label "$item_id" "$selected_opt")
                 option_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${opt_label}"
@@ -796,14 +791,10 @@ process_items() {
                     selected_opt=$(echo "$options" | sed -n "${value}p")
                     echo "[DEBUG] selected_opt='$selected_opt'" >> "$CONFIG_DIR/debug.log"
                     
-                    # disabledの場合は変数を削除
-                    if [ "$selected_opt" = "disabled" ]; then
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
-                    else
-                        sed -i "/^${variable}=/d" "$SETUP_VARS"
-                        echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    fi
+                    # 変数を保存（disabled含む全オプション共通）
+                    sed -i "/^${variable}=/d" "$SETUP_VARS"
+                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                    echo "[DEBUG] Saved ${variable}='${selected_opt}' to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
                     
                     auto_add_conditional_packages "$cat_id"
                     auto_cleanup_conditional_variables "$cat_id"
