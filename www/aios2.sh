@@ -3083,6 +3083,9 @@ auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
+    # ★ デバッグ追加
+    echo "[AIOS2-DEBUG] auto_add_conditional_packages ENTERED: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
+    
     debug_log "=== auto_add_conditional_packages called ==="
     debug_log "cat_id=$cat_id"
     
@@ -3174,6 +3177,10 @@ auto_add_conditional_packages() {
         debug_log "Conditional packages cache built:"
         echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
+    
+    # ★ デバッグ追加：キャッシュの状態確認
+    echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
+    echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
     
     # キャッシュから処理
     while IFS='|' read -r pkg_id when_var expected; do
