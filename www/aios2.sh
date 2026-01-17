@@ -2547,7 +2547,12 @@ EOF
         echo "SELECTED_OPTION='${single_option}'" > "$CONFIG_DIR/script_vars_${script_id}.txt"
         write_option_envvars "$script_id" "$single_option"
         custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"
-        return $?
+        local ret=$?
+        # 確認画面でキャンセルまたはCONFIRMED='0'の場合はファイル削除
+        if [ $ret -ne 0 ] || grep -q "^CONFIRMED='0'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
+            rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+        fi
+        return $ret
     fi
     
     custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
