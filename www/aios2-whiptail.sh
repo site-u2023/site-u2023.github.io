@@ -1739,6 +1739,8 @@ PKGS
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
+            # CONFIRMED='1' がない場合はスキップ
+            grep -q "^CONFIRMED='1'$" "$var_file" || continue
             
             local script_id script_name selected_option action_label
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
