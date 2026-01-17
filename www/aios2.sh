@@ -3242,6 +3242,8 @@ auto_add_conditional_packages() {
                         echo "${enable_var}='1'" >> "$SETUP_VARS"
                         debug_log "Added enableVar: $enable_var"
                     fi
+                fi
+            else
                 if pkg_remove "$pkg_id" "auto"; then
                     debug_log "[AUTO] Removed package: $pkg_id (complex condition not met)"
                     
