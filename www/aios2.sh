@@ -3486,11 +3486,23 @@ auto_cleanup_conditional_variables() {
     
     # 実効接続タイプを取得
     local effective_conn_type
-    effective_conn_type=$(get_effective_connection_type)
+    effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    
+    # 空の場合はget_effective_connection_typeを使用
+    if [ -z "$effective_conn_type" ]; then
+        effective_conn_type=$(get_effective_connection_type)
+    fi
+    
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
-    # connection_type の exclusiveVars を使ってクリーンアップ
-    cleanup_radio_group_exclusive_vars "connection-type" "$effective_conn_type"
+    # connection_typeの場合はcleanup_radio_group_exclusive_varsをスキップ
+    # （既にprocess_items内で接続タイプ別の変数削除が完了しているため）
+    if [ "$cat_id" = "internet-connection" ]; then
+        echo "[DEBUG] Skipping cleanup_radio_group_exclusive_vars for internet-connection (already handled)" >> "$CONFIG_DIR/debug.log"
+    else
+        # connection_type の exclusiveVars を使ってクリーンアップ
+        cleanup_radio_group_exclusive_vars "connection-type" "$effective_conn_type"
+    fi
     
     # カテゴリ内の他のアイテムも処理
     for item_id in $(get_setup_category_items "$cat_id"); do
