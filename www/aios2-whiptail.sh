@@ -415,6 +415,7 @@ $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
             set_var "connection_type" "auto"
+            set_var "connection_auto" "mape"
             set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
             set_var "mape_br" "$MAPE_BR"
             set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
@@ -457,6 +458,7 @@ $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
             set_var "connection_type" "auto"
+            set_var "connection_auto" "dslite"
             set_var "dslite_aftr_address" "$DSLITE_AFTR"
 
             auto_add_conditional_packages "internet-connection"
