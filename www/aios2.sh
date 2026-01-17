@@ -3259,13 +3259,6 @@ _evaluate_condition_group() {
             current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         fi
         
-        # disabled は明示的に不一致とする
-        if [ "$current_val" = "disabled" ]; then
-            debug_log "    Condition: $when_var='disabled' → forced NOT match"
-            all_match=0
-            break
-        fi
-        
         debug_log "    Condition: $when_var, expected=[$expected_values], current='$current_val'"
         
         # expected_values内のいずれかと一致するかチェック（OR）
@@ -3332,22 +3325,6 @@ auto_add_conditional_packages() {
     local effective_conn_type
     effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # disabled の場合は全パッケージ削除のみ実行
-    if [ "$effective_conn_type" = "disabled" ]; then
-        debug_log "Connection type is disabled, removing all conditional packages"
-        
-        # connection_type関連の全パッケージを削除
-        local conn_packages="map coreutils-sha1sum ds-lite"
-        for pkg_id in $conn_packages; do
-            if pkg_remove "$pkg_id" "auto" "normal"; then
-                debug_log "[AUTO] Removed package: $pkg_id (connection disabled)"
-            fi
-        done
-        
-        debug_log "=== auto_add_conditional_packages finished (disabled) ==="
-        return 0
-    fi
-    
     if [ "$effective_conn_type" = "auto" ]; then
         local auto_type
         auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -3407,7 +3384,7 @@ auto_add_conditional_packages() {
                 fi
             fi
         else
-            # パッケージを削除（owner=auto のみ）
+            # パッケージを削除
             if pkg_remove "$pkg_id" "auto" "normal"; then
                 debug_log "[AUTO] Removed package: $pkg_id (no matching conditions)"
                 
@@ -3419,9 +3396,6 @@ auto_add_conditional_packages() {
             fi
         fi
     done
-    
-    # ★ 追加：選択キャッシュをクリア
-    clear_selection_cache
     
     debug_log "=== auto_add_conditional_packages finished ==="
 }
@@ -3486,23 +3460,11 @@ auto_cleanup_conditional_variables() {
     
     # 実効接続タイプを取得
     local effective_conn_type
-    effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    # 空の場合はget_effective_connection_typeを使用
-    if [ -z "$effective_conn_type" ]; then
-        effective_conn_type=$(get_effective_connection_type)
-    fi
-    
+    effective_conn_type=$(get_effective_connection_type)
     echo "[DEBUG] Effective connection type: $effective_conn_type" >> "$CONFIG_DIR/debug.log"
     
-    # connection_typeの場合はcleanup_radio_group_exclusive_varsをスキップ
-    # （既にprocess_items内で接続タイプ別の変数削除が完了しているため）
-    if [ "$cat_id" = "internet-connection" ]; then
-        echo "[DEBUG] Skipping cleanup_radio_group_exclusive_vars for internet-connection (already handled)" >> "$CONFIG_DIR/debug.log"
-    else
-        # connection_type の exclusiveVars を使ってクリーンアップ
-        cleanup_radio_group_exclusive_vars "connection-type" "$effective_conn_type"
-    fi
+    # connection_type の exclusiveVars を使ってクリーンアップ
+    cleanup_radio_group_exclusive_vars "connection-type" "$effective_conn_type"
     
     # カテゴリ内の他のアイテムも処理
     for item_id in $(get_setup_category_items "$cat_id"); do
