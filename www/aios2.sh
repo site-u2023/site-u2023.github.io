@@ -3175,7 +3175,7 @@ auto_add_conditional_packages() {
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
     
-    # ★ 修正：grep で空行を除外してからループ
+    # grep で空行を除外してからループ
     echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
         echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
         
@@ -3183,7 +3183,8 @@ auto_add_conditional_packages() {
             echo "[AIOS2-DEBUG] Skipping empty pkg_id" >> "$CONFIG_DIR/debug.log"
             continue
         }
-        
+
+		echo "[LOOP-DEBUG] pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
         # 複合条件の処理
