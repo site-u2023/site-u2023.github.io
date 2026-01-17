@@ -175,7 +175,7 @@
         },
         {
           "id": "remove",
-          "label": "tr-tui-customscript-filebrowser",
+          "label": "tr-tui-customscript-filebrowser-remove",
           "requiresUpdate": "false",
           "requiresConfirmation": "true",
           "envVars": {
