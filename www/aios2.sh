@@ -13,7 +13,7 @@ DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
 MAX_JOBS=$((DEVICE_CPU_CORES + 1))
 [ "$MAX_JOBS" -gt 8 ] && MAX_JOBS=8
     
-DEBUG_MODE="${DEBUG_MODE:-0}"
+DEBUG_MODE="${DEBUG_MODE:-1}"
 
 debug_log() {
     [ "$DEBUG_MODE" -eq 1 ] && echo "[DEBUG] $*" >> "$CONFIG_DIR/debug.log"
