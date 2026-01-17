@@ -3384,7 +3384,7 @@ auto_add_conditional_packages() {
                 fi
             fi
         else
-            # パッケージを削除
+            # パッケージを削除（owner=auto のみ）
             if pkg_remove "$pkg_id" "auto" "normal"; then
                 debug_log "[AUTO] Removed package: $pkg_id (no matching conditions)"
                 
@@ -3396,6 +3396,9 @@ auto_add_conditional_packages() {
             fi
         fi
     done
+    
+    # ★ 追加：選択キャッシュをクリア
+    clear_selection_cache
     
     debug_log "=== auto_add_conditional_packages finished ==="
 }
