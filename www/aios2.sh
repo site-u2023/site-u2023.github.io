@@ -683,19 +683,35 @@ init() {
         return 1
     fi
 
-    if [ -z "$PKG_CHANNEL" ]; then
-        if command -v apk >/dev/null 2>&1; then
-            PKG_CHANNEL="snapshot"
-        else
-            PKG_CHANNEL="release"
-        fi
-    fi
-
     # パッケージマネージャー設定読込（チャネル検出含む）
     load_package_manager_config || {
         echo "Fatal: Cannot load package manager configuration"
         return 1
     }
+    
+    # チャンネル自動判定（load_package_manager_config後に実行）
+    if [ -z "$PKG_CHANNEL" ]; then
+        # バージョン情報取得
+        local distrib_release=""
+        if [ -f /etc/openwrt_release ]; then
+            distrib_release=$(grep 'DISTRIB_RELEASE=' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        # SNAPSHOT判定
+        if [ "$distrib_release" = "SNAPSHOT" ] || echo "$distrib_release" | grep -qi "snapshot"; then
+            # APKかつSNAPSHOT → snapshotBare
+            if command -v apk >/dev/null 2>&1; then
+                PKG_CHANNEL="snapshotBare"
+            else
+                PKG_CHANNEL="snapshot"
+            fi
+        else
+            # 通常リリース
+            PKG_CHANNEL="release"
+        fi
+        
+        echo "[DEBUG] Auto-detected PKG_CHANNEL: $PKG_CHANNEL (DISTRIB_RELEASE=$distrib_release)" >> "$CONFIG_DIR/debug.log"
+    fi
 
     # キャッシュ変数の完全初期化
     unset _PACKAGE_NAME_CACHE
@@ -938,7 +954,10 @@ get_extended_device_info() {
     
     get_device_info
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
-    OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2) 
+    OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2)
+    
+    # DISTRIB_RELEASEも保持（チャンネル判定用）
+    DISTRIB_RELEASE="$OPENWRT_VERSION" 
     
     # APIから値を抽出して変数に設定
     _set_api_value() {
@@ -5338,12 +5357,13 @@ aios2_main() {
 
     export DEVICE_TARGET
     export OPENWRT_VERSION
+    export DISTRIB_RELEASE
     export ASU_URL
     export DEVICE_MODEL
     export DEVICE_ARCH
     export DEVICE_VENDOR
     export DEVICE_SUBTARGET
-    export PKG_CHANNEL 
+    export PKG_CHANNEL
     
     echo "[DEBUG] Exported variables:" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG]   DEVICE_ARCH='$DEVICE_ARCH'" >> "$CONFIG_DIR/debug.log"
