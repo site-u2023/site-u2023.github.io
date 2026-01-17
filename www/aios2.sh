@@ -3079,259 +3079,122 @@ EOF
     return 1
 }
 
+# 依存情報の損失を防ぐためのスマート追加関数
+add_auto_package_smart() {
+    local p_id="$1"
+    local entry
+    
+    # キャッシュから完全なエントリ（uniqueIdやinstallOptionsを含む）を検索
+    entry=$(echo "$_PACKAGE_NAME_CACHE" | grep "^${p_id}=" | head -n 1)
+    
+    if [ -n "$entry" ]; then
+        # フィールド11 (owner) を 'auto' に書き換えて保存用エントリを作成
+        local new_entry=$(echo "$entry" | awk -F= 'BEGIN{OFS="="} {$11="auto"; print}')
+        
+        # すでにインストールリストにある場合は一旦削除（重複防止）して追加
+        grep -q "^${p_id}=" "$INSTALLED_PACKAGES_FILE" 2>/dev/null && \
+            sed -i "/^${p_id}=/d" "$INSTALLED_PACKAGES_FILE"
+        
+        echo "$new_entry" >> "$INSTALLED_PACKAGES_FILE"
+        return 0
+    else
+        # キャッシュにない場合は通常のpkg_add（フォールバック）
+        pkg_add "$p_id" "auto"
+    fi
+}
+
 auto_add_conditional_packages() {
     local cat_id="$1"
+    debug_log "=== auto_add_conditional_packages called === ($cat_id)"
+    
+    [ -z "$_CONDITIONAL_PACKAGES_CACHE" ] && return
+    
     local effective_conn_type
-    
-    echo "[AIOS2-DEBUG] auto_add_conditional_packages ENTERED: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
-    
-    debug_log "=== auto_add_conditional_packages called ==="
-    debug_log "cat_id=$cat_id"
-    
-    effective_conn_type=$(get_effective_connection_type)
-    debug_log "Effective connection type: $effective_conn_type"
+    effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+    [ -z "$effective_conn_type" ] && effective_conn_type="auto"
 
-    # wifi_mode設定時にcountryが未設定なら自動追加
-    if grep -q "^wifi_mode=" "$SETUP_VARS" 2>/dev/null; then
-        if ! grep -q "^country=" "$SETUP_VARS" 2>/dev/null; then
-            local api_country
-            api_country=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.country' 2>/dev/null)
-            [ -n "$api_country" ] && {
-                echo "country='${api_country}'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set country='${api_country}' (for wifi_mode)"
-            }
-        fi
-    fi
-
-    # connection_typeが'mape'の場合、GUAプレフィックスの有無で mape_type を自動設定
-    if [ "$effective_conn_type" = "mape" ]; then
-        local gua_prefix=""
-        gua_prefix="$MAPE_GUA_PREFIX"
-        
-        if [ -n "$gua_prefix" ]; then
-            if ! grep -q "^mape_type='gua'$" "$SETUP_VARS" 2>/dev/null; then
-                sed -i "/^mape_type=/d" "$SETUP_VARS" 2>/dev/null
-                echo "mape_type='gua'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set mape_type='gua' (API provides GUA prefix)"
-            fi
-        else
-            if ! grep -q "^mape_type=" "$SETUP_VARS" 2>/dev/null; then
-                echo "mape_type='pd'" >> "$SETUP_VARS"
-                debug_log "[AUTO] Set mape_type='pd' (no GUA prefix in API)"
-            fi
-        fi
-    fi
-
-    # 初回のみキャッシュ構築
-    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(
-            # wifi_mode (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|wifi_mode|${when_val}"
-            fi
-            
-            # connection_type (配列)
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
-            
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                echo "$values" | while read -r val; do
-                    [ -z "$val" ] && continue
-                    echo "${pkg_id}|connection_type|${val}"
-                done
-            done
-            
-            # netopt_congestion (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].when.netopt_congestion' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|netopt_congestion|${when_val}"
-            fi
-            
-            # net_optimizer + connection_type の複合条件
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                
-                net_opt_val=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.net_optimizer" 2>/dev/null)
-                conn_types=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                
-                if [ -n "$conn_types" ]; then
-                    echo "$conn_types" | while read -r conn_val; do
-                        [ -z "$conn_val" ] && continue
-                        echo "${pkg_id}|net_optimizer_and_connection|${net_opt_val}:${conn_val}"
-                    done
-                fi
-            done
-        )
-        _CONDITIONAL_PACKAGES_LOADED=1
-        debug_log "Conditional packages cache built:"
-        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
-    
-    echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
-    echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
-
-	# キャッシュから完全なエントリを取得して追加
-    add_auto_package_smart() {
-        local p_id="$1"
-        local target_file="$SELECTED_PACKAGES"
-        
-        # 既に存在するかチェック
-        if awk -F= -v target="$p_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
-            return 1 # Already exists
-        fi
-
-        # キャッシュから定義を検索 (ID または uniqueId)
-        local cache_line
-        if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
-            # uniqueId で検索
-            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$p_id" '$3 == id {print; exit}')
-            # なければ id で検索
-            [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$p_id" '$1 == id {print; exit}')
-        fi
-
-        if [ -n "$cache_line" ]; then
-            # キャッシュが見つかった場合: ownerをautoに書き換えて追加
-            # フォーマット: id=name=uniqueId=installOptions=enableVar=deps=hidden=virtual=reboot=checked=owner=isCustom
-            # 11番目のフィールド(owner)を置換
-            local full_entry
-            full_entry=$(echo "$cache_line" | awk 'BEGIN{FS=OFS="="} {$11="auto"; print}')
-            echo "$full_entry" >> "$target_file"
-            debug_log "[AUTO] Smart added: $p_id (found in cache)"
-        else
-            # キャッシュにない場合: 従来のpkg_addを使用
-            pkg_add "$p_id" "auto"
-        fi
-        return 0
-    }
-	
-    # grep で空行を除外してからループ
-	echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
-        echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
-        
-        [ -z "$pkg_id" ] && {
-            echo "[AIOS2-DEBUG] Skipping empty pkg_id" >> "$CONFIG_DIR/debug.log"
-            continue
-        }
+    # ★ 修正: パイプ( | while )を使わずヒアドキュメント( << EOF )にすることで
+    # ループ内の変数変更が消えないようにし、サブシェルの不具合を回避します
+    while IFS='|' read -r pkg_id when_var expected; do
+        [ -z "$pkg_id" ] && continue
         
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
-        # 複合条件の処理
+        local is_match=0
+        # --- 条件判定フェーズ ---
         if [ "$when_var" = "net_optimizer_and_connection" ]; then
-            local net_opt_expected conn_expected
-            net_opt_expected=$(echo "$expected" | cut -d: -f1)
-            conn_expected=$(echo "$expected" | cut -d: -f2)
-            
-            local net_opt_current
-            net_opt_current=$(grep "^net_optimizer=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            
-            debug_log "Complex condition: net_optimizer=$net_opt_current (expected=$net_opt_expected), connection=$effective_conn_type (expected=$conn_expected)"
-            
-            if [ "$net_opt_current" = "$net_opt_expected" ] && [ "$effective_conn_type" = "$conn_expected" ]; then
-                # スマート追加を使用
-                if add_auto_package_smart "$pkg_id"; then
-                    debug_log "[AUTO] Added package: $pkg_id (condition: net_optimizer=$net_opt_expected AND connection_type=$conn_expected)"
-                    
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                        echo "${enable_var}='1'" >> "$SETUP_VARS"
-                        debug_log "Added enableVar: $enable_var"
-                    fi
-                fi
-            else
-                if pkg_remove "$pkg_id" "auto"; then
-                    debug_log "[AUTO] Removed package: $pkg_id (complex condition not met)"
-                    
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                        debug_log "Removed enableVar: $enable_var"
-                    fi
-                fi
-            fi
-            continue
-        fi
-        
-        # 単純条件の処理
-        local current_val
-        if [ "$when_var" = "connection_type" ]; then
-            current_val="$effective_conn_type"
-            debug_log "Using effective_conn_type: $current_val"
+            # 複合条件 (例: net_optimizerがauto かつ 接続がdhcp)
+            local n_exp=$(echo "$expected" | cut -d: -f1)
+            local c_exp=$(echo "$expected" | cut -d: -f2)
+            local n_curr=$(grep "^net_optimizer=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            [ "$n_curr" = "$n_exp" ] && [ "$effective_conn_type" = "$c_exp" ] && is_match=1
         else
-            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            # 単純条件
+            local current_val
+            [ "$when_var" = "connection_type" ] && current_val="$effective_conn_type" || \
+                current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            [ "$current_val" = "$expected" ] && is_match=1
         fi
-        
-        debug_log "current_val=$current_val"
-        
-        local should_add=0
-        if [ "$current_val" = "$expected" ]; then
-            should_add=1
-            debug_log "Match found!"
-        fi
-        
-        if [ "$should_add" -eq 1 ]; then
-            if add_auto_package_smart "$pkg_id"; then
-                debug_log "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})"
-                
-                local enable_var
-                enable_var=$(get_package_enablevar "$pkg_id" "")
-                if [ -n "$enable_var" ] && ! grep -q "^${enable_var}=" "$SETUP_VARS" 2>/dev/null; then
-                    echo "${enable_var}='1'" >> "$SETUP_VARS"
-                    debug_log "Added enableVar: $enable_var"
-                fi
-            fi
-        else
-            local force_remove=0
-            if [ "$current_val" = "disabled" ]; then
-                force_remove=1
-                debug_log "${when_var} disabled, force removing $pkg_id"
-            fi
-            
-            local has_other_match=0
-            if [ "$force_remove" -eq 0 ]; then
-                echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r check_pkg check_var check_val; do
-                    [ "$check_pkg" != "$pkg_id" ] && continue
-                    [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
-                    
-                    local check_current
-                    if [ "$check_var" = "connection_type" ]; then
-                        check_current="$effective_conn_type"
-                    else
-                        check_current=$(grep "^${check_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    fi
-                    
-                    if [ "$check_current" = "$check_val" ]; then
-                        has_other_match=1
-                        debug_log "Found other matching condition: ${check_var}=${check_current}"
-                        break
-                    fi
-                done
-            fi
-            
-            if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
-                if pkg_remove "$pkg_id" "auto"; then
-                    debug_log "[AUTO] Removed package: $pkg_id (owner=auto, no matching conditions)"
-                    
-                    local enable_var
-                    enable_var=$(get_package_enablevar "$pkg_id" "")
-                    if [ -n "$enable_var" ]; then
-                        sed -i "/^${enable_var}=/d" "$SETUP_VARS"
-                        debug_log "Removed enableVar: $enable_var"
-                    fi
-                else
-                    debug_log "Skipped removal: $pkg_id (owner!=auto or not found)"
-                fi
-            fi
-        fi
-    done
 
-    debug_log "=== auto_add_conditional_packages finished ==="
+        # --- アクションフェーズ ---
+        if [ "$is_match" -eq 1 ]; then
+            # 条件に一致：スマート追加を実行
+            if add_auto_package_smart "$pkg_id"; then
+                debug_log "[AUTO] Added package: $pkg_id (condition match)"
+                local evar=$(get_package_enablevar "$pkg_id" "")
+                [ -n "$evar" ] && ! grep -q "^${evar}=" "$SETUP_VARS" 2>/dev/null && \
+                    echo "${evar}='1'" >> "$SETUP_VARS"
+            fi
+        else
+            # 条件に不一致：ただし「他に一致する条件が一つでもある」なら削除しない
+            local has_any_match=0
+            local old_ifs="$IFS"; IFS='
+'
+            for line in $_CONDITIONAL_PACKAGES_CACHE; do
+                [ -z "$line" ] && continue
+                local c_pkg=$(echo "$line" | cut -d'|' -f1)
+                [ "$c_pkg" != "$pkg_id" ] && continue
+                
+                local c_var=$(echo "$line" | cut -d'|' -f2)
+                local c_exp=$(echo "$line" | cut -d'|' -f3)
+                
+                # 自身の現在の判定行はスキップ
+                [ "$c_var|$c_exp" = "$when_var|$expected" ] && continue
+                
+                # 他の条件行が一致するかチェック
+                local c_m=0
+                if [ "$c_var" = "net_optimizer_and_connection" ]; then
+                    local cn_exp=$(echo "$c_exp" | cut -d: -f1)
+                    local cc_exp=$(echo "$c_exp" | cut -d: -f2)
+                    local cn_curr=$(grep "^net_optimizer=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    [ "$cn_curr" = "$cn_exp" ] && [ "$effective_conn_type" = "$cc_exp" ] && c_m=1
+                else
+                    local cv
+                    [ "$c_var" = "connection_type" ] && cv="$effective_conn_type" || \
+                        cv=$(grep "^${c_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                    [ "$cv" = "$c_exp" ] && c_m=1
+                fi
+                
+                if [ "$c_m" -eq 1 ]; then
+                    has_any_match=1
+                    debug_log "Package $pkg_id is kept because other condition ($c_var=$c_exp) matches."
+                    break
+                fi
+            done
+            IFS="$old_ifs"
+
+            # 他に一致する条件が「全くない」場合のみ削除を実行
+            if [ "$has_any_match" -eq 0 ]; then
+                if pkg_remove "$pkg_id" "auto"; then
+                    debug_log "[AUTO] Removed package: $pkg_id (no matching conditions)"
+                    local evar=$(get_package_enablevar "$pkg_id" "")
+                    [ -n "$evar" ] && sed -i "/^${evar}=/d" "$SETUP_VARS"
+                fi
+            fi
+        fi
+    done << EOF
+$(echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$')
+EOF
 }
 
 get_section_controlling_radio_info() {
