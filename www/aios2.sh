@@ -3083,7 +3083,6 @@ auto_add_conditional_packages() {
     local cat_id="$1"
     local effective_conn_type
     
-    # ★ デバッグ追加
     echo "[AIOS2-DEBUG] auto_add_conditional_packages ENTERED: cat_id=$cat_id" >> "$CONFIG_DIR/debug.log"
     
     debug_log "=== auto_add_conditional_packages called ==="
@@ -3153,19 +3152,14 @@ auto_add_conditional_packages() {
             fi
             
             # net_optimizer + connection_type の複合条件 - 追加
-            # when: { "net_optimizer": "auto", "connection_type": ["dhcp", "pppoe", "ap"] }
             pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
             echo "$pkg_ids" | while read -r pkg_id; do
                 [ -z "$pkg_id" ] && continue
                 
-                # net_optimizer の値を取得
                 net_opt_val=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.net_optimizer" 2>/dev/null)
-                
-                # connection_type の配列を取得
                 conn_types=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
                 
                 if [ -n "$conn_types" ]; then
-                    # 複合条件: net_optimizer=auto AND connection_type in [dhcp,pppoe,ap]
                     echo "$conn_types" | while read -r conn_val; do
                         [ -z "$conn_val" ] && continue
                         echo "${pkg_id}|net_optimizer_and_connection|${net_opt_val}:${conn_val}"
@@ -3178,13 +3172,17 @@ auto_add_conditional_packages() {
         echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
     fi
     
-    # ★ デバッグ追加：キャッシュの状態確認
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
     
-    # キャッシュから処理
-    while IFS='|' read -r pkg_id when_var expected; do
-        [ -z "$pkg_id" ] && continue
+    # ★ 修正：grep で空行を除外してからループ
+    echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
+        echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
+        
+        [ -z "$pkg_id" ] && {
+            echo "[AIOS2-DEBUG] Skipping empty pkg_id" >> "$CONFIG_DIR/debug.log"
+            continue
+        }
         
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
@@ -3225,7 +3223,7 @@ auto_add_conditional_packages() {
             continue
         fi
         
-        # 単純条件の処理（既存ロジック）
+        # 単純条件の処理
         local current_val
         if [ "$when_var" = "connection_type" ]; then
             current_val="$effective_conn_type"
@@ -3262,7 +3260,7 @@ auto_add_conditional_packages() {
             
             local has_other_match=0
             if [ "$force_remove" -eq 0 ]; then
-                while IFS='|' read -r check_pkg check_var check_val; do
+                echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r check_pkg check_var check_val; do
                     [ "$check_pkg" != "$pkg_id" ] && continue
                     [ "$check_var-$check_val" = "$when_var-$expected" ] && continue
                     
@@ -3278,9 +3276,7 @@ auto_add_conditional_packages() {
                         debug_log "Found other matching condition: ${check_var}=${check_current}"
                         break
                     fi
-                done <<CHECK
-$_CONDITIONAL_PACKAGES_CACHE
-CHECK
+                done
             fi
             
             if [ "$force_remove" -eq 1 ] || [ "$has_other_match" -eq 0 ]; then
@@ -3298,9 +3294,7 @@ CHECK
                 fi
             fi
         fi
-    done <<EOF
-$_CONDITIONAL_PACKAGES_CACHE
-EOF
+    done
 
     debug_log "=== auto_add_conditional_packages finished ==="
 }
