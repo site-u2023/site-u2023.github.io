@@ -3144,14 +3144,14 @@ auto_add_conditional_packages() {
                 done
             done
             
-            # netopt_congestion (文字列) - 追加
+            # netopt_congestion (文字列)
             pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].id' 2>/dev/null)
             when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].when.netopt_congestion' 2>/dev/null)
             if [ -n "$pkg_id" ]; then
                 echo "${pkg_id}|netopt_congestion|${when_val}"
             fi
             
-            # net_optimizer + connection_type の複合条件 - 追加
+            # net_optimizer + connection_type の複合条件
             pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
             echo "$pkg_ids" | while read -r pkg_id; do
                 [ -z "$pkg_id" ] && continue
@@ -3174,8 +3174,42 @@ auto_add_conditional_packages() {
     
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
-    
-    # ★ 修正：grep で空行を除外してからループ
+
+	# キャッシュから完全なエントリを取得して追加
+    add_auto_package_smart() {
+        local p_id="$1"
+        local target_file="$SELECTED_PACKAGES"
+        
+        # 既に存在するかチェック
+        if awk -F= -v target="$p_id" '($1 == target && $3 == "") || $3 == target' "$target_file" | grep -q .; then
+            return 1 # Already exists
+        fi
+
+        # キャッシュから定義を検索 (ID または uniqueId)
+        local cache_line
+        if [ "$_PACKAGE_NAME_LOADED" -eq 1 ]; then
+            # uniqueId で検索
+            cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$p_id" '$3 == id {print; exit}')
+            # なければ id で検索
+            [ -z "$cache_line" ] && cache_line=$(echo "$_PACKAGE_NAME_CACHE" | awk -F= -v id="$p_id" '$1 == id {print; exit}')
+        fi
+
+        if [ -n "$cache_line" ]; then
+            # キャッシュが見つかった場合: ownerをautoに書き換えて追加
+            # フォーマット: id=name=uniqueId=installOptions=enableVar=deps=hidden=virtual=reboot=checked=owner=isCustom
+            # 11番目のフィールド(owner)を置換
+            local full_entry
+            full_entry=$(echo "$cache_line" | awk 'BEGIN{FS=OFS="="} {$11="auto"; print}')
+            echo "$full_entry" >> "$target_file"
+            debug_log "[AUTO] Smart added: $p_id (found in cache)"
+        else
+            # キャッシュにない場合: 従来のpkg_addを使用
+            pkg_add "$p_id" "auto"
+        fi
+        return 0
+    }
+	
+    # grep で空行を除外してからループ
     echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
         echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
         
