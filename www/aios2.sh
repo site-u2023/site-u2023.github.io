@@ -702,7 +702,7 @@ init() {
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
     unset _PACKAGE_COMPAT_CACHE
-    unset _CONDITIONAL_PACKAGES_CACHE
+    # ★ 削除：unset _CONDITIONAL_PACKAGES_CACHE
     unset _CUSTOMFEED_CATEGORIES_CACHE
     unset _CATEGORIES_CACHE
     unset _SETUP_CATEGORIES_CACHE
@@ -719,7 +719,7 @@ init() {
     _SELECTED_PACKAGES_CACHE_LOADED=0
     _SELECTED_CUSTOM_CACHE_LOADED=0
     _PACKAGE_COMPAT_LOADED=0
-    _CONDITIONAL_PACKAGES_LOADED=0
+    # ★ 削除：_CONDITIONAL_PACKAGES_LOADED=0
     _CUSTOMFEED_CATEGORIES_LOADED=0
     _CATEGORIES_LOADED=0
     _SETUP_CATEGORIES_LOADED=0
@@ -3175,7 +3175,7 @@ auto_add_conditional_packages() {
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
     
-    # grep で空行を除外してからループ
+    # ★ 修正：grep で空行を除外してからループ
     echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
         echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
         
@@ -3183,8 +3183,7 @@ auto_add_conditional_packages() {
             echo "[AIOS2-DEBUG] Skipping empty pkg_id" >> "$CONFIG_DIR/debug.log"
             continue
         }
-
-		echo "[LOOP-DEBUG] pkg_id=$pkg_id, when_var=$when_var, expected=$expected" >> "$CONFIG_DIR/debug.log"
+        
         debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected"
         
         # 複合条件の処理
