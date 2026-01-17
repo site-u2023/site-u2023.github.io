@@ -710,20 +710,81 @@ process_items() {
                                 for var in $auto_vars; do
                                     sed -i "/^${var}=/d" "$SETUP_VARS"
                                 done
+                                echo "[DEBUG] Removed auto connection_auto variable" >> "$CONFIG_DIR/debug.log"
                                 ;;
                         esac
                         
-                        # disabled選択時も明示的に全パッケージと変数を削除
-                        if [ "$selected_opt" = "disabled" ]; then
-                            pkg_remove "map" "auto" "normal"
-                            pkg_remove "coreutils-sha1sum" "auto" "normal"
-                            pkg_remove "ds-lite" "auto" "normal"
-                            
-                            for var in $mape_vars $dslite_vars $pppoe_vars $ap_vars $auto_vars; do
-                                sed -i "/^${var}=/d" "$SETUP_VARS"
-                            done
-                            echo "[DEBUG] Removed all connection-related packages and variables (disabled selected)" >> "$CONFIG_DIR/debug.log"
-                        fi
+                        # ★追加：新しい接続タイプに不要な変数を全て削除
+                        case "$selected_opt" in
+                            disabled)
+                                # disabledの場合は全変数を削除
+                                pkg_remove "map" "auto" "normal"
+                                pkg_remove "coreutils-sha1sum" "auto" "normal"
+                                pkg_remove "ds-lite" "auto" "normal"
+                                
+                                for var in $mape_vars $dslite_vars $pppoe_vars $ap_vars $auto_vars; do
+                                    sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed all connection-related packages and variables (disabled selected)" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            dhcp)
+                                # DHCPの場合は全変数を削除（DHCPは追加変数なし）
+                                for var in $mape_vars $dslite_vars $pppoe_vars $ap_vars $auto_vars; do
+                                    sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed all connection-related variables (DHCP selected)" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            mape)
+                                # MAP-E以外の変数を削除
+                                for var in $dslite_vars $pppoe_vars $ap_vars $auto_vars; do
+                                    # MAP-Eと重複する変数はスキップ
+                                    local skip=0
+                                    for mape_var in $mape_vars; do
+                                        [ "$var" = "$mape_var" ] && skip=1 && break
+                                    done
+                                    [ "$skip" -eq 0 ] && sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed non-MAP-E variables" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            dslite)
+                                # DS-Lite以外の変数を削除
+                                for var in $mape_vars $pppoe_vars $ap_vars $auto_vars; do
+                                    # DS-Liteと重複する変数はスキップ
+                                    local skip=0
+                                    for dslite_var in $dslite_vars; do
+                                        [ "$var" = "$dslite_var" ] && skip=1 && break
+                                    done
+                                    [ "$skip" -eq 0 ] && sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed non-DS-Lite variables" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            pppoe)
+                                # PPPoE以外の変数を削除
+                                for var in $mape_vars $dslite_vars $ap_vars $auto_vars; do
+                                    sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed non-PPPoE variables" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            ap)
+                                # AP以外の変数を削除
+                                for var in $mape_vars $dslite_vars $pppoe_vars $auto_vars; do
+                                    # APと重複する変数はスキップ
+                                    local skip=0
+                                    for ap_var in $ap_vars; do
+                                        [ "$var" = "$ap_var" ] && skip=1 && break
+                                    done
+                                    [ "$skip" -eq 0 ] && sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed non-AP variables" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                            auto)
+                                # autoの場合は一旦全変数を削除（後でAUTO検出結果に基づき再設定）
+                                for var in $mape_vars $dslite_vars $pppoe_vars $ap_vars; do
+                                    sed -i "/^${var}=/d" "$SETUP_VARS"
+                                done
+                                echo "[DEBUG] Removed all variables for AUTO detection" >> "$CONFIG_DIR/debug.log"
+                                ;;
+                        esac
                     fi
                 fi
                 
