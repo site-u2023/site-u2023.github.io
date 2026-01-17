@@ -3276,7 +3276,7 @@ auto_add_conditional_packages() {
         fi
         
         if [ "$should_add" -eq 1 ]; then
-            if pkg_add "$pkg_id" "auto"; then
+            if add_auto_package_smart "$pkg_id"; then
                 debug_log "[AUTO] Added package: $pkg_id (condition: ${when_var}=${current_val})"
                 
                 local enable_var
