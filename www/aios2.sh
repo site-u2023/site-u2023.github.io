@@ -3324,41 +3324,7 @@ auto_add_conditional_packages() {
     # 実効接続タイプを取得
     local effective_conn_type
     effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-
-    # ★ connection_type='auto' の場合、パラメータから推定
-    if [ "$effective_conn_type" = "auto" ]; then
-        local auto_type
-        auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        
-        # connection_auto が未設定の場合、パラメータから推定
-        if [ -z "$auto_type" ]; then
-            # MAP-E パラメータがあるか？
-            if grep -q "^mape_br=" "$SETUP_VARS" 2>/dev/null || \
-               grep -q "^peeraddr=" "$SETUP_VARS" 2>/dev/null && \
-               grep -q "^ealen=" "$SETUP_VARS" 2>/dev/null; then
-                auto_type="mape"
-            # DS-Lite パラメータがあるか？
-            elif grep -q "^dslite_aftr_address=" "$SETUP_VARS" 2>/dev/null || \
-                 grep -q "^peeraddr=" "$SETUP_VARS" 2>/dev/null; then
-                auto_type="dslite"
-            # API データから推定
-            elif [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
-                auto_type="mape"
-            elif [ -n "$DSLITE_AFTR" ]; then
-                auto_type="dslite"
-            else
-                auto_type="dhcp"
-            fi
-            
-            sed -i "/^connection_auto=/d" "$SETUP_VARS"
-            echo "connection_auto='${auto_type}'" >> "$SETUP_VARS"
-            debug_log "Auto-detected connection_auto='${auto_type}'"
-        fi
-        
-        effective_conn_type="$auto_type"
-        debug_log "Using connection_auto='${auto_type}' for evaluation"
-    fi
-	
+    
     if [ "$effective_conn_type" = "auto" ]; then
         local auto_type
         auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
