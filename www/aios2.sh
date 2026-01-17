@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R8.0105.1223"
+VERSION="R8.0117.1930"
 MESSAGE="[Under Maintenance]"
 SHOW_MESSAGE="VERSION"
 
@@ -3129,10 +3129,17 @@ add_auto_package_smart() {
 }
 
 # =============================================================================
-# Build conditional packages cache (FIXED VERSION v2)
-# Extracts packages with "when" conditions from setup.json (NOT postinst.json)
-# Format: pkg_id|when_var|expected_value|uniqueId
-# Uses jsonfilter index access for reliable parsing
+# Build conditional packages cache (V3: AND条件対応版)
+# Extracts packages with "when" conditions from setup.json
+# 
+# Format: pkg_id|group_id|when_var|expected_values|uniqueId
+#   - group_id: 同じグループ内の条件はAND評価
+#   - expected_values: カンマ区切りでOR評価
+#
+# Example cache entries:
+#   kmod-tcp-bbr|g1|netopt_congestion|bbr|
+#   kmod-tcp-bbr|g2|net_optimizer|auto|
+#   kmod-tcp-bbr|g2|connection_type|dhcp,pppoe,ap|
 # =============================================================================
 build_conditional_packages_cache() {
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 1 ]; then
@@ -3141,65 +3148,67 @@ build_conditional_packages_cache() {
     
     debug_log "Building conditional packages cache..."
     
-    # SETUP_JSON が存在するか確認（存在しない場合は後で再試行）
+    # SETUP_JSONがまだダウンロードされていない場合はリトライ用にreturn
     if [ ! -f "$SETUP_JSON" ]; then
         debug_log "SETUP_JSON not found yet, will retry later: $SETUP_JSON"
-        # _CONDITIONAL_PACKAGES_LOADED は 0 のままにして、後で再試行可能にする
         return 0
     fi
     
     _CONDITIONAL_PACKAGES_CACHE=""
     
+    local group_counter=0
     local categories
     categories=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].id' 2>/dev/null)
     
     for cat_id in $categories; do
         [ -z "$cat_id" ] && continue
         
-        # このカテゴリの packages 配列をインデックスでアクセス
+        # このカテゴリのpackages配列を取得してインデックスでアクセス
         local pkg_idx=0
         while true; do
             local pkg_id unique_id when_json
             
-            # パッケージIDを取得（存在しなければループ終了）
             pkg_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].id" 2>/dev/null)
             [ -z "$pkg_id" ] && break
             
-            # uniqueIdとwhenを取得
             unique_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].uniqueId" 2>/dev/null)
             when_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].packages[$pkg_idx].when" 2>/dev/null)
             
             if [ -n "$when_json" ]; then
                 debug_log "Found package with when: $pkg_id, when=$when_json"
                 
-                # when オブジェクトのキーを取得（最初のキーのみ処理）
-                local when_var
-                when_var=$(echo "$when_json" | grep -oE '"[a-z_]+":' | head -1 | tr -d '":')
+                # 新しい条件グループを作成
+                group_counter=$((group_counter + 1))
+                local group_id="g${group_counter}"
                 
-                if [ -n "$when_var" ]; then
-                    # 値を取得（配列または単一値）
-                    local when_values
-                    when_values=$(jsonfilter -e "@.${when_var}[*]" 2>/dev/null <<EOF
-$when_json
-EOF
-)
+                # whenオブジェクトのキーを取得
+                local when_keys
+                when_keys=$(echo "$when_json" | grep -oE '"[a-z_]+":' | tr -d '":' | sort -u)
+                
+                for when_var in $when_keys; do
+                    [ -z "$when_var" ] && continue
                     
-                    # 配列でない場合は単一値として取得
-                    if [ -z "$when_values" ]; then
-                        when_values=$(jsonfilter -e "@.${when_var}" 2>/dev/null <<EOF
-$when_json
-EOF
-)
+                    # 値を取得（配列または単一値）
+                    local when_values=""
+                    
+                    # まず配列として試す
+                    local arr_values
+                    arr_values=$(echo "$when_json" | jsonfilter -e "@.${when_var}[*]" 2>/dev/null)
+                    
+                    if [ -n "$arr_values" ]; then
+                        # 配列の場合：スペース区切り → カンマ区切り
+                        when_values=$(echo "$arr_values" | tr '\n' ',' | sed 's/,$//')
+                    else
+                        # 単一値の場合
+                        when_values=$(echo "$when_json" | jsonfilter -e "@.${when_var}" 2>/dev/null)
                     fi
                     
-                    # 各値に対してエントリを追加
-                    for expected in $when_values; do
-                        [ -z "$expected" ] && continue
-                        _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${pkg_id}|${when_var}|${expected}|${unique_id}
+                    if [ -n "$when_values" ]; then
+                        _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}
 "
-                        debug_log "Added cache entry: ${pkg_id}|${when_var}|${expected}|${unique_id}"
-                    done
-                fi
+                        debug_log "Added cache entry: ${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}"
+                    fi
+                done
             fi
             
             pkg_idx=$((pkg_idx + 1))
@@ -3208,7 +3217,7 @@ EOF
     
     _CONDITIONAL_PACKAGES_LOADED=1
     
-    # カウント計算（安全な方法で空行を除外）
+    # カウント（安全な方法）
     local count=0
     if [ -n "$_CONDITIONAL_PACKAGES_CACHE" ]; then
         count=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep -c '|' 2>/dev/null || true)
@@ -3220,13 +3229,74 @@ EOF
     
     if [ "$count" -gt 0 ] 2>/dev/null; then
         debug_log "Sample entries:"
-        printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | head -5 >> "$CONFIG_DIR/debug.log"
+        printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | head -10 >> "$CONFIG_DIR/debug.log"
     fi
 }
 
 # =============================================================================
-# Auto add conditional packages (FIXED VERSION)
-# Adds/removes packages based on setup.json "when" conditions
+# 条件評価ヘルパー関数
+# グループ内の全条件がAND、expected_values内はOR
+# =============================================================================
+_evaluate_condition_group() {
+    local pkg_id="$1"
+    local group_id="$2"
+    local effective_conn_type="$3"
+    
+    # このグループの条件をファイルに保存
+    local cond_file="$CONFIG_DIR/cond_eval.tmp"
+    printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|${group_id}|" > "$cond_file"
+    
+    local all_match=1
+    
+    while IFS='|' read -r _pkg _grp when_var expected_values _uid; do
+        [ -z "$when_var" ] && continue
+        
+        # 現在値を取得
+        local current_val
+        if [ "$when_var" = "connection_type" ]; then
+            current_val="$effective_conn_type"
+        else
+            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        fi
+        
+        debug_log "    Condition: $when_var, expected=[$expected_values], current='$current_val'"
+        
+        # expected_values内のいずれかと一致するかチェック（OR）
+        local value_match=0
+        
+        # カンマ区切りを処理
+        local old_ifs="$IFS"
+        IFS=','
+        set -- $expected_values
+        IFS="$old_ifs"
+        
+        for exp_val in "$@"; do
+            if [ "$current_val" = "$exp_val" ]; then
+                value_match=1
+                debug_log "      Value matched: $exp_val"
+                break
+            fi
+        done
+        
+        if [ "$value_match" -eq 0 ]; then
+            debug_log "    Condition NOT matched"
+            all_match=0
+            break
+        fi
+    done < "$cond_file"
+    
+    rm -f "$cond_file"
+    
+    return $((1 - all_match))  # 0=成功(一致), 1=失敗(不一致)
+}
+
+# =============================================================================
+# Auto add conditional packages (V3: AND条件対応版)
+# 
+# 評価ロジック:
+#   - 同じgroup_id内の全条件がAND（全て一致が必要）
+#   - expected_values内の値はOR（いずれか一致でOK）
+#   - 異なるgroup_idはOR（いずれかのグループが一致すればOK）
 # =============================================================================
 auto_add_conditional_packages() {
     local cat_id="$1"
@@ -3235,7 +3305,7 @@ auto_add_conditional_packages() {
     # キャッシュ構築（初回のみ）
     build_conditional_packages_cache
     
-    # キャッシュが空かチェック（安全な方法）
+    # キャッシュが空かチェック
     if [ -z "$_CONDITIONAL_PACKAGES_CACHE" ]; then
         debug_log "No conditional packages defined"
         return 0
@@ -3255,7 +3325,6 @@ auto_add_conditional_packages() {
     local effective_conn_type
     effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    # connection_type が "auto" の場合、connection_auto を確認
     if [ "$effective_conn_type" = "auto" ]; then
         local auto_type
         auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
@@ -3266,66 +3335,47 @@ auto_add_conditional_packages() {
     
     debug_log "Effective connection type: $effective_conn_type"
     
-    # 処理済みパッケージを追跡（サブシェル回避のためファイル使用）
-    local processed_file="$CONFIG_DIR/conditional_processed.tmp"
-    : > "$processed_file"
+    # ユニークなパッケージIDリストを取得
+    local unique_pkgs
+    unique_pkgs=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | cut -d'|' -f1 | sort -u)
     
-    # ヒアドキュメントでサブシェル回避
-    while IFS='|' read -r pkg_id when_var expected unique_id; do
+    for pkg_id in $unique_pkgs; do
         [ -z "$pkg_id" ] && continue
         
-        # 既に処理済みのパッケージはスキップ
-        local pkg_key="${pkg_id}:${unique_id}"
-        if grep -qx "$pkg_key" "$processed_file" 2>/dev/null; then
-            continue
-        fi
-        echo "$pkg_key" >> "$processed_file"
+        debug_log "Evaluating package: $pkg_id"
         
-        debug_log "Checking: pkg_id=$pkg_id, when_var=$when_var, expected=$expected, unique_id=$unique_id"
+        # このパッケージの全グループIDを取得
+        local pkg_groups
+        pkg_groups=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|" | cut -d'|' -f2 | sort -u)
         
-        # 現在の変数値を取得
-        local current_val
-        if [ "$when_var" = "connection_type" ]; then
-            current_val="$effective_conn_type"
-        else
-            current_val=$(grep "^${when_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        fi
+        local any_group_match=0
         
-        debug_log "Current value of $when_var: '$current_val'"
-        
-        # このパッケージの全条件をチェック（いずれかが一致すれば追加）
-        local any_match=0
-        while IFS='|' read -r c_pkg c_var c_exp c_uid; do
-            [ -z "$c_pkg" ] && continue
-            [ "$c_pkg" != "$pkg_id" ] && continue
+        for group_id in $pkg_groups; do
+            [ -z "$group_id" ] && continue
             
-            # 条件の現在値を取得
-            local c_curr
-            if [ "$c_var" = "connection_type" ]; then
-                c_curr="$effective_conn_type"
+            debug_log "  Checking group: $group_id"
+            
+            # グループの条件を評価
+            if _evaluate_condition_group "$pkg_id" "$group_id" "$effective_conn_type"; then
+                debug_log "  Group $group_id: MATCHED"
+                any_group_match=1
+                break  # 1つのグループが一致すればOK（OR）
             else
-                c_curr=$(grep "^${c_var}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+                debug_log "  Group $group_id: NOT matched"
             fi
-            
-            if [ "$c_curr" = "$c_exp" ]; then
-                any_match=1
-                debug_log "Condition match found: $c_var=$c_exp (current=$c_curr)"
-                break
-            fi
-        done <<INNER_EOF
-$(echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$')
-INNER_EOF
+        done
         
-        debug_log "Match result for $pkg_id: any_match=$any_match"
+        debug_log "Package $pkg_id final result: any_group_match=$any_group_match"
         
         # アクション実行
-        if [ "$any_match" -eq 1 ]; then
-            # 条件に一致：パッケージを追加
-            # pkg_add の第3引数は caller (normal/custom_feeds) なので "normal" を使用
+        if [ "$any_group_match" -eq 1 ]; then
+            # パッケージを追加
             if pkg_add "$pkg_id" "auto" "normal"; then
                 debug_log "[AUTO] Added package: $pkg_id"
                 
                 # enableVar処理
+                local unique_id
+                unique_id=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|" | head -1 | cut -d'|' -f5)
                 local evar
                 evar=$(get_package_enablevar "$pkg_id" "$unique_id")
                 if [ -n "$evar" ] && ! grep -q "^${evar}=" "$SETUP_VARS" 2>/dev/null; then
@@ -3334,22 +3384,19 @@ INNER_EOF
                 fi
             fi
         else
-            # 条件に不一致：パッケージを削除
-            # pkg_remove の第2引数は owner filter、第3引数は caller
+            # パッケージを削除
             if pkg_remove "$pkg_id" "auto" "normal"; then
                 debug_log "[AUTO] Removed package: $pkg_id (no matching conditions)"
                 
-                # enableVar削除
+                local unique_id
+                unique_id=$(printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|" | head -1 | cut -d'|' -f5)
                 local evar
                 evar=$(get_package_enablevar "$pkg_id" "$unique_id")
                 [ -n "$evar" ] && sed -i "/^${evar}=/d" "$SETUP_VARS"
             fi
         fi
-    done <<EOF
-$(echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$')
-EOF
+    done
     
-    rm -f "$processed_file"
     debug_log "=== auto_add_conditional_packages finished ==="
 }
 
