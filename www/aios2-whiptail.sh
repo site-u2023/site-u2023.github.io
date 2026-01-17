@@ -687,26 +687,42 @@ process_items() {
                                 echo "[DEBUG] Removed AP variables" >> "$CONFIG_DIR/debug.log"
                                 ;;
                             auto)
-                                # autoから他への変更時は、autoで追加された全てを削除
+                                # autoから他への変更時は、全接続タイプの変数を削除
                                 local auto_type
                                 auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                                case "$auto_type" in
-                                    mape)
-                                        pkg_remove "map" "auto" "normal"
-                                        pkg_remove "coreutils-sha1sum" "auto" "normal"
-                                        for var in $mape_vars; do
-                                            sed -i "/^${var}=/d" "$SETUP_VARS"
-                                        done
-                                        echo "[DEBUG] Removed auto-added MAP-E packages and variables" >> "$CONFIG_DIR/debug.log"
-                                        ;;
-                                    dslite)
-                                        pkg_remove "ds-lite" "auto" "normal"
-                                        for var in $dslite_vars; do
-                                            sed -i "/^${var}=/d" "$SETUP_VARS"
-                                        done
-                                        echo "[DEBUG] Removed auto-added DS-Lite packages and variables" >> "$CONFIG_DIR/debug.log"
-                                        ;;
-                                esac
+                                
+                                # connection_autoが存在しない場合は全変数を削除
+                                if [ -z "$auto_type" ]; then
+                                    # 全パッケージと全変数を削除
+                                    pkg_remove "map" "auto" "normal"
+                                    pkg_remove "coreutils-sha1sum" "auto" "normal"
+                                    pkg_remove "ds-lite" "auto" "normal"
+                                    
+                                    for var in $mape_vars $dslite_vars $pppoe_vars $ap_vars $auto_vars; do
+                                        sed -i "/^${var}=/d" "$SETUP_VARS"
+                                    done
+                                    echo "[DEBUG] Removed all connection-related packages and variables (auto without detection)" >> "$CONFIG_DIR/debug.log"
+                                else
+                                    # connection_autoがある場合は検出されたタイプに応じて削除
+                                    case "$auto_type" in
+                                        mape)
+                                            pkg_remove "map" "auto" "normal"
+                                            pkg_remove "coreutils-sha1sum" "auto" "normal"
+                                            for var in $mape_vars; do
+                                                sed -i "/^${var}=/d" "$SETUP_VARS"
+                                            done
+                                            echo "[DEBUG] Removed auto-added MAP-E packages and variables" >> "$CONFIG_DIR/debug.log"
+                                            ;;
+                                        dslite)
+                                            pkg_remove "ds-lite" "auto" "normal"
+                                            for var in $dslite_vars; do
+                                                sed -i "/^${var}=/d" "$SETUP_VARS"
+                                            done
+                                            echo "[DEBUG] Removed auto-added DS-Lite packages and variables" >> "$CONFIG_DIR/debug.log"
+                                            ;;
+                                    esac
+                                fi
+                                
                                 for var in $auto_vars; do
                                     sed -i "/^${var}=/d" "$SETUP_VARS"
                                 done
