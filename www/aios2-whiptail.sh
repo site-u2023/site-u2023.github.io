@@ -1676,9 +1676,16 @@ PKGS
             local custom_removed
             custom_removed=$(cat "$CONFIG_DIR/custom_feed_remove_list.txt" | xargs)
             if [ -n "$custom_removed" ]; then
-                summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
+                # 通常パッケージ削除がない場合のみヘッダーを追加
+                if [ -z "$packages_to_remove" ]; then
+                    summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
+                fi
                 for pkg in $custom_removed; do
-                    summary="${summary}  - ${pkg}\n"
+                    # 通常削除リストと重複していない場合のみ追加
+                    case " $packages_to_remove " in
+                        *" $pkg "*) ;;
+                        *) summary="${summary}  - ${pkg}\n" ;;
+                    esac
                 done
                 summary="${summary}\n"
                 has_changes=1
@@ -1697,7 +1704,10 @@ PKGS
                     summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
                     while read -r pkg_pattern; do
                         [ -z "$pkg_pattern" ] && continue
-                        summary="${summary}  - ${pkg_pattern}\n"
+                        # コロン区切りの最初の部分がパッケージ名
+                        local pkg_name
+                        pkg_name=$(echo "$pkg_pattern" | cut -d':' -f1)
+                        summary="${summary}  - ${pkg_name}\n"
                     done <<PKGS
 $(echo "$packages_value" | tr ' ' '\n')
 PKGS
