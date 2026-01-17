@@ -3122,55 +3122,53 @@ auto_add_conditional_packages() {
         fi
     fi
 
-    # 初回のみキャッシュ構築
-    if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 0 ]; then
-        _CONDITIONAL_PACKAGES_CACHE=$(
-            # wifi_mode (文字列)
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|wifi_mode|${when_val}"
-            fi
+    # ★ 修正：キャッシュを毎回構築（_CONDITIONAL_PACKAGES_LOADED チェックを削除）
+    _CONDITIONAL_PACKAGES_CACHE=$(
+        # wifi_mode (文字列)
+        pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].id' 2>/dev/null)
+        when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.wifi_mode].when.wifi_mode' 2>/dev/null)
+        if [ -n "$pkg_id" ]; then
+            echo "${pkg_id}|wifi_mode|${when_val}"
+        fi
+        
+        # connection_type (配列)
+        pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
+        
+        echo "$pkg_ids" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
+            values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
+            echo "$values" | while read -r val; do
+                [ -z "$val" ] && continue
+                echo "${pkg_id}|connection_type|${val}"
+            done
+        done
+        
+        # netopt_congestion (文字列)
+        pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].id' 2>/dev/null)
+        when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].when.netopt_congestion' 2>/dev/null)
+        if [ -n "$pkg_id" ]; then
+            echo "${pkg_id}|netopt_congestion|${when_val}"
+        fi
+        
+        # net_optimizer + connection_type の複合条件
+        pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
+        echo "$pkg_ids" | while read -r pkg_id; do
+            [ -z "$pkg_id" ] && continue
             
-            # connection_type (配列)
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.connection_type].id' 2>/dev/null)
+            net_opt_val=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.net_optimizer" 2>/dev/null)
+            conn_types=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
             
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                values=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                echo "$values" | while read -r val; do
-                    [ -z "$val" ] && continue
-                    echo "${pkg_id}|connection_type|${val}"
+            if [ -n "$conn_types" ]; then
+                echo "$conn_types" | while read -r conn_val; do
+                    [ -z "$conn_val" ] && continue
+                    echo "${pkg_id}|net_optimizer_and_connection|${net_opt_val}:${conn_val}"
                 done
-            done
-            
-            # netopt_congestion (文字列) - 追加
-            pkg_id=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].id' 2>/dev/null)
-            when_val=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.netopt_congestion].when.netopt_congestion' 2>/dev/null)
-            if [ -n "$pkg_id" ]; then
-                echo "${pkg_id}|netopt_congestion|${when_val}"
             fi
-            
-            # net_optimizer + connection_type の複合条件 - 追加
-            pkg_ids=$(jsonfilter -i "$SETUP_JSON" -e '@.categories[*].packages[@.when.net_optimizer].id' 2>/dev/null)
-            echo "$pkg_ids" | while read -r pkg_id; do
-                [ -z "$pkg_id" ] && continue
-                
-                net_opt_val=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.net_optimizer" 2>/dev/null)
-                conn_types=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].packages[@.id='$pkg_id'].when.connection_type[*]" 2>/dev/null)
-                
-                if [ -n "$conn_types" ]; then
-                    echo "$conn_types" | while read -r conn_val; do
-                        [ -z "$conn_val" ] && continue
-                        echo "${pkg_id}|net_optimizer_and_connection|${net_opt_val}:${conn_val}"
-                    done
-                fi
-            done
-        )
-        _CONDITIONAL_PACKAGES_LOADED=1
-        debug_log "Conditional packages cache built:"
-        echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
-    fi
+        done
+    )
+    
+    debug_log "Conditional packages cache built:"
+    echo "$_CONDITIONAL_PACKAGES_CACHE" >> "$CONFIG_DIR/debug.log"
     
     echo "[AIOS2-DEBUG] Cache content length: $(echo "$_CONDITIONAL_PACKAGES_CACHE" | wc -l)" >> "$CONFIG_DIR/debug.log"
     echo "[AIOS2-DEBUG] About to enter while loop" >> "$CONFIG_DIR/debug.log"
