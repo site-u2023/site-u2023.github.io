@@ -3210,7 +3210,7 @@ auto_add_conditional_packages() {
     }
 	
     # grep で空行を除外してからループ
-    echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
+	echo "$_CONDITIONAL_PACKAGES_CACHE" | grep -v '^$' | while IFS='|' read -r pkg_id when_var expected; do
         echo "[AIOS2-DEBUG] Loop iteration: pkg_id='$pkg_id', when_var='$when_var', expected='$expected'" >> "$CONFIG_DIR/debug.log"
         
         [ -z "$pkg_id" ] && {
@@ -3232,7 +3232,8 @@ auto_add_conditional_packages() {
             debug_log "Complex condition: net_optimizer=$net_opt_current (expected=$net_opt_expected), connection=$effective_conn_type (expected=$conn_expected)"
             
             if [ "$net_opt_current" = "$net_opt_expected" ] && [ "$effective_conn_type" = "$conn_expected" ]; then
-                if pkg_add "$pkg_id" "auto"; then
+                # スマート追加を使用
+                if add_auto_package_smart "$pkg_id"; then
                     debug_log "[AUTO] Added package: $pkg_id (condition: net_optimizer=$net_opt_expected AND connection_type=$conn_expected)"
                     
                     local enable_var
@@ -3241,8 +3242,6 @@ auto_add_conditional_packages() {
                         echo "${enable_var}='1'" >> "$SETUP_VARS"
                         debug_log "Added enableVar: $enable_var"
                     fi
-                fi
-            else
                 if pkg_remove "$pkg_id" "auto"; then
                     debug_log "[AUTO] Removed package: $pkg_id (complex condition not met)"
                     
