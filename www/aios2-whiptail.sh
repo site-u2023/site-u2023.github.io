@@ -678,18 +678,21 @@ process_items() {
                                 esac
                                 ;;
                         esac
+                        
+                        # disabled選択時も明示的に全パッケージ削除
+                        if [ "$selected_opt" = "disabled" ]; then
+                            pkg_remove "map" "auto" "normal"
+                            pkg_remove "coreutils-sha1sum" "auto" "normal"
+                            pkg_remove "ds-lite" "auto" "normal"
+                            echo "[DEBUG] Removed all connection-related packages (disabled selected)" >> "$CONFIG_DIR/debug.log"
+                        fi
                     fi
                 fi
                 
-                # disabledの場合は変数を削除
-                if [ "$selected_opt" = "disabled" ]; then
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "[DEBUG] Selected 'disabled', removed ${variable}" >> "$CONFIG_DIR/debug.log"
-                else
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-                fi
+                # 変数を常に保存（disabledでも値として保持）
+                sed -i "/^${variable}=/d" "$SETUP_VARS"
+                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
+                echo "[DEBUG] Saved ${variable}='${selected_opt}' to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
 
                 # 既存の cleanup_radio_group_exclusive_vars 呼び出しを削除
                 # （上記の「値が変更された場合のみ」の条件内に移動したため）
