@@ -5063,18 +5063,27 @@ EOF
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
-            local script_id script_name confirmed_status action_label
+            local script_id script_name selected_option action_label
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             script_name=$(get_customscript_name "$script_id")
             [ -z "$script_name" ] && script_name="$script_id"
             
-            # CONFIRMED の値を確認
-            if grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null; then
-                action_label="install"
-            elif grep -q "^CONFIRMED='0'$" "$var_file" 2>/dev/null; then
-                action_label="remove"
+            # 現在の状態と選択状態の差分を確認
+            local installed=0
+            local confirmed=0
+            is_script_installed "$script_id" && installed=1
+            grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && confirmed=1
+            
+            # 差分がない場合はスキップ
+            [ "$installed" -eq "$confirmed" ] && continue
+            
+            selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+            
+            if [ -n "$selected_option" ]; then
+                action_label=$(get_customscript_option_label "$script_id" "$selected_option")
+                [ -z "$action_label" ] && action_label="$selected_option"
             else
-                action_label="install"
+                action_label=""
             fi
             
             printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
