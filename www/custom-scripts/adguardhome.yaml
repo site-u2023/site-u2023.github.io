@@ -16,32 +16,24 @@ dns:
     - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1001'
     - '# DNS-over-QUIC'
     - quic://unfiltered.adguard-dns.com
+    - quic://dns.nextdns.io
     - '# DNS-over-TLS'
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
-    - tls://jp.tiar.app
-    - tls://dns.nextdns.io
     - '# DNS-over-HTTPS(coercion HTTP/3)'
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
-    - h3://jp.tiarap.org/dns-query
     - h3://dns.nextdns.io
   bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
-    - 172.104.93.80
-    - 129.250.35.250
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
-    - 2400:8902::f03c:91ff:feda:c514
-    - 2001:418:3ff::53
   fallback_dns:
     - https://cloudflare-dns.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
-    - https://jp.tiar.app/dns-query
-    - https://dns.nextdns.io
   upstream_mode: parallel
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
