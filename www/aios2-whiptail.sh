@@ -1739,10 +1739,20 @@ PKGS
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
             for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
-            # CONFIRMED='1' がない場合はスキップ
-            grep -q "^CONFIRMED='1'$" "$var_file" || continue
             
             local script_id script_name selected_option action_label
+            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            
+            # 現在の状態と選択状態の差分を確認
+            local installed=0
+            local confirmed=0
+            is_script_installed "$script_id" && installed=1
+            grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && confirmed=1
+            
+            # 差分がない場合はスキップ
+            [ "$installed" -eq "$confirmed" ] && continue
+            
+            script_name=$(get_customscript_name "$script_id")
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             script_name=$(get_customscript_name "$script_id")
             [ -z "$script_name" ] && script_name="$script_id"
