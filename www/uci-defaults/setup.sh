@@ -436,13 +436,8 @@ dns:
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
     - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
-    - quic://unfiltered.adguard-dns.com
     - quic://dns.nextdns.io
-    - tls://1dot1dot1dot1.cloudflare-dns.com
-    - tls://dns.google
-    - h3://cloudflare-dns.com/dns-query
-    - h3://dns.google/dns-query
-    - h3://unfiltered.adguard-dns.com/dns-query
+    - tls://dns.nextdns.io
     - https://dns.nextdns.io
 bootstrap_dns:
     - 1.1.1.1
@@ -453,7 +448,6 @@ fallback_dns:
     - https://cloudflare-dns.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
-    - https://dns.nextdns.io/dns-query
 upstream_mode: parallel
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
