@@ -4921,11 +4921,10 @@ generate_config_summary() {
         # ========================================
         # パッケージ変更（削除 + 追加）
         # ========================================
-        
         local packages_to_remove=$(detect_packages_to_remove)
-        
         local install_list=""
         local remove_list=""
+        local package_header_printed=0
         
         local custom_feed_pkgs=""
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
@@ -4952,24 +4951,24 @@ EOF
             done
         fi
         
+        # 削除リスト構築
         if [ -n "$packages_to_remove" ]; then
             for pkg in $packages_to_remove; do
-                # まず packages_initial_snapshot.txt をチェック
                 local is_custom
                 is_custom=$(grep "^${pkg}=" "$CONFIG_DIR/packages_initial_snapshot.txt" 2>/dev/null | cut -d= -f12)
                 
-                # なければ custom_packages_initial_snapshot.txt に存在するかチェック
                 if [ -z "$is_custom" ] && grep -q "^${pkg}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
                     is_custom="1"
                 fi
                 
                 [ "$is_custom" = "1" ] && continue
                 
-                remove_list="${remove_list}remove ${pkg}
+                remove_list="${remove_list}${pkg}
 "
             done
         fi
         
+        # インストールリスト構築
         if [ -f "$SELECTED_PACKAGES" ] && [ -s "$SELECTED_PACKAGES" ]; then
             while read -r cache_line; do
                 [ -z "$cache_line" ] && continue
@@ -4979,25 +4978,47 @@ EOF
                 uid=$(echo "$cache_line" | cut -d= -f3)
                 
                 if ! is_package_installed "$pkg_id"; then
-                    install_list="${install_list}install ${pkg_id}
+                    install_list="${install_list}${pkg_id}
 "
                 fi
             done < "$SELECTED_PACKAGES"
         fi
         
-        if [ -n "$remove_list" ] || [ -n "$install_list" ]; then
-            printf "🔵 %s\n\n" "$tr_packages"
-            [ -n "$remove_list" ] && echo "$remove_list"
-            [ -n "$install_list" ] && echo "$install_list"
-            echo ""
-            has_content=1
+        # ヘッダー出力とリスト出力
+        if [ -n "$remove_list" ]; then
+            if [ "$package_header_printed" -eq 0 ]; then
+                printf "🔵 %s\n\n" "$tr_packages"
+                package_header_printed=1
+            fi
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                printf "remove %s\n" "$pkg"
+            done <<EOF
+$remove_list
+EOF
         fi
+        
+        if [ -n "$install_list" ]; then
+            if [ "$package_header_printed" -eq 0 ]; then
+                printf "🔵 %s\n\n" "$tr_packages"
+                package_header_printed=1
+            fi
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                printf "install %s\n" "$pkg"
+            done <<EOF
+$install_list
+EOF
+        fi
+        
+        [ "$package_header_printed" -eq 1 ] && { echo ""; has_content=1; }
         
         # ========================================
         # カスタムフィード変更（削除 + 追加）
         # ========================================
         local custom_install=""
         local custom_remove=""
+        local customfeed_header_printed=0
         
         if [ -f "$CUSTOMFEEDS_JSON" ]; then
             for cat_id in $(get_customfeed_categories); do
@@ -5013,7 +5034,7 @@ EOF
                     [ -z "$installed_pkgs" ] && continue
                     
                     if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
-                        custom_remove="${custom_remove}remove ${pkg_id}
+                        custom_remove="${custom_remove}${pkg_id}
 "
                     fi
                 done
@@ -5034,21 +5055,44 @@ EOF
                 installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
                 
                 if [ -z "$installed_pkgs" ]; then
-                    custom_install="${custom_install}install ${pkg_id}
+                    custom_install="${custom_install}${pkg_id}
 "
                 fi
             done < "$SELECTED_CUSTOM_PACKAGES"
         fi
         
-        if [ -n "$custom_remove" ] || [ -n "$custom_install" ]; then
-            printf "🟢 %s\n\n" "$tr_customfeeds"
-            [ -n "$custom_remove" ] && echo "$custom_remove"
-            [ -n "$custom_install" ] && echo "$custom_install"
-            echo ""
-            has_content=1
+        # ヘッダー出力とリスト出力
+        if [ -n "$custom_remove" ]; then
+            if [ "$customfeed_header_printed" -eq 0 ]; then
+                printf "🟢 %s\n\n" "$tr_customfeeds"
+                customfeed_header_printed=1
+            fi
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                printf "remove %s\n" "$pkg"
+            done <<EOF
+$custom_remove
+EOF
         fi
         
+        if [ -n "$custom_install" ]; then
+            if [ "$customfeed_header_printed" -eq 0 ]; then
+                printf "🟢 %s\n\n" "$tr_customfeeds"
+                customfeed_header_printed=1
+            fi
+            while read -r pkg; do
+                [ -z "$pkg" ] && continue
+                printf "install %s\n" "$pkg"
+            done <<EOF
+$custom_install
+EOF
+        fi
+        
+        [ "$customfeed_header_printed" -eq 1 ] && { echo ""; has_content=1; }
+        
+        # ========================================
         # 設定変数
+        # ========================================
         if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
             printf "🟡 %s\n\n" "$tr_variables"
             cat "$SETUP_VARS"
@@ -5056,16 +5100,20 @@ EOF
             has_content=1
         fi
         
+        # ========================================
         # カスタムスクリプト
+        # ========================================
+        local customscript_header_printed=0
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
             
-            local script_id script_name selected_option action_label
+            local script_id script_name
             script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-            script_name=$(get_customscript_name "$script_id")
-            [ -z "$script_name" ] && script_name="$script_id"
             
-            # 現在の状態と選択状態の差分を確認
+            # CONFIRMEDがない場合はスキップ
+            grep -q "^CONFIRMED=" "$var_file" 2>/dev/null || continue
+            
+            # 選択状態とインストール状態を比較
             local installed=0
             local confirmed=0
             is_script_installed "$script_id" && installed=1
@@ -5074,20 +5122,26 @@ EOF
             # 差分がない場合はスキップ
             [ "$installed" -eq "$confirmed" ] && continue
             
-            selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
+            script_name=$(get_customscript_name "$script_id")
+            [ -z "$script_name" ] && script_name="$script_id"
             
-            if [ -n "$selected_option" ]; then
-                action_label=$(get_customscript_option_label "$script_id" "$selected_option")
-                [ -z "$action_label" ] && action_label="$selected_option"
-            else
-                action_label=""
+            # ヘッダーを1回だけ出力
+            if [ "$customscript_header_printed" -eq 0 ]; then
+                printf "🔴 %s\n\n" "$tr_customscripts"
+                customscript_header_printed=1
             fi
             
-            printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
-            grep -Ev "^(SELECTED_OPTION|CONFIRMED)=" "$var_file"
-            echo ""
+            # パッケージと同じフォーマット: remove/install
+            if [ "$confirmed" -eq 1 ] && [ "$installed" -eq 0 ]; then
+                printf "install %s\n" "$script_name"
+            elif [ "$confirmed" -eq 0 ] && [ "$installed" -eq 1 ]; then
+                printf "remove %s\n" "$script_name"
+            fi
+            
             has_content=1
         done
+        
+        [ "$customscript_header_printed" -eq 1 ] && echo ""
         
         if [ "$has_content" -eq 0 ]; then
             echo "$(translate 'tr-tui-no-config')"
