@@ -5,19 +5,6 @@
 # Common Functions (UI-independent)
 
 VERSION="R8.0117.1930"
-MESSAGE="[Under Maintenance]"
-SHOW_MESSAGE="VERSION"
-
-DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
-[ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
-MAX_JOBS=$((DEVICE_CPU_CORES + 1))
-[ "$MAX_JOBS" -gt 8 ] && MAX_JOBS=8
-    
-DEBUG_MODE="${DEBUG_MODE:-1}"
-
-debug_log() {
-    [ "$DEBUG_MODE" -eq 1 ] && echo "[DEBUG] $*" >> "$CONFIG_DIR/debug.log"
-}
 
 # =============================================================================
 # Package Management Architecture
@@ -114,6 +101,20 @@ debug_log() {
 #   - User unchecks: luci-app-vnstat2
 #
 # =============================================================================
+
+MESSAGE="[Under Maintenance]"
+SHOW_MESSAGE="VERSION"
+
+DEVICE_CPU_CORES=$(grep -c "^processor" /proc/cpuinfo 2>/dev/null)
+[ -z "$DEVICE_CPU_CORES" ] || [ "$DEVICE_CPU_CORES" -eq 0 ] && DEVICE_CPU_CORES=1
+MAX_JOBS=$((DEVICE_CPU_CORES + 1))
+[ "$MAX_JOBS" -gt 8 ] && MAX_JOBS=8
+    
+DEBUG_MODE="${DEBUG_MODE:-1}"
+
+debug_log() {
+    [ "$DEBUG_MODE" -eq 1 ] && echo "[DEBUG] $*" >> "$CONFIG_DIR/debug.log"
+}
 
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
@@ -3132,12 +3133,14 @@ add_auto_package_smart() {
 # Format: pkg_id|group_id|when_var|expected_values|uniqueId|cat_id
 #   - group_id: 同じグループ内の条件はAND評価
 #   - expected_values: カンマ区切りでOR評価
+#   - cat_id: パッケージが属するカテゴリID
 #
 # Example cache entries:
-#   kmod-tcp-bbr|g1|netopt_congestion|bbr|
-#   kmod-tcp-bbr|g2|net_optimizer|auto|
-#   kmod-tcp-bbr|g2|connection_type|dhcp,pppoe,ap|
+#   kmod-tcp-bbr|g1|netopt_congestion|bbr||tuning-config
+#   kmod-tcp-bbr|g2|net_optimizer|auto||tuning-config
+#   kmod-tcp-bbr|g2|connection_type|dhcp,pppoe,ap||tuning-config
 # =============================================================================
+
 build_conditional_packages_cache() {
     if [ "$_CONDITIONAL_PACKAGES_LOADED" -eq 1 ]; then
         return 0
