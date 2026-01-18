@@ -443,7 +443,7 @@ dns:
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
-    - h3://dns.nextdns.io
+    - https://dns.nextdns.io
 bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
