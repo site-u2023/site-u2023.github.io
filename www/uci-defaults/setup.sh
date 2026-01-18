@@ -434,16 +434,18 @@ dns:
   refuse_any: true
   upstream_dns:
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
-    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
+    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - quic://dns.nextdns.io
     - tls://dns.nextdns.io
     - https://dns.nextdns.io
 bootstrap_dns:
-    - 1.1.1.1
-    - 8.8.8.8
+    - 2a07:a8c0::
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
+    - 45.90.28.0
+    - 1.1.1.1
+    - 8.8.8.8
 fallback_dns:
     - https://cloudflare-dns.com/dns-query
     - https://dns.google/dns-query
