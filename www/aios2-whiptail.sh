@@ -265,15 +265,6 @@ EOF
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            if [ "$selected_option" = "$current_selection" ]; then
-                # 同じオプションを再選択 → ファイルはそのままで次の画面へ
-                :
-            else
-                # 違うオプションに変更 → CONFIRMEDをクリア（新規扱い）
-                : > "$CONFIG_DIR/script_vars_${script_id}.txt"
-                echo "SELECTED_OPTION='$selected_option'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
-            fi
-            
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
@@ -343,11 +334,14 @@ custom_script_confirm_ui() {
             confirmed="OFF"
         fi
         
+        # 更新ボタンを押した時だけファイルを作成/更新
+        : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+        echo "SELECTED_OPTION='${option_id}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        write_option_envvars "$script_id" "$option_id"
+        
         if [ "$confirmed" = "ON" ]; then
-            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='1'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         else
-            sed -i "/^CONFIRMED=/d" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null
             echo "CONFIRMED='0'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
         fi
         
