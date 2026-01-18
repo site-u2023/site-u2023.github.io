@@ -5102,7 +5102,7 @@ EOF
         
         # ========================================
         # カスタムスクリプト
-        # ========================================
+        # ======================================== 
         local customscript_header_printed=0
         for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
             [ -f "$var_file" ] || continue
@@ -5131,12 +5131,16 @@ EOF
                 customscript_header_printed=1
             fi
             
-            # パッケージと同じフォーマット: remove/install
+            # アクション表示: remove/install (スクリプトIDを使用)
             if [ "$confirmed" -eq 1 ] && [ "$installed" -eq 0 ]; then
-                printf "install %s\n" "$script_name"
+                printf "install %s\n\n" "$script_id"
             elif [ "$confirmed" -eq 0 ] && [ "$installed" -eq 1 ]; then
-                printf "remove %s\n" "$script_name"
+                printf "remove %s\n\n" "$script_id"
             fi
+            
+            # 設定変数を出力（SELECTED_OPTION と CONFIRMED 以外）
+            grep -Ev "^(SELECTED_OPTION|CONFIRMED)=" "$var_file"
+            echo ""
             
             has_content=1
         done
