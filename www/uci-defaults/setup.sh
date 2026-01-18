@@ -432,22 +432,22 @@ users:
 dns:
   port: {{DNS_PORT}}
   refuse_any: true
-upstream_dns:
+  upstream_dns:
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
     - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
     - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - quic://unfiltered.adguard-dns.com
     - tls://unfiltered.adguard-dns.com
     - https://unfiltered.adguard-dns.com/dns-query
-bootstrap_dns:
+  bootstrap_dns:
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
     - 1.1.1.1
     - 8.8.8.8
-fallback_dns:
+  fallback_dns:
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
-upstream_mode: parallel
+  upstream_mode: parallel
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
 filters:
