@@ -440,16 +440,13 @@ dns:
     - tls://dns.nextdns.io
     - https://dns.nextdns.io
 bootstrap_dns:
-    - 2a07:a8c0::
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
-    - 45.90.28.0
     - 1.1.1.1
     - 8.8.8.8
 fallback_dns:
-    - https://cloudflare-dns.com/dns-query
+    - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
-    - https://unfiltered.adguard-dns.com/dns-query
 upstream_mode: parallel
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
