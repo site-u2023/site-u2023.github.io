@@ -437,12 +437,14 @@ dns:
     - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
     - quic://unfiltered.adguard-dns.com
+    - quic://dns.nextdns.io
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
-  bootstrap_dns:
+    - h3://dns.nextdns.io
+bootstrap_dns:
     - 1.1.1.1
     - 8.8.8.8
     - 2606:4700:4700::1111
