@@ -3129,7 +3129,7 @@ add_auto_package_smart() {
 # Build conditional packages cache (V3: AND条件対応版)
 # Extracts packages with "when" conditions from setup.json
 # 
-# Format: pkg_id|group_id|when_var|expected_values|uniqueId
+# Format: pkg_id|group_id|when_var|expected_values|uniqueId|cat_id
 #   - group_id: 同じグループ内の条件はAND評価
 #   - expected_values: カンマ区切りでOR評価
 #
@@ -3201,9 +3201,9 @@ build_conditional_packages_cache() {
                     fi
                     
                     if [ -n "$when_values" ]; then
-                        _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}
+                        _CONDITIONAL_PACKAGES_CACHE="${_CONDITIONAL_PACKAGES_CACHE}${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}|${cat_id}
 "
-                        debug_log "Added cache entry: ${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}"
+						debug_log "Added cache entry: ${pkg_id}|${group_id}|${when_var}|${when_values}|${unique_id}|${cat_id}"
                     fi
                 done
             fi
@@ -3245,7 +3245,7 @@ _evaluate_condition_group() {
     
     local all_match=1
     
-    while IFS='|' read -r _pkg _grp when_var expected_values _uid; do
+    while IFS='|' read -r _pkg _grp when_var expected_values _uid _cat; do
         [ -z "$when_var" ] && continue
         
         # 現在値を取得
@@ -3338,6 +3338,13 @@ auto_add_conditional_packages() {
     
     for pkg_id in $unique_pkgs; do
         [ -z "$pkg_id" ] && continue
+        
+        # カテゴリフィルタリング
+        # このパッケージが指定されたカテゴリに属するかチェック
+        if ! printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|" | grep "|${cat_id}$" | grep -q .; then
+            debug_log "Skipping package: $pkg_id (not in category $cat_id)"
+            continue
+        fi
         
         debug_log "Evaluating package: $pkg_id"
         
