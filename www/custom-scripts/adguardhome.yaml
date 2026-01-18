@@ -20,23 +20,28 @@ dns:
     - '# DNS-over-TLS'
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
+    - tls://dns10.quad9.net
     - '# DNS-over-HTTPS(coercion HTTP/3)'
     - h3://cloudflare-dns.com/dns-query
     - h3://dns.google/dns-query
     - h3://unfiltered.adguard-dns.com/dns-query
     - https://dns.nextdns.io
+    - https://dns10.quad9.net/dns-query
   bootstrap_dns:
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
     - 2a07:a8c0::
+    - 2620:fe::fe
     - 1.1.1.1
     - 8.8.8.8
     - 45.90.28.0
+    - 9.9.9.9
   fallback_dns:
     - https://cloudflare-dns.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
     - https://dns.nextdns.io/dns-query
+    - https://dns10.quad9.net/dns-query
   upstream_mode: parallel
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
