@@ -434,6 +434,8 @@ dns:
   refuse_any: true
   upstream_dns:
     - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
+    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
+    - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
     - quic://unfiltered.adguard-dns.com
     - tls://1dot1dot1dot1.cloudflare-dns.com
     - tls://dns.google
@@ -469,6 +471,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | awk '{print $1}' | cut -d. -f3-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
