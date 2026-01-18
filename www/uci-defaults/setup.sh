@@ -117,12 +117,12 @@ firewall_wan() {
         set -- ${snr:-$S}
         case "${band}" in
             2g)
-                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk-mixed'
+                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
                 nasid_suffix='-2g'
                 band_snr=$1
                 ;;
             5g)
-                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='sae-mixed'
+                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
                 nasid_suffix='-5g'
                 band_snr=$2
                 [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1'
@@ -148,6 +148,7 @@ firewall_wan() {
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
+            [ "${encryption}" = "sae" ] && SET ${iface}.ieee80211w='2' || SET ${iface}.ieee80211w='0'
             { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
                 SET ${iface}.isolate='1'
                 [ "${wifi_mode}" = "usteer" ] && {
@@ -172,8 +173,10 @@ firewall_wan() {
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0].band_steering='1'
-        SET @usteer[0].load_balancing='1'
-        SET @usteer[0].sta_block_timeout='300'
+        SET @usteer[0].load_balancing='0'
+        SET @usteer[0].sta_block_timeout='30'
+        SET @usteer[0].assoc_steering='0'
+        SET @usteer[0].probe_steering='0'
         SET @usteer[0].min_snr='20'
         SET @usteer[0].max_snr='80'
         SET @usteer[0].signal_diff_threshold='10'
