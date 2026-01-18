@@ -1731,40 +1731,46 @@ PKGS
         fi
         
         if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
+            local customscript_header_printed=0
             for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-            [ -f "$var_file" ] || continue
+                [ -f "$var_file" ] || continue
+                
+                local script_id script_name
+                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                
+                # CONFIRMEDがない場合はスキップ
+                grep -q "^CONFIRMED=" "$var_file" 2>/dev/null || continue
+                
+                # 選択状態とインストール状態を比較
+                local installed=0
+                local confirmed=0
+                is_script_installed "$script_id" && installed=1
+                grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && confirmed=1
+                
+                # 差分がない場合はスキップ
+                [ "$installed" -eq "$confirmed" ] && continue
+                
+                script_name=$(get_customscript_name "$script_id")
+                [ -z "$script_name" ] && script_name="$script_id"
+                
+                # ヘッダーを1回だけ出力
+                if [ "$customscript_header_printed" -eq 0 ]; then
+                    summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
+                    customscript_header_printed=1
+                fi
+                
+                # パッケージと同じフォーマット: remove/install
+                if [ "$confirmed" -eq 1 ] && [ "$installed" -eq 0 ]; then
+                    summary="${summary}  - install ${script_name}\n"
+                elif [ "$confirmed" -eq 0 ] && [ "$installed" -eq 1 ]; then
+                    summary="${summary}  - remove ${script_name}\n"
+                fi
+                
+                has_changes=1
+            done
             
-            local script_id script_name selected_option action_label
-            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-            
-            # 現在の状態と選択状態の差分を確認
-            local installed=0
-            local confirmed=0
-            is_script_installed "$script_id" && installed=1
-            grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && confirmed=1
-            
-            # 差分がない場合はスキップ
-            [ "$installed" -eq "$confirmed" ] && continue
-            
-            script_name=$(get_customscript_name "$script_id")
-            script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-            script_name=$(get_customscript_name "$script_id")
-            [ -z "$script_name" ] && script_name="$script_id"
-            
-            selected_option=$(grep "^SELECTED_OPTION=" "$var_file" 2>/dev/null | cut -d"'" -f2)
-            
-            if [ -n "$selected_option" ]; then
-                action_label=$(get_customscript_option_label "$script_id" "$selected_option")
-                [ -z "$action_label" ] && action_label="$selected_option"
-            else
-                action_label="unknown"
-            fi
-            
-            printf "🔴 %s: %s (%s)\n\n" "$tr_customscripts" "$script_name" "$action_label"
-            grep -Ev "^(SELECTED_OPTION|CONFIRMED)=" "$var_file"
-            echo ""
-            has_content=1
-        done
+            # カスタムスクリプトが出力された場合は改行を追加
+            [ "$customscript_header_printed" -eq 1 ] && summary="${summary}\n"
         fi
         
         if [ "$has_changes" -eq 1 ]; then
