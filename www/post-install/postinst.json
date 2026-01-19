@@ -402,6 +402,11 @@
           "checked": "false"
         },
         {
+          "id": "luci-app-advanced-reboot",
+          "name": "luci-app-advanced-reboot",
+          "description": "Dual-firmware reboot manager (Linksys/Xiaomi/ZyXEL)"
+        },
+        {
           "id": "luci-proto-wireguard",
           "name": "luci-proto-wireguard",
           "dependencies": ["luci-app-wireguard", "wireguard-tools"]
