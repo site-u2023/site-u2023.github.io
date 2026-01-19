@@ -149,11 +149,9 @@ _RESTORE() {
             break
         fi
         
-        # 追加のDFS検出（NOP中の再検出）
-        if echo "${LINE}" | grep -q "DFS-RADAR-DETECTED"; then
-            logger "ZZDFS: WARNING - Another radar detected during NOP"
-            echo "${LINE}" >> /tmp/config-software/dfs_event
-        fi
+        # ※ 削除: NOP中の追加レーダー検出監視
+        # → フォールバック中（ch36）では元のチャンネル（ch128）の
+        #   レーダー検出は発生しないため不要
     done &
     LOG_PID=$!
     
