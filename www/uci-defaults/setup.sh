@@ -447,7 +447,7 @@ dns:
   fallback_dns:
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
-  upstream_mode: parallel
+  upstream_mode: fastest_addr
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
 filters:
