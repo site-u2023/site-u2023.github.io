@@ -419,7 +419,7 @@ firewall_wan() {
         cfg_fw="${CONF}/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
-        agh_hash=$(htpasswd -B -n -b "${agh_user}" "${agh_pass}" 2>&- | cut -d: -f2)
+        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>&- | cut -d: -f2)
         [ -n "$agh_hash" ] && {
         cat > "$agh_yaml" << 'AGHEOF'
 http:
@@ -465,10 +465,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        ntp_first=$(uci -q get system.ntp.server | head -n1)
-        ntp_domain=$(echo "$ntp_first" | cut -d. -f2-)
-        [ -z "$ntp_domain" ] && ntp_domain=pool.ntp.org
-        sed -i "s|{{NTP_DOMAIN}}|$ntp_domain|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF}' 2>/dev/null)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
