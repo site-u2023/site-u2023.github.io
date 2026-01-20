@@ -106,6 +106,7 @@ firewall_wan() {
 }
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
+    RESET
     wireless_cfg=$(uci -q show wireless)
     link_id=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
@@ -172,7 +173,6 @@ firewall_wan() {
     done
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
-        SET @usteer[0]=usteer
         SET @usteer[0].roam_scan_snr='-65'
         SET @usteer[0].signal_diff_threshold='10'
         SET @usteer[0].min_snr='20'
@@ -300,7 +300,6 @@ firewall_wan() {
 }
 [ -n "${ttyd}" ] && {
     SEC=ttyd
-    SET @ttyd[0]=ttyd
     SET @ttyd[0].command='/bin/login -f root'
     SET @ttyd[0].interface="${LAN}"
 }
