@@ -173,13 +173,10 @@ firewall_wan() {
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0]=usteer
-        SET @usteer[0].band_steering='1'
-        SET @usteer[0].load_balancing='0'
-        SET @usteer[0].assoc_steering='0'
-        SET @usteer[0].probe_steering='0'
+        SET @usteer[0].roam_scan_snr='-65'
+        SET @usteer[0].signal_diff_threshold='10'
         SET @usteer[0].min_snr='20'
         SET @usteer[0].max_snr='80'
-        SET @usteer[0].signal_diff_threshold='10'
     }
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
