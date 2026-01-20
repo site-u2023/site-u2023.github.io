@@ -172,6 +172,7 @@ firewall_wan() {
     done
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
+        SET @usteer[0]=usteer
         SET @usteer[0].band_steering='1'
         SET @usteer[0].load_balancing='0'
         SET @usteer[0].assoc_steering='0'
@@ -302,6 +303,7 @@ firewall_wan() {
 }
 [ -n "${ttyd}" ] && {
     SEC=ttyd
+    SET @ttyd[0]=ttyd
     SET @ttyd[0].command='/bin/login -f root'
     SET @ttyd[0].interface="${LAN}"
 }
