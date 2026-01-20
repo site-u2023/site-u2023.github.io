@@ -1195,8 +1195,10 @@ generate_yaml() {
     ntp_server=$(uci -q get system.ntp.server | head -n1)
     ntp_domain=$(echo "$ntp_server" | awk -F. '{
         if (NF==4) print $0;
-        else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF
-    }' | sed 's/^[0-9]*\.//; s/^\([a-z][a-z]\)\.//')
+        else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF;
+        else if (NF==2) print $(NF-1)"."$NF;
+        else print $0
+    }')
     
     # Replace placeholders
     sed -i "s|{{AGH_USER}}|${AGH_USER}|g" "$yaml_tmp"
