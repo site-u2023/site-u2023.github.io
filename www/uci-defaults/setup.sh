@@ -465,7 +465,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF}' 2>/dev/null)|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>/dev/null)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
