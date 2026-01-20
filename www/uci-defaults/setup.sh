@@ -11,15 +11,15 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
-[ -f "/etc/uci-defaults/setup.sh" ] && {
-    cp -f ${CONF}/network ${CONF}/network.default
-    cp -f ${CONF}/wireless ${CONF}/wireless.default
+[ -f "/etc/uci-defaults/99-asu-defaults" ] && {
+    cp -f ${CONF}/network ${CONF}/network.def
+    cp -f ${CONF}/wireless ${CONF}/wireless.def
 }
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
-    [ -f "${CONF}/${SEC}.default" ] && cp -f "${CONF}/${SEC}.default" "${CONF}/${SEC}" && return
+    [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
@@ -509,7 +509,7 @@ AGHEOF
 # END_CMDS
 uci commit 2>/dev/null
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ ! -f "/etc/uci-defaults/setup.sh" ] && {
+[ ! -f "/etc/uci-defaults/99-asu-defaults" ] && {
     [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
         for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
             ${INIT}/$s restart 2>/dev/null
@@ -520,5 +520,5 @@ uci commit 2>/dev/null
         ${INIT}/usteer restart 2>/dev/null
     }
 }
-echo "[setup.sh] All done!"
+echo "All done!"
 exit 0
