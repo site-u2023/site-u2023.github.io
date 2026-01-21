@@ -679,6 +679,36 @@ process_items() {
             
         field)
             variable=$(get_setup_item_variable "$item_id")
+            
+            # variableが空の場合はSETUP_VARSへの保存をスキップ（lookupトリガー等の特殊フィールド）
+            if [ -z "$variable" ]; then
+                echo "[DEBUG] field $item_id has no variable, skipping save to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
+                
+                # 入力ボックスは表示するが、値は保存しない
+                default=$(get_setup_item_default "$item_id")
+                field_type=$(get_setup_item_field_type "$item_id")
+                
+                local api_source api_value
+                api_source=$(get_setup_item_api_source "$item_id")
+                if [ -n "$api_source" ]; then
+                    api_value=$(get_api_value "$api_source")
+                    current="${api_value:-$default}"
+                else
+                    current="$default"
+                fi
+                
+                value=$(show_inputbox "$item_breadcrumb" "" "$current")
+                exit_code=$?
+                
+                if ! [ "$exit_code" -eq 0 ]; then
+                    echo "[DEBUG] Inputbox cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
+                    return $RETURN_BACK
+                fi
+                
+                echo "[DEBUG] Input received but not saved (no variable): '$value'" >> "$CONFIG_DIR/debug.log"
+                return $RETURN_STAY
+            fi
+            
             default=$(get_setup_item_default "$item_id")
             field_type=$(get_setup_item_field_type "$item_id")
             
