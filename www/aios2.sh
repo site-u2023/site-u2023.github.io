@@ -3322,17 +3322,28 @@ auto_add_conditional_packages() {
         return 0
     fi
     
-    # 実効接続タイプを取得
+    # 実効接続タイプを取得（修正版）
     local effective_conn_type
     effective_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
     
-    if [ "$effective_conn_type" = "auto" ]; then
+    debug_log "Raw connection_type: '$effective_conn_type'"
+    
+    # connection_typeが設定されていない場合は処理しない
+    if [ -z "$effective_conn_type" ]; then
+        debug_log "connection_type not set, skipping connection-dependent packages"
+        effective_conn_type="__UNSET__"  # ダミー値で一致しないようにする
+    elif [ "$effective_conn_type" = "auto" ]; then
+        # autoの場合は connection_auto の値を使用
         local auto_type
         auto_type=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -n "$auto_type" ] && effective_conn_type="$auto_type"
+        
+        if [ -n "$auto_type" ]; then
+            effective_conn_type="$auto_type"
+            debug_log "connection_type=auto, resolved to: $auto_type"
+        else
+            debug_log "connection_type=auto but connection_auto not set, keeping 'auto'"
+        fi
     fi
-    
-    [ -z "$effective_conn_type" ] && effective_conn_type="auto"
     
     debug_log "Effective connection type: $effective_conn_type"
     
