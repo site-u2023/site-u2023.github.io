@@ -3354,25 +3354,6 @@ auto_add_conditional_packages() {
     for pkg_id in $unique_pkgs; do
         [ -z "$pkg_id" ] && continue
         
-        # カテゴリフィルタリング
-        # cat_id="*" の場合は全カテゴリ対象、それ以外は厳密にマッチ
-        local should_process=0
-        
-        if [ "$cat_id" = "*" ]; then
-            should_process=1
-            debug_log "Processing package: $pkg_id (all categories mode)"
-        else
-            # このパッケージが指定されたカテゴリに属するかチェック
-            if printf '%s' "$_CONDITIONAL_PACKAGES_CACHE" | grep "^${pkg_id}|" | grep "|${cat_id}$" | grep -q .; then
-                should_process=1
-                debug_log "Processing package: $pkg_id (category match: $cat_id)"
-            else
-                debug_log "Skipping package: $pkg_id (not in category $cat_id)"
-            fi
-        fi
-        
-        [ "$should_process" -eq 0 ] && continue
-        
         debug_log "Evaluating package: $pkg_id"
         
         # このパッケージの全グループIDを取得
