@@ -109,6 +109,7 @@ firewall_wan() {
     RESET
     wireless_cfg=$(uci -q show wireless)
     link_id=0
+    radio_count=0
     for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
         SET ${radio}.country="${country}"
@@ -119,23 +120,19 @@ firewall_wan() {
         case "${band}" in
             2g)
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
-                nasid_suffix='-2g'
                 band_snr=$1
                 ;;
             5g)
                 [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
-                nasid_suffix='-5g'
                 band_snr=$2
                 [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1'
                 ;;
             6g)
                 encryption='sae'
-                nasid_suffix='-6g'
                 band_snr=$3
                 ;;
             *)
                 encryption='psk-mixed'
-                nasid_suffix=''
                 band_snr=20
                 ;;
         esac
@@ -156,7 +153,7 @@ firewall_wan() {
                     SET ${iface}.ieee80211r='1'
                     SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
                     SET ${iface}.ft_over_ds='1'
-                    SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"
+                    SET ${iface}.nasid="${wlan_ssid}-${radio_count}"
                     SET ${iface}.ieee80211k='1'
                     SET ${iface}.ieee80211v='1'
                 }
@@ -170,6 +167,7 @@ firewall_wan() {
             }
         }
         link_id=$((link_id + 1))
+        radio_count=$((radio_count + 1))
     done
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
