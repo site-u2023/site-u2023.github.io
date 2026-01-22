@@ -750,7 +750,10 @@ init() {
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
-    : > "$SETUP_VARS"
+    
+    # SETUP_VARS は初回起動時のみ作成（既存ファイルは保持）
+    [ ! -f "$SETUP_VARS" ] && : > "$SETUP_VARS"
+    
     : > "$CONFIG_DIR/debug.log"
 
     download_postinst_json >/dev/null 2>&1
