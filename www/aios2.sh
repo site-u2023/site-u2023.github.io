@@ -961,6 +961,24 @@ get_extended_device_info() {
     
     get_device_info
     OPENWRT_VERSION=$(grep 'DISTRIB_RELEASE' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+    
+    # ★ 汎用的なバージョン正規化
+    # パターン1: 19.07-9 → 19.07.9 (QSDK等のハイフン区切り)
+    # パターン2: 22.03.5 → そのまま (公式OpenWrt)
+    # パターン3: 4.5.0-release1 → 4.5.0 (GL.iNet等の独自ビルド)
+    
+    # まず DISTRIB_TARGET をチェックして特殊ケースを判定
+    DEVICE_TARGET_RAW=$(grep 'DISTRIB_TARGET' /etc/openwrt_release 2>/dev/null | cut -d"'" -f2)
+    
+    # QSDKベース判定 (ipq95xx, ipq807x など)
+    case "$DEVICE_TARGET_RAW" in
+        ipq95xx/*|ipq807x/*|ipq60xx/*|ipq50xx/*)
+            # QSDKの場合、ハイフンをドットに変換
+            OPENWRT_VERSION=$(echo "$OPENWRT_VERSION" | sed 's/-/./g')
+            debug_log "QSDK detected, normalized version: $OPENWRT_VERSION"
+            ;;
+    esac
+    
     OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2)
     
     # DISTRIB_RELEASEも保持（チャンネル判定用）
