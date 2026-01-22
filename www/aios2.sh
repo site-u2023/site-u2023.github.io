@@ -986,13 +986,13 @@ get_extended_device_info() {
     DISTRIB_RELEASE="$OPENWRT_VERSION" 
     
     # APIから値を抽出して変数に設定
-    _set_api_value() {
-        local var_name="$1"
-        local json_path="$2"
-        local value
-        value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
-        eval "${var_name}='${value}'"
-    }
+	_set_api_value() {
+    	local var_name="$1"
+    	local json_path="$2"
+    	local value
+    	value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
+    	export "${var_name}=${value}"
+	}
     
     # 基本情報
     _set_api_value 'AUTO_LANGUAGE'      'language'
