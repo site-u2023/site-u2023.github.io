@@ -3528,7 +3528,7 @@ cleanup_radio_group_exclusive_vars() {
         local original_conn_type
         original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
-        echo "[DEBUG] cleanup_radio: original='$original_conn_type', current='$current_value'" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] cleanup_radio: original='$original_conn_type'" >> "$CONFIG_DIR/debug.log"
         
         # auto 以外の場合のみ connection_auto を削除
         if [ "$original_conn_type" != "auto" ]; then
@@ -3536,69 +3536,7 @@ cleanup_radio_group_exclusive_vars() {
             echo "[EXCLUSIVE] Removed connection_auto (not auto mode)" >> "$CONFIG_DIR/debug.log"
         fi
         
-        # ★ データ変数は削除しない（保護リスト）
-        # これらは setup.json の export_exclusions.connection_type.auto に定義されている
-        local protected_vars="peeraddr ipaddr ip4prefixlen ip6prefix ip6prefixlen ealen psidlen offset ip6prefix_gua"
-        
-        echo "[DEBUG] Protected data variables: $protected_vars" >> "$CONFIG_DIR/debug.log"
-        
-        # 保護リスト以外の変数を削除（UI制御変数のみ）
-        local all_exclusive_vars=""
-        local options
-        options=$(get_setup_item_options "$item_id")
-        
-        while read -r option_value; do
-            [ -z "$option_value" ] || [ "$option_value" = "___EMPTY___" ] && continue
-            
-            # 現在選択されていないオプションの変数を収集
-            if [ "$option_value" != "$current_value" ]; then
-                local vars_json
-                vars_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars.${option_value}[*]" 2>/dev/null)
-                
-                if [ -z "$vars_json" ]; then
-                    vars_json=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$item_id'].exclusiveVars.${option_value}[*]" 2>/dev/null)
-                fi
-                
-                # 保護リストに含まれない変数のみ削除対象に追加
-                while read -r var_name; do
-                    [ -z "$var_name" ] && continue
-                    
-                    # 保護リストチェック
-                    local is_protected=0
-                    for protected_var in $protected_vars; do
-                        if [ "$var_name" = "$protected_var" ]; then
-                            is_protected=1
-                            echo "[DEBUG] Variable '$var_name' is protected (data variable)" >> "$CONFIG_DIR/debug.log"
-                            break
-                        fi
-                    done
-                    
-                    # 保護されていない場合のみ削除リストに追加
-                    if [ "$is_protected" -eq 0 ]; then
-                        all_exclusive_vars="${all_exclusive_vars}${var_name}
-"
-                    fi
-                done <<EOF
-$vars_json
-EOF
-            fi
-        done <<OPTIONS
-$options
-OPTIONS
-        
-        # 削除実行
-        while read -r var_name; do
-            [ -z "$var_name" ] && continue
-            
-            if grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
-                sed -i "/^${var_name}=/d" "$SETUP_VARS"
-                echo "[EXCLUSIVE] Removed UI control variable: $var_name" >> "$CONFIG_DIR/debug.log"
-            fi
-        done <<VARS
-$all_exclusive_vars
-VARS
-        
-        echo "[DEBUG] connection-type cleanup completed (data variables preserved)" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Data variables preserved" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 	
