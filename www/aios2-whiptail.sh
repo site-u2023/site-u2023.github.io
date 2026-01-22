@@ -410,6 +410,12 @@ $(translate 'tr-tui-use-auto-config')"
         if show_yesno "$breadcrumb" "$info"; then
             set_var "connection_type" "auto"
             set_var "connection_auto" "mape"
+            if [ -n "$MAPE_GUA_PREFIX" ]; then
+                set_var "mape_type" "gua"
+                set_var "ip6prefix_gua" "$MAPE_GUA_PREFIX"
+            else
+                set_var "mape_type" "pd"
+            fi     
             set_var "ip6prefix_gua" "$MAPE_GUA_PREFIX"
             set_var "peeraddr" "$MAPE_BR"
             set_var "ipaddr" "$MAPE_IPV4_PREFIX"
