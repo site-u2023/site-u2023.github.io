@@ -3527,23 +3527,16 @@ cleanup_radio_group_exclusive_vars() {
 
     # connection-type 変更時はAPI生データ変数も削除
     if [ "$item_id" = "connection-type" ]; then
-        # 元の connection_type の値を取得（実効値ではなく、SETUP_VARS から直接）
+        # 元の connection_type の値を SETUP_VARS から直接取得
         local original_conn_type
         original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
-        echo "[DEBUG] original_conn_type='$original_conn_type'" >> "$CONFIG_DIR/debug.log"
-        
-        # auto または mape 以外の場合のみ、setup.json 定義の変数を削除
-        if [ "$original_conn_type" != "mape" ] && [ "$original_conn_type" != "auto" ]; then
-            # mape/auto 用の変数を削除
-            sed -i '/^ip6prefix_gua=/d; /^peeraddr=/d; /^ipaddr=/d; /^ip4prefixlen=/d; /^ip6prefix=/d; /^ip6prefixlen=/d; /^ealen=/d; /^psidlen=/d; /^offset=/d' "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed MAP-E variables (original_conn_type='$original_conn_type')" >> "$CONFIG_DIR/debug.log"
-        fi
+        echo "[DEBUG] cleanup_radio: original='$original_conn_type', current='$current_value'" >> "$CONFIG_DIR/debug.log"
         
         # auto 以外の場合のみ connection_auto を削除
         if [ "$original_conn_type" != "auto" ]; then
             sed -i '/^connection_auto=/d' "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed connection_auto variable (original_conn_type='$original_conn_type')" >> "$CONFIG_DIR/debug.log"
+            echo "[EXCLUSIVE] Removed connection_auto (not auto mode)" >> "$CONFIG_DIR/debug.log"
         fi
     fi
 	
@@ -3559,6 +3552,15 @@ cleanup_radio_group_exclusive_vars() {
         echo "[DEBUG] No exclusiveVars defined for $item_id" >> "$CONFIG_DIR/debug.log"
         return 0
     }
+    
+    # connection-type の場合は元の値を使用（実効値ではなく）
+    local effective_value="$current_value"
+    if [ "$item_id" = "connection-type" ]; then
+        local original_conn_type
+        original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        [ -n "$original_conn_type" ] && effective_value="$original_conn_type"
+        echo "[DEBUG] Using original value for exclusiveVars check: '$effective_value'" >> "$CONFIG_DIR/debug.log"
+    fi
     
     # 全オプションの変数リストを取得
     local all_exclusive_vars=""
@@ -3577,7 +3579,7 @@ cleanup_radio_group_exclusive_vars() {
         fi
         
         # 現在選択されていないオプションの変数を削除対象に追加
-        if [ "$option_value" != "$current_value" ]; then
+        if [ "$option_value" != "$effective_value" ]; then
             all_exclusive_vars="${all_exclusive_vars}${vars_json}
 "
         fi
@@ -3591,7 +3593,7 @@ EOF
         
         if grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
             sed -i "/^${var_name}=/d" "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed variable: $var_name (not in current selection: $current_value)" >> "$CONFIG_DIR/debug.log"
+            echo "[EXCLUSIVE] Removed variable: $var_name (not in current selection: $effective_value)" >> "$CONFIG_DIR/debug.log"
         fi
     done <<EOF
 $all_exclusive_vars
@@ -5756,10 +5758,6 @@ aios2_main() {
         echo "Error: UI module aios2-${UI_MODE}.sh not found."
         return 1
     fi
-    
-    echo ""
-    echo "Thank you for using aios2!"
-    echo ""
 }
 
 # オプション処理
