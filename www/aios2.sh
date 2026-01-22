@@ -661,6 +661,8 @@ convert_install_option() {
 }
 
 init() {
+    [ -n "$INIT_DONE" ] && return 0
+    INIT_DONE=1
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
 
     mkdir -p "$CONFIG_DIR"
