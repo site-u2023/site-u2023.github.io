@@ -503,19 +503,5 @@ AGHEOF
 # END_CMDS
 uci commit 2>&-
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
-[ ! -f "/etc/uci-defaults/99-asu-defaults" ] && {
-    {
-        sleep 5
-        [ "${connection_type}" != "disabled" ] && [ "${connection_type}" != "dhcp" ] && {
-            for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
-                ${INIT}/$s restart 2>&-
-            done
-        }
-        [ -n "${wifi_mode}" ] && [ "${wifi_mode}" != "disabled" ] && {
-            wifi reload 2>&-
-            ${INIT}/usteer restart 2>&-
-        }
-    } >/dev/null 2>&1 &
-}
 echo "All done!"
 exit 0
