@@ -546,7 +546,7 @@
             ],
             "dhcp": [],
             "pppoe": ["pppoe_username", "pppoe_password"],
-            "dslite": ["peeraddr"],
+            "dslite": ["dslite_peeraddr"],
             "mape": [
               "peeraddr", "ipaddr", "ip4prefixlen",
               "ip6prefix", "ip6prefixlen", "ealen",
@@ -804,7 +804,7 @@
               "label": "AFTR Address",
               "class": "tr-dslite-aftr-ipv6-address",
               "fieldType": "text",
-              "variable": "peeraddr",
+              "variable": "dslite_peeraddr",
               "placeholder": "gw.transix.jp or IPv6 address",
               "default": "2404:8e00::feed:100",
               "apiSource": "aftr.aftrAddress",
@@ -826,7 +826,7 @@
               "label": "IP Address",
               "class": "tr-ap-ip-address",
               "fieldType": "text",
-              "variable": "ipaddr",
+              "variable": "ap_ipaddr",
               "placeholder": "192.168.1.2/24",
               "default": "192.168.1.2/24"
             },
