@@ -119,7 +119,6 @@ debug_log() {
 SCRIPT_NAME=$(basename "$0")
 BASE_TMP_DIR="/tmp"
 CONFIG_DIR="$BASE_TMP_DIR/aios2"
-INIT_FLAG="$CONFIG_DIR/.init_done"
 BACKUP_DIR="/etc/aios2/backup"
 RESTORE_PATH_CONFIG="/etc/aios2/restore_path.txt"
 MAX_BACKUPS="10"
@@ -662,8 +661,6 @@ convert_install_option() {
 }
 
 init() {
-    [ -f "$INIT_FLAG" ] && return 0
-    touch "$INIT_FLAG"
     local LOCK_FILE="$CONFIG_DIR/.aios2.lock"
 
     mkdir -p "$CONFIG_DIR"
