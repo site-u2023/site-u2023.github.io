@@ -956,6 +956,15 @@ get_language_code() {
     echo "[DEBUG] get_language_code: Final AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
 }
 
+# APIから値を抽出して変数に設定
+set_api_value() {
+    local var_name="$1"
+    local json_path="$2"
+    local value
+    value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
+    export "${var_name}=${value}"
+}
+	
 get_extended_device_info() {
     # LuCIから言語設定を事前取得
     get_language_code
@@ -985,38 +994,29 @@ get_extended_device_info() {
     # DISTRIB_RELEASEも保持（チャンネル判定用）
     DISTRIB_RELEASE="$OPENWRT_VERSION" 
     
-    # APIから値を抽出して変数に設定
-	_set_api_value() {
-    	local var_name="$1"
-    	local json_path="$2"
-    	local value
-    	value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
-    	export "${var_name}=${value}"
-	}
-    
     # 基本情報
-    _set_api_value 'AUTO_LANGUAGE'      'language'
-    _set_api_value 'AUTO_TIMEZONE'      'timezone'
-    _set_api_value 'AUTO_ZONENAME'      'zonename'
-    _set_api_value 'AUTO_COUNTRY'       'country'
-    _set_api_value 'ISP_NAME'           'isp'
-    _set_api_value 'ISP_AS'             'as'
-    _set_api_value 'ISP_IPV6'           'ipv6'
+    set_api_value 'AUTO_LANGUAGE'      'language'
+    set_api_value 'AUTO_TIMEZONE'      'timezone'
+    set_api_value 'AUTO_ZONENAME'      'zonename'
+    set_api_value 'AUTO_COUNTRY'       'country'
+    set_api_value 'ISP_NAME'           'isp'
+    set_api_value 'ISP_AS'             'as'
+    set_api_value 'ISP_IPV6'           'ipv6'
     
     # MAP-E
-    _set_api_value 'MAPE_BR'            'mape.brIpv6Address'
-    _set_api_value 'MAPE_EALEN'         'mape.eaBitLength'
-    _set_api_value 'MAPE_IPV4_PREFIX'   'mape.ipv4Prefix'
-    _set_api_value 'MAPE_IPV4_PREFIXLEN' 'mape.ipv4PrefixLength'
-    _set_api_value 'MAPE_IPV6_PREFIX'   'mape.ipv6Prefix'
-    _set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
-    _set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
-    _set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
+    set_api_value 'MAPE_BR'            'mape.brIpv6Address'
+    set_api_value 'MAPE_EALEN'         'mape.eaBitLength'
+    set_api_value 'MAPE_IPV4_PREFIX'   'mape.ipv4Prefix'
+    set_api_value 'MAPE_IPV4_PREFIXLEN' 'mape.ipv4PrefixLength'
+    set_api_value 'MAPE_IPV6_PREFIX'   'mape.ipv6Prefix'
+    set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
+    set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
+    set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
   
     # DS-Lite
-    _set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
-    _set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
-    _set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
+    set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
+    set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
+    set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
     
     reset_detected_conn_type
     detect_ipv6_type
