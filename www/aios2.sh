@@ -750,10 +750,8 @@ init() {
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
-    
     # SETUP_VARS は初回起動時のみ作成（既存ファイルは保持）
     [ ! -f "$SETUP_VARS" ] && : > "$SETUP_VARS"
-    
     : > "$CONFIG_DIR/debug.log"
 
     download_postinst_json >/dev/null 2>&1
@@ -3525,13 +3523,12 @@ cleanup_radio_group_exclusive_vars() {
     echo "[DEBUG] === cleanup_radio_group_exclusive_vars ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] item_id=$item_id, current_value=$current_value" >> "$CONFIG_DIR/debug.log"
 
-    # connection-type の場合は特別処理
+    # connection-type の場合は特別処理（データ変数は削除しない）
     if [ "$item_id" = "connection-type" ]; then
-        # 元の connection_type の値を SETUP_VARS から直接取得
         local original_conn_type
         original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
-        echo "[DEBUG] cleanup_radio: original='$original_conn_type', current='$current_value'" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] cleanup_radio: original='$original_conn_type'" >> "$CONFIG_DIR/debug.log"
         
         # auto 以外の場合のみ connection_auto を削除
         if [ "$original_conn_type" != "auto" ]; then
@@ -3539,13 +3536,11 @@ cleanup_radio_group_exclusive_vars() {
             echo "[EXCLUSIVE] Removed connection_auto (not auto mode)" >> "$CONFIG_DIR/debug.log"
         fi
         
-        # API 取得値（peeraddr, ipaddr など）は絶対に削除しない
-        echo "[DEBUG] API values preserved (never deleted)" >> "$CONFIG_DIR/debug.log"
-        echo "[DEBUG] === cleanup_radio_group_exclusive_vars finished ===" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] Data variables preserved" >> "$CONFIG_DIR/debug.log"
         return 0
     fi
 	
-    # connection-type 以外の場合は通常の exclusiveVars 処理
+    # exclusiveVars の存在確認
     local has_exclusive
     has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
     
@@ -3728,7 +3723,6 @@ reset_state_for_next_session() {
     # 選択パッケージ（ファイル）をクリア（削除ではなく空にする）
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
-    
     # SETUP_VARS を完全にクリア（前回の設定は全て適用済み）
     : > "$SETUP_VARS"
     # 現在の言語設定を再取得
