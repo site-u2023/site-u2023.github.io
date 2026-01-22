@@ -453,7 +453,7 @@ $(translate 'tr-tui-use-auto-config')"
         if show_yesno "$breadcrumb" "$info"; then
             set_var "connection_type" "auto"
             set_var "connection_auto" "dslite"
-            set_var "peeraddr" "$DSLITE_AFTR"
+            set_var "dslite_peeraddr" "$DSLITE_AFTR"
 
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
