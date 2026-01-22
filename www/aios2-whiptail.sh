@@ -386,7 +386,7 @@ ${tr_mape_notice}
 "
         [ -n "$MAPE_GUA_PREFIX" ] && info="${info}option ip6prefix_gua $MAPE_GUA_PREFIX
 "
-        info="${info}option peeraddr $MAPE_BR
+        [ -n "$MAPE_BR" ] && info="${info}option peeraddr $MAPE_BR
 "
         [ -n "$MAPE_IPV4_PREFIX" ] && info="${info}option ipaddr $MAPE_IPV4_PREFIX
 "
