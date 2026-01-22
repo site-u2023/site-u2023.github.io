@@ -3525,7 +3525,7 @@ cleanup_radio_group_exclusive_vars() {
     echo "[DEBUG] === cleanup_radio_group_exclusive_vars ===" >> "$CONFIG_DIR/debug.log"
     echo "[DEBUG] item_id=$item_id, current_value=$current_value" >> "$CONFIG_DIR/debug.log"
 
-    # connection-type 変更時はAPI生データ変数も削除
+    # connection-type の場合は特別処理
     if [ "$item_id" = "connection-type" ]; then
         # 元の connection_type の値を SETUP_VARS から直接取得
         local original_conn_type
@@ -3538,9 +3538,14 @@ cleanup_radio_group_exclusive_vars() {
             sed -i '/^connection_auto=/d' "$SETUP_VARS"
             echo "[EXCLUSIVE] Removed connection_auto (not auto mode)" >> "$CONFIG_DIR/debug.log"
         fi
+        
+        # API 取得値（peeraddr, ipaddr など）は絶対に削除しない
+        echo "[DEBUG] API values preserved (never deleted)" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] === cleanup_radio_group_exclusive_vars finished ===" >> "$CONFIG_DIR/debug.log"
+        return 0
     fi
 	
-    # exclusiveVars の存在確認
+    # connection-type 以外の場合は通常の exclusiveVars 処理
     local has_exclusive
     has_exclusive=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].exclusiveVars" 2>/dev/null | head -1)
     
@@ -3552,15 +3557,6 @@ cleanup_radio_group_exclusive_vars() {
         echo "[DEBUG] No exclusiveVars defined for $item_id" >> "$CONFIG_DIR/debug.log"
         return 0
     }
-    
-    # connection-type の場合は元の値を使用（実効値ではなく）
-    local effective_value="$current_value"
-    if [ "$item_id" = "connection-type" ]; then
-        local original_conn_type
-        original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-        [ -n "$original_conn_type" ] && effective_value="$original_conn_type"
-        echo "[DEBUG] Using original value for exclusiveVars check: '$effective_value'" >> "$CONFIG_DIR/debug.log"
-    fi
     
     # 全オプションの変数リストを取得
     local all_exclusive_vars=""
@@ -3579,7 +3575,7 @@ cleanup_radio_group_exclusive_vars() {
         fi
         
         # 現在選択されていないオプションの変数を削除対象に追加
-        if [ "$option_value" != "$effective_value" ]; then
+        if [ "$option_value" != "$current_value" ]; then
             all_exclusive_vars="${all_exclusive_vars}${vars_json}
 "
         fi
@@ -3593,7 +3589,7 @@ EOF
         
         if grep -q "^${var_name}=" "$SETUP_VARS" 2>/dev/null; then
             sed -i "/^${var_name}=/d" "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed variable: $var_name (not in current selection: $effective_value)" >> "$CONFIG_DIR/debug.log"
+            echo "[EXCLUSIVE] Removed variable: $var_name (not in current selection: $current_value)" >> "$CONFIG_DIR/debug.log"
         fi
     done <<EOF
 $all_exclusive_vars
