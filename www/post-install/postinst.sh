@@ -4,7 +4,7 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+# exec > >(tee -a /tmp/aios2/debug.log) 2>&1
 
 [ -n "$INSTALL_CMD" ] && eval "$INSTALL_CMD"
 
