@@ -407,34 +407,24 @@ ${tr_mape_notice}
 
 $(translate 'tr-tui-use-auto-config')"
         
-        # ★修正：show_yesnoの戻り値を直接判定
         if show_yesno "$breadcrumb" "$info"; then
-            echo "[DEBUG] User selected YES for MAP-E auto-config" >> "$CONFIG_DIR/debug.log"
-            
-            # ★修正：sed削除→set_var呼び出しに変更（API生値も保存）
             set_var "connection_type" "auto"
             set_var "connection_auto" "mape"
-            
-            # ★追加：MAP-Eパラメータを全て保存（setup.shでの判定用）
-            [ -n "$MAPE_GUA_PREFIX" ] && set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
-            [ -n "$MAPE_BR" ] && set_var "mape_br" "$MAPE_BR"
-            [ -n "$MAPE_IPV4_PREFIX" ] && set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
-            [ -n "$MAPE_IPV4_PREFIXLEN" ] && set_var "mape_ipv4_prefixlen" "$MAPE_IPV4_PREFIXLEN"
-            [ -n "$MAPE_IPV6_PREFIX" ] && set_var "mape_ipv6_prefix" "$MAPE_IPV6_PREFIX"
-            [ -n "$MAPE_IPV6_PREFIXLEN" ] && set_var "mape_ipv6_prefixlen" "$MAPE_IPV6_PREFIXLEN"
-            [ -n "$MAPE_EALEN" ] && set_var "mape_ealen" "$MAPE_EALEN"
-            [ -n "$MAPE_PSIDLEN" ] && set_var "mape_psidlen" "$MAPE_PSIDLEN"
-            [ -n "$MAPE_PSID_OFFSET" ] && set_var "mape_psid_offset" "$MAPE_PSID_OFFSET"
-            
-            echo "[DEBUG] MAP-E parameters saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-            
-            # ★追加：条件パッケージの自動追加（変更検知用に最新状態で実行）
+            set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
+            set_var "mape_br" "$MAPE_BR"
+            set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
+            set_var "mape_ipv4_prefixlen" "$MAPE_IPV4_PREFIXLEN"
+            set_var "mape_ipv6_prefix" "$MAPE_IPV6_PREFIX"
+            set_var "mape_ipv6_prefixlen" "$MAPE_IPV6_PREFIXLEN"
+            set_var "mape_ealen" "$MAPE_EALEN"
+            set_var "mape_psidlen" "$MAPE_PSIDLEN"
+            set_var "mape_psid_offset" "$MAPE_PSID_OFFSET"
+
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
             
             return 0
         else
-            echo "[DEBUG] User selected NO, resetting detection" >> "$CONFIG_DIR/debug.log"
             reset_detected_conn_type
             return 1
         fi
@@ -460,32 +450,21 @@ ${tr_dslite_notice}
 
 $(translate 'tr-tui-use-auto-config')"
         
-        # ★修正：DS-Liteも同様に修正
         if show_yesno "$breadcrumb" "$info"; then
-            echo "[DEBUG] User selected YES for DS-Lite auto-config" >> "$CONFIG_DIR/debug.log"
-            
             set_var "connection_type" "auto"
             set_var "connection_auto" "dslite"
-            
-            # ★追加：DS-LiteパラメータをSETUP_VARSに保存
-            [ -n "$DSLITE_AFTR" ] && set_var "dslite_aftr_address" "$DSLITE_AFTR"
-            [ -n "$DSLITE_AFTR_TYPE" ] && set_var "dslite_aftr_type" "$DSLITE_AFTR_TYPE"
-            [ -n "$DSLITE_JURISDICTION" ] && set_var "dslite_jurisdiction" "$DSLITE_JURISDICTION"
-            
-            echo "[DEBUG] DS-Lite parameters saved to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-            
+            set_var "dslite_aftr_address" "$DSLITE_AFTR"
+
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
             
             return 0
         else
-            echo "[DEBUG] User selected NO, resetting detection" >> "$CONFIG_DIR/debug.log"
             reset_detected_conn_type
             return 1
         fi
         
     else
-        # ★変更なし：不明/DHCPの場合
         local tr_isp_info tr_manual_config
         tr_isp_info=$(translate "tr-tui-isp-info")
         tr_manual_config=$(translate "tr-tui-manual-config-required")
