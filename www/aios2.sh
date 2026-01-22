@@ -3527,18 +3527,24 @@ cleanup_radio_group_exclusive_vars() {
 
     # connection-type 変更時はAPI生データ変数も削除
     if [ "$item_id" = "connection-type" ]; then
-        [ "$current_value" != "mape" ] && [ "$current_value" != "auto" ] && {
-            sed -i '/^mape_/d' "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed mape_* variables" >> "$CONFIG_DIR/debug.log"
-        }
-        [ "$current_value" != "dslite" ] && [ "$current_value" != "auto" ] && {
-            sed -i '/^dslite_/d' "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed dslite_* variables" >> "$CONFIG_DIR/debug.log"
-        }
-        [ "$current_value" != "auto" ] && {
+        # 元の connection_type の値を取得（実効値ではなく、SETUP_VARS から直接）
+        local original_conn_type
+        original_conn_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        
+        echo "[DEBUG] original_conn_type='$original_conn_type'" >> "$CONFIG_DIR/debug.log"
+        
+        # auto または mape 以外の場合のみ、setup.json 定義の変数を削除
+        if [ "$original_conn_type" != "mape" ] && [ "$original_conn_type" != "auto" ]; then
+            # mape/auto 用の変数を削除
+            sed -i '/^ip6prefix_gua=/d; /^peeraddr=/d; /^ipaddr=/d; /^ip4prefixlen=/d; /^ip6prefix=/d; /^ip6prefixlen=/d; /^ealen=/d; /^psidlen=/d; /^offset=/d' "$SETUP_VARS"
+            echo "[EXCLUSIVE] Removed MAP-E variables (original_conn_type='$original_conn_type')" >> "$CONFIG_DIR/debug.log"
+        fi
+        
+        # auto 以外の場合のみ connection_auto を削除
+        if [ "$original_conn_type" != "auto" ]; then
             sed -i '/^connection_auto=/d' "$SETUP_VARS"
-            echo "[EXCLUSIVE] Removed connection_auto variable" >> "$CONFIG_DIR/debug.log"
-        }
+            echo "[EXCLUSIVE] Removed connection_auto variable (original_conn_type='$original_conn_type')" >> "$CONFIG_DIR/debug.log"
+        fi
     fi
 	
     # exclusiveVars の存在確認
