@@ -3954,6 +3954,12 @@ function generatePackageSelector() {
             updatePackageSizeDisplay();
         });
     }
+    
+    requestAnimationFrame(() => {
+        if (current_language_json) {
+            applyCustomTranslations(current_language_json);
+        }
+    });
 }
 
 function createHiddenPackageCheckbox(pkg) {
