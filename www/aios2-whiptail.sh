@@ -1593,8 +1593,8 @@ EOF
         local failed_scripts=""
         
         local packages_to_install=""
-        if [ "$HAS_INSTALL" -eq 1 ] && [ -f "$CONFIG_DIR/postinst.sh" ]; then
-            packages_to_install=$(grep '^INSTALL_CMD=' "$CONFIG_DIR/postinst.sh" 2>/dev/null | cut -d'"' -f2 | sed 's/.*apk add //;s/.*opkg install //' | tr ' ' '\n' | grep -v '^-' | grep -v '^$')
+        if [ "$HAS_INSTALL" -eq 1 ] && [ -f "$GENERATED_POSTINST" ]; then
+            packages_to_install=$(grep '^INSTALL_CMD=' "$GENERATED_POSTINST" 2>/dev/null | cut -d'"' -f2 | sed 's/.*apk add //;s/.*opkg install //' | tr ' ' '\n' | grep -v '^-' | grep -v '^$')
         fi
         
         if [ "$HAS_REMOVE" -eq 1 ]; then
@@ -1616,7 +1616,7 @@ EOF
         if [ "$HAS_INSTALL" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-packages')"
-            sh "$CONFIG_DIR/postinst.sh" || return 1
+            sh "$GENERATED_POSTINST" || return 1
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
                 failed_scripts="${failed_scripts}postinst.sh "
@@ -1647,11 +1647,11 @@ EOF
             echo ""
             echo "$(translate 'tr-tui-applying-config')"
             
-            sh "$CONFIG_DIR/setup.sh"
+            sh "$GENERATED_SETUP"
             
             if [ $? -ne 0 ]; then
                 failed_count=$((failed_count + 1))
-                failed_scripts="${failed_scripts}setup.sh "
+                failed_scripts="${failed_scripts}$(basename "$GENERATED_SETUP") "
             else
                 echo "$(translate 'tr-tui-config-applied')"
             fi
