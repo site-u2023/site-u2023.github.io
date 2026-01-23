@@ -4044,6 +4044,8 @@ function createPackageItem(pkg) {
     return packageItem;
 }
 
+// ==================== パッケージデータベース ====================
+
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     const label = document.createElement('label');
     label.className = 'form-check-label';
@@ -4102,7 +4104,6 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         urlLink.textContent = ' 🔗';
         urlLink.className = 'package-webui-link';
         urlLink.title = webUrl;
-        urlLink.style.textDecoration = 'none';
         urlLink.onclick = (e) => e.stopPropagation();
         
         label.appendChild(urlLink);
