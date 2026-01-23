@@ -468,12 +468,7 @@ log:
   file: ""
 schema_version: 29
 AGHEOF
-        sed -i "s|{{AGH_USER}}|${agh_user}|g" "$agh_yaml"
-        sed -i "s|{{AGH_HASH}}|${agh_hash}|g" "$agh_yaml"
-        sed -i "s|{{WEB_PORT}}|${agh_web_port}|g" "$agh_yaml"
-        sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
-        sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
-        sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{AGH_USER}}|${agh_user}|g;s|{{AGH_HASH}}|${agh_hash}|g;s|{{WEB_PORT}}|${agh_web_port}|g;s|{{DNS_PORT}}|${agh_dns_port}|g;s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g;s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
         sed -i "s|{{NTP_DOMAIN}}|$(GET system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
