@@ -4045,7 +4045,6 @@ function createPackageItem(pkg) {
 }
 
 // ==================== パッケージデータベース ====================
-
 function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     const label = document.createElement('label');
     label.className = 'form-check-label';
@@ -4095,11 +4094,10 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     }
     
     if (pkg.description && pkg.description.includes('{lan_ip}')) {
-        const lanIp = resolveVariableValue('lan_ip_address') || '192.168.1.1';
-        const webUrl = pkg.description.replace('{lan_ip}', lanIp);
+        const webUrl = pkg.description;
         
         const urlLink = document.createElement('a');
-        urlLink.href = webUrl;
+        urlLink.href = '#';
         urlLink.target = '_blank';
         urlLink.textContent = ' 🔗';
         urlLink.className = 'package-webui-link';
