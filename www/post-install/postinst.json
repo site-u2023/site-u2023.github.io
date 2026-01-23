@@ -145,7 +145,27 @@
         },
         {
           "id": "prometheus-node-exporter-lua",
-          "name": "prometheus-node-exporter-lua"
+          "name": "prometheus-node-exporter-lua",
+          "dependencies": [
+            "prometheus-node-exporter-lua-openwrt",
+            "prometheus-node-exporter-lua-nat_traffic",
+            "prometheus-node-exporter-lua-thermal"
+          ]
+        },
+        {
+          "id": "prometheus-node-exporter-lua-openwrt",
+          "name": "prometheus-node-exporter-lua-openwrt",
+          "hidden": "true"
+        },
+        {
+          "id": "prometheus-node-exporter-lua-nat_traffic",
+          "name": "prometheus-node-exporter-lua-nat_traffic",
+          "hidden": "true"
+        },
+        {
+          "id": "prometheus-node-exporter-lua-thermal",
+          "name": "prometheus-node-exporter-lua-thermal",
+          "hidden": "true"
         }
       ]
     },
