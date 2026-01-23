@@ -285,7 +285,8 @@
     "tr-tui-summary-customscripts": "カスタムスクリプト",
     "tr-tui-no-config": "設定項目がありません",
     "tr-tui-reboot-question": "再起動しますか？",
-
+    "tr-tui-restart -question": "サービスを再起動しますか？"
+    
     "tr-tui-restore-point": "復元ポイント",
     "tr-tui-no-restore-points": "復元ポイントがありません",
     "tr-tui-restore-confirm": "この復元ポイントに戻しますか？",
