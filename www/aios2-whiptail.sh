@@ -1828,24 +1828,33 @@ PKGS
                 reboot
             fi
         elif [ "$HAS_SETUP" -eq 1 ]; then
-            local connection_type wifi_mode needs_restart=0
+            local connection_type connection_auto wifi_mode needs_restart=0
             connection_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            connection_auto=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             
-            [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && needs_restart=1
-            [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
-            
-            if [ "$needs_restart" -eq 1 ]; then
-                if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
-                    [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && {
-                        for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
-                            /etc/init.d/$s restart 2>/dev/null
-                        done
-                    }
-                    [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && {
-                        wifi reload 2>/dev/null
-                        /etc/init.d/usteer restart 2>/dev/null
-                    }
+            # MAP-E → reboot必要
+            if [ "$connection_type" = "mape" ] || { [ "$connection_type" = "auto" ] && [ "$connection_auto" = "mape" ]; }; then
+                if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                    reboot
+                fi
+            else
+                # その他のネットワーク/WiFi変更 → サービスリスタート
+                [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && needs_restart=1
+                [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
+                
+                if [ "$needs_restart" -eq 1 ]; then
+                    if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
+                        [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && {
+                            for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
+                                /etc/init.d/$s restart 2>/dev/null
+                            done
+                        }
+                        [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && {
+                            wifi reload 2>/dev/null
+                            /etc/init.d/usteer restart 2>/dev/null
+                        }
+                    fi
                 fi
             fi
         fi
