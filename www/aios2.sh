@@ -348,8 +348,8 @@ SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
 CUSTOMFEEDS_JSON="$CONFIG_DIR/customfeeds.json"
 CUSTOMSCRIPTS_JSON="$CONFIG_DIR/customscripts.json"
 
-TPL_POSTINST="$CONFIG_DIR/tpl_postinst.sh"
-TPL_SETUP="$CONFIG_DIR/tpl_setup.sh"
+# TPL_POSTINST, TPL_SETUP, GENERATED_POSTINST, GENERATED_SETUP は
+# load_config_from_js() で動的に設定される
 
 print_banner_unicode() {
 	local="show_message"
@@ -422,10 +422,27 @@ load_config_from_js() {
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
     
+    # テンプレートパスからファイル名を動的に抽出
+    local POSTINST_FILENAME SETUP_FILENAME
+    POSTINST_FILENAME=$(basename "$POSTINST_TEMPLATE_PATH")
+    SETUP_FILENAME=$(basename "$SETUP_TEMPLATE_PATH")
+    
+    # テンプレートキャッシュパス
+    TPL_POSTINST="$CONFIG_DIR/tpl_${POSTINST_FILENAME}"
+    TPL_SETUP="$CONFIG_DIR/tpl_${SETUP_FILENAME}"
+    
+    # 生成スクリプトパス
+    GENERATED_POSTINST="$CONFIG_DIR/${POSTINST_FILENAME}"
+    GENERATED_SETUP="$CONFIG_DIR/${SETUP_FILENAME}"
+    
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
         echo "[DEBUG] ASU_URL=$ASU_URL"
+        echo "[DEBUG] TPL_POSTINST=$TPL_POSTINST"
+        echo "[DEBUG] TPL_SETUP=$TPL_SETUP"
+        echo "[DEBUG] GENERATED_POSTINST=$GENERATED_POSTINST"
+        echo "[DEBUG] GENERATED_SETUP=$GENERATED_SETUP"
     } >> "$CONFIG_DIR/debug.log"
     
     return 0
@@ -3743,8 +3760,8 @@ reset_state_for_next_session() {
     
     # 生成済み実行スクリプトの削除（一時ファイル）
     rm -f "$CONFIG_DIR/remove.sh"
-    rm -f "$CONFIG_DIR/postinst.sh"
-    rm -f "$CONFIG_DIR/setup.sh"
+    rm -f "$GENERATED_POSTINST"
+    rm -f "$GENERATED_SETUP"
     rm -f "$CONFIG_DIR"/customfeeds-*.sh
     rm -f "$CONFIG_DIR"/customscripts-*.sh
     rm -f "$CONFIG_DIR/execution_plan.sh"
@@ -4623,9 +4640,9 @@ IDOPTS
                 skip=0
             }
             !skip
-        ' "$TPL_POSTINST" > "$CONFIG_DIR/postinst.sh"
+        ' "$TPL_POSTINST" > "$GENERATED_POSTINST"
         
-        chmod +x "$CONFIG_DIR/postinst.sh"
+        chmod +x "$GENERATED_POSTINST"
     fi
     
     # ========================================
@@ -4650,9 +4667,9 @@ IDOPTS
                 skip=0
             }
             !skip
-        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$CONFIG_DIR/setup.sh"
+        ' vars_file="$SETUP_VARS" "$TPL_SETUP" > "$GENERATED_SETUP"
         
-        chmod +x "$CONFIG_DIR/setup.sh"
+        chmod +x "$GENERATED_SETUP"
     fi
     
 # ========================================
@@ -4885,9 +4902,9 @@ generate_execution_plan() {
     fi
     
     # インストール対象チェック（postinst.sh の INSTALL_CMD）
-    if [ -f "$CONFIG_DIR/postinst.sh" ]; then
+    if [ -f "$GENERATED_POSTINST" ]; then
         local install_cmd
-        install_cmd=$(grep '^INSTALL_CMD=' "$CONFIG_DIR/postinst.sh" 2>/dev/null | cut -d'"' -f2)
+        install_cmd=$(grep '^INSTALL_CMD=' "$GENERATED_POSTINST" 2>/dev/null | cut -d'"' -f2)
         if [ -n "$install_cmd" ]; then
             has_install=1
             needs_update=1
