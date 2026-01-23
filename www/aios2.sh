@@ -5575,10 +5575,10 @@ EOF
 # Main Entry Point
 
 show_log() {
-    if [ -f "$BASE_TMP_DIR/aios2/debug.log" ]; then
-        cat "$BASE_TMP_DIR/aios2/debug.log"
+    if [ -f "$BASE_TMP_DIR/debug.log" ]; then
+        cat "$BASE_TMP_DIR/debug.log"
     else
-        echo "No log file found at $BASE_TMP_DIR/aios2/debug.log"
+        echo "No log file found at $BASE_TMP_DIR/debug.log"
     fi
 }
 
