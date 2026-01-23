@@ -2750,6 +2750,22 @@ function applyCustomTranslations(map) {
         });
     }
     
+    document.querySelectorAll('.tooltip').forEach(tooltip => {
+        let content = tooltip.textContent;
+        
+        const varMatches = content.matchAll(/\{([a-z_][a-z0-9_]*)\}/gi);
+        for (const match of varMatches) {
+            const varName = match[1];
+            let value = resolveVariableValue(varName);
+            if (value.includes('/')) {
+                value = value.split('/')[0];
+            }
+            content = content.replace(`{${varName}}`, value);
+        }
+        
+        tooltip.textContent = content;
+    });
+    
     console.log('Custom translations applied to DOM');
 }
 
@@ -4093,21 +4109,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    if (pkg.description && pkg.description.includes('{lan_ip}')) {
-        const webUrl = pkg.description;
-        
-        const urlLink = document.createElement('a');
-        urlLink.href = '#';
-        urlLink.target = '_blank';
-        urlLink.textContent = ' 🔗';
-        urlLink.className = 'package-webui-link';
-        urlLink.title = webUrl;
-        urlLink.onclick = (e) => e.stopPropagation();
-        
-        label.appendChild(urlLink);
-        
-        addTooltip(label, webUrl);
-    } else if (pkg.description) {
+    if (pkg.description) {
         addTooltip(label, pkg.description);
     }
     
