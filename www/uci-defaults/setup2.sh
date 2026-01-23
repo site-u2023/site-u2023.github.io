@@ -11,6 +11,7 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
+GET() { uci -q get "$@"; }
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
@@ -21,8 +22,8 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-LAN="$(uci -q get network.lan.device 2>&- || uci -q get network.lan.ifname 2>&- || echo lan)"
-WAN="$(uci -q get network.wan.device 2>&- || uci -q get network.wan.ifname 2>&- || echo wan)"
+LAN="$(GET network.lan.device 2>&- || GET network.lan.ifname 2>&- || echo lan)"
+WAN="$(GET network.wan.device 2>&- || GET network.wan.ifname 2>&- || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
@@ -110,10 +111,10 @@ firewall_wan() {
         SET "${radio}".disabled='0'
         SET ${radio}.country="${country}"
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
-        band=$(uci -q get wireless.${radio}.band 2>&-)
+        band=$(GET wireless.${radio}.band 2>&-)
         if [ -z "$band" ]; then
-            hwmode=$(uci -q get wireless.${radio}.hwmode)
-            band_attr=$(uci -q get wireless.${radio}.band 2>&-)
+            hwmode=$(GET wireless.${radio}.hwmode)
+            band_attr=$(GET wireless.${radio}.band 2>&-)
             case "${hwmode}" in
                 11axg|11ng|11bg|11g) band='2g' ;;
                 11bea|11na|11ac|11a) [ "${band_attr}" = "3" ] && band='6g' || band='5g' ;;
@@ -143,7 +144,7 @@ firewall_wan() {
         suffix=${band:+-$band}
         { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
         iface="default_${radio}"
-        [ -n "$(uci -q get wireless.${iface})" ] && {
+        [ -n "$(GET wireless.${iface})" ] && {
             for o in rnr background_radar; do DEL ${radio}.$o; done
             for o in isolate ieee80211r mobility_domain ft_over_ds nasid ieee80211k ieee80211v usteer_min_snr ieee80211w mlo mld_id mlo_link_id; do DEL ${iface}.$o; done
             SET ${iface}.disabled='0'
@@ -298,7 +299,7 @@ firewall_wan() {
     {
         SEC=wireless
         for r in 0 1 2; do
-            [ -n "$(uci -q get wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
+            [ -n "$(GET wireless.default_radio$r)" ] && SET default_radio$r.network="${AP}"
         done
     }
     ${INIT}/odhcpd disable 2>&-
@@ -420,7 +421,7 @@ firewall_wan() {
     fi
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
-    lan_ip_address=$(uci -q get network.lan.ipaddr | cut -d/ -f1)
+    lan_ip_address=$(GET network.lan.ipaddr | cut -d/ -f1)
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         mkdir -p "${agh_dir}"
         cfg_dhcp="${CONF}/dhcp"
@@ -473,7 +474,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(GET system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
