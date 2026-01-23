@@ -4092,7 +4092,26 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    if (pkg.description) {
+    // description が URL の場合、🔗
+    if (pkg.description && pkg.description.includes('{lan_ip}')) {
+        const lanIpField = document.getElementById('aios-lan-ipv4');
+        let lanIp = lanIpField?.value?.trim() || '192.168.1.1';
+        lanIp = lanIp.split('/')[0];
+        
+        const webUrl = pkg.description.replace('{lan_ip}', lanIp);
+        
+        const urlLink = document.createElement('a');
+        urlLink.href = webUrl;
+        urlLink.target = '_blank';
+        urlLink.textContent = ' 🔗';
+        urlLink.className = 'package-webui-link';
+        urlLink.title = webUrl;
+        urlLink.onclick = (e) => e.stopPropagation();
+        
+        label.appendChild(urlLink);
+        
+        addTooltip(label, webUrl);
+    } else if (pkg.description) {
         addTooltip(label, pkg.description);
     }
     
