@@ -21,8 +21,8 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-LAN="$(uci -q get network.lan.device 2>/dev/null || uci -q get network.lan.ifname 2>/dev/null || echo lan)"
-WAN="$(uci -q get network.wan.device 2>/dev/null || uci -q get network.wan.ifname 2>/dev/null || echo wan)"
+LAN="$(uci -q get network.lan.device 2>&- || uci -q get network.lan.ifname 2>&- || echo lan)"
+WAN="$(uci -q get network.wan.device 2>&- || uci -q get network.wan.ifname 2>&- || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
@@ -111,10 +111,10 @@ firewall_wan() {
         SET "${radio}".disabled='0'
         SET ${radio}.country="${country}"
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
-        band=$(uci -q get wireless.${radio}.band 2>/dev/null)
+        band=$(uci -q get wireless.${radio}.band 2>&-)
         if [ -z "$band" ]; then
             hwmode=$(uci -q get wireless.${radio}.hwmode)
-            band_attr=$(uci -q get wireless.${radio}.band 2>/dev/null)
+            band_attr=$(uci -q get wireless.${radio}.band 2>&-)
             case "${hwmode}" in
                 11axg|11ng|11bg|11g) band='2g' ;;
                 11bea|11na|11ac|11a) [ "${band_attr}" = "3" ] && band='6g' || band='5g' ;;
@@ -473,7 +473,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>/dev/null)|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
