@@ -668,7 +668,7 @@
           "id": "ksmbd-avahi-service",
           "name": "ksmbd-avahi-service",
           "hidden": "true"
-        },,
+        },
         {
           "id": "luci-app-transmission",
           "name": "luci-app-transmission"
