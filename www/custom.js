@@ -4092,7 +4092,9 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    addTooltip(label, pkg.id);
+    if (pkg.description) {
+        addTooltip(label, pkg.description);
+    }
     
     label.setAttribute('data-package-name', pkg.name || pkg.id);
     
