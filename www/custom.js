@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0107.1557) loaded');
+console.log('custom.js (R8.0123.1527) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -4109,21 +4109,31 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    if (pkg.description && pkg.description.includes('{lan_ipv4}')) {
-    const urlLink = document.createElement('a');
-    urlLink.href = pkg.description;
-    urlLink.target = '_blank';
-    urlLink.textContent = ' 🔗';
-    urlLink.className = 'package-webui-link';
-    urlLink.onclick = (e) => e.stopPropagation();
-    
-    label.appendChild(urlLink);
-    
-    addTooltip(label, pkg.description);
-    
-} else if (pkg.description) {
-    addTooltip(label, pkg.description);
-}
+    if (pkg.description && (pkg.description.includes('{lan_ipv4}') || pkg.description.includes('{lan_ipv6}'))) {
+        let resolvedUrl = pkg.description;
+        const lanIpv4Field = document.getElementById('aios-lan-ipv4');
+        const defaultLanIp = state.config.constants?.defaults?.lan_ip?.split('/')[0];
+        const lanIp = lanIpv4Field?.value?.split('/')[0] || lanIpv4Field?.placeholder?.split('/')[0] || defaultLanIp;
+        resolvedUrl = resolvedUrl.replace(/\{lan_ipv4\}/g, lanIp);
+        
+        const urlLink = document.createElement('a');
+        urlLink.href = resolvedUrl;
+        urlLink.target = '_blank';
+        urlLink.textContent = ' 🔗';
+        urlLink.className = 'package-webui-link';
+        urlLink.onclick = (e) => e.stopPropagation();
+        
+        label.appendChild(urlLink);
+        
+        const tooltip = document.createElement('div');
+        tooltip.className = 'tooltip';
+        tooltip.textContent = resolvedUrl;
+        label.style.position = 'relative';
+        label.appendChild(tooltip);
+        
+    } else if (pkg.description) {
+        addTooltip(label, pkg.description);
+    }
     
     label.setAttribute('data-package-name', pkg.name || pkg.id);
     
