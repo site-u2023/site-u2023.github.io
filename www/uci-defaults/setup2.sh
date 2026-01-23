@@ -238,8 +238,8 @@ firewall_wan() {
     HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
     HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
     HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
-    cp "$MAPSH" "$MAPSH".old
     [ "$HASH" = "$HASH1" ] && {
+        cp "$MAPSH" "$MAPSH".old
         sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
         sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
         sed -i '137,158d' "$MAPSH"
@@ -274,6 +274,7 @@ firewall_wan() {
 \t  fi' "$MAPSH"
     }
     [ "$HASH" = "$HASH0" ] && {
+        cp "$MAPSH" "$MAPSH".old
         sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
     }
 }
