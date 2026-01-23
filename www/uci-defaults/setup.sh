@@ -24,8 +24,6 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-LAN="$(uci -q get network.lan.device || echo lan)"
-WAN="$(uci -q get network.wan.device || echo wan)"
 LAN="$(uci -q get network.lan.device 2>&1 || echo lan)"
 WAN="$(uci -q get network.wan.device 2>&1 || uci -q get network.wan.ifname 2>&1 || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
