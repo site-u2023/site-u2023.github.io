@@ -58,6 +58,7 @@
         {
           "id": "luci-app-ttyd",
           "name": "luci-app-ttyd",
+          "description": "http://{lan_ip}/cgi-bin/luci/admin/services/ttyd",
           "enableVar": "ttyd",
           "checked": "true"
         },
@@ -121,7 +122,8 @@
         },
         {
           "id": "netdata",
-          "name": "netdata"
+          "name": "netdata",
+          "description": "http://{lan_ip}:19999"
         },
         {
           "id": "htop",
@@ -146,6 +148,7 @@
         {
           "id": "prometheus-node-exporter-lua",
           "name": "prometheus-node-exporter-lua",
+          "description": "http://{lan_ip}:9100/metrics",
           "dependencies": [
             "prometheus-node-exporter-lua-openwrt",
             "prometheus-node-exporter-lua-nat_traffic",
@@ -487,7 +490,8 @@
         },
         {
           "id": "luci-app-minidlna",
-          "name": "luci-app-minidlna"
+          "name": "luci-app-minidlna",
+          "description": "http://{lan_ip}:8200"
         },
         {
           "id": "smartmontools",
@@ -691,11 +695,13 @@
         },
         {
           "id": "luci-app-transmission",
-          "name": "luci-app-transmission"
+          "name": "luci-app-transmission",
+          "description": "http://{lan_ip}:9091"
         },
         {
           "id": "syncthing",
-          "name": "syncthing"
+          "name": "syncthing",
+          "description": "http://{lan_ip}:8384"
         }
       ]
     },
@@ -708,7 +714,7 @@
         {
           "id": "apache",
           "name": "apache",
-          "description": "Full Apache HTTP Server (includes htpasswd)",
+          "description": "http://{lan_ip}:80",
           "enableVar": "apache_keep"
         }
       ]
