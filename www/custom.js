@@ -4135,19 +4135,8 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
         tooltip.setAttribute('data-template', pkg.description);
+        tooltip.textContent = pkg.description;
         label.appendChild(tooltip);
-        
-        label.addEventListener('mouseenter', function() {
-            let content = tooltip.getAttribute('data-template');
-            let lanIp = resolveVariableValue('lan_ipv4');
-            if (lanIp && lanIp.includes('/')) {
-                lanIp = lanIp.split('/')[0];
-            }
-            if (lanIp) {
-                content = content.replace('{lan_ipv4}', lanIp);
-            }
-            tooltip.textContent = content;
-        });
         
     } else if (pkg.description) {
         addTooltip(label, pkg.description);
