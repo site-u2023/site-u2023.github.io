@@ -392,8 +392,8 @@ firewall_wan() {
             for lib in $htpasswd_libs; do
                 [ -f "$lib" ] && cp "$lib" /tmp/
             done
-            apk del apache 2>&- || true
-            opkg remove apache 2>&- || true
+            apk del apache 2>&-
+            opkg remove apache 2>&-
             mv /tmp/htpasswd "$htpasswd_bin"
             for lib in $tmp_libs; do
                 [ -f "$lib" ] && mv "$lib" /usr/lib/
@@ -468,7 +468,7 @@ AGHEOF
         ADDLIST lan.dhcp_option="6,${lan_ip_address}"
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
-        DEL "${agh_rule}" 2>&- || true
+        DEL "${agh_rule}" 2>&-
         SET ${agh_rule}=redirect
         SET ${agh_rule}.name="AdGuard Home DNS Redirect"
         SET ${agh_rule}.family='any'
