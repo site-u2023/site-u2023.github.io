@@ -58,7 +58,7 @@
         {
           "id": "luci-app-ttyd",
           "name": "luci-app-ttyd",
-          "description": "http://{lan_ip}/cgi-bin/luci/admin/services/ttyd",
+          "description": "http://{lan_ip}:7681",
           "enableVar": "ttyd",
           "checked": "true"
         },
