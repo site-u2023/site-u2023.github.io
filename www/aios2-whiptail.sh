@@ -416,7 +416,6 @@ $(translate 'tr-tui-use-auto-config')"
             else
                 set_var "mape_type" "pd"
             fi     
-            set_var "ip6prefix_gua" "$MAPE_GUA_PREFIX"
             set_var "peeraddr" "$MAPE_BR"
             set_var "ipaddr" "$MAPE_IPV4_PREFIX"
             set_var "ip4prefixlen" "$MAPE_IPV4_PREFIXLEN"
