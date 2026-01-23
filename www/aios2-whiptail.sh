@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R7.1224.0021"
+VERSION="R8.0123.1651"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1833,8 +1833,9 @@ PKGS
             connection_auto=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
             
-            # MAP-E → reboot必要
-            if [ "$connection_type" = "mape" ] || { [ "$connection_type" = "auto" ] && [ "$connection_auto" = "mape" ]; }; then
+            # MAP-E / DS-Lite → reboot必要
+            if [ "$connection_type" = "mape" ] || [ "$connection_type" = "dslite" ] || \
+               { [ "$connection_type" = "auto" ] && { [ "$connection_auto" = "mape" ] || [ "$connection_auto" = "dslite" ]; }; }; then
                 if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
                     reboot
                 fi
