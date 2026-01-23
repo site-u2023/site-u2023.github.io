@@ -672,6 +672,14 @@ details summary::-webkit-details-marker {
   color: var(--owrt-blue);
 }
 
+.package-webui-link {
+  text-decoration: none;
+}
+
+.package-webui-link:hover {
+  text-decoration: none;
+}
+
 .package-dependent {
   margin-left: 1.5em;
 }
