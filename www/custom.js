@@ -4110,37 +4110,20 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     }
     
     if (pkg.description && pkg.description.includes('{lan_ipv4}')) {
-        const urlLink = document.createElement('a');
-        urlLink.href = '#';
-        urlLink.target = '_blank';
-        urlLink.textContent = ' 🔗';
-        urlLink.className = 'package-webui-link';
-        urlLink.setAttribute('data-url-template', pkg.description);
-        urlLink.onclick = (e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            let url = urlLink.getAttribute('data-url-template');
-            let lanIp = resolveVariableValue('lan_ipv4');
-            if (lanIp && lanIp.includes('/')) {
-                lanIp = lanIp.split('/')[0];
-            }
-            if (lanIp) {
-                url = url.replace('{lan_ipv4}', lanIp);
-                window.open(url, '_blank');
-            }
-        };
-        
-        label.appendChild(urlLink);
-        
-        const tooltip = document.createElement('div');
-        tooltip.className = 'tooltip';
-        tooltip.setAttribute('data-template', pkg.description);
-        tooltip.textContent = pkg.description;
-        label.appendChild(tooltip);
-        
-    } else if (pkg.description) {
-        addTooltip(label, pkg.description);
-    }
+    const urlLink = document.createElement('a');
+    urlLink.href = pkg.description;
+    urlLink.target = '_blank';
+    urlLink.textContent = ' 🔗';
+    urlLink.className = 'package-webui-link';
+    urlLink.onclick = (e) => e.stopPropagation();
+    
+    label.appendChild(urlLink);
+    
+    addTooltip(label, pkg.description);
+    
+} else if (pkg.description) {
+    addTooltip(label, pkg.description);
+}
     
     label.setAttribute('data-package-name', pkg.name || pkg.id);
     
