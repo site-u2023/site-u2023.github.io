@@ -11,27 +11,19 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
-[ -f "/etc/uci-defaults/99-asu-defaults" ] && {
-    cp -f ${CONF}/network ${CONF}/network.def
-    cp -f ${CONF}/wireless ${CONF}/wireless.def
-}
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
-RESET() {
-    [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
-    [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
-    [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
-}
+RESET() { cp -f "${CONF}/${SEC}" "${CONF}/${SEC}.def"; }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-LAN="$(uci -q get network.lan.device 2>/dev/null || echo lan)"
-WAN="$(uci -q get network.wan.device 2>/dev/null || echo wan)"
+LAN="$(uci -q get network.lan.device 2>&- || echo lan)"
+WAN="$(uci -q get network.wan.device 2>&- || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
-# exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+exec > >(tee -a /tmp/aios2/debug.log) 2>&-
 SEC=system
 SET @system[0].description="$(date +%F\ %H:%M) siteU"
 disable_wan() {
@@ -91,7 +83,7 @@ firewall_wan() {
     SET diag.dns="${diag}"
 }
 [ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
-[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
+[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >&-
 [ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
 [ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
 [ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
@@ -231,9 +223,8 @@ firewall_wan() {
     firewall_wan "${MAPE}" "${MAPE6}"
     MAPSH="/lib/netifd/proto/map.sh"
     HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
     cp "$MAPSH" "$MAPSH".old
-    [ "$HASH" = "$HASH1" ] && {
+    [ "$(sha1sum "$MAPSH" | awk '{print $1}')" = "$HASH" ] && {
         sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
         sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
         sed -i '137,158d' "$MAPSH"
@@ -401,8 +392,8 @@ firewall_wan() {
             for lib in $htpasswd_libs; do
                 [ -f "$lib" ] && cp "$lib" /tmp/
             done
-            apk del apache >/dev/null 2>&1 || true
-            opkg remove apache >/dev/null 2>&1 || true
+            apk del apache 2>&- || true
+            opkg remove apache 2>&- || true
             mv /tmp/htpasswd "$htpasswd_bin"
             for lib in $tmp_libs; do
                 [ -f "$lib" ] && mv "$lib" /usr/lib/
@@ -464,7 +455,7 @@ AGHEOF
         sed -i "s|{{DNS_PORT}}|${agh_dns_port}|g" "$agh_yaml"
         sed -i "s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g" "$agh_yaml"
         sed -i "s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
-        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>/dev/null)|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(uci -q get system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
         chmod 600 "$agh_yaml"
         SEC=dhcp
         SET @dnsmasq[0].noresolv='1'
