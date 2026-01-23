@@ -11,10 +11,6 @@ CONF="/etc/config"
 INIT="/etc/init.d"
 NAS="openwrt"
 MNT="/mnt/sda"
-[ -f "/etc/uci-defaults/99-asu-defaults" ] && {
-    cp -f ${CONF}/network ${CONF}/network.def
-    cp -f ${CONF}/wireless ${CONF}/wireless.def
-}
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
