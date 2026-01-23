@@ -23,7 +23,7 @@ ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 mkdir -p /tmp/aios2
-exec > >(tee -a /tmp/aios2/debug.log) 2>&-
+exec >/tmp/setup.log 2>&1
 SEC=system
 SET @system[0].description="$(date +%F\ %H:%M) siteU"
 disable_wan() {
