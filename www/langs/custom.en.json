@@ -262,6 +262,7 @@
     "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-no-config": "No configuration items",
     "tr-tui-reboot-question": "Do you want to reboot?",
+    "tr-tui-restart-question": "Restart services to apply changes?",
 
     "tr-customscripts-title": "Custom Scripts",
     "tr-adguardhome-disabled": "AdGuard Home Disabled",
