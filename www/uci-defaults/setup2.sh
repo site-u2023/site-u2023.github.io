@@ -14,6 +14,7 @@ MNT="/mnt/sda"
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
 RESET() {
+    [ -f "/etc/uci-defaults/99-asu-defaults" ] && [ ! -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}" "${CONF}/${SEC}.def"
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
     [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
