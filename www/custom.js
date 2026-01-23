@@ -4119,7 +4119,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    if (pkg.description && pkg.description.includes('{lan_ipv4}')) {
+    if (pkg.description && pkg.description.includes('{lan_ip_address}')) {
         const urlLink = document.createElement('a');
         urlLink.setAttribute('data-url-template', pkg.description);
         urlLink.target = '_blank';
