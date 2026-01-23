@@ -110,11 +110,19 @@ firewall_wan() {
     wireless_cfg=$(uci -q show wireless)
     link_id=0
     radio_count=0
-    for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+    for radio in $(printf '%s\n' "${wireless_cfg}" | grep -E "wireless\.(radio|wifi)[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
         SET "${radio}".disabled='0'
         SET ${radio}.country="${country}"
         [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
-        band=$(uci -q get wireless.${radio}.band)
+        band=$(uci -q get wireless.${radio}.band 2>/dev/null)
+        if [ -z "$band" ]; then
+            hwmode=$(uci -q get wireless.${radio}.hwmode)
+            band_attr=$(uci -q get wireless.${radio}.band 2>/dev/null)
+            case "${hwmode}" in
+                11axg|11ng|11bg|11g) band='2g' ;;
+                11bea|11na|11ac|11a) [ "${band_attr}" = "3" ] && band='6g' || band='5g' ;;
+            esac
+        fi
         S="30 15 5"
         set -- ${snr:-$S}
         case "${band}" in
