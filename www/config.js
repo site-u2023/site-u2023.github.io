@@ -47,6 +47,7 @@ var config = {
   setup_db_path: "uci-defaults/setup.json",
   // setup.sh template URL
   setup_template_path: "uci-defaults/setup.sh",
+  setup_template_path_aios: "uci-defaults/setup2.sh", 
   // Language file path template
   language_path_template: "langs/custom.{lang}.json",
   
