@@ -26,6 +26,8 @@ ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 LAN="$(uci -q get network.lan.device || echo lan)"
 WAN="$(uci -q get network.wan.device || echo wan)"
+LAN="$(uci -q get network.lan.device 2>&1 || echo lan)"
+WAN="$(uci -q get network.wan.device 2>&1 || uci -q get network.wan.ifname 2>&1 || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
@@ -190,7 +192,7 @@ firewall_wan() {
     disable_wan
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
-    SET ${DSL6}.device="${WAN}"
+    SET ${DSL6}.device="${WAN}" 2>&1 || SET ${DSL6}.ifname="${WAN}"
     SET ${DSL6}.reqaddress='try'
     SET ${DSL6}.reqprefix='auto'
     SET ${DSL}=interface
@@ -208,7 +210,7 @@ firewall_wan() {
     disable_wan
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
-    SET ${MAPE6}.device="${WAN}"
+    SET ${MAPE6}.device="${WAN}" 2>&1 || SET ${MAPE6}.ifname="${WAN}"
     SET ${MAPE6}.reqaddress='try'
     SET ${MAPE6}.reqprefix='auto'
     SET ${MAPE}=interface
@@ -230,9 +232,11 @@ firewall_wan() {
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     MAPSH="/lib/netifd/proto/map.sh"
-    HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    [ "$(sha1sum "$MAPSH" | awk '{print $1}')" = "$HASH" ] && {
-        cp "$MAPSH" "$MAPSH".bak
+    HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
+    HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+    HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
+    cp "$MAPSH" "$MAPSH".old
+    [ "$HASH" = "$HASH1" ] && {
         sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
         sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
         sed -i '137,158d' "$MAPSH"
@@ -266,6 +270,9 @@ firewall_wan() {
 \t    done\
 \t  fi' "$MAPSH"
     }
+    [ "$HASH" = "$HASH0" ] && {
+        sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
+    }
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
@@ -274,14 +281,14 @@ firewall_wan() {
         RESET
         SET ${AP}=interface
         SET ${AP}.proto='static'
-        SET ${AP}.device="${LAN}"
+        SET ${AP}.device="${LAN}" 2>&1 || SET ${AP}.ifname="${LAN}"
         SET ${AP}.ipaddr="${ap_ipaddr}"
         SET ${AP}.gateway="${gateway}"
         SET ${AP}.dns="${gateway}"
         SET ${AP}.delegate='0'
         SET ${AP6}=interface
         SET ${AP6}.proto='dhcpv6'
-        SET ${AP6}.device="@${AP}"
+        SET ${AP6}.device="@${AP}" 2>&1 || SET ${AP6}.ifname="@${AP}"
         SET ${AP6}.reqaddress='try'
         SET ${AP6}.reqprefix='no'
     }
