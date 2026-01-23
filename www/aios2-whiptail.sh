@@ -1822,9 +1822,31 @@ PKGS
         reset_state_for_next_session
         
         local needs_reboot=$(needs_reboot_check)
+        
         if [ "$needs_reboot" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
                 reboot
+            fi
+        elif [ "$HAS_SETUP" -eq 1 ]; then
+            local connection_type wifi_mode needs_restart=0
+            connection_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+            
+            [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && needs_restart=1
+            [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
+            
+            if [ "$needs_restart" -eq 1 ]; then
+                if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
+                    [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && {
+                        for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
+                            /etc/init.d/$s restart 2>/dev/null
+                        done
+                    }
+                    [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && {
+                        wifi reload 2>/dev/null
+                        /etc/init.d/usteer restart 2>/dev/null
+                    }
+                fi
             fi
         fi
     fi
