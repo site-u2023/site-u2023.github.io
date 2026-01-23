@@ -123,23 +123,10 @@ firewall_wan() {
         S="30 15 5"
         set -- ${snr:-$S}
         case "${band}" in
-            2g)
-                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
-                band_snr=$1
-                ;;
-            5g)
-                [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'
-                band_snr=$2
-                [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1'
-                ;;
-            6g)
-                encryption='sae'
-                band_snr=$3
-                ;;
-            *)
-                encryption='psk-mixed'
-                band_snr=20
-                ;;
+            2g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$1 ;;
+            5g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$2; [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1' ;;
+            6g) encryption='sae'; band_snr=$3 ;;
+            *) encryption='psk-mixed'; band_snr=20 ;;
         esac
         suffix=${band:+-$band}
         { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
