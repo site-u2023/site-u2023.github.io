@@ -2750,8 +2750,8 @@ function applyCustomTranslations(map) {
         });
     }
     
-    document.querySelectorAll('.tooltip').forEach(tooltip => {
-        let content = tooltip.textContent;
+    document.querySelectorAll('[data-url-template]').forEach(el => {
+        let content = el.getAttribute('data-url-template');
         
         const varMatches = content.matchAll(/\{([a-z_][a-z0-9_]*)\}/gi);
         for (const match of varMatches) {
@@ -2763,7 +2763,11 @@ function applyCustomTranslations(map) {
             content = content.replace(`{${varName}}`, value);
         }
         
-        tooltip.textContent = content;
+        if (el.tagName === 'A') {
+            el.href = content;
+        } else {
+            el.textContent = content;
+        }
     });
     
     console.log('Custom translations applied to DOM');
@@ -4109,25 +4113,18 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    if (pkg.description && (pkg.description.includes('{lan_ipv4}') || pkg.description.includes('{lan_ipv6}'))) {
-        let resolvedUrl = pkg.description;
-        const lanIpv4Field = document.getElementById('aios-lan-ipv4');
-        const defaultLanIp = state.config.constants?.defaults?.lan_ip?.split('/')[0];
-        const lanIp = lanIpv4Field?.value?.split('/')[0] || lanIpv4Field?.placeholder?.split('/')[0] || defaultLanIp;
-        resolvedUrl = resolvedUrl.replace(/\{lan_ipv4\}/g, lanIp);
-        
+    if (pkg.description && pkg.description.includes('{lan_ipv4}')) {
         const urlLink = document.createElement('a');
-        urlLink.href = resolvedUrl;
+        urlLink.setAttribute('data-url-template', pkg.description);
         urlLink.target = '_blank';
         urlLink.textContent = ' 🔗';
         urlLink.className = 'package-webui-link';
         urlLink.onclick = (e) => e.stopPropagation();
-        
         label.appendChild(urlLink);
         
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
-        tooltip.textContent = resolvedUrl;
+        tooltip.setAttribute('data-url-template', pkg.description);
         label.style.position = 'relative';
         label.appendChild(tooltip);
         
