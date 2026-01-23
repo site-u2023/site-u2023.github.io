@@ -4092,12 +4092,8 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         label.appendChild(span);
     }
     
-    // description が URL の場合、🔗
     if (pkg.description && pkg.description.includes('{lan_ip}')) {
-        const lanIpField = document.getElementById('aios-lan-ipv4');
-        let lanIp = lanIpField?.value?.trim() || '192.168.1.1';
-        lanIp = lanIp.split('/')[0];
-        
+        const lanIp = resolveVariableValue('lan_ip_address') || '192.168.1.1';
         const webUrl = pkg.description.replace('{lan_ip}', lanIp);
         
         const urlLink = document.createElement('a');
@@ -4106,6 +4102,7 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
         urlLink.textContent = ' 🔗';
         urlLink.className = 'package-webui-link';
         urlLink.title = webUrl;
+        urlLink.style.textDecoration = 'none';
         urlLink.onclick = (e) => e.stopPropagation();
         
         label.appendChild(urlLink);
