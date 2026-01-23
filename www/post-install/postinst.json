@@ -660,9 +660,15 @@
           "hidden": "true"
         },
         {
-          "id": "ksmbd-tools",
-          "name": "ksmbd-tools"
+          "id": "luci-app-ksmbd",
+          "name": "luci-app-ksmbd",
+          "dependencies": ["ksmbd-avahi-service"]
         },
+        {
+          "id": "ksmbd-avahi-service",
+          "name": "ksmbd-avahi-service",
+          "hidden": "true"
+        },,
         {
           "id": "luci-app-transmission",
           "name": "luci-app-transmission"
