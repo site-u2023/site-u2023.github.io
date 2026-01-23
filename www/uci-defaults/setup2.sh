@@ -87,7 +87,7 @@ firewall_wan() {
     SET diag.dns="${diag}"
 }
 [ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
-[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
+[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd 2>&-
 [ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
 [ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
 [ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
