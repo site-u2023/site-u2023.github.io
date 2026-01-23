@@ -398,7 +398,7 @@ load_config_from_js() {
     PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "packages_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "postinst_template_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-    SETUP_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_template_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+    SETUP_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_template_path_aios:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMFEEDS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "customfeeds_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     CUSTOMSCRIPTS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "customscripts_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "language_path_template:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
