@@ -80,12 +80,72 @@
       "id": "system-management",
       "name": "System Management",
       "class": "tr-system-management",
-      "description": "CPU interrupt balancing for multi-core systems",
+      "description": "System upgrades, CPU interrupt balancing, and log management",
       "packages": [
+        {
+          "id": "luci-app-attendedsysupgrade",
+          "name": "luci-app-attendedsysupgrade",
+          "checked": "false",
+          "dependencies": []
+        },
+        {
+          "id": "owut",
+          "name": "owut",
+          "checked": "true"
+        },
+        {
+          "id": "auc",
+          "name": "auc",
+          "checked": "false"
+        },
         {
           "id": "luci-app-irqbalance",
           "name": "luci-app-irqbalance",
           "enableVar": "irqbalance"
+        },
+        {
+          "id": "logrotate",
+          "name": "logrotate"
+        }
+      ]
+    },
+    {
+      "id": "system-monitoring",
+      "name": "System Monitoring",
+      "class": "tr-system-monitoring",
+      "description": "System watchdog, network monitoring, and resource monitoring tools",
+      "packages": [
+        {
+          "id": "luci-app-watchcat",
+          "name": "luci-app-watchcat"
+        },
+        {
+          "id": "netdata",
+          "name": "netdata"
+        },
+        {
+          "id": "htop",
+          "name": "htop",
+          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
+        },
+        {
+          "id": "collectd",
+          "name": "collectd",
+          "uniqueId": "collectd-htop",
+          "hidden": "true"
+        },
+        {
+          "id": "collectd-mod-thermal",
+          "name": "collectd-mod-thermal",
+          "hidden": "true"
+        },
+        {
+          "id": "btop",
+          "name": "btop"
+        },
+        {
+          "id": "prometheus-node-exporter-lua",
+          "name": "prometheus-node-exporter-lua"
         }
       ]
     },
@@ -93,7 +153,7 @@
       "id": "network-management",
       "name": "Network Management",
       "class": "tr-network-management",
-      "description": "QoS, bandwidth monitoring, Wi-Fi scheduling, and network utilities",
+      "description": "QoS, bandwidth monitoring, Wi-Fi scheduling, policy-based routing, and network utilities",
       "packages": [
         {
           "id": "luci-app-sqm",
@@ -161,6 +221,10 @@
           "id": "mwan3",
           "name": "mwan3",
           "hidden": "true"
+        },
+        {
+          "id": "luci-app-pbr",
+          "name": "luci-app-pbr"
         }
       ]
     },
@@ -252,39 +316,11 @@
       ]
     },
     {
-      "id": "system-monitoring",
-      "name": "System Monitoring",
-      "class": "tr-system-monitoring",
-      "description": "System watchdog and network monitoring",
-      "packages": [
-        {
-          "id": "luci-app-watchcat",
-          "name": "luci-app-watchcat"
-        }
-      ]
-    },
-    {
       "id": "diagnostic-tools",
       "name": "Network Diagnostic Tools",
       "class": "tr-diagnostic-tools",
       "description": "Network testing, monitoring, analysis and DNS troubleshooting tools",
       "packages": [
-        {
-          "id": "htop",
-          "name": "htop",
-          "dependencies": ["collectd-htop", "collectd-mod-thermal"]
-        },
-        {
-          "id": "collectd",
-          "name": "collectd",
-          "uniqueId": "collectd-htop",
-          "hidden": "true"
-        },
-        {
-          "id": "collectd-mod-thermal",
-          "name": "collectd-mod-thermal",
-          "hidden": "true"
-        },
         {
           "id": "mtr-nojson",
           "name": "mtr-nojson"
@@ -344,10 +380,6 @@
         {
           "id": "curl",
           "name": "curl"
-        },
-        {
-          "id": "netdata",
-          "name": "netdata"
         }
       ]
     },
@@ -383,24 +415,8 @@
       "id": "utilities",
       "name": "Utilities",
       "class": "tr-utilities",
-      "description": "System upgrade, VPN and media server utilities",
+      "description": "VPN, media server, and device management utilities",
       "packages": [
-        {
-          "id": "luci-app-attendedsysupgrade",
-          "name": "luci-app-attendedsysupgrade",
-          "checked": "false",
-          "dependencies": []
-        },
-        {
-          "id": "owut",
-          "name": "owut",
-          "checked": "true"
-        },
-        {
-          "id": "auc",
-          "name": "auc",
-          "checked": "false"
-        },
         {
           "id": "luci-app-advanced-reboot",
           "name": "luci-app-advanced-reboot",
@@ -456,10 +472,6 @@
         {
           "id": "smartmontools",
           "name": "smartmontools"
-        },
-        {
-          "id": "logrotate",
-          "name": "logrotate"
         },
         {
           "id": "whiptail",
@@ -634,7 +646,7 @@
       "id": "file-sharing",
       "name": "File Sharing",
       "class": "tr-file-sharing",
-      "description": "SMB/CIFS file sharing server",
+      "description": "SMB/CIFS file sharing servers",
       "packages": [
         {
           "id": "luci-app-samba4",
@@ -646,6 +658,10 @@
           "id": "wsdd2",
           "name": "wsdd2",
           "hidden": "true"
+        },
+        {
+          "id": "ksmbd-tools",
+          "name": "ksmbd-tools"
         },
         {
           "id": "luci-app-transmission",
