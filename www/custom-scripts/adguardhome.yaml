@@ -30,14 +30,8 @@ dns:
   bootstrap_dns:
     - 2606:4700:4700::1111
     - 2001:4860:4860::8888
-    - 2a07:a8c0::
-    - 2620:fe::fe
-    - 2a10:50c0::1:ff
     - 1.1.1.1
     - 8.8.8.8
-    - 45.90.28.0
-    - 9.9.9.9
-    - 94.140.14.140
   fallback_dns:
     - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
