@@ -125,6 +125,38 @@ show_textbox() {
     rm -f "$temp_file"
 }
 
+# =============================================================================
+# Summary List Builder
+# =============================================================================
+# Args:
+#   $1 - header (translated label)
+#   $2 - items (newline separated list)
+#   $3 - action prefix (optional: "install"/"remove"/empty)
+# Returns: formatted summary string
+# =============================================================================
+build_summary_section() {
+    local header="$1"
+    local items="$2"
+    local action="$3"
+    
+    [ -z "$items" ] && return 0
+    
+    local result="${header}:\n"
+    while read -r item; do
+        [ -z "$item" ] && continue
+        if [ -n "$action" ]; then
+            result="${result}  - ${action} ${item}\n"
+        else
+            result="${result}  - ${item}\n"
+        fi
+    done <<EOF
+$items
+EOF
+    result="${result}\n"
+    
+    printf '%s' "$result"
+}
+
 # Package Compatibility Check for Custom Feeds
 
 custom_feeds_selection() {
@@ -1708,57 +1740,40 @@ EOF
         local summary=""
         local has_changes=0
         
+        # パッケージ削除
         if [ -n "$packages_to_remove" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
-            for pkg in $packages_to_remove; do
-                summary="${summary}  - ${pkg}\n"
-            done
-            summary="${summary}\n"
+            summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-removed')" "$packages_to_remove" "")"
             has_changes=1
         fi
         
-        if [ -n "$customscripts_to_install" ] || [ -n "$customscripts_to_remove" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
-            
-            while read -r cs_name; do
-                [ -z "$cs_name" ] && continue
-                summary="${summary}  - remove ${cs_name}\n"
-            done <<CS_REMOVE
-$(printf '%b' "$customscripts_to_remove")
-CS_REMOVE
-            
-            while read -r cs_name; do
-                [ -z "$cs_name" ] && continue
-                summary="${summary}  - install ${cs_name}\n"
-            done <<CS_INSTALL
-$(printf '%b' "$customscripts_to_install")
-CS_INSTALL
-            
-            summary="${summary}\n"
+        # パッケージインストール
+        if [ -n "$packages_to_install" ]; then
+            summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-installed')" "$packages_to_install" "")"
             has_changes=1
         fi
         
+        # カスタムフィード削除
         if [ -f "$CONFIG_DIR/custom_feed_remove_list.txt" ]; then
             local custom_removed
             custom_removed=$(cat "$CONFIG_DIR/custom_feed_remove_list.txt" | xargs)
             if [ -n "$custom_removed" ]; then
-                # 通常パッケージ削除がない場合のみヘッダーを追加
-                if [ -z "$packages_to_remove" ]; then
-                    summary="${summary}$(translate 'tr-tui-summary-removed'):\n"
-                fi
+                local custom_remove_list=""
                 for pkg in $custom_removed; do
-                    # 通常削除リストと重複していない場合のみ追加
                     case " $packages_to_remove " in
                         *" $pkg "*) ;;
-                        *) summary="${summary}  - ${pkg}\n" ;;
+                        *) custom_remove_list="${custom_remove_list}${pkg}\n" ;;
                     esac
                 done
-                summary="${summary}\n"
-                has_changes=1
+                if [ -n "$custom_remove_list" ]; then
+                    summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-removed')" "$(printf '%b' "$custom_remove_list")" "")"
+                    has_changes=1
+                fi
             fi
         fi
         
+        # カスタムフィードインストール
         if [ "$HAS_CUSTOMFEEDS" -eq 1 ]; then
+            local customfeed_install_list=""
             for script in "$CONFIG_DIR"/customfeeds-*.sh; do
                 [ -f "$script" ] || continue
                 [ "$(basename "$script")" = "customfeeds-none.sh" ] && continue
@@ -1767,59 +1782,47 @@ CS_INSTALL
                 packages_value=$(grep '^PACKAGES=' "$script" 2>/dev/null | cut -d'"' -f2)
                 
                 if [ -n "$packages_value" ]; then
-                    summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
                     while read -r pkg_pattern; do
                         [ -z "$pkg_pattern" ] && continue
-                        # コロン区切りの最初の部分がパッケージ名
                         local pkg_name
                         pkg_name=$(echo "$pkg_pattern" | cut -d':' -f1)
-                        summary="${summary}  - ${pkg_name}\n"
+                        customfeed_install_list="${customfeed_install_list}${pkg_name}\n"
                     done <<PKGS
 $(echo "$packages_value" | tr ' ' '\n')
 PKGS
-                    summary="${summary}\n"
-                    has_changes=1
                     break
                 fi
             done
-        fi
-        
-        if [ "$HAS_SETUP" -eq 1 ]; then
-            local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
-            if [ "$setup_count" -gt 0 ]; then
-                summary="${summary}$(translate 'tr-tui-summary-settings') (${setup_count}):\n"
-                
-                while IFS= read -r line; do
-                    [ -z "$line" ] && continue
-                    case "$line" in
-                        \#*) continue ;;
-                    esac
-                    summary="${summary}  - ${line}\n"
-                done < "$SETUP_VARS"
-                
-                summary="${summary}\n"
+            if [ -n "$customfeed_install_list" ]; then
+                summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-installed')" "$(printf '%b' "$customfeed_install_list")" "")"
                 has_changes=1
             fi
         fi
         
-        if [ -n "$customscripts_to_install" ] || [ -n "$customscripts_to_remove" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
-            
-            if [ -n "$customscripts_to_remove" ]; then
-                printf '%b' "$customscripts_to_remove" | while read -r cs_name; do
-                    [ -z "$cs_name" ] && continue
-                    summary="${summary}  - remove ${cs_name}\n"
-                done
+        # 設定変数
+        if [ "$HAS_SETUP" -eq 1 ]; then
+            local setup_list=""
+            while IFS= read -r line; do
+                [ -z "$line" ] && continue
+                case "$line" in
+                    \#*) continue ;;
+                esac
+                setup_list="${setup_list}${line}\n"
+            done < "$SETUP_VARS"
+            if [ -n "$setup_list" ]; then
+                local setup_count=$(grep -cv '^#\|^$' "$SETUP_VARS" 2>/dev/null || echo 0)
+                summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-settings') (${setup_count})" "$(printf '%b' "$setup_list")" "")"
+                has_changes=1
             fi
-            
-            if [ -n "$customscripts_to_install" ]; then
-                printf '%b' "$customscripts_to_install" | while read -r cs_name; do
-                    [ -z "$cs_name" ] && continue
-                    summary="${summary}  - install ${cs_name}\n"
-                done
-            fi
-            
-            summary="${summary}\n"
+        fi
+        
+        # カスタムスクリプト
+        if [ -n "$customscripts_to_remove" ]; then
+            summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-customscripts')" "$(printf '%b' "$customscripts_to_remove")" "remove")"
+            has_changes=1
+        fi
+        if [ -n "$customscripts_to_install" ]; then
+            summary="${summary}$(build_summary_section "$(translate 'tr-tui-summary-customscripts')" "$(printf '%b' "$customscripts_to_install")" "install")"
             has_changes=1
         fi
         
