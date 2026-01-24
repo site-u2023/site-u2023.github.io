@@ -4810,10 +4810,6 @@ EOF4
                 
                     echo ""
 					echo "${script_id}_main -t"
-                
-                    echo ""
-                    echo "# Cleanup after execution"
-                    echo "rm -f \"$CONFIG_DIR/script_vars_${script_id}.txt\""
                 } > "$CONFIG_DIR/customscripts-${script_id}.sh"
             
                 chmod +x "$CONFIG_DIR/customscripts-${script_id}.sh"
