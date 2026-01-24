@@ -1717,14 +1717,23 @@ EOF
             has_changes=1
         fi
         
-        if [ -n "$packages_to_install" ]; then
-            summary="${summary}$(translate 'tr-tui-summary-installed'):\n"
-            while read -r pkg; do
-                [ -z "$pkg" ] && continue
-                summary="${summary}  - ${pkg}\n"
-            done <<PKGS
-$packages_to_install
-PKGS
+        if [ -n "$customscripts_to_install" ] || [ -n "$customscripts_to_remove" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
+            
+            while read -r cs_name; do
+                [ -z "$cs_name" ] && continue
+                summary="${summary}  - remove ${cs_name}\n"
+            done <<CS_REMOVE
+$(printf '%b' "$customscripts_to_remove")
+CS_REMOVE
+            
+            while read -r cs_name; do
+                [ -z "$cs_name" ] && continue
+                summary="${summary}  - install ${cs_name}\n"
+            done <<CS_INSTALL
+$(printf '%b' "$customscripts_to_install")
+CS_INSTALL
+            
             summary="${summary}\n"
             has_changes=1
         fi
