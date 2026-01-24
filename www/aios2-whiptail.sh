@@ -1578,6 +1578,34 @@ EOF
         local packages_to_remove
         packages_to_remove=$(detect_packages_to_remove)
         
+        # カスタムスクリプト情報を実行前に取得
+        local customscripts_to_install=""
+        local customscripts_to_remove=""
+        for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+            [ -f "$var_file" ] || continue
+            
+            local cs_script_id cs_script_name
+            cs_script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+            
+            grep -q "^CONFIRMED=" "$var_file" 2>/dev/null || continue
+            
+            local cs_installed=0
+            local cs_confirmed=0
+            is_script_installed "$cs_script_id" && cs_installed=1
+            grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && cs_confirmed=1
+            
+            [ "$cs_installed" -eq "$cs_confirmed" ] && continue
+            
+            cs_script_name=$(get_customscript_name "$cs_script_id")
+            [ -z "$cs_script_name" ] && cs_script_name="$cs_script_id"
+            
+            if [ "$cs_confirmed" -eq 1 ] && [ "$cs_installed" -eq 0 ]; then
+                customscripts_to_install="${customscripts_to_install}${cs_script_name}\n"
+            elif [ "$cs_confirmed" -eq 0 ] && [ "$cs_installed" -eq 1 ]; then
+                customscripts_to_remove="${customscripts_to_remove}${cs_script_name}\n"
+            fi
+        done
+        
         echo "Generating installation scripts..."
         generate_files
         
@@ -1765,47 +1793,25 @@ PKGS
             fi
         fi
         
-        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ]; then
-            local customscript_header_printed=0
-            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
-                [ -f "$var_file" ] || continue
-                
-                local script_id script_name
-                script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
-                
-                # CONFIRMEDがない場合はスキップ
-                grep -q "^CONFIRMED=" "$var_file" 2>/dev/null || continue
-                
-                # 選択状態とインストール状態を比較
-                local installed=0
-                local confirmed=0
-                is_script_installed "$script_id" && installed=1
-                grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && confirmed=1
-                
-                # 差分がない場合はスキップ
-                [ "$installed" -eq "$confirmed" ] && continue
-                
-                script_name=$(get_customscript_name "$script_id")
-                [ -z "$script_name" ] && script_name="$script_id"
-                
-                # ヘッダーを1回だけ出力
-                if [ "$customscript_header_printed" -eq 0 ]; then
-                    summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
-                    customscript_header_printed=1
-                fi
-                
-                # パッケージと同じフォーマット: remove/install
-                if [ "$confirmed" -eq 1 ] && [ "$installed" -eq 0 ]; then
-                    summary="${summary}  - install ${script_name}\n"
-                elif [ "$confirmed" -eq 0 ] && [ "$installed" -eq 1 ]; then
-                    summary="${summary}  - remove ${script_name}\n"
-                fi
-                
-                has_changes=1
-            done
+        if [ -n "$customscripts_to_install" ] || [ -n "$customscripts_to_remove" ]; then
+            summary="${summary}$(translate 'tr-tui-summary-customscripts'):\n"
             
-            # カスタムスクリプトが出力された場合は改行を追加
-            [ "$customscript_header_printed" -eq 1 ] && summary="${summary}\n"
+            if [ -n "$customscripts_to_remove" ]; then
+                printf '%b' "$customscripts_to_remove" | while read -r cs_name; do
+                    [ -z "$cs_name" ] && continue
+                    summary="${summary}  - remove ${cs_name}\n"
+                done
+            fi
+            
+            if [ -n "$customscripts_to_install" ]; then
+                printf '%b' "$customscripts_to_install" | while read -r cs_name; do
+                    [ -z "$cs_name" ] && continue
+                    summary="${summary}  - install ${cs_name}\n"
+                done
+            fi
+            
+            summary="${summary}\n"
+            has_changes=1
         fi
         
         if [ "$has_changes" -eq 1 ]; then
