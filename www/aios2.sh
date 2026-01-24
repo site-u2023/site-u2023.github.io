@@ -2457,7 +2457,7 @@ custom_scripts_selection() {
     download_customscripts_json || return 0
     
     local tr_main_menu tr_custom_scripts breadcrumb
-    local all_scripts choices script_id
+    local all_scripts
     
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_custom_scripts=$(translate "tr-tui-custom-scripts")
@@ -2470,44 +2470,7 @@ custom_scripts_selection() {
         return 0
     fi
     
-    # UIを表示してユーザーの選択（チェック状態）を取得
-    # choices には "id1" "id2" のように選択されたIDのみが入る
-    choices=$(custom_scripts_selection_ui "$breadcrumb" "$all_scripts")
-    
-    # UIでキャンセル（Back）が押された場合は何もしない
-    [ $? -ne 0 ] && return 0
-
-    # 全スクリプトを走査して、チェックの有無に応じた処理を行う
-    for script_id in $all_scripts; do
-        [ -z "$script_id" ] && continue
-        
-        # 現在のスクリプトがチェックリストで選択されたか確認
-        local is_selected=0
-        if echo "$choices" | grep -q "\"$script_id\""; then
-            is_selected=1
-        fi
-        
-        # 利用可能なオプション（install/remove等）を取得
-        local options filtered_options opt_ids
-        options=$(get_customscript_options "$script_id")
-        filtered_options=$(filter_script_options "$script_id" "$options")
-        opt_ids=$(echo "$filtered_options" | jsonfilter -e '@[*].id' 2>/dev/null)
-
-        if [ "$is_selected" -eq 1 ]; then
-            # 【チェックがある場合】
-            # インストール済みで「削除」しか選択肢がない場合は何もしない（削除確認のループ防止）
-            # それ以外（installやconfigがある場合）はオプション画面へ
-            if echo "$opt_ids" | grep -qv "remove"; then
-                custom_script_options "$script_id" "$breadcrumb"
-            fi
-        else
-            # 【チェックがない場合】
-            # リストで選択されていないが、現在インストール済み（removeオプションがある）なら削除処理へ
-            if echo "$opt_ids" | grep -q "remove"; then
-                custom_script_options "$script_id" "$breadcrumb"
-            fi
-        fi
-    done
+    custom_scripts_selection_ui "$breadcrumb" "$all_scripts"
 }
 
 custom_script_options() {
