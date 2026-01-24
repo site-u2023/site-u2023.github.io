@@ -18,6 +18,7 @@ dns:
     - quic://unfiltered.adguard-dns.com
     - quic://dns.nextdns.io
     - '# DNS-over-TLS'
+    - tls://unfiltered.adguard-dns.com
     - tls://one.one.one.one
     - tls://dns.google
     - tls://dns10.quad9.net
