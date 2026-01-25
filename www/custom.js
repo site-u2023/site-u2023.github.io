@@ -2489,9 +2489,9 @@ async function insertExtendedInfo(temp) {
 
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
-
-        state.extendedInfoConfig = infoConfig;
         
+        state.extendedInfoConfig = infoConfig;
+
         const extendedInfo = document.createElement('div');
         extendedInfo.id = 'extended-build-info';
         extendedInfo.className = 'hide';
@@ -2502,28 +2502,26 @@ async function insertExtendedInfo(temp) {
             if (category.class) h3.classList.add(category.class);
             extendedInfo.appendChild(h3);
 
-            category.packages.forEach(pkg => {
-                if (pkg.fields) {
-                    pkg.fields.forEach(field => {
-                        const row = document.createElement('div');
-                        row.className = 'row';
+            if (category.fields) {
+                category.fields.forEach(field => {
+                    const row = document.createElement('div');
+                    row.className = 'row';
 
-                        const col1 = document.createElement('div');
-                        col1.className = 'col1';
-                        if (field.class) col1.classList.add(field.class);
-                        col1.textContent = field.label;
+                    const col1 = document.createElement('div');
+                    col1.className = 'col1';
+                    if (field.class) col1.classList.add(field.class);
+                    col1.textContent = field.label;
 
-                        const col2 = document.createElement('div');
-                        col2.className = 'col2';
-                        col2.id = field.id;
-                        col2.textContent = current_language_json?.['tr-loading'] || 'Loading...';
+                    const col2 = document.createElement('div');
+                    col2.className = 'col2';
+                    col2.id = field.id;
+                    col2.textContent = current_language_json?.['tr-loading'] || 'Loading...';
 
-                        row.appendChild(col1);
-                        row.appendChild(col2);
-                        extendedInfo.appendChild(row);
-                    });
-                }
-            });
+                    row.appendChild(col1);
+                    row.appendChild(col2);
+                    extendedInfo.appendChild(row);
+                });
+            }
         });
 
         imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
