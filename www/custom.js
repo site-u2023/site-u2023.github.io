@@ -1331,17 +1331,35 @@ function evaluateInitialPackages() {
 }
 
 function getConnectionTypeFromApi(apiInfo) {
-    if (!apiInfo) return 'dhcp';
+    if (!apiInfo) return state.autoConfig?.connectionDetection?.default || 'DHCP/PPPoE';
     
-    if (apiInfo.mape?.brIpv6Address) {
-        return 'mape';
+    const detection = state.autoConfig?.connectionDetection;
+    if (!detection) {
+        console.warn('connectionDetection config not loaded');
+        return 'DHCP/PPPoE';
     }
     
-    if (apiInfo.aftr?.aftrAddress) { 
-        return 'dslite';
+    const resolveCheckField = (varName) => {
+        for (const category in state.autoConfig.apiFields) {
+            const field = state.autoConfig.apiFields[category].find(f => f.varName === varName);
+            if (field) return field.jsonPath;
+        }
+        return null;
+    };
+    
+    for (const [typeName, typeConfig] of Object.entries(detection)) {
+        if (typeName === 'default') continue;
+        
+        const checkPath = resolveCheckField(typeConfig.checkField);
+        if (!checkPath) continue;
+        
+        const value = CustomUtils.getNestedValue(apiInfo, checkPath);
+        if (value !== null && value !== undefined && value !== '') {
+            return typeConfig.returnValue;
+        }
     }
     
-    return 'dhcp';
+    return detection.default;
 }
 
 function handleRadioChange(e) {
