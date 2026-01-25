@@ -8,7 +8,7 @@ const CONSOLE_MODE = {
     warn: false,  // 警告
     debug: false, // デバッグ
     error: true   // エラー（常時 true 推奨）
-};
+};function getConnectionType(apiInfo) {
 
 // ===== Console Control Layer =====
 (function() {
@@ -2264,28 +2264,15 @@ function parseApiValues(apiResponse) {
 // ==================== 接続タイプ判定 ====================
 
 function getConnectionType(apiInfo) {
-    if (state.autoConfig?.connectionDetection) {
-        const detection = state.autoConfig.connectionDetection;
-        
-        if (state.apiValues) {
-            if (state.apiValues[detection.mape.checkField]) return 'MAP-E';
-            if (state.apiValues[detection.dslite.checkField]) return 'DS-Lite';
-        }
-        else if (apiInfo) {
-            const mapeField = detection.mape.checkField;
-            const dsliteField = detection.dslite.checkField;
-            
-            const mapeJsonPath = state.autoConfig.apiFields.mape?.find(f => f.varName === mapeField)?.jsonPath;
-            const dsliteJsonPath = state.autoConfig.apiFields.dslite?.find(f => f.varName === dsliteField)?.jsonPath;
-            
-            if (mapeJsonPath && CustomUtils.getNestedValue(apiInfo, mapeJsonPath)) return 'MAP-E';
-            if (dsliteJsonPath && CustomUtils.getNestedValue(apiInfo, dsliteJsonPath)) return 'DS-Lite';
-        }
+    if (!state.autoConfig?.connectionDetection) {
+        console.warn('autoConfig not loaded');
+        return 'DHCP/PPPoE';
     }
-    else if (apiInfo) {
-        if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
-        if (apiInfo?.aftr?.aftrAddress) return 'DS-Lite';
-    }
+    
+    const detection = state.autoConfig.connectionDetection;
+    
+    if (state.apiValues[detection.mape.checkField]) return 'MAP-E';
+    if (state.apiValues[detection.dslite.checkField]) return 'DS-Lite';
     
     return 'DHCP/PPPoE';
 }
