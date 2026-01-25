@@ -89,6 +89,8 @@ const state = {
     },
     
     apiInfo: null,
+    autoConfig: null, 
+    apiValues: {},
     lookupTargetFields: null,
     extendedInfoConfig: null,
     
@@ -2225,12 +2227,70 @@ function loadUciDefaultsTemplate() {
         });
 }
 
-// ==================== ISP情報処理 ====================
+// ==================== auto-config.json ロード ====================
+
+async function loadAutoConfig() {
+    try {
+        const url = config.auto_config_json_path || 'auto-config/auto-config.json';
+        const response = await fetch(url + '?t=' + Date.now());
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        
+        state.autoConfig = await response.json();
+        console.log('Auto-config loaded:', state.autoConfig);
+        return state.autoConfig;
+    } catch (err) {
+        console.error('Failed to load auto-config.json:', err);
+        return null;
+    }
+}
+
+// ==================== APIレスポンスパース ====================
+
+function parseApiValues(apiResponse) {
+    if (!state.autoConfig?.apiFields || !apiResponse) return {};
+    
+    const values = {};
+    ['basic', 'mape', 'dslite'].forEach(category => {
+        (state.autoConfig.apiFields[category] || []).forEach(field => {
+            values[field.varName] = CustomUtils.getNestedValue(apiResponse, field.jsonPath);
+        });
+    });
+    
+    state.apiValues = values;
+    console.log('API values parsed:', state.apiValues);
+    return values;
+}
+
+// ==================== 接続タイプ判定 ====================
+
 function getConnectionType(apiInfo) {
-    if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
-    if (apiInfo?.aftr?.aftrAddress) return 'DS-Lite';
+    if (state.autoConfig?.connectionDetection) {
+        const detection = state.autoConfig.connectionDetection;
+        
+        if (state.apiValues) {
+            if (state.apiValues[detection.mape.checkField]) return 'MAP-E';
+            if (state.apiValues[detection.dslite.checkField]) return 'DS-Lite';
+        }
+        else if (apiInfo) {
+            const mapeField = detection.mape.checkField;
+            const dsliteField = detection.dslite.checkField;
+            
+            const mapeJsonPath = state.autoConfig.apiFields.mape?.find(f => f.varName === mapeField)?.jsonPath;
+            const dsliteJsonPath = state.autoConfig.apiFields.dslite?.find(f => f.varName === dsliteField)?.jsonPath;
+            
+            if (mapeJsonPath && CustomUtils.getNestedValue(apiInfo, mapeJsonPath)) return 'MAP-E';
+            if (dsliteJsonPath && CustomUtils.getNestedValue(apiInfo, dsliteJsonPath)) return 'DS-Lite';
+        }
+    }
+    else if (apiInfo) {
+        if (apiInfo?.mape?.brIpv6Address) return 'MAP-E';
+        if (apiInfo?.aftr?.aftrAddress) return 'DS-Lite';
+    }
+    
     return 'DHCP/PPPoE';
 }
+
+// ==================== ISP情報取得・表示 ====================
 
 async function fetchAndDisplayIspInfo(forceRefresh = false) {
     if (!config?.auto_config_api_url) {
@@ -2239,12 +2299,18 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
     }
     
     try {
+        if (!state.autoConfig) {
+            await loadAutoConfig();
+        }
+        
         const options = forceRefresh ? { cache: 'no-store' } : {};
         const response = await fetch(config.auto_config_api_url, options);
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
         
         console.log('ISP info fetched:', apiInfo);
+        
+        parseApiValues(apiInfo);
         
         displayIspInfo(apiInfo);
         updateAutoConnectionInfo(apiInfo);
@@ -2259,38 +2325,43 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
                 updateVariableDefinitions();
             });
         }
-
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
     }
 }
 
+// ==================== ISP情報表示 ====================
+
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
-
-    if (state.extendedInfoConfig?.categories?.[0]?.fields) {
-        const fields = state.extendedInfoConfig.categories[0].fields;
-        
-        fields.forEach(field => {
-            let value = "Unknown";
-            
-            if (field.computed) {
-                if (field.computed === "getConnectionType") {
-                    value = getConnectionType(apiInfo);
-                }
-            } else if (field.apiPaths) {
-                const values = field.apiPaths
-                    .map(path => CustomUtils.getNestedValue(apiInfo, path))
-                    .filter(Boolean);
-                value = values.length > 0 ? values.join(field.separator || ", ") : "Unknown";
-            } else if (field.apiPath) {
-                value = CustomUtils.getNestedValue(apiInfo, field.apiPath) || "Unknown";
-            }
-            
-            UI.updateElement(field.id, { text: value });
-        });
+    
+    parseApiValues(apiInfo);
+    
+    const displayConfig = state.autoConfig?.display?.extendedInfo;
+    if (!displayConfig?.fields) {
+        console.warn('extendedInfo fields not found');
+        return;
     }
-
+    
+    displayConfig.fields.forEach(field => {
+        let value = "Unknown";
+        
+        if (field.computed) {
+            if (field.computed === "getConnectionType") {
+                value = getConnectionType(apiInfo);
+            }
+        } else if (field.varNames) {
+            const values = field.varNames
+                .map(varName => state.apiValues[varName])
+                .filter(Boolean);
+            value = values.length > 0 ? values.join(field.separator || ", ") : "Unknown";
+        } else if (field.varName) {
+            value = state.apiValues[field.varName] || "Unknown";
+        }
+        
+        UI.updateElement(field.id, { text: value });
+    });
+    
     const extendedInfo = document.getElementById("extended-build-info");
     if (extendedInfo) {
         extendedInfo.classList.remove('hide');
@@ -2299,10 +2370,8 @@ function displayIspInfo(apiInfo) {
     }
 }
 
-// ============================================================
-// updateAutoConnectionInfo() - JSON駆動版
-// information.json の mape-info / dslite-info カテゴリを使用
-// ============================================================
+// ==================== 接続情報表示 ====================
+
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
@@ -2310,8 +2379,7 @@ function updateAutoConnectionInfo(apiInfo) {
     autoInfo.innerHTML = '';
     
     const connectionType = getConnectionType(apiInfo);
-
-    // IPv6警告（既存ロジック維持）
+    
     if (apiInfo && apiInfo.ipv6 === null) {
         const warningSpan = document.createElement('span');
         warningSpan.className = 'tr-ipv6-warning-auto';
@@ -2319,36 +2387,31 @@ function updateAutoConnectionInfo(apiInfo) {
         autoInfo.appendChild(document.createElement('br'));
         autoInfo.appendChild(document.createElement('br'));
     }
-
-    // ISP情報（既存ロジック維持）
-    if (apiInfo?.isp) {
-        autoInfo.appendChild(document.createTextNode(`ISP: ${apiInfo.isp}`));
+    
+    if (state.apiValues?.ISP) {
+        autoInfo.appendChild(document.createTextNode(`ISP: ${state.apiValues.ISP}`));
         autoInfo.appendChild(document.createElement('br'));
-        if (apiInfo.as) {
-            autoInfo.appendChild(document.createTextNode(`AS: ${apiInfo.as}`));
+        if (state.apiValues.AS) {
+            autoInfo.appendChild(document.createTextNode(`AS: ${state.apiValues.AS}`));
             autoInfo.appendChild(document.createElement('br'));
         }
     }
     
-    // JSON駆動の接続情報表示
-    const infoConfig = state.extendedInfoConfig;
-    if (!infoConfig?.categories) {
-        console.warn('extendedInfoConfig not loaded');
+    if (!state.autoConfig?.display) {
+        console.warn('autoConfig.display not loaded');
         return;
     }
     
-    // 接続タイプに応じたカテゴリを検索
-    let targetCategory = null;
+    let targetDisplay = null;
     if (connectionType === 'MAP-E') {
-        targetCategory = infoConfig.categories.find(cat => cat.connectionType === 'mape');
+        targetDisplay = state.autoConfig.display.mapeInfo;
     } else if (connectionType === 'DS-Lite') {
-        targetCategory = infoConfig.categories.find(cat => cat.connectionType === 'dslite');
+        targetDisplay = state.autoConfig.display.dsliteInfo;
     }
     
-    if (targetCategory) {
-        renderConnectionInfoFromJson(autoInfo, targetCategory, apiInfo);
+    if (targetDisplay) {
+        renderConnectionInfo(autoInfo, targetDisplay);
     } else {
-        // 標準接続の場合
         const span = document.createElement('span');
         span.className = 'tr-standard-notice';
         span.textContent = 'Standard connection will be used';
@@ -2358,47 +2421,38 @@ function updateAutoConnectionInfo(apiInfo) {
     applyCustomTranslations(current_language_json);
 }
 
-// ============================================================
-// renderConnectionInfoFromJson() - JSONカテゴリからDOM生成
-// ============================================================
-function renderConnectionInfoFromJson(container, category, apiInfo) {
+// ==================== 接続情報レンダリング ====================
+
+function renderConnectionInfo(container, displayConfig) {
+    if (!displayConfig) return;
+    
     container.appendChild(document.createElement('hr'));
     
-    // Notice表示
-    if (category.notice) {
+    if (displayConfig.notice) {
         const notice = document.createElement('p');
         const noticeSpan = document.createElement('span');
-        noticeSpan.className = category.notice.class || '';
-        noticeSpan.textContent = category.notice.default || '';
+        noticeSpan.className = displayConfig.notice.class || '';
+        noticeSpan.textContent = current_language_json?.[displayConfig.notice.class] || displayConfig.notice.default || '';
         notice.appendChild(noticeSpan);
         container.appendChild(notice);
     }
     
-    // フィールド表示
-    if (category.fields) {
-        category.fields.forEach(field => {
-            let value = null;
+    if (displayConfig.fields) {
+        displayConfig.fields.forEach(field => {
+            let value = state.apiValues?.[field.varName];
             
-            // apiPath からの値取得
-            if (field.apiPath) {
-                value = CustomUtils.getNestedValue(apiInfo, field.apiPath);
-            }
-            
-            // GUA prefix の特別処理（condition: hasValue の場合）
             if (field.condition === 'hasValue') {
-                // GUAの計算を試みる
-                if (field.id === 'mape-ip6prefix-gua' && !value) {
-                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                if (field.varName === 'MAPE_GUA_PREFIX' && !value) {
+                    value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (!value) {
                         const guaField = document.querySelector('#mape-gua-prefix');
                         if (guaField && guaField.value) value = guaField.value;
                     }
+                    if (value) state.apiValues.MAPE_GUA_PREFIX = value;
                 }
-                // 値がない場合はスキップ
                 if (!value) return;
             }
             
-            // 値がある場合のみ表示
             if (value !== null && value !== undefined && value !== '') {
                 container.appendChild(document.createTextNode(`${field.label} ${value}`));
                 container.appendChild(document.createElement('br'));
@@ -2406,25 +2460,23 @@ function renderConnectionInfoFromJson(container, category, apiInfo) {
         });
     }
     
-    // Footer（export LEGACY=1 等）
-    if (category.footer?.text) {
+    if (displayConfig.footer?.text) {
         container.appendChild(document.createElement('br'));
-        container.appendChild(document.createTextNode(category.footer.text));
+        container.appendChild(document.createTextNode(displayConfig.footer.text));
         container.appendChild(document.createElement('br'));
     }
     
-    // リンク
-    if (category.link) {
+    if (displayConfig.link) {
         container.appendChild(document.createElement('hr'));
         
         const linkDiv = document.createElement('div');
         linkDiv.style.textAlign = 'center';
         
         const link = document.createElement('a');
-        link.href = category.link.url;
+        link.href = displayConfig.link.url;
         link.target = '_blank';
         link.className = 'linked-title';
-        link.textContent = category.link.text;
+        link.textContent = displayConfig.link.text;
         
         linkDiv.appendChild(link);
         container.appendChild(linkDiv);
@@ -2473,67 +2525,70 @@ function applyIspAutoConfig(apiInfo, options = {}) {
     return mutated;
 }
 
+// ==================== Extended Info DOM生成 ====================
+
 async function insertExtendedInfo(temp) {
     if (document.querySelector('#extended-build-info')) {
         console.log('Extended info already exists');
         return;
     }
-
+    
     const imageLink = document.querySelector('#image-link');
     if (!imageLink) {
         console.log('Image link element not found');
         return;
     }
-
+    
     try {
-        const infoUrl = config.information_path || 'auto-config/information.json';
-        const response = await fetch(infoUrl + '?t=' + Date.now());
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const infoConfig = await response.json();
-        console.log('Information config loaded:', infoConfig);
+        // auto-config.jsonをロード（まだロードされていなければ）
+        if (!state.autoConfig) {
+            await loadAutoConfig();
+        }
         
-        state.extendedInfoConfig = infoConfig;
-
+        if (!state.autoConfig?.display?.extendedInfo) {
+            console.warn('extendedInfo not found in auto-config.json');
+            return;
+        }
+        
+        const displayConfig = state.autoConfig.display.extendedInfo;
+        
         const extendedInfo = document.createElement('div');
-        extendedInfo.id = 'extended-build-info';
+        extendedInfo.id = displayConfig.id || 'extended-build-info';
         extendedInfo.className = 'hide';
-
-        infoConfig.categories
-            .filter(category => category.renderIn === 'extendedInfo')
-            .forEach(category => {
-            const h3 = document.createElement('h3');
-            h3.textContent = category.name;
-            if (category.class) h3.classList.add(category.class);
-            extendedInfo.appendChild(h3);
-
-            if (category.fields) {
-                category.fields.forEach(field => {
-                    const row = document.createElement('div');
-                    row.className = 'row';
-
-                    const col1 = document.createElement('div');
-                    col1.className = 'col1';
-                    if (field.class) col1.classList.add(field.class);
-                    col1.textContent = field.label;
-
-                    const col2 = document.createElement('div');
-                    col2.className = 'col2';
-                    col2.id = field.id;
-                    col2.textContent = current_language_json?.[field.class] || 'Loading...';
-
-                    row.appendChild(col1);
-                    row.appendChild(col2);
-                    extendedInfo.appendChild(row);
-                });
-            }
-        });
-
-        // imageLink.after(extendedInfo);
+        
+        // ヘッダー
+        const h3 = document.createElement('h3');
+        h3.textContent = displayConfig.name;
+        if (displayConfig.class) h3.classList.add(displayConfig.class);
+        extendedInfo.appendChild(h3);
+        
+        // フィールド生成
+        if (displayConfig.fields) {
+            displayConfig.fields.forEach(field => {
+                const row = document.createElement('div');
+                row.className = 'row';
+                
+                const col1 = document.createElement('div');
+                col1.className = 'col1';
+                if (field.class) col1.classList.add(field.class);
+                col1.textContent = field.label;
+                
+                const col2 = document.createElement('div');
+                col2.className = 'col2';
+                col2.id = field.id;
+                col2.textContent = current_language_json?.[field.class] || 'Loading...';
+                
+                row.appendChild(col1);
+                row.appendChild(col2);
+                extendedInfo.appendChild(row);
+            });
+        }
+        
+        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
         console.log('Extended info inserted');
-
+        
     } catch (err) {
-        console.error('Failed to load information config:', err);
+        console.error('Failed to load auto-config:', err);
     }
 }
 
