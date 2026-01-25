@@ -30,7 +30,7 @@ var config = {
   asu_extra_packages: ["luci"],
   // 最小サポートバージョン（任意）
   min_version: "23.05.0",
-  
+
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
   // auto-config.js database URL
