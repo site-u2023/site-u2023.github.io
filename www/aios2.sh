@@ -1095,7 +1095,6 @@ get_extended_device_info() {
     # auto-config.json ベースで全API値をパース
     parse_api_fields
     
-	# 互換性のため一部変数名を調整
     # AUTO_LANGUAGE: LuCIの設定を優先（get_language_code()で既に設定済み）
     # LuCIに設定がない、または複数言語で自動判定できない場合はAPIの言語を使用
     if [ -z "$AUTO_LANGUAGE" ] || [ "$AUTO_LANGUAGE" = "auto" ]; then
@@ -1105,12 +1104,13 @@ get_extended_device_info() {
         echo "[DEBUG] Using existing language: AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
     fi
     
+    # 互換性のため一部変数名を調整
     AUTO_TIMEZONE="$TIMEZONE"
     AUTO_ZONENAME="$ZONENAME"
     AUTO_COUNTRY="$COUNTRY"
     ISP_NAME="$ISP"
     ISP_AS="$AS"
-    ISP_IPV6="$IPV6""
+    ISP_IPV6="$IPV6"
     
     reset_detected_conn_type
     detect_ipv6_type
@@ -1127,7 +1127,6 @@ get_extended_device_info() {
     else
         DEVICE_USB="Not available"
     fi
-
 
     # リソース情報（数値、チェック用）
     MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
