@@ -397,7 +397,7 @@ load_config_from_js() {
     BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "base_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     [ -z "$AUTO_CONFIG_API_URL" ] && AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "auto_config_api_url:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     ASU_URL=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "asu_url:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-    AUTO_CONFIG_DEF_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "auto_config_def_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+	AUTO_CONFIG_DEF_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "auto_config_json_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
 	PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "packages_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "postinst_template_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
