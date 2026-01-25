@@ -973,17 +973,26 @@ get_language_code() {
     if [ "$AUTO_LANGUAGE" = "auto" ] || [ -z "$AUTO_LANGUAGE" ]; then
         local available_langs
         available_langs=$(uci show luci.languages 2>/dev/null | grep "^luci.languages\." | cut -d. -f3 | cut -d= -f1 | sort -u)
-        local lang_count
-        lang_count=$(echo "$available_langs" | wc -l)
         
-        echo "[DEBUG] get_language_code: available_langs='$available_langs', lang_count=$lang_count" >> "$CONFIG_DIR/debug.log"
+        echo "[DEBUG] get_language_code: available_langs='$available_langs'" >> "$CONFIG_DIR/debug.log"
         
-        if [ "$lang_count" -eq 1 ]; then
-            AUTO_LANGUAGE="$available_langs"
-            echo "[DEBUG] get_language_code: Single language detected, AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
+        # 空でないかチェック
+        if [ -n "$available_langs" ]; then
+            local lang_count
+            lang_count=$(echo "$available_langs" | wc -l)
+            
+            echo "[DEBUG] get_language_code: lang_count=$lang_count" >> "$CONFIG_DIR/debug.log"
+            
+            if [ "$lang_count" -eq 1 ]; then
+                AUTO_LANGUAGE="$available_langs"
+                echo "[DEBUG] get_language_code: Single language detected, AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
+            else
+                AUTO_LANGUAGE=""
+                echo "[DEBUG] get_language_code: Multiple languages detected, AUTO_LANGUAGE cleared" >> "$CONFIG_DIR/debug.log"
+            fi
         else
             AUTO_LANGUAGE=""
-            echo "[DEBUG] get_language_code: Multiple languages detected, AUTO_LANGUAGE cleared" >> "$CONFIG_DIR/debug.log"
+            echo "[DEBUG] get_language_code: No languages found in LuCI config, AUTO_LANGUAGE cleared" >> "$CONFIG_DIR/debug.log"
         fi
     fi
     
@@ -1087,13 +1096,21 @@ get_extended_device_info() {
     parse_api_fields
     
 	# 互換性のため一部変数名を調整
-    AUTO_LANGUAGE="$API_LANGUAGE"  # LANGUAGEは翻訳システムと競合するため API_LANGUAGE から取得
+    # AUTO_LANGUAGE: LuCIの設定を優先（get_language_code()で既に設定済み）
+    # LuCIに設定がない、または複数言語で自動判定できない場合はAPIの言語を使用
+    if [ -z "$AUTO_LANGUAGE" ] || [ "$AUTO_LANGUAGE" = "auto" ]; then
+        AUTO_LANGUAGE="$API_LANGUAGE"
+        echo "[DEBUG] Using API language: AUTO_LANGUAGE='$AUTO_LANGUAGE' (from API_LANGUAGE='$API_LANGUAGE')" >> "$CONFIG_DIR/debug.log"
+    else
+        echo "[DEBUG] Using existing language: AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
+    fi
+    
     AUTO_TIMEZONE="$TIMEZONE"
     AUTO_ZONENAME="$ZONENAME"
     AUTO_COUNTRY="$COUNTRY"
     ISP_NAME="$ISP"
     ISP_AS="$AS"
-    ISP_IPV6="$IPV6"
+    ISP_IPV6="$IPV6""
     
     reset_detected_conn_type
     detect_ipv6_type
