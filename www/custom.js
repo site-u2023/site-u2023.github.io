@@ -3,7 +3,7 @@ console.log('custom.js (R8.0125.1044) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
-    log: true,   // 通常ログ
+    log: false,   // 通常ログ
     info: false,  // 情報
     warn: false,  // 警告
     debug: false, // デバッグ
