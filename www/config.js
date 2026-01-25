@@ -37,7 +37,7 @@ var config = {
   // Package manager configuration
   package_manager_config_path: "variables/package-manager.json",
   
-  // UCI-defaults setup.sh URL
+  // Extended build information JSON URL
   information_path: "auto-config/information.json",
   // packages.sh database URL
   packages_db_path: "post-install/postinst.json",
