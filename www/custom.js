@@ -2529,8 +2529,9 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        const imagesDiv = document.querySelector('#images');
-        const buildInfoDiv = imagesDiv?.firstElementChild;
+        // imageLink.after(extendedInfo);
+        const buildTitle = document.querySelector('#build-title');
+        const buildInfoDiv = buildTitle?.parentElement;
         buildInfoDiv?.after(extendedInfo);
         console.log('Extended info inserted');
 
