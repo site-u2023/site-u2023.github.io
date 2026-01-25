@@ -4,98 +4,46 @@
       "id": "extended-build-info",
       "name": "Location & ISP Information",
       "class": "tr-extended-info",
-      "description": "Location and ISP information from auto-config API",
-      "type": "form-section",
-      "packages": [
+      "fields": [
         {
-          "id": "location-isp-info",
-          "name": "Location & ISP Information",
-          "class": "tr-extended-info",
-          "type": "info-display",
-          "fields": [
-            {
-              "id": "auto-config-notice",
-              "label": "Notice",
-              "class": "tr-notice",
-              "type": "display",
-              "selector": "#auto-config-notice",
-              "variableName": "notice",
-              "defaultValue": "",
-              "apiMapping": "notice"
-            },
-            {
-              "id": "auto-config-country",
-              "label": "Country",
-              "class": "tr-country",
-              "type": "display",
-              "selector": "#auto-config-country",
-              "variableName": "country",
-              "defaultValue": "",
-              "apiMapping": "country"
-            },
-            {
-              "id": "auto-config-timezone",
-              "label": "Timezone",
-              "class": "tr-timezone",
-              "type": "display",
-              "selector": "#auto-config-timezone",
-              "variableName": "timezone",
-              "defaultValue": "",
-              "apiMapping": "timezone"
-            },
-            {
-              "id": "auto-config-zonename",
-              "label": "Zonename",
-              "class": "tr-zonename",
-              "type": "display",
-              "selector": "#auto-config-zonename",
-              "variableName": "zonename",
-              "defaultValue": "",
-              "apiMapping": "zonename"
-            },
-            {
-              "id": "auto-config-isp",
-              "label": "ISP",
-              "class": "tr-isp",
-              "type": "display",
-              "selector": "#auto-config-isp",
-              "variableName": "isp",
-              "defaultValue": "",
-              "apiMapping": "isp"
-            },
-            {
-              "id": "auto-config-as",
-              "label": "AS",
-              "class": "tr-as",
-              "type": "display",
-              "selector": "#auto-config-as",
-              "variableName": "as",
-              "defaultValue": "",
-              "apiMapping": "as"
-            },
-            {
-              "id": "auto-config-ip",
-              "label": "IP Address",
-              "class": "tr-ip-address",
-              "type": "display",
-              "selector": "#auto-config-ip",
-              "variableName": "ip_address",
-              "defaultValue": "",
-              "apiMapping": "ipv4,ipv6",
-              "note": "IPv4 and IPv6 addresses are combined"
-            },
-            {
-              "id": "auto-config-method",
-              "label": "Method",
-              "class": "tr-method",
-              "type": "display",
-              "selector": "#auto-config-method",
-              "variableName": "method",
-              "defaultValue": "",
-              "apiMapping": "mape,aftr",
-              "note": "Connection method determined from mape or aftr presence"
-            }
-          ]
+          "id": "auto-config-country",
+          "label": "Country",
+          "class": "tr-country"
+        },
+        {
+          "id": "auto-config-timezone",
+          "label": "Timezone",
+          "class": "tr-timezone"
+        },
+        {
+          "id": "auto-config-zonename",
+          "label": "Zonename",
+          "class": "tr-zonename"
+        },
+        {
+          "id": "auto-config-isp",
+          "label": "ISP",
+          "class": "tr-isp"
+        },
+        {
+          "id": "auto-config-as",
+          "label": "AS",
+          "class": "tr-as"
+        },
+        {
+          "id": "auto-config-ip",
+          "label": "IP Address",
+          "class": "tr-ip-address"
+        },
+        {
+          "id": "auto-config-method",
+          "label": "Connection Method",
+          "class": "tr-method"
+        },
+        {
+          "id": "auto-config-notice",
+          "label": "Notice",
+          "class": "tr-notice"
         }
       ]
     }
