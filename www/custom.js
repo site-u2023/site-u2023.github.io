@@ -2529,8 +2529,8 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        const downloads1 = document.querySelector('#downloads1');
-        downloads1.before(extendedInfo);
+        const packagesSection = document.querySelector('#custom-packages-section');
+        packagesSection.before(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
