@@ -781,7 +781,7 @@
                 "xpass": [],
                 "v6connect": []
               },
-              "computeTarget": "peeraddr"
+              "computeTarget": "dslite_peeraddr"
             },
             {
               "type": "field",
@@ -795,7 +795,7 @@
                 {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
               ],
               "apiSource": "aftr.jurisdiction",
-              "computeTarget": "peeraddr",
+              "computeTarget": "dslite_peeraddr",
               "showWhen": {"dslite_aftr_type": ["transix"]}
             },
             {
