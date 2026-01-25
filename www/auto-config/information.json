@@ -55,6 +55,98 @@
           "apiPath": "notice"
         }
       ]
+    },
+    {
+      "id": "mape-info",
+      "name": "MAP-E Configuration",
+      "class": "tr-mape-config",
+      "connectionType": "mape",
+      "notice": {
+        "class": "tr-mape-notice1",
+        "default": "Note: Actual values may differ."
+      },
+      "fields": [
+        {
+          "id": "mape-ip6prefix-gua",
+          "label": "option ip6prefix_gua",
+          "apiPath": "mape.ipv6Prefix_gua",
+          "variable": "MAPE_GUA_PREFIX",
+          "condition": "hasValue"
+        },
+        {
+          "id": "mape-peeraddr",
+          "label": "option peeraddr",
+          "apiPath": "mape.brIpv6Address",
+          "variable": "MAPE_BR"
+        },
+        {
+          "id": "mape-ipaddr",
+          "label": "option ipaddr",
+          "apiPath": "mape.ipv4Prefix",
+          "variable": "MAPE_IPV4_PREFIX"
+        },
+        {
+          "id": "mape-ip4prefixlen",
+          "label": "option ip4prefixlen",
+          "apiPath": "mape.ipv4PrefixLength",
+          "variable": "MAPE_IPV4_PREFIXLEN"
+        },
+        {
+          "id": "mape-ip6prefix",
+          "label": "option ip6prefix",
+          "apiPath": "mape.ipv6Prefix",
+          "variable": "MAPE_IPV6_PREFIX"
+        },
+        {
+          "id": "mape-ip6prefixlen",
+          "label": "option ip6prefixlen",
+          "apiPath": "mape.ipv6PrefixLength",
+          "variable": "MAPE_IPV6_PREFIXLEN"
+        },
+        {
+          "id": "mape-ealen",
+          "label": "option ealen",
+          "apiPath": "mape.eaBitLength",
+          "variable": "MAPE_EALEN"
+        },
+        {
+          "id": "mape-psidlen",
+          "label": "option psidlen",
+          "apiPath": "mape.psidlen",
+          "variable": "MAPE_PSIDLEN"
+        },
+        {
+          "id": "mape-offset",
+          "label": "option offset",
+          "apiPath": "mape.psIdOffset",
+          "variable": "MAPE_PSID_OFFSET"
+        }
+      ],
+      "footer": {
+        "text": "export LEGACY=1"
+      },
+      "link": {
+        "url": "https://ipv4.web.fc2.com/map-e.html",
+        "text": "Powered by config-softwire"
+      }
+    },
+    {
+      "id": "dslite-info",
+      "name": "DS-Lite Configuration",
+      "class": "tr-dslite-config",
+      "connectionType": "dslite",
+      "notice": {
+        "class": "tr-dslite-notice1",
+        "default": "Note: Actual values may differ."
+      },
+      "fields": [
+        {
+          "id": "dslite-aftr",
+          "label": "option peeraddr",
+          "apiPath": "aftr.aftrAddress",
+          "variable": "DSLITE_AFTR"
+        }
+      ]
     }
   ]
 }
