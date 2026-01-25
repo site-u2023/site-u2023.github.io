@@ -410,68 +410,51 @@ show_network_info() {
         download_information_json
     fi
     
-    if [ "$detected_type" = "mape" ]; then
+    if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
         info="${tr_auto_detection}: MAP-E
 
 "
-        [ -n "$isp_name" ] && info="${info}${tr_isp}: $isp_name
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME
 "
-        [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS
 "
         
         # JSON から notice を取得
         local notice_class notice_text
-        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.class" 2>/dev/null | head -1)
+        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].notice.class" 2>/dev/null | head -1)
         if [ -n "$notice_class" ]; then
             notice_text=$(translate "$notice_class")
         else
-            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.default" 2>/dev/null | head -1)
+            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].notice.default" 2>/dev/null | head -1)
         fi
         [ -n "$notice_text" ] && info="${info}
 ${notice_text}
 
 "
         
-        # 値を一時ファイルに保存（setup変数名=値 形式）
-        local field_cache="$CONFIG_DIR/mape_field_cache.txt"
-        : > "$field_cache"
-        
         # JSON からフィールドを取得してループ
-        local i
+        local fields field_count i
+        field_count=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[*]" 2>/dev/null | grep -c "^{" || echo "0")
+        
+        # jsonfilter でフィールドを1つずつ取得
         i=0
         while [ $i -lt 20 ]; do
-            local field_label field_api_path field_condition field_value field_variable field_setup_var
+            local field_label field_variable field_condition field_value
             
-            # 各フィールドのプロパティを取得
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].label" 2>/dev/null)
+            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].label" 2>/dev/null)
             [ -z "$field_label" ] && break
             
-            field_api_path=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].apiPath" 2>/dev/null)
-            field_condition=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].condition" 2>/dev/null)
-            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].variable" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].variable" 2>/dev/null)
+            field_condition=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].condition" 2>/dev/null)
             
-            # label から setup 変数名を抽出（"option " を削除）
-            field_setup_var=$(echo "$field_label" | sed 's/^option //')
-            
-            # API から値を取得
-            if [ -n "$field_api_path" ]; then
-                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_path}" 2>/dev/null)
-            else
-                field_value=""
-            fi
-            
-            echo "[DEBUG] MAP-E field[$i]: label='$field_label', setupVar='$field_setup_var', apiPath='$field_api_path', value='$field_value'" >> "$CONFIG_DIR/debug.log"
+            # 変数から値を取得
+            field_value=$(eval "echo \"\$$field_variable\"")
             
             # condition: hasValue の場合、値がなければスキップ
             if [ "$field_condition" = "hasValue" ] && [ -z "$field_value" ]; then
                 i=$((i + 1))
                 continue
-            fi
-            
-            # 値を保存（setup変数名=値の形式）
-            if [ -n "$field_setup_var" ] && [ -n "$field_value" ]; then
-                echo "${field_setup_var}=${field_value}" >> "$field_cache"
             fi
             
             # 値がある場合のみ表示
@@ -488,53 +471,49 @@ ${notice_text}
 $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
-            # 基本設定
             set_var "connection_type" "auto"
             set_var "connection_auto" "mape"
-            
-            # GUA/PD 判定
-            local mape_gua_prefix
-            mape_gua_prefix=$(grep "^ip6prefix_gua=" "$field_cache" 2>/dev/null | cut -d= -f2)
-            if [ -n "$mape_gua_prefix" ]; then
+            if [ -n "$MAPE_GUA_PREFIX" ]; then
                 set_var "mape_type" "gua"
+                set_var "ip6prefix_gua" "$MAPE_GUA_PREFIX"
             else
                 set_var "mape_type" "pd"
-            fi
-            
-            # キャッシュから動的に set_var を呼び出す
-            while IFS='=' read -r setup_var var_value; do
-                [ -z "$setup_var" ] || [ -z "$var_value" ] && continue
-                set_var "$setup_var" "$var_value"
-            done < "$field_cache"
-            
-            rm -f "$field_cache"
+            fi     
+            set_var "peeraddr" "$MAPE_BR"
+            set_var "ipaddr" "$MAPE_IPV4_PREFIX"
+            set_var "ip4prefixlen" "$MAPE_IPV4_PREFIXLEN"
+            set_var "ip6prefix" "$MAPE_IPV6_PREFIX"
+            set_var "ip6prefixlen" "$MAPE_IPV6_PREFIXLEN"
+            set_var "ealen" "$MAPE_EALEN"
+            set_var "psidlen" "$MAPE_PSIDLEN"
+            set_var "offset" "$MAPE_PSID_OFFSET"
 
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
             
             return 0
         else
-            rm -f "$field_cache"
+            reset_detected_conn_type
             return 1
         fi
         
-    elif [ "$detected_type" = "dslite" ]; then
+    elif [ "$DETECTED_CONN_TYPE" = "dslite" ] && [ -n "$DSLITE_AFTR" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
         info="${tr_auto_detection}: DS-Lite
 
 "
-        [ -n "$isp_name" ] && info="${info}${tr_isp}: $isp_name
+        [ -n "$ISP_NAME" ] && info="${info}${tr_isp}: $ISP_NAME
 "
-        [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
+        [ -n "$ISP_AS" ] && info="${info}${tr_as}: $ISP_AS
 "
         
         # JSON から notice を取得
         local notice_class notice_text
-        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].notice.class" 2>/dev/null | head -1)
+        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].notice.class" 2>/dev/null | head -1)
         if [ -n "$notice_class" ]; then
             notice_text=$(translate "$notice_class")
         else
-            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].notice.default" 2>/dev/null | head -1)
+            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].notice.default" 2>/dev/null | head -1)
         fi
         [ -n "$notice_text" ] && info="${info}
 ${notice_text}
@@ -545,24 +524,15 @@ ${notice_text}
         local i
         i=0
         while [ $i -lt 20 ]; do
-            local field_label field_api_path field_value field_setup_var
+            local field_label field_variable field_value
             
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].label" 2>/dev/null)
+            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].fields[$i].label" 2>/dev/null)
             [ -z "$field_label" ] && break
             
-            field_api_path=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].apiPath" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].fields[$i].variable" 2>/dev/null)
             
-            # label から setup 変数名を抽出（"option " を削除）
-            field_setup_var=$(echo "$field_label" | sed 's/^option //')
-            
-            # API から値を取得
-            if [ -n "$field_api_path" ]; then
-                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_path}" 2>/dev/null)
-            else
-                field_value=""
-            fi
-            
-            echo "[DEBUG] DS-Lite field[$i]: label='$field_label', setupVar='$field_setup_var', apiPath='$field_api_path', value='$field_value'" >> "$CONFIG_DIR/debug.log"
+            # 変数から値を取得
+            field_value=$(eval "echo \"\$$field_variable\"")
             
             # 値がある場合のみ表示
             if [ -n "$field_value" ]; then
@@ -580,14 +550,14 @@ $(translate 'tr-tui-use-auto-config')"
         if show_yesno "$breadcrumb" "$info"; then
             set_var "connection_type" "auto"
             set_var "connection_auto" "dslite"
-            # DS-Lite は peeraddr のみ（label から抽出済み）
-            set_var "peeraddr" "$dslite_aftr"
+            set_var "dslite_peeraddr" "$DSLITE_AFTR"
 
             auto_add_conditional_packages "internet-connection"
             auto_add_conditional_packages "setup-driven-packages"
             
             return 0
         else
+            reset_detected_conn_type
             return 1
         fi
         
