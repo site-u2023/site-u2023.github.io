@@ -554,6 +554,7 @@ $(translate 'tr-tui-use-auto-config')"
             rm -f "$field_cache"
             return 1
         fi
+    fi
         
     elif [ "$detected_type" = "dslite" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
