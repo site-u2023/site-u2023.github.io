@@ -1072,12 +1072,10 @@ process_items() {
 
 show_auto_detection_if_available() {
     if [ "$DETECTED_CONN_TYPE" != "unknown" ] && [ -n "$DETECTED_CONN_TYPE" ]; then
-        local tr_main_menu tr_internet_connection tr_auto_detection breadcrumb
+        local tr_auto_detection breadcrumb
         
-        tr_main_menu=$(translate "tr-tui-main-menu")
-        tr_internet_connection=$(translate "tr-tui-internet-connection")
         tr_auto_detection=$(translate "tr-auto-detection")
-        breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_internet_connection" "$tr_auto_detection")
+        breadcrumb="$tr_auto_detection"
         
         if show_network_info "$breadcrumb"; then
             auto_add_conditional_packages "internet-connection"
