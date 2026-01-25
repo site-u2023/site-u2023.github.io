@@ -1570,6 +1570,26 @@ function getFieldValue(selector) {
     return element.value || null;
 }
 
+function extractLuciName(pkg) {
+    if (pkg === 'luci') return 'base';
+
+    const patterns = state.config.setup?.constants?.language_module_patterns || [
+        'luci-app-', 'luci-proto-', 'luci-mod-'
+    ];
+    
+    for (const pattern of patterns) {
+        if (pkg.startsWith(pattern)) {
+            return pkg.substring(pattern.length);
+        }
+    }
+    
+    if (pkg.startsWith('luci-theme-')) {
+        return null;
+    }
+    
+    return null;
+}
+
 // ==================== 統合パッケージ管理 ====================
 async function updateAllPackageState(source = 'unknown') {
     if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
@@ -1858,16 +1878,6 @@ function isManualPackage(pkg, confirmedSet, knownSelectablePackages, currentUISe
     if (state.cache.prevUISelections.has(pkg) && !currentUISelections.has(pkg)) return false;
     
     return true;
-}
-
-function extractLuciName(pkg) {
-    if (pkg === 'luci') return 'base';
-
-    const prefixMatch = pkg.match(/^luci-(?:app|mod|theme|proto)-(.+)$/);
-    if (prefixMatch && prefixMatch[1]) {
-        return prefixMatch[1];
-    }
-    return null;
 }
 
 // ==================== フォーム値収集 ====================
