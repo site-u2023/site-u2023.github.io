@@ -555,8 +555,8 @@ $(translate 'tr-tui-use-auto-config')"
             return 1
         fi
     fi
-        
-    elif [ "$detected_type" = "dslite" ]; then
+    
+    if [ "$detected_type" = "dslite" ]; then
         tr_auto_detection=$(translate "tr-auto-detection")
         info="${tr_auto_detection}: DS-Lite
 
@@ -642,24 +642,24 @@ $(translate 'tr-tui-use-auto-config')"
             rm -f "$field_cache"
             return 1
         fi
-        
-    else
-        local tr_isp_info tr_manual_config
-        tr_isp_info=$(translate "tr-tui-isp-info")
-        tr_manual_config=$(translate "tr-tui-manual-config-required")
-        info="${tr_isp_info}
+    fi
+    
+    # Unknown の場合
+    local tr_isp_info tr_manual_config
+    tr_isp_info=$(translate "tr-tui-isp-info")
+    tr_manual_config=$(translate "tr-tui-manual-config-required")
+    info="${tr_isp_info}
 
 "
-        [ -n "$isp_name" ] && info="${info}${tr_isp}: $isp_name
+    [ -n "$isp_name" ] && info="${info}${tr_isp}: $isp_name
 "
-        [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
+    [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
 "
-        info="${info}
+    info="${info}
 ${tr_manual_config}"
-        
-        show_msgbox "$breadcrumb" "$info"
-        return 1
-    fi
+    
+    show_msgbox "$breadcrumb" "$info"
+    return 1
 }
 
 process_items() {
