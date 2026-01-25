@@ -434,22 +434,22 @@ ${notice_text}
 "
         
         # JSON からフィールドを取得してループ
-        local fields field_count i
-        field_count=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[*]" 2>/dev/null | grep -c "^{" || echo "0")
-        
-        # jsonfilter でフィールドを1つずつ取得
+        local i
         i=0
         while [ $i -lt 20 ]; do
             local field_label field_variable field_condition field_value
             
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].label" 2>/dev/null)
+            # 各フィールドのプロパティを取得
+            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].label" 2>/dev/null)
             [ -z "$field_label" ] && break
             
-            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].variable" 2>/dev/null)
-            field_condition=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='mape'].fields[$i].condition" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].variable" 2>/dev/null)
+            field_condition=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].condition" 2>/dev/null)
             
-            # 変数から値を取得
+            # 変数名から値を取得（aios2.sh 内でエクスポートされたグローバル変数）
             field_value=$(eval "echo \"\$$field_variable\"")
+            
+            echo "[DEBUG] MAP-E field[$i]: label='$field_label', var='$field_variable', condition='$field_condition', value='$field_value'" >> "$CONFIG_DIR/debug.log"
             
             # condition: hasValue の場合、値がなければスキップ
             if [ "$field_condition" = "hasValue" ] && [ -z "$field_value" ]; then
@@ -526,13 +526,15 @@ ${notice_text}
         while [ $i -lt 20 ]; do
             local field_label field_variable field_value
             
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].fields[$i].label" 2>/dev/null)
+            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].label" 2>/dev/null)
             [ -z "$field_label" ] && break
             
-            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.connectionType='dslite'].fields[$i].variable" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].variable" 2>/dev/null)
             
             # 変数から値を取得
             field_value=$(eval "echo \"\$$field_variable\"")
+            
+            echo "[DEBUG] DS-Lite field[$i]: label='$field_label', var='$field_variable', value='$field_value'" >> "$CONFIG_DIR/debug.log"
             
             # 値がある場合のみ表示
             if [ -n "$field_value" ]; then
