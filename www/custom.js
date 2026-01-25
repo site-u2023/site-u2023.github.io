@@ -4861,10 +4861,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     
     cacheFrequentlyUsedElements();
     
-    if (!document.querySelector('#extended-build-info')) {
-        await insertExtendedInfo(temp);
-    }
-    
     await fetchAndDisplayIspInfo();
     
     if (state.apiInfo) {
@@ -4896,6 +4892,10 @@ async function initializeCustomFeatures(asuSection, temp) {
 
     generatePackageSelector();
 
+    if (!document.querySelector('#extended-build-info')) {
+        await insertExtendedInfo(temp);
+    }
+    
     if (state.packages.default.length > 0 || state.packages.device.length > 0 || state.packages.extra.length > 0) {
         console.log('Force applying existing device packages');
         const initialPackages = state.packages.default
