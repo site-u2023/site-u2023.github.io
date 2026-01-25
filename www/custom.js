@@ -8,7 +8,7 @@ const CONSOLE_MODE = {
     warn: false,  // 警告
     debug: false, // デバッグ
     error: true   // エラー（常時 true 推奨）
-};function getConnectionType(apiInfo) {
+};
 
 // ===== Console Control Layer =====
 (function() {
