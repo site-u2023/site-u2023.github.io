@@ -2299,6 +2299,10 @@ function displayIspInfo(apiInfo) {
     }
 }
 
+// ============================================================
+// updateAutoConnectionInfo() - JSON駆動版
+// information.json の mape-info / dslite-info カテゴリを使用
+// ============================================================
 function updateAutoConnectionInfo(apiInfo) {
     const autoInfo = document.querySelector('#auto-info');
     if (!autoInfo) return;
@@ -2307,6 +2311,7 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
 
+    // IPv6警告（既存ロジック維持）
     if (apiInfo && apiInfo.ipv6 === null) {
         const warningSpan = document.createElement('span');
         warningSpan.className = 'tr-ipv6-warning-auto';
@@ -2315,6 +2320,7 @@ function updateAutoConnectionInfo(apiInfo) {
         autoInfo.appendChild(document.createElement('br'));
     }
 
+    // ISP情報（既存ロジック維持）
     if (apiInfo?.isp) {
         autoInfo.appendChild(document.createTextNode(`ISP: ${apiInfo.isp}`));
         autoInfo.appendChild(document.createElement('br'));
@@ -2324,117 +2330,25 @@ function updateAutoConnectionInfo(apiInfo) {
         }
     }
     
+    // JSON駆動の接続情報表示
+    const infoConfig = state.extendedInfoConfig;
+    if (!infoConfig?.categories) {
+        console.warn('extendedInfoConfig not loaded');
+        return;
+    }
+    
+    // 接続タイプに応じたカテゴリを検索
+    let targetCategory = null;
     if (connectionType === 'MAP-E') {
-        let gua = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
-        if (!gua) {
-            const guaField = document.querySelector('#mape-gua-prefix');
-            if (guaField && guaField.value) gua = guaField.value;
-        }
-        
-        autoInfo.appendChild(document.createElement('hr'));
-        
-        const notice = document.createElement('p');
-        const noticeSpan = document.createElement('span');
-        noticeSpan.className = 'tr-mape-notice1';
-        noticeSpan.textContent = 'Note: Actual values may differ.';
-        notice.appendChild(noticeSpan);
-        autoInfo.appendChild(notice);
-        
-        autoInfo.appendChild(document.createTextNode(`option peeraddr ${apiInfo.mape.brIpv6Address}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option ipaddr ${apiInfo.mape.ipv4Prefix}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option ip4prefixlen ${apiInfo.mape.ipv4PrefixLength}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option ip6prefix ${apiInfo.mape.ipv6Prefix}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option ip6prefixlen ${apiInfo.mape.ipv6PrefixLength}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option ealen ${apiInfo.mape.eaBitLength}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option psidlen ${apiInfo.mape.psidlen}`));
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode(`option offset ${apiInfo.mape.psIdOffset}`));
-        autoInfo.appendChild(document.createElement('br'));
-        
-        if (gua) {
-            autoInfo.appendChild(document.createTextNode(`option ip6prefix_gua ${gua}`));
-            autoInfo.appendChild(document.createElement('br'));
-        }
-        
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createTextNode('export LEGACY=1'));
-        autoInfo.appendChild(document.createElement('br'));
-        
-        autoInfo.appendChild(document.createElement('hr'));
-        
-        const linkDiv = document.createElement('div');
-        linkDiv.style.textAlign = 'center';
-        
-        const link = document.createElement('a');
-        link.href = 'https://ipv4.web.fc2.com/map-e.html';
-        link.target = '_blank';
-        link.className = 'linked-title';
-        link.textContent = 'Powered by config-softwire';
-        
-        linkDiv.appendChild(link);
-        autoInfo.appendChild(linkDiv);
+        targetCategory = infoConfig.categories.find(cat => cat.connectionType === 'mape');
     } else if (connectionType === 'DS-Lite') {
-        autoInfo.appendChild(document.createElement('hr'));
-        
-        const h4 = document.createElement('h4');
-        const noticeSpan = document.createElement('span');
-        noticeSpan.className = 'tr-dslite-notice1';
-        noticeSpan.textContent = 'Note: Actual values may differ.';
-        h4.appendChild(noticeSpan);
-        autoInfo.appendChild(h4);
-        
-        autoInfo.appendChild(document.createElement('hr'));
-        
-        if (apiInfo.aftr?.aftrType) {
-            const strong = document.createElement('strong');
-            strong.textContent = 'Service Type:';
-            autoInfo.appendChild(strong);
-            autoInfo.appendChild(document.createTextNode(` ${apiInfo.aftr.aftrType}`));
-            autoInfo.appendChild(document.createElement('br'));
-        }
-        
-        if (apiInfo.aftr?.jurisdiction) {
-            const strong = document.createElement('strong');
-            strong.textContent = 'Region:';
-            autoInfo.appendChild(strong);
-            autoInfo.appendChild(document.createTextNode(' '));
-            
-            const regionSpan = document.createElement('span');
-            regionSpan.className = apiInfo.aftr.jurisdiction === 'east' ? 'tr-east-japan' : 'tr-west-japan';
-            autoInfo.appendChild(regionSpan);
-            autoInfo.appendChild(document.createElement('br'));
-        }
-        
-        if (apiInfo.aftr?.peeraddr) {
-            const strong = document.createElement('strong');
-            strong.textContent = 'FQDN:';
-            autoInfo.appendChild(strong);
-            autoInfo.appendChild(document.createTextNode(` ${apiInfo.aftr.peeraddr}`));
-            autoInfo.appendChild(document.createElement('br'));
-        }
-        
-        autoInfo.appendChild(document.createElement('hr'));
-        
-        const configStrong = document.createElement('strong');
-        configStrong.textContent = 'UCI Configuration:';
-        autoInfo.appendChild(configStrong);
-        autoInfo.appendChild(document.createElement('br'));
-        
-        const code = document.createElement('code');
-        if (apiInfo.aftr?.peeraddr) {
-            code.appendChild(document.createTextNode(`option peeraddr '${apiInfo.aftr.peeraddr}'`));
-            code.appendChild(document.createElement('br'));
-        }
-        autoInfo.appendChild(code);
-        
-        autoInfo.appendChild(document.createElement('hr'));
+        targetCategory = infoConfig.categories.find(cat => cat.connectionType === 'dslite');
+    }
+    
+    if (targetCategory) {
+        renderConnectionInfoFromJson(autoInfo, targetCategory, apiInfo);
     } else {
+        // 標準接続の場合
         const span = document.createElement('span');
         span.className = 'tr-standard-notice';
         span.textContent = 'Standard connection will be used';
@@ -2442,6 +2356,79 @@ function updateAutoConnectionInfo(apiInfo) {
     }
     
     applyCustomTranslations(current_language_json);
+}
+
+// ============================================================
+// renderConnectionInfoFromJson() - JSONカテゴリからDOM生成
+// ============================================================
+function renderConnectionInfoFromJson(container, category, apiInfo) {
+    container.appendChild(document.createElement('hr'));
+    
+    // Notice表示
+    if (category.notice) {
+        const notice = document.createElement('p');
+        const noticeSpan = document.createElement('span');
+        noticeSpan.className = category.notice.class || '';
+        noticeSpan.textContent = category.notice.default || '';
+        notice.appendChild(noticeSpan);
+        container.appendChild(notice);
+    }
+    
+    // フィールド表示
+    if (category.fields) {
+        category.fields.forEach(field => {
+            let value = null;
+            
+            // apiPath からの値取得
+            if (field.apiPath) {
+                value = CustomUtils.getNestedValue(apiInfo, field.apiPath);
+            }
+            
+            // GUA prefix の特別処理（condition: hasValue の場合）
+            if (field.condition === 'hasValue') {
+                // GUAの計算を試みる
+                if (field.id === 'mape-ip6prefix-gua' && !value) {
+                    value = CustomUtils.generateGuaPrefixFromFullAddress(apiInfo);
+                    if (!value) {
+                        const guaField = document.querySelector('#mape-gua-prefix');
+                        if (guaField && guaField.value) value = guaField.value;
+                    }
+                }
+                // 値がない場合はスキップ
+                if (!value) return;
+            }
+            
+            // 値がある場合のみ表示
+            if (value !== null && value !== undefined && value !== '') {
+                container.appendChild(document.createTextNode(`${field.label} ${value}`));
+                container.appendChild(document.createElement('br'));
+            }
+        });
+    }
+    
+    // Footer（export LEGACY=1 等）
+    if (category.footer?.text) {
+        container.appendChild(document.createElement('br'));
+        container.appendChild(document.createTextNode(category.footer.text));
+        container.appendChild(document.createElement('br'));
+    }
+    
+    // リンク
+    if (category.link) {
+        container.appendChild(document.createElement('hr'));
+        
+        const linkDiv = document.createElement('div');
+        linkDiv.style.textAlign = 'center';
+        
+        const link = document.createElement('a');
+        link.href = category.link.url;
+        link.target = '_blank';
+        link.className = 'linked-title';
+        link.textContent = category.link.text;
+        
+        linkDiv.appendChild(link);
+        container.appendChild(linkDiv);
+    }
 }
 
 function applyIspAutoConfig(apiInfo, options = {}) {
