@@ -2529,9 +2529,9 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        const imageLink = document.querySelector('#image-link');
-        const buildInfoSection = imageLink.closest('.row').parentElement;
-        buildInfoSection.after(extendedInfo);
+        const imagesDiv = document.querySelector('#images');
+        const buildInfoDiv = imagesDiv?.firstElementChild;
+        buildInfoDiv?.after(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
