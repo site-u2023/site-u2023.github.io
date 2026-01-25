@@ -2529,10 +2529,7 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        // imageLink.after(extendedInfo);
-        const packagesSection = document.querySelector('#custom-packages-section');
-        packagesSection.before(extendedInfo);
-        
+        imageLink.after(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
