@@ -2529,7 +2529,7 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        imageLink.after(extendedInfo);
+        // imageLink.after(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
@@ -4857,6 +4857,10 @@ async function initializeCustomFeatures(asuSection, temp) {
     replaceAsuSection(asuSection, temp);
     
     cacheFrequentlyUsedElements();
+
+    if (!document.querySelector('#extended-build-info')) {
+        await insertExtendedInfo(temp);
+    }
     
     await fetchAndDisplayIspInfo();
     
@@ -4888,10 +4892,6 @@ async function initializeCustomFeatures(asuSection, temp) {
     }
 
     generatePackageSelector();
-
-    if (!document.querySelector('#extended-build-info')) {
-        await insertExtendedInfo(temp);
-    }
     
     if (state.packages.default.length > 0 || state.packages.device.length > 0 || state.packages.extra.length > 0) {
         console.log('Force applying existing device packages');
