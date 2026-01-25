@@ -842,8 +842,22 @@ download_file_with_cache() {
     local url="$1"
     local output_path="$2"
     
+    # ファイルが存在し、かつ空でなければ JSON 検証
     if [ -f "$output_path" ] && [ -s "$output_path" ]; then
-        return 0
+        # JSON ファイルなら構文チェック
+        if echo "$output_path" | grep -q '\.json$'; then
+            if jsonfilter -i "$output_path" -e '@' >/dev/null 2>&1; then
+                # JSON が有効なら再利用
+                return 0
+            else
+                # JSON が壊れている場合は削除して再ダウンロード
+                echo "[DEBUG] Invalid JSON detected: $output_path, re-downloading..." >> "$CONFIG_DIR/debug.log"
+                rm -f "$output_path"
+            fi
+        else
+            # JSON 以外のファイルはサイズチェックのみ
+            return 0
+        fi
     fi
     
     __download_file_core "$url" "$output_path"
