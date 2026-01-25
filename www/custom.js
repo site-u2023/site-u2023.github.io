@@ -638,11 +638,27 @@ function evaluateAllComputedFields() {
         for (const item of category.items) {
             if (item.type === 'field' && item.computed) {
                 console.log(`Found computed field: ${item.id}`);
+                
+                if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                    console.log(`Skipping hidden computed field: ${item.id}`);
+                    continue;
+                }
+                
                 computeFieldValue(item.variable);
             } else if (item.type === 'section' && item.items) {
                 for (const subItem of item.items) {
                     if (subItem.type === 'field' && subItem.computed) {
                         console.log(`Found computed field in section: ${subItem.id}`);
+                        
+                        if (item.showWhen && !evaluateShowWhen(item.showWhen)) {
+                            console.log(`Skipping field in hidden section: ${subItem.id}`);
+                            continue;
+                        }
+                        if (subItem.showWhen && !evaluateShowWhen(subItem.showWhen)) {
+                            console.log(`Skipping hidden computed field: ${subItem.id}`);
+                            continue;
+                        }
+                        
                         computeFieldValue(subItem.variable);
                     }
                 }
