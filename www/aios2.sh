@@ -996,6 +996,7 @@ get_language_code() {
 # =============================================================================
 # Dynamically sets shell variables based on auto-config.json definitions
 # Supports basic, mape, dslite categories
+# Note: LANGUAGE variable is renamed to API_LANGUAGE to avoid conflict with translation system
 # Example: MAPE_BR, DSLITE_AFTR, ISP, COUNTRY etc.
 # =============================================================================
 parse_api_fields() {
@@ -1015,9 +1016,14 @@ parse_api_fields() {
             
             value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
             
-            # API_ プレフィックスを付けて競合回避
-            eval "API_${var_name}='${value}'"
-            export "API_${var_name}"
+            # LANGUAGE だけは特別扱い（翻訳システムと競合するため）
+            if [ "$var_name" = "LANGUAGE" ]; then
+                eval "API_LANGUAGE='${value}'"
+                export "API_LANGUAGE"
+            else
+                eval "${var_name}='${value}'"
+                export "${var_name}"
+            fi
             
             i=$((i + 1))
         done
@@ -1036,9 +1042,8 @@ detect_connection_type() {
     mape_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.mape.checkField" 2>/dev/null)
     dslite_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.dslite.checkField" 2>/dev/null)
     
-    # API_ プレフィックス付きで参照
-    eval "mape_val=\$API_$mape_field"
-    eval "dslite_val=\$API_$dslite_field"
+    eval "mape_val=\$$mape_field"
+    eval "dslite_val=\$$dslite_field"
     
     if [ -n "$mape_val" ]; then
         echo "mape"
@@ -1081,14 +1086,14 @@ get_extended_device_info() {
     # auto-config.json ベースで全API値をパース
     parse_api_fields
     
-    # 互換性のため一部変数名を調整（API_プレフィックス付き変数から取得）
-    AUTO_LANGUAGE="$API_LANGUAGE"
-    AUTO_TIMEZONE="$API_TIMEZONE"
-    AUTO_ZONENAME="$API_ZONENAME"
-    AUTO_COUNTRY="$API_COUNTRY"
-    ISP_NAME="$API_ISP"
-    ISP_AS="$API_AS"
-    ISP_IPV6="$API_IPV6"
+	# 互換性のため一部変数名を調整
+    AUTO_LANGUAGE="$API_LANGUAGE"  # LANGUAGEは翻訳システムと競合するため API_LANGUAGE から取得
+    AUTO_TIMEZONE="$TIMEZONE"
+    AUTO_ZONENAME="$ZONENAME"
+    AUTO_COUNTRY="$COUNTRY"
+    ISP_NAME="$ISP"
+    ISP_AS="$AS"
+    ISP_IPV6="$IPV6"
     
     reset_detected_conn_type
     detect_ipv6_type
