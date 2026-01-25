@@ -10,7 +10,7 @@ var config = {
   // 最新バージョンに更新
   // versions: ["24.10.0", "23.05.5"],
   // Pre-selected version (optional if provided by .versions.json)
-  // default_version: "24.10.0",
+  // default_version: "24.10.0",f
   // Image download URL (e.g. "https://downloads.openwrt.org")
   image_url: "https://downloads.openwrt.org",
   // Insert snapshot versions (optional)
@@ -33,12 +33,12 @@ var config = {
   
   // Auto-configuration API URL
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
-
-  // Package manager configuration
-  package_manager_config_path: "variables/package-manager.json",
-  
+  // auto-config.js database URL
+  auto_config_json_path: "auto-config/auto-config.json",
   // Extended build information JSON URL
   information_path: "auto-config/information.json",
+  // Package manager configuration
+  package_manager_config_path: "variables/package-manager.json",
   // packages.sh database URL
   packages_db_path: "post-install/postinst.json",
   // packages.sh template URL
