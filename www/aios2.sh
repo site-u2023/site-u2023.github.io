@@ -1090,6 +1090,47 @@ get_extended_device_info() {
     
     reset_detected_conn_type
     detect_ipv6_type
+	
+    # デバイス情報（CPU, Storage, USB）
+    DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
+    [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
+    DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
+    DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
+    DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
+    
+    if [ -d /sys/bus/usb/devices ]; then
+        DEVICE_USB="Available"
+    else
+        DEVICE_USB="Not available"
+    fi
+
+
+    # リソース情報（数値、チェック用）
+    MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
+    if [ -z "$MEM_FREE_KB" ]; then
+        BUFFERS_KB=$(awk '/^Buffers:/ {print $2}' /proc/meminfo)
+        CACHED_KB=$(awk '/^Cached:/ {print $2}' /proc/meminfo)
+        MEM_FREE_KB=$((BUFFERS_KB + CACHED_KB))
+    fi
+    MEM_FREE_MB=$((MEM_FREE_KB / 1024))
+    
+    FLASH_FREE_KB=$(df -k / | awk 'NR==2 {print $4}')
+    FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
+    
+    # メモリ情報（表示用）
+    MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
+    MEM_TOTAL_MB=$((MEM_TOTAL_KB / 1024))
+    DEVICE_MEM="${MEM_TOTAL_MB} MB"
+    
+    # LANアドレス取得
+    LAN_IF="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
+    if [ -n "$LAN_IF" ]; then
+        LAN_ADDR=$(ip -4 -o addr show dev "$LAN_IF" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
+        LAN_ADDR6=$(ip -6 -o addr show dev "$LAN_IF" scope global 2>/dev/null | grep -v temporary | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
+    fi
+    
+    echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
+}
 
 # Device Info (JSON-driven)
 
