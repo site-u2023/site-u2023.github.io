@@ -1015,8 +1015,9 @@ parse_api_fields() {
             
             value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
             
-            eval "${var_name}='${value}'"
-            export "${var_name}"
+            # API_ プレフィックスを付けて競合回避
+            eval "API_${var_name}='${value}'"
+            export "API_${var_name}"
             
             i=$((i + 1))
         done
@@ -1035,8 +1036,9 @@ detect_connection_type() {
     mape_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.mape.checkField" 2>/dev/null)
     dslite_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.dslite.checkField" 2>/dev/null)
     
-    eval "mape_val=\$$mape_field"
-    eval "dslite_val=\$$dslite_field"
+    # API_ プレフィックス付きで参照
+    eval "mape_val=\$API_$mape_field"
+    eval "dslite_val=\$API_$dslite_field"
     
     if [ -n "$mape_val" ]; then
         echo "mape"
@@ -1079,14 +1081,14 @@ get_extended_device_info() {
     # auto-config.json ベースで全API値をパース
     parse_api_fields
     
-    # 互換性のため一部変数名を調整
-    AUTO_LANGUAGE="$LANGUAGE"
-    AUTO_TIMEZONE="$TIMEZONE"
-    AUTO_ZONENAME="$ZONENAME"
-    AUTO_COUNTRY="$COUNTRY"
-    ISP_NAME="$ISP"
-    ISP_AS="$AS"
-    ISP_IPV6="$IPV6"
+    # 互換性のため一部変数名を調整（API_プレフィックス付き変数から取得）
+    AUTO_LANGUAGE="$API_LANGUAGE"
+    AUTO_TIMEZONE="$API_TIMEZONE"
+    AUTO_ZONENAME="$API_ZONENAME"
+    AUTO_COUNTRY="$API_COUNTRY"
+    ISP_NAME="$API_ISP"
+    ISP_AS="$API_AS"
+    ISP_IPV6="$API_IPV6"
     
     reset_detected_conn_type
     detect_ipv6_type
