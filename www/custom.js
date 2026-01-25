@@ -2250,7 +2250,7 @@ function parseApiValues(apiResponse) {
     if (!state.autoConfig?.apiFields || !apiResponse) return {};
     
     const values = {};
-    ['basic', 'mape', 'dslite'].forEach(category => {
+    Object.keys(state.autoConfig.apiFields).forEach(category => {
         (state.autoConfig.apiFields[category] || []).forEach(field => {
             values[field.varName] = CustomUtils.getNestedValue(apiResponse, field.jsonPath);
         });
@@ -2264,17 +2264,16 @@ function parseApiValues(apiResponse) {
 // ==================== 接続タイプ判定 ====================
 
 function getConnectionType(apiInfo) {
-    if (!state.autoConfig?.connectionDetection) {
+    const detection = state.autoConfig?.connectionDetection;
+    if (!detection) {
         console.warn('autoConfig not loaded');
         return 'DHCP/PPPoE';
     }
     
-    const detection = state.autoConfig.connectionDetection;
+    if (state.apiValues[detection.mape.checkField]) return detection.mape.returnValue;
+    if (state.apiValues[detection.dslite.checkField]) return detection.dslite.returnValue;
     
-    if (state.apiValues[detection.mape.checkField]) return 'MAP-E';
-    if (state.apiValues[detection.dslite.checkField]) return 'DS-Lite';
-    
-    return 'DHCP/PPPoE';
+    return detection.default;
 }
 
 // ==================== ISP情報取得・表示 ====================
@@ -2349,7 +2348,7 @@ function displayIspInfo(apiInfo) {
         UI.updateElement(field.id, { text: value });
     });
     
-    const extendedInfo = document.getElementById("extended-build-info");
+    const extendedInfo = document.getElementById(state.autoConfig?.display?.extendedInfo?.id);
     if (extendedInfo) {
         extendedInfo.classList.remove('hide');
         extendedInfo.style.display = '';
@@ -2367,7 +2366,7 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
-    if (apiInfo && apiInfo.ipv6 === null) {
+    if (state.apiValues.IPV6 === null) {
         const warningSpan = document.createElement('span');
         warningSpan.className = 'tr-ipv6-warning-auto';
         autoInfo.appendChild(warningSpan);
@@ -2389,10 +2388,11 @@ function updateAutoConnectionInfo(apiInfo) {
         return;
     }
     
+    const detection = state.autoConfig.connectionDetection;
     let targetDisplay = null;
-    if (connectionType === 'MAP-E') {
+    if (connectionType === detection.mape.returnValue) {
         targetDisplay = state.autoConfig.display.mapeInfo;
-    } else if (connectionType === 'DS-Lite') {
+    } else if (connectionType === detection.dslite.returnValue) {
         targetDisplay = state.autoConfig.display.dsliteInfo;
     }
     
@@ -2401,7 +2401,6 @@ function updateAutoConnectionInfo(apiInfo) {
     } else {
         const span = document.createElement('span');
         span.className = 'tr-standard-notice';
-        span.textContent = 'Standard connection will be used';
         autoInfo.appendChild(span);
     }
     
@@ -2428,15 +2427,17 @@ function renderConnectionInfo(container, displayConfig) {
         displayConfig.fields.forEach(field => {
             let value = state.apiValues?.[field.varName];
             
-            if (field.condition === 'hasValue') {
-                if (field.varName === 'MAPE_GUA_PREFIX' && !value) {
+            if (field.condition === 'computeGuaPrefix') {
+                if (!value) {
                     value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
                     if (!value) {
                         const guaField = document.querySelector('#mape-gua-prefix');
                         if (guaField && guaField.value) value = guaField.value;
                     }
-                    if (value) state.apiValues.MAPE_GUA_PREFIX = value;
+                    if (value) state.apiValues[field.varName] = value;
                 }
+                if (!value) return;
+            } else if (field.condition === 'hasValue') {
                 if (!value) return;
             }
             
@@ -2515,11 +2516,6 @@ function applyIspAutoConfig(apiInfo, options = {}) {
 // ==================== Extended Info DOM生成 ====================
 
 async function insertExtendedInfo(temp) {
-    if (document.querySelector('#extended-build-info')) {
-        console.log('Extended info already exists');
-        return;
-    }
-    
     const imageLink = document.querySelector('#image-link');
     if (!imageLink) {
         console.log('Image link element not found');
@@ -2527,7 +2523,6 @@ async function insertExtendedInfo(temp) {
     }
     
     try {
-        // auto-config.jsonをロード（まだロードされていなければ）
         if (!state.autoConfig) {
             await loadAutoConfig();
         }
@@ -2539,17 +2534,20 @@ async function insertExtendedInfo(temp) {
         
         const displayConfig = state.autoConfig.display.extendedInfo;
         
+        if (document.querySelector(`#${displayConfig.id}`)) {
+            console.log('Extended info already exists');
+            return;
+        }
+        
         const extendedInfo = document.createElement('div');
-        extendedInfo.id = displayConfig.id || 'extended-build-info';
+        extendedInfo.id = displayConfig.id;
         extendedInfo.className = 'hide';
         
-        // ヘッダー
         const h3 = document.createElement('h3');
         h3.textContent = displayConfig.name;
         if (displayConfig.class) h3.classList.add(displayConfig.class);
         extendedInfo.appendChild(h3);
         
-        // フィールド生成
         if (displayConfig.fields) {
             displayConfig.fields.forEach(field => {
                 const row = document.createElement('div');
