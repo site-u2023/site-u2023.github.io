@@ -2529,9 +2529,7 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        const buildTitle = document.querySelector('#build-title');
-        const buildInfoDiv = buildTitle?.parentElement;
-        buildInfoDiv?.after(extendedInfo);
+        imageLink.after(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
