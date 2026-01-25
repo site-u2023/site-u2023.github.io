@@ -8,42 +8,51 @@
         {
           "id": "auto-config-country",
           "label": "Country",
-          "class": "tr-country"
+          "class": "tr-country",
+          "apiPath": "country"
         },
         {
           "id": "auto-config-timezone",
           "label": "Timezone",
-          "class": "tr-timezone"
+          "class": "tr-timezone",
+          "apiPath": "timezone"
         },
         {
           "id": "auto-config-zonename",
           "label": "Zonename",
-          "class": "tr-zonename"
+          "class": "tr-zonename",
+          "apiPath": "zonename"
         },
         {
           "id": "auto-config-isp",
           "label": "ISP",
-          "class": "tr-isp"
+          "class": "tr-isp",
+          "apiPath": "isp"
         },
         {
           "id": "auto-config-as",
           "label": "AS",
-          "class": "tr-as"
+          "class": "tr-as",
+          "apiPath": "as"
         },
         {
           "id": "auto-config-ip",
           "label": "IP Address",
-          "class": "tr-ip-address"
+          "class": "tr-ip-address",
+          "apiPaths": ["ipv4", "ipv6"],
+          "separator": " / "
         },
         {
           "id": "auto-config-method",
           "label": "Connection Method",
-          "class": "tr-method"
+          "class": "tr-method",
+          "computed": "getConnectionType"
         },
         {
           "id": "auto-config-notice",
           "label": "Notice",
-          "class": "tr-notice"
+          "class": "tr-notice",
+          "apiPath": "notice"
         }
       ]
     }
