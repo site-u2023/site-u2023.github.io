@@ -341,7 +341,9 @@ TUI_MODE=""            # -t: tui mode
 PACKAGES_JSON="$CONFIG_DIR/postinst.json"
 SETUP_JSON="$CONFIG_DIR/setup.json"
 AUTO_CONFIG_JSON="$CONFIG_DIR/auto_config.json"
+AUTO_CONFIG_DEF="$CONFIG_DIR/auto-config.json"
 PACKAGE_MANAGER_JSON="$CONFIG_DIR/package-manager.json"
+
 SELECTED_PACKAGES="$CONFIG_DIR/selected_packages.txt"
 SELECTED_CUSTOM_PACKAGES="$CONFIG_DIR/selected_custom_packages.txt"
 SETUP_VARS="$CONFIG_DIR/setup_vars.sh"
@@ -395,7 +397,8 @@ load_config_from_js() {
     BASE_PATH_PART=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "base_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     [ -z "$AUTO_CONFIG_API_URL" ] && AUTO_CONFIG_API_URL=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "auto_config_api_url:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     ASU_URL=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "asu_url:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-    PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "packages_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+    AUTO_CONFIG_DEF_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "auto_config_def_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+	PACKAGES_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "packages_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     POSTINST_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "postinst_template_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     SETUP_TEMPLATE_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "setup_template_path_aios:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
@@ -408,7 +411,8 @@ load_config_from_js() {
     PACKAGE_MANAGER_CONFIG_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "package_manager_config_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     
     BASE_URL="${BASE_URL_PART}/${BASE_PATH_PART}"
-    
+
+	AUTO_CONFIG_DEF_URL="${BASE_URL}/${AUTO_CONFIG_DEF_PATH}"
     PACKAGES_URL="${BASE_URL}/${PACKAGES_DB_PATH}"
     POSTINST_TEMPLATE_URL="${BASE_URL}/${POSTINST_TEMPLATE_PATH}"
     SETUP_JSON_URL="${BASE_URL}/${SETUP_DB_PATH}"
@@ -728,6 +732,12 @@ init() {
         echo "Fatal: Cannot download package-manager.json"
         return 1
     fi
+    
+    # auto-config.json のダウンロード
+    if ! download_file_with_cache "$AUTO_CONFIG_DEF_URL" "$AUTO_CONFIG_DEF"; then
+        echo "Fatal: Cannot download auto-config.json"
+        return 1
+    fi
 
     # パッケージマネージャー設定読込（チャネル検出含む）
     load_package_manager_config || {
@@ -898,13 +908,7 @@ get_device_info() {
 }
 
 reset_detected_conn_type() {
-    if [ -n "$MAPE_BR" ] && [ -n "$MAPE_EALEN" ]; then
-        DETECTED_CONN_TYPE="mape"
-    elif [ -n "$DSLITE_AFTR" ]; then
-        DETECTED_CONN_TYPE="dslite"
-    else
-        DETECTED_CONN_TYPE="unknown"
-    fi
+    DETECTED_CONN_TYPE=$(detect_connection_type)
 }
 
 detect_ipv6_type() {
@@ -987,13 +991,60 @@ get_language_code() {
     echo "[DEBUG] get_language_code: Final AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
 }
 
-# APIから値を抽出して変数に設定
-set_api_value() {
-    local var_name="$1"
-    local json_path="$2"
-    local value
-    value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
-    export "${var_name}=${value}"
+# =============================================================================
+# Parse API Fields (auto-config.json driven)
+# =============================================================================
+# Dynamically sets shell variables based on auto-config.json definitions
+# Supports basic, mape, dslite categories
+# Example: MAPE_BR, DSLITE_AFTR, ISP, COUNTRY etc.
+# =============================================================================
+parse_api_fields() {
+    local category var_name json_path value i
+    
+    for category in basic mape dslite; do
+        i=0
+        while [ $i -lt 30 ]; do
+            var_name=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.apiFields.${category}[$i].varName" 2>/dev/null)
+            [ -z "$var_name" ] && break
+            
+            json_path=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.apiFields.${category}[$i].jsonPath" 2>/dev/null)
+            [ -z "$json_path" ] && {
+                i=$((i + 1))
+                continue
+            }
+            
+            value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${json_path}" 2>/dev/null)
+            
+            eval "${var_name}='${value}'"
+            export "${var_name}"
+            
+            i=$((i + 1))
+        done
+    done
+}
+
+# =============================================================================
+# Detect Connection Type (auto-config.json driven)
+# =============================================================================
+# Returns: "mape", "dslite", or "unknown"
+# Uses connectionDetection rules from auto-config.json
+# =============================================================================
+detect_connection_type() {
+    local mape_field dslite_field mape_val dslite_val
+    
+    mape_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.mape.checkField" 2>/dev/null)
+    dslite_field=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.connectionDetection.dslite.checkField" 2>/dev/null)
+    
+    eval "mape_val=\$$mape_field"
+    eval "dslite_val=\$$dslite_field"
+    
+    if [ -n "$mape_val" ]; then
+        echo "mape"
+    elif [ -n "$dslite_val" ]; then
+        echo "dslite"
+    else
+        echo "unknown"
+    fi
 }
 	
 get_extended_device_info() {
@@ -1023,75 +1074,22 @@ get_extended_device_info() {
     OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2)
     
     # DISTRIB_RELEASEも保持（チャンネル判定用）
-    DISTRIB_RELEASE="$OPENWRT_VERSION" 
+    DISTRIB_RELEASE="$OPENWRT_VERSION"
     
-    # 基本情報
-    set_api_value 'AUTO_LANGUAGE'      'language'
-    set_api_value 'AUTO_TIMEZONE'      'timezone'
-    set_api_value 'AUTO_ZONENAME'      'zonename'
-    set_api_value 'AUTO_COUNTRY'       'country'
-    set_api_value 'ISP_NAME'           'isp'
-    set_api_value 'ISP_AS'             'as'
-    set_api_value 'ISP_IPV6'           'ipv6'
+    # auto-config.json ベースで全API値をパース
+    parse_api_fields
     
-    # MAP-E
-    set_api_value 'MAPE_BR'            'mape.brIpv6Address'
-    set_api_value 'MAPE_EALEN'         'mape.eaBitLength'
-    set_api_value 'MAPE_IPV4_PREFIX'   'mape.ipv4Prefix'
-    set_api_value 'MAPE_IPV4_PREFIXLEN' 'mape.ipv4PrefixLength'
-    set_api_value 'MAPE_IPV6_PREFIX'   'mape.ipv6Prefix'
-    set_api_value 'MAPE_IPV6_PREFIXLEN' 'mape.ipv6PrefixLength'
-    set_api_value 'MAPE_PSIDLEN'       'mape.psidlen'
-    set_api_value 'MAPE_PSID_OFFSET'   'mape.psIdOffset'
-  
-    # DS-Lite
-    set_api_value 'DSLITE_AFTR'        'aftr.aftrAddress'
-    set_api_value 'DSLITE_AFTR_TYPE'   'aftr.aftrType'
-    set_api_value 'DSLITE_JURISDICTION' 'aftr.jurisdiction'
+    # 互換性のため一部変数名を調整
+    AUTO_LANGUAGE="$LANGUAGE"
+    AUTO_TIMEZONE="$TIMEZONE"
+    AUTO_ZONENAME="$ZONENAME"
+    AUTO_COUNTRY="$COUNTRY"
+    ISP_NAME="$ISP"
+    ISP_AS="$AS"
+    ISP_IPV6="$IPV6"
     
     reset_detected_conn_type
     detect_ipv6_type
-	
-    # デバイス情報（CPU, Storage, USB）
-    DEVICE_CPU=$(grep -m1 "model name" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    [ -z "$DEVICE_CPU" ] && DEVICE_CPU=$(grep -m1 "Hardware" /proc/cpuinfo | cut -d: -f2 | xargs 2>/dev/null)
-    DEVICE_STORAGE=$(df -h / | awk 'NR==2 {print $2}')
-    DEVICE_STORAGE_USED=$(df -h / | awk 'NR==2 {print $3}')
-    DEVICE_STORAGE_AVAIL=$(df -h / | awk 'NR==2 {print $4}')
-    
-    if [ -d /sys/bus/usb/devices ]; then
-        DEVICE_USB="Available"
-    else
-        DEVICE_USB="Not available"
-    fi
-
-
-    # リソース情報（数値、チェック用）
-    MEM_FREE_KB=$(awk '/^MemAvailable:/ {print $2}' /proc/meminfo)
-    if [ -z "$MEM_FREE_KB" ]; then
-        BUFFERS_KB=$(awk '/^Buffers:/ {print $2}' /proc/meminfo)
-        CACHED_KB=$(awk '/^Cached:/ {print $2}' /proc/meminfo)
-        MEM_FREE_KB=$((BUFFERS_KB + CACHED_KB))
-    fi
-    MEM_FREE_MB=$((MEM_FREE_KB / 1024))
-    
-    FLASH_FREE_KB=$(df -k / | awk 'NR==2 {print $4}')
-    FLASH_FREE_MB=$((FLASH_FREE_KB / 1024))
-    
-    # メモリ情報（表示用）
-    MEM_TOTAL_KB=$(awk '/^MemTotal:/ {print $2}' /proc/meminfo)
-    MEM_TOTAL_MB=$((MEM_TOTAL_KB / 1024))
-    DEVICE_MEM="${MEM_TOTAL_MB} MB"
-    
-    # LANアドレス取得
-    LAN_IF="$(ubus call network.interface.lan status 2>/dev/null | jsonfilter -e '@.l3_device')"
-    if [ -n "$LAN_IF" ]; then
-        LAN_ADDR=$(ip -4 -o addr show dev "$LAN_IF" scope global 2>/dev/null | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
-        LAN_ADDR6=$(ip -6 -o addr show dev "$LAN_IF" scope global 2>/dev/null | grep -v temporary | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
-    fi
-    
-    echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
-}
 
 # Device Info (JSON-driven)
 
