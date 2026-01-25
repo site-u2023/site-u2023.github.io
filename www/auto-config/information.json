@@ -4,6 +4,7 @@
       "id": "extended-build-info",
       "name": "Location & ISP Information",
       "class": "tr-extended-info",
+      "renderIn": "extendedInfo",
       "fields": [
         {
           "id": "auto-config-country",
@@ -60,6 +61,7 @@
       "id": "mape-info",
       "name": "MAP-E Configuration",
       "class": "tr-mape-config",
+      "renderIn": "autoConnectionInfo",
       "connectionType": "mape",
       "notice": {
         "class": "tr-mape-notice1",
@@ -134,6 +136,7 @@
       "id": "dslite-info",
       "name": "DS-Lite Configuration",
       "class": "tr-dslite-config",
+      "renderIn": "autoConnectionInfo",
       "connectionType": "dslite",
       "notice": {
         "class": "tr-dslite-notice1",
