@@ -1,1 +1,109 @@
-json
+{
+  "version": "1.0",
+  "description": "API field definitions for auto-config.site-u.workers.dev - Shell/JS dual compatible",
+
+  "apiFields": {
+    "basic": [
+      { "varName": "NOTICE", "jsonPath": "notice" },
+      { "varName": "LANGUAGE", "jsonPath": "language" },
+      { "varName": "COUNTRY", "jsonPath": "country" },
+      { "varName": "REGION_NAME", "jsonPath": "regionName" },
+      { "varName": "REGION_CODE", "jsonPath": "region" },
+      { "varName": "TIMEZONE", "jsonPath": "timezone" },
+      { "varName": "ZONENAME", "jsonPath": "zonename" },
+      { "varName": "IPV4", "jsonPath": "ipv4" },
+      { "varName": "IPV6", "jsonPath": "ipv6" },
+      { "varName": "ISP", "jsonPath": "isp" },
+      { "varName": "AS", "jsonPath": "as" }
+    ],
+    "mape": [
+      { "varName": "MAPE_BR", "jsonPath": "mape.brIpv6Address" },
+      { "varName": "MAPE_IPV4_PREFIX", "jsonPath": "mape.ipv4Prefix" },
+      { "varName": "MAPE_IPV4_PREFIXLEN", "jsonPath": "mape.ipv4PrefixLength" },
+      { "varName": "MAPE_IPV6_PREFIX", "jsonPath": "mape.ipv6Prefix" },
+      { "varName": "MAPE_IPV6_PREFIXLEN", "jsonPath": "mape.ipv6PrefixLength" },
+      { "varName": "MAPE_EALEN", "jsonPath": "mape.eaBitLength" },
+      { "varName": "MAPE_PSIDLEN", "jsonPath": "mape.psidlen" },
+      { "varName": "MAPE_PSID_OFFSET", "jsonPath": "mape.psIdOffset" },
+      { "varName": "MAPE_CALC_OFFSET", "jsonPath": "mape.calculatedOffset" },
+      { "varName": "MAPE_GUA_PREFIX", "jsonPath": "mape.ipv6Prefix_gua" }
+    ],
+    "dslite": [
+      { "varName": "DSLITE_AFTR_TYPE", "jsonPath": "aftr.aftrType" },
+      { "varName": "DSLITE_AFTR_FQDN", "jsonPath": "aftr.aftrFqdn" },
+      { "varName": "DSLITE_AFTR", "jsonPath": "aftr.aftrAddress" },
+      { "varName": "DSLITE_AFTR_IPV6", "jsonPath": "aftr.aftrIpv6Address" },
+      { "varName": "DSLITE_PEERADDR", "jsonPath": "aftr.peeraddr" },
+      { "varName": "DSLITE_JURISDICTION", "jsonPath": "aftr.jurisdiction" },
+      { "varName": "DSLITE_AFTR_EAST", "jsonPath": "aftrAddresses.east" },
+      { "varName": "DSLITE_AFTR_WEST", "jsonPath": "aftrAddresses.west" }
+    ]
+  },
+
+  "connectionDetection": {
+    "mape": { "checkField": "MAPE_BR" },
+    "dslite": { "checkField": "DSLITE_AFTR" }
+  },
+
+  "display": {
+    "extendedInfo": {
+      "id": "extended-build-info",
+      "name": "Location & ISP Information",
+      "class": "tr-extended-info",
+      "renderIn": "extendedInfo",
+      "fields": [
+        { "id": "auto-config-country", "label": "Country", "class": "tr-country", "varName": "COUNTRY" },
+        { "id": "auto-config-timezone", "label": "Timezone", "class": "tr-timezone", "varName": "TIMEZONE" },
+        { "id": "auto-config-zonename", "label": "Zonename", "class": "tr-zonename", "varName": "ZONENAME" },
+        { "id": "auto-config-isp", "label": "ISP", "class": "tr-isp", "varName": "ISP" },
+        { "id": "auto-config-as", "label": "AS", "class": "tr-as", "varName": "AS" },
+        { "id": "auto-config-ip", "label": "IP Address", "class": "tr-ip-address", "varNames": ["IPV4", "IPV6"], "separator": " / " },
+        { "id": "auto-config-method", "label": "Connection Method", "class": "tr-method", "computed": "getConnectionType" },
+        { "id": "auto-config-notice", "label": "Notice", "class": "tr-notice", "varName": "NOTICE" }
+      ]
+    },
+    "mapeInfo": {
+      "id": "mape-info",
+      "name": "MAP-E Configuration",
+      "class": "tr-mape-config",
+      "renderIn": "autoConnectionInfo",
+      "connectionType": "mape",
+      "notice": {
+        "class": "tr-mape-notice1",
+        "default": "Note: Actual values may differ."
+      },
+      "fields": [
+        { "id": "mape-ip6prefix-gua", "label": "option ip6prefix_gua", "varName": "MAPE_GUA_PREFIX", "condition": "hasValue" },
+        { "id": "mape-peeraddr", "label": "option peeraddr", "varName": "MAPE_BR" },
+        { "id": "mape-ipaddr", "label": "option ipaddr", "varName": "MAPE_IPV4_PREFIX" },
+        { "id": "mape-ip4prefixlen", "label": "option ip4prefixlen", "varName": "MAPE_IPV4_PREFIXLEN" },
+        { "id": "mape-ip6prefix", "label": "option ip6prefix", "varName": "MAPE_IPV6_PREFIX" },
+        { "id": "mape-ip6prefixlen", "label": "option ip6prefixlen", "varName": "MAPE_IPV6_PREFIXLEN" },
+        { "id": "mape-ealen", "label": "option ealen", "varName": "MAPE_EALEN" },
+        { "id": "mape-psidlen", "label": "option psidlen", "varName": "MAPE_PSIDLEN" },
+        { "id": "mape-offset", "label": "option offset", "varName": "MAPE_PSID_OFFSET" }
+      ],
+      "footer": {
+        "text": "export LEGACY=1"
+      },
+      "link": {
+        "url": "https://ipv4.web.fc2.com/map-e.html",
+        "text": "Powered by config-softwire"
+      }
+    },
+    "dsliteInfo": {
+      "id": "dslite-info",
+      "name": "DS-Lite Configuration",
+      "class": "tr-dslite-config",
+      "renderIn": "autoConnectionInfo",
+      "connectionType": "dslite",
+      "notice": {
+        "class": "tr-dslite-notice1",
+        "default": "Note: Actual values may differ."
+      },
+      "fields": [
+        { "id": "dslite-aftr", "label": "option peeraddr", "varName": "DSLITE_AFTR" }
+      ]
+    }
+  }
+}
