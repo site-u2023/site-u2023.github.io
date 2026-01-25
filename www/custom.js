@@ -90,6 +90,7 @@ const state = {
     
     apiInfo: null,
     lookupTargetFields: null,
+    extendedInfoConfig: null,
     
     packages: {
         json: null,
@@ -2251,16 +2252,28 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
 function displayIspInfo(apiInfo) {
     if (!apiInfo) return;
 
-    UI.updateElement("auto-config-country", { text: apiInfo.country || "Unknown" });
-    UI.updateElement("auto-config-timezone", { text: apiInfo.timezone || "Unknown" });
-    UI.updateElement("auto-config-zonename", { text: apiInfo.zonename || "Unknown" });
-    UI.updateElement("auto-config-isp", { text: apiInfo.isp || "Unknown" });
-    UI.updateElement("auto-config-as", { text: apiInfo.as || "Unknown" });
-    UI.updateElement("auto-config-ip", { text: [apiInfo.ipv4, apiInfo.ipv6].filter(Boolean).join(" / ") || "Unknown" });
-
-    const wanType = getConnectionType(apiInfo);
-    UI.updateElement("auto-config-method", { text: wanType });
-    UI.updateElement("auto-config-notice", { text: apiInfo.notice || "" });
+    if (state.extendedInfoConfig?.categories?.[0]?.fields) {
+        const fields = state.extendedInfoConfig.categories[0].fields;
+        
+        fields.forEach(field => {
+            let value = "Unknown";
+            
+            if (field.computed) {
+                if (field.computed === "getConnectionType") {
+                    value = getConnectionType(apiInfo);
+                }
+            } else if (field.apiPaths) {
+                const values = field.apiPaths
+                    .map(path => CustomUtils.getNestedValue(apiInfo, path))
+                    .filter(Boolean);
+                value = values.length > 0 ? values.join(field.separator || ", ") : "Unknown";
+            } else if (field.apiPath) {
+                value = CustomUtils.getNestedValue(apiInfo, field.apiPath) || "Unknown";
+            }
+            
+            UI.updateElement(field.id, { text: value });
+        });
+    }
 
     const extendedInfo = document.getElementById("extended-build-info");
     if (extendedInfo) {
@@ -2470,13 +2483,15 @@ async function insertExtendedInfo(temp) {
     }
 
     try {
-        const infoUrl = 'auto-config/information.json';
+        const infoUrl = config.information_path || 'auto-config/information.json';
         const response = await fetch(infoUrl + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
         const infoConfig = await response.json();
         console.log('Information config loaded:', infoConfig);
 
+        state.extendedInfoConfig = infoConfig;
+        
         const extendedInfo = document.createElement('div');
         extendedInfo.id = 'extended-build-info';
         extendedInfo.className = 'hide';
