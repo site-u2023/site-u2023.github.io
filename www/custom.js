@@ -2499,7 +2499,9 @@ async function insertExtendedInfo(temp) {
         extendedInfo.id = 'extended-build-info';
         extendedInfo.className = 'hide';
 
-        infoConfig.categories.forEach(category => {
+        infoConfig.categories
+            .filter(category => category.renderIn === 'extendedInfo')
+            .forEach(category => {
             const h3 = document.createElement('h3');
             h3.textContent = category.name;
             if (category.class) h3.classList.add(category.class);
@@ -2518,7 +2520,7 @@ async function insertExtendedInfo(temp) {
                     const col2 = document.createElement('div');
                     col2.className = 'col2';
                     col2.id = field.id;
-                    col2.textContent = current_language_json?.['tr-loading'] || 'Loading...';
+                    col2.textContent = current_language_json?.[field.class] || 'Loading...';
 
                     row.appendChild(col1);
                     row.appendChild(col2);
@@ -2527,16 +2529,11 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        imageLink.closest('.row').insertAdjacentElement('afterend', extendedInfo);
-
-        console.log('Extended info DOM elements created');
-
-        if (state.apiInfo) {
-            displayIspInfo(state.apiInfo);
-        }
+        imageLink.after(extendedInfo);
+        console.log('Extended info inserted');
 
     } catch (err) {
-        console.error('Failed to load information.json:', err);
+        console.error('Failed to load information config:', err);
     }
 }
 
