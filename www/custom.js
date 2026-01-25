@@ -2529,7 +2529,8 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        imageLink.after(extendedInfo);
+        const downloads1 = document.querySelector('#downloads1');
+        downloads1.before(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
