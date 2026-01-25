@@ -2529,8 +2529,9 @@ async function insertExtendedInfo(temp) {
             }
         });
 
-        const packagesSection = document.querySelector('#custom-packages-section');
-        packagesSection.before(extendedInfo);
+        const buildTitle = document.querySelector('#build-title');
+        const buildInfoDiv = buildTitle?.parentElement;
+        buildInfoDiv?.after(extendedInfo);
         console.log('Extended info inserted');
 
     } catch (err) {
