@@ -5503,19 +5503,18 @@ save_restore_path() {
 create_backup() {
     local trigger="${1:-manual}"
     local changes_summary="${2:-}"
-    local timestamp backup_dir backup_file meta_file
+    local timestamp backup_file meta_file
     
     backup_path=$(load_restore_path)
     timestamp=$(date +%Y%m%d_%H%M%S)
-    backup_dir="${backup_path}/${timestamp}"
-    backup_file="${backup_dir}/system.tar.gz"
-    meta_file="${backup_dir}/metadata.txt"
+    backup_file="${backup_path}/backup-${timestamp}.tar.gz"
+    meta_file="${backup_path}/backup-${timestamp}.meta.txt"
     
-    mkdir -p "$backup_dir" || return 1
+    mkdir -p "$backup_path" || return 1
     
     # システムバックアップ
     if ! sysupgrade -b "$backup_file"; then
-        rm -rf "$backup_dir"
+        rm -f "$backup_file"
         return 1
     fi
     
