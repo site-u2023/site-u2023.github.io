@@ -1726,21 +1726,11 @@ EOF
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-    
+
     summary_file=$(generate_config_summary)
     
-    if [ ! -f "$summary_file" ] || [ ! -s "$summary_file" ]; then
-        echo "Error: Failed to generate summary"
-        return 1
-    fi
-    
-    if grep -q "$(translate 'tr-tui-no-config')" "$summary_file"; then
-        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-config')"
-        return 0
-    fi
-    
     summary_content=$(cat "$summary_file")
-    
+
     confirm_msg="${summary_content}
 
 🟣 $(translate 'tr-tui-apply-confirm-question')"
@@ -1780,6 +1770,7 @@ EOF
         done
         
         echo "Generating installation scripts..."
+        initialize_language_packages
         generate_files
         
         local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
