@@ -56,9 +56,17 @@ show_inputbox() {
     
     local exit_code=$?
     
-    # IPv4アドレスの場合、CIDRを自動付与
+    # IPv4アドレスの場合、CIDRを自動付与（24.10以上のみ）
     if [ $exit_code -eq 0 ] && echo "$value" | grep -qE '^([0-9]{1,3}\.){3}[0-9]{1,3}$'; then
-        value="${value}/24"
+        case "$DISTRIB_RELEASE" in
+            19.*|21.*|22.*|23.*)
+                # 古いバージョンはCIDR非対応
+                ;;
+            *)
+                # 24.10以上、SNAPSHOT
+                value="${value}/24"
+                ;;
+        esac
     fi
     
     echo "$value"
