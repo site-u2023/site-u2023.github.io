@@ -53,7 +53,8 @@
     "tr-software-flow-offloading": "Software Flow Offloading",
     "tr-hardware-flow-offloading": "Hardware Flow Offloading",
     "tr-restore-backup-path": "Restore Backup Path",
-
+    "tr-tui-restore-point-state-before-apply": "Restore to State Before This Configuration",
+    
     "tr-wi-fi-configuration": "Wi-Fi Configuration",
     "tr-wi-fi-mode": "Wi-Fi Mode",
     "tr-wi-fi-ssid": "Wi-Fi SSID",
