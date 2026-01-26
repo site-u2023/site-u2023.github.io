@@ -5502,24 +5502,39 @@ save_restore_path() {
 
 create_backup() {
     local trigger="${1:-manual}"
-    local timestamp backup_file
+    local changes_summary="${2:-}"
+    local timestamp backup_dir backup_file meta_file
     
+    backup_path=$(load_restore_path)
     timestamp=$(date +%Y%m%d_%H%M%S)
-    backup_file="$BACKUP_DIR/backup-${timestamp}.tar.gz"
+    backup_dir="${backup_path}/${timestamp}"
+    backup_file="${backup_dir}/system.tar.gz"
+    meta_file="${backup_dir}/metadata.txt"
     
-    mkdir -p "$BACKUP_DIR" || return 1
+    mkdir -p "$backup_dir" || return 1
     
+    # システムバックアップ
     if ! sysupgrade -b "$backup_file"; then
-        echo "Error: sysupgrade backup failed" >&2
+        rm -rf "$backup_dir"
         return 1
     fi
     
-    if [ ! -f "$backup_file" ] || [ ! -s "$backup_file" ]; then
-        echo "Error: Backup file not created or empty" >&2
-        return 1
+    # メタデータ生成
+    if [ -n "$changes_summary" ]; then
+        local tr_restore_desc
+        tr_restore_desc=$(translate "tr-tui-restore-point-state-before-apply")
+        
+        {
+            echo "=== ${tr_restore_desc} ==="
+            echo ""
+            echo "$(date '+%Y-%m-%d %H:%M:%S')"
+            echo "$DEVICE_MODEL / OpenWrt $OPENWRT_VERSION"
+            echo ""
+            echo "$changes_summary"
+        } > "$meta_file"
     fi
     
-    cleanup_old_backups
+    cleanup_old_backups "$backup_path"
     return 0
 }
 
