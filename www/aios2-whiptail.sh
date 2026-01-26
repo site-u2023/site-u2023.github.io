@@ -1711,14 +1711,18 @@ enable_installed_services() {
         connection_auto=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
         
-        # ネットワーク変更（MAP-E/DS-Lite含む） → サービスリスタート
+        # ネットワーク変更 → サービスリスタート
         [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && needs_restart=1
         [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
         
         if [ "$needs_restart" -eq 1 ]; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
+                # ttyd は遅延実行（セッション切断対策）
+                (sleep 10; /etc/init.d/ttyd restart 2>/dev/null) &
+                restarted_services="ttyd "
+                
                 [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && {
-                    for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
+                    for s in network firewall dnsmasq odhcpd uhttpd; do
                         /etc/init.d/$s restart 2>/dev/null
                         restarted_services="${restarted_services}${s} "
                     done
