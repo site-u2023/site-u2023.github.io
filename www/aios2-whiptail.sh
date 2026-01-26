@@ -1746,12 +1746,6 @@ EOF
 🟣 $(translate 'tr-tui-apply-confirm-question')"
     
     if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
-        echo "$(translate 'tr-tui-creating-backup')"
-        if ! create_backup "before_apply" "$summary_content"; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
-            return 1
-        fi
-        
         clear
         
         local packages_to_remove
@@ -1854,6 +1848,12 @@ EOF
         
         if [ "$HAS_SETUP" -eq 1 ]; then
             echo ""
+            echo "$(translate 'tr-tui-creating-backup')"
+            if ! create_backup "before_setup" "$summary_content"; then
+                show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
+                return 1
+            fi
+            
             echo "$(translate 'tr-tui-applying-config')"
             
             sh "$GENERATED_SETUP"
