@@ -145,9 +145,9 @@ build_summary_section() {
     while read -r item; do
         [ -z "$item" ] && continue
         if [ -n "$action" ]; then
-            result="${result}  - ${action} ${item}\n"
+            result="${result}${action} ${item}\n"
         else
-            result="${result}  - ${item}\n"
+            result="${result}${item}\n"
         fi
     done <<EOF
 $items
