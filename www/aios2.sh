@@ -5586,24 +5586,22 @@ create_backup() {
     
     # メタデータ生成
     if [ -n "$changes_summary" ]; then
-        local tr_restore_desc
+        local tr_restore_desc tr_settings_only
         tr_restore_desc=$(translate "tr-tui-restore-point-state-before-apply")
+        tr_settings_only=$(translate "tr-tui-rollback-settings-only")
         
         {
             echo "$(date '+%Y-%m-%d %H:%M:%S')"
             echo "OpenWrt $OPENWRT_VERSION"
             echo ""
             echo "=== ${tr_restore_desc} ==="
+            echo "${tr_settings_only}"
             echo ""
             echo "$changes_summary"
             echo ""
             echo "================================="
         } > "$meta_file"
     fi
-    
-    cleanup_old_backups "$backup_path"
-    return 0
-}
 
 cleanup_old_backups() {
     local backup_count
