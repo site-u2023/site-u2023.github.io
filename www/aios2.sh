@@ -5593,9 +5593,11 @@ create_backup() {
             echo "=== ${tr_restore_desc} ==="
             echo ""
             echo "$(date '+%Y-%m-%d %H:%M:%S')"
-            echo "$DEVICE_MODEL / OpenWrt $OPENWRT_VERSION"
+            echo "OpenWrt $OPENWRT_VERSION"
             echo ""
             echo "$changes_summary"
+            echo ""
+            echo "-------------------------------"
         } > "$meta_file"
     fi
     
