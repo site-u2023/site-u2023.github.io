@@ -290,7 +290,7 @@
     "tr-tui-rollback-settings-only": "Note: Only settings will be restored during rollback",
     "tr-tui-no-restore-points": "No rollback points available",
     "tr-tui-restore-confirm": "Rollback to this configuration?",
-    "tr-tui-restore-warning": "Current settings will be automatically backed up before rollback",
+    "tr-tui-restore-warning": "Note: Current settings will be automatically backed up before rollback",
     "tr-tui-restore-success": "Settings restored successfully",
     "tr-tui-restore-failed": "Rollback failed",
     "tr-tui-creating-backup": "Creating rollback point...",
