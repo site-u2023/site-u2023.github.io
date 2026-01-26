@@ -4465,6 +4465,7 @@ expand_remove_list() {
         esac
         
         if [ -n "$base_name" ]; then
+            # ★修正：インストール済みパッケージから言語パッケージを検索
             local found_lang
             found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
             
