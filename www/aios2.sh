@@ -4467,7 +4467,11 @@ expand_remove_list() {
         if [ -n "$base_name" ]; then
             # ★修正：インストール済みパッケージから言語パッケージを検索
             local found_lang
-            found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
+            if [ "$PKG_MGR" = "apk" ]; then
+                found_lang=$(apk info 2>/dev/null | grep "^luci-i18n-${base_name}-")
+            else
+                found_lang=$(opkg list-installed 2>/dev/null | awk '{print $1}' | grep "^luci-i18n-${base_name}-")
+            fi
             
             if [ -n "$found_lang" ]; then
                 while read -r lang_pkg; do
@@ -4481,7 +4485,7 @@ LANG
             fi
         fi
         
-        # 2. 依存パッケージ（opkgのみ、JSONから取得したコマンドを使用）
+        # 2. 依存パッケージ（opkgのみ）
         if [ "$PKG_MGR" = "opkg" ]; then
             local deps_cmd
             deps_cmd=$(expand_template "$PKG_DEPENDS_CMD" "package" "$pkg")
@@ -4490,7 +4494,7 @@ LANG
             deps=$(eval "$deps_cmd" 2>/dev/null)
             
             for dep in $deps; do
-                # システムパッケージ除外（JSONから取得したリスト）
+                # システムパッケージ除外
                 local is_system=0
                 for sys_pkg in $PKG_SYSTEM_PACKAGES; do
                     case "$dep" in
