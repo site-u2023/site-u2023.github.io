@@ -5590,14 +5590,14 @@ create_backup() {
         tr_restore_desc=$(translate "tr-tui-restore-point-state-before-apply")
         
         {
-            echo "=== ${tr_restore_desc} ==="
-            echo ""
             echo "$(date '+%Y-%m-%d %H:%M:%S')"
             echo "OpenWrt $OPENWRT_VERSION"
             echo ""
+            echo "=== ${tr_restore_desc} ==="
+            echo ""
             echo "$changes_summary"
             echo ""
-            echo "-------------------------------"
+            echo "================================="
         } > "$meta_file"
     fi
     
