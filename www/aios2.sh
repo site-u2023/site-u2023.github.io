@@ -5767,7 +5767,8 @@ aios2_main() {
         wait $CACHE_PKG_PID
         cache_available_languages
         initialize_installed_packages
-        
+        initialize_language_packages
+		
         : > "$SETUP_VARS"
 	
         cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
