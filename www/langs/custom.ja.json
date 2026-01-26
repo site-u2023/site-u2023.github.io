@@ -53,7 +53,8 @@
     "tr-software-flow-offloading": "ソフトウェアフローオフロード",
     "tr-hardware-flow-offloading": "ハードウェアフローオフロード",
     "tr-restore-backup-path": "バックアップ復元パス",
-
+    "tr-tui-restore-point-state-before-apply": "この設定適用前の状態に復元",
+    
     "tr-wi-fi-configuration": "Wi-Fi設定",
     "tr-wi-fi-mode": "Wi-Fiモード",
     "tr-wi-fi-ssid": "Wi-Fi SSID",
