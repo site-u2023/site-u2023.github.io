@@ -1694,28 +1694,7 @@ EOF
 enable_installed_services() {
     local breadcrumb="$1"
     local has_setup="${2:-0}"
-    
-    # enableVarを持つサービスの有効化
-    local services_to_enable=""
-    while IFS= read -r line; do
-        [ -z "$line" ] && continue
-        case "$line" in \#*|'') continue ;; esac
-        
-        local var_name=$(echo "$line" | cut -d= -f1)
-        local var_val=$(echo "$line" | cut -d"'" -f2)
-        
-        [ "$var_val" != "1" ] && continue
-        [ -x "/etc/init.d/$var_name" ] && services_to_enable="${services_to_enable}${var_name} "
-    done < "$SETUP_VARS"
-    
-    if [ -n "$services_to_enable" ]; then
-        if show_yesno "$breadcrumb" "$(translate 'tr-tui-enable-services-question')\n\n$services_to_enable"; then
-            for svc in $services_to_enable; do
-                /etc/init.d/$svc enable 2>/dev/null
-                /etc/init.d/$svc start 2>/dev/null
-            done
-        fi
-    fi
+    local restarted_services=""
     
     local needs_reboot=$(needs_reboot_check)
     
@@ -1726,37 +1705,68 @@ enable_installed_services() {
         return 0
     fi
     
-    [ "$has_setup" -ne 1 ] && return 0
-    
-    local connection_type connection_auto wifi_mode needs_restart=0
-    connection_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    connection_auto=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-    
-    # MAP-E / DS-Lite → reboot必要
-    if [ "$connection_type" = "mape" ] || [ "$connection_type" = "dslite" ] || \
-       { [ "$connection_type" = "auto" ] && { [ "$connection_auto" = "mape" ] || [ "$connection_auto" = "dslite" ]; }; }; then
-        if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
-            reboot
+    if [ "$has_setup" -eq 1 ]; then
+        local connection_type connection_auto wifi_mode needs_restart=0
+        connection_type=$(grep "^connection_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        connection_auto=$(grep "^connection_auto=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        wifi_mode=$(grep "^wifi_mode=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
+        
+        # MAP-E / DS-Lite → reboot必要
+        if [ "$connection_type" = "mape" ] || [ "$connection_type" = "dslite" ] || \
+           { [ "$connection_type" = "auto" ] && { [ "$connection_auto" = "mape" ] || [ "$connection_auto" = "dslite" ]; }; }; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+            return 0
         fi
-        return 0
+        
+        # その他のネットワーク/WiFi変更 → サービスリスタート
+        [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && needs_restart=1
+        [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
+        
+        if [ "$needs_restart" -eq 1 ]; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
+                [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && {
+                    for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
+                        /etc/init.d/$s restart 2>/dev/null
+                        restarted_services="${restarted_services}${s} "
+                    done
+                }
+                [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && {
+                    wifi reload 2>/dev/null
+                    /etc/init.d/usteer restart 2>/dev/null
+                    restarted_services="${restarted_services}usteer "
+                }
+            fi
+        fi
     fi
     
-    # その他のネットワーク/WiFi変更 → サービスリスタート
-    [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && needs_restart=1
-    [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && needs_restart=1
+    # enableVarを持つサービスの有効化（すでにリスタートしたサービスは除外）
+    local services_to_enable=""
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        case "$line" in \#*|'') continue ;; esac
+        
+        local var_name=$(echo "$line" | cut -d= -f1)
+        local var_val=$(echo "$line" | cut -d"'" -f2)
+        
+        [ "$var_val" != "1" ] && continue
+        [ -x "/etc/init.d/$var_name" ] || continue
+        
+        # すでにリスタートしたサービスは除外
+        case " $restarted_services " in
+            *" $var_name "*) continue ;;
+        esac
+        
+        services_to_enable="${services_to_enable}${var_name} "
+    done < "$SETUP_VARS"
     
-    if [ "$needs_restart" -eq 1 ]; then
-        if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')"; then
-            [ -n "$connection_type" ] && [ "$connection_type" != "disabled" ] && [ "$connection_type" != "dhcp" ] && {
-                for s in network firewall dnsmasq odhcpd uhttpd ttyd; do
-                    /etc/init.d/$s restart 2>/dev/null
-                done
-            }
-            [ -n "$wifi_mode" ] && [ "$wifi_mode" != "disabled" ] && {
-                wifi reload 2>/dev/null
-                /etc/init.d/usteer restart 2>/dev/null
-            }
+    if [ -n "$services_to_enable" ]; then
+        if show_yesno "$breadcrumb" "$(translate 'tr-tui-enable-services-question')\n\n$services_to_enable"; then
+            for svc in $services_to_enable; do
+                /etc/init.d/$svc enable 2>/dev/null
+                /etc/init.d/$svc start 2>/dev/null
+            done
         fi
     fi
 }
