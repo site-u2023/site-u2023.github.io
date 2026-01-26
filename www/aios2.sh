@@ -2314,7 +2314,7 @@ add_package_with_dependencies() {
                         if [ -n "$module_name" ]; then
                             # ベース言語パック検出
                             local installed_lang
-                            installed_lang=$(echo "$_INSTALLED_PACKAGES_CACHE" | grep "^luci-i18n-base-" | sed 's/^luci-i18n-base-//' | head -1)
+                            installed_lang=$(grep "^luci-i18n-base-" "$CONFIG_DIR/installed_packages_cache.txt" 2>/dev/null | sed 's/^luci-i18n-base-//' | head -1)
                             
                             if [ -n "$installed_lang" ]; then
                                 local lang_pkg="luci-i18n-${module_name}-${installed_lang}"
