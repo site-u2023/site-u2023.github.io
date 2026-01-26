@@ -2078,8 +2078,101 @@ EOF
     fi
     
     selected_backup=$(echo "$backups" | sed -n "${choice}p")
+
+    # ★ メタデータファイルを読み込む
+    local meta_file meta_content confirm_msg
+    meta_file=$(echo "$selected_backup" | sed 's/\.tar\.gz$/.meta.txt/')
+
+    if [ -f "$meta_file" ]; then
+        meta_content=$(cat "$meta_file")
+        confirm_msg="${meta_content}
+
+    $(translate 'tr-tui-restore-confirm')
+
+    $(translate 'tr-tui-restore-warning')"
+    else
+        confirm_msg="$(translate 'tr-tui-restore-confirm')
+
+    $(translate 'tr-tui-restore-warning')"
+    fi
+
+    if show_yesno "$breadcrumb" "$confirm_msg"; then    
+        if restore_from_backup "$selected_backup"; then
+            if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-success')\n\n$(translate 'tr-tui-reboot-question')"; then
+                reboot
+            fi
+        else
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-restore-failed')"
+        fi
+    fi
+}
+
+restore_point_menu() {
+    local tr_main_menu tr_restore_point breadcrumb
+    local current_path custom_path backups menu_items i choice selected_backup
     
-    if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-confirm')\n\n$(translate 'tr-tui-restore-warning')"; then
+    tr_main_menu=$(translate "tr-tui-main-menu")
+    tr_restore_point=$(translate "tr-tui-restore-point")
+    breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_restore_point")
+    
+    current_path=$(load_restore_path)
+    
+    custom_path=$(show_inputbox "$breadcrumb" "$(translate 'tr-restore-backup-path')" "$current_path")
+    
+    if ! [ $? -eq 0 ] || [ -z "$custom_path" ]; then
+        return 0
+    fi
+    
+    save_restore_path "$custom_path"
+    
+    backups=$(ls -1t "${custom_path}"/backup-*.tar.gz 2>/dev/null)
+    
+    if [ -z "$backups" ]; then
+        show_msgbox "$breadcrumb" "$(translate 'tr-tui-no-restore-points')"
+        return 0
+    fi
+    
+    menu_items=""
+    i=1
+    
+    while read -r backup_file; do
+        local timestamp display_date
+        
+        timestamp=$(basename "$backup_file" | sed 's/^backup-//;s/\.tar\.gz$//')
+        display_date=$(echo "$timestamp" | sed 's/\([0-9]\{4\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)_\([0-9]\{2\}\)\([0-9]\{2\}\)\([0-9]\{2\}\)/\1-\2-\3 \4:\5:\6/')
+        
+        menu_items="$menu_items $i \"$display_date\""
+        i=$((i+1))
+    done <<EOF
+$backups
+EOF
+    
+    choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"\" \"\" $menu_items")
+    
+    if ! [ $? -eq 0 ] || [ -z "$choice" ]; then
+        return 0
+    fi
+    
+    selected_backup=$(echo "$backups" | sed -n "${choice}p")
+    
+    # ★ メタデータファイルを読み込む
+    local meta_file meta_content confirm_msg
+    meta_file=$(echo "$selected_backup" | sed 's/\.tar\.gz$/.meta.txt/')
+    
+    if [ -f "$meta_file" ]; then
+        meta_content=$(cat "$meta_file")
+        confirm_msg="${meta_content}
+
+$(translate 'tr-tui-restore-confirm')
+
+$(translate 'tr-tui-restore-warning')"
+    else
+        confirm_msg="$(translate 'tr-tui-restore-confirm')
+
+$(translate 'tr-tui-restore-warning')"
+    fi
+    
+    if show_yesno "$breadcrumb" "$confirm_msg"; then
         if restore_from_backup "$selected_backup"; then
             if show_yesno "$breadcrumb" "$(translate 'tr-tui-restore-success')\n\n$(translate 'tr-tui-reboot-question')"; then
                 reboot
