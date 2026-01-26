@@ -1726,7 +1726,8 @@ EOF
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-
+    initialize_language_packages
+    
     summary_file=$(generate_config_summary)
     
     summary_content=$(cat "$summary_file")
@@ -1770,7 +1771,6 @@ EOF
         done
         
         echo "Generating installation scripts..."
-        initialize_language_packages
         generate_files
         
         local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
