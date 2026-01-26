@@ -286,12 +286,12 @@
     "tr-dns-adblock-disabled": "Disabled",
     "tr-dns-adblock-nextdns-info": "External DNS (No device resources required)<br>Register at <nextdns.io> and get your Configuration ID",
     
-    "tr-tui-restore-point": "Restore Point",
-    "tr-tui-no-restore-points": "No restore points available",
-    "tr-tui-restore-confirm": "Restore to this point?",
-    "tr-tui-restore-warning": "Current settings will be automatically backed up before restoration",
-    "tr-tui-restore-success": "Successfully restored",
-    "tr-tui-restore-failed": "Failed to restore",
-    "tr-tui-creating-backup": "Creating backup...",
-    "tr-tui-backup-failed": "Backup creation failed"
+    "tr-tui-restore-point": "Rollback",
+    "tr-tui-no-restore-points": "No rollback points available",
+    "tr-tui-restore-confirm": "Rollback to this configuration?",
+    "tr-tui-restore-warning": "Current settings will be automatically backed up before rollback",
+    "tr-tui-restore-success": "Settings restored successfully",
+    "tr-tui-restore-failed": "Rollback failed",
+    "tr-tui-creating-backup": "Creating rollback point...",
+    "tr-tui-backup-failed": "Failed to create rollback point"
 }
