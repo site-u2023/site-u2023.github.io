@@ -1747,7 +1747,7 @@ EOF
     
     if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
         echo "$(translate 'tr-tui-creating-backup')"
-        if ! create_backup "before_apply"; then
+        if ! create_backup "before_apply" "$summary_content"; then
             show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
             return 1
         fi
