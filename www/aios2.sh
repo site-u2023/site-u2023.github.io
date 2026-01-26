@@ -4342,8 +4342,9 @@ detect_packages_to_remove() {
     # 重複追加防止用関数
     add_remove_pkg() {
         local pkg="$1"
-        echo "$remove_list" | grep -qw "$pkg" && return
-        remove_list="${remove_list}${pkg} "
+        echo "$remove_list" | grep -qx "$pkg" && return
+        remove_list="${remove_list}${pkg}
+"
     }
 
     # ----------------------------------------
@@ -4440,9 +4441,10 @@ EOF
     fi
     
     # カスタムフィード削除リストをファイルに保存
-    echo "$custom_remove_list" | xargs > "$CONFIG_DIR/custom_feed_remove_list.txt"
+    pkg_list_to_command_args "$custom_remove_list" > "$CONFIG_DIR/custom_feed_remove_list.txt"
     
-    echo "$remove_list" | xargs
+    # 改行区切りで返す（内部処理用）
+    pkg_list_clean "$remove_list"
 }
 
 # ========================================
@@ -4457,12 +4459,17 @@ expand_remove_list() {
     for pkg in $packages; do
         # 1. 言語パッケージ検出
         local base_name=""
-        case "$pkg" in
-            luci-app-*)   base_name="${pkg#luci-app-}" ;;
-            luci-proto-*) base_name="${pkg#luci-proto-}" ;;
-            luci-theme-*) base_name="${pkg#luci-theme-}" ;;
-            luci-mod-*)   base_name="${pkg#luci-mod-}" ;;
-        esac
+        local patterns
+        patterns=$(get_language_module_patterns)
+        
+        for pattern in $patterns; do
+            case "$pkg" in
+                ${pattern}*)
+                    base_name="${pkg#$pattern}"
+                    break
+                    ;;
+            esac
+        done
         
         if [ -n "$base_name" ]; then
             # ★修正：package-manager.json の listInstalledCommand を使用
