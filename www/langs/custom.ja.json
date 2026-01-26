@@ -288,12 +288,12 @@
     "tr-tui-reboot-question": "再起動しますか？",
     "tr-tui-restart -question": "サービスを再起動しますか？",
     
-    "tr-tui-restore-point": "復元ポイント",
-    "tr-tui-no-restore-points": "復元ポイントがありません",
-    "tr-tui-restore-confirm": "この復元ポイントに戻しますか？",
-    "tr-tui-restore-warning": "現在の設定は復元前に自動的にバックアップされます。",
-    "tr-tui-restore-success": "正常に復元されました",
-    "tr-tui-restore-failed": "復元に失敗しました",
-    "tr-tui-creating-backup": "バックアップを作成中...",
-    "tr-tui-backup-failed": "バックアップの作成に失敗しました"
+    "tr-tui-restore-point": "ロールバック",
+    "tr-tui-no-restore-points": "ロールバックポイントがありません",
+    "tr-tui-restore-confirm": "この時点の設定に戻しますか？",
+    "tr-tui-restore-warning": "現在の設定は、ロールバック前に自動的にバックアップされます。",
+    "tr-tui-restore-success": "設定を元に戻しました",
+    "tr-tui-restore-failed": "ロールバックに失敗しました",
+    "tr-tui-creating-backup": "ロールバックポイントを作成中...",
+    "tr-tui-backup-failed": "ロールバックポイントの作成に失敗しました"
 }
