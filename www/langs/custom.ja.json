@@ -292,7 +292,7 @@
     "tr-tui-rollback-settings-only": "※ロールバックで復元されるのは設定のみです",
     "tr-tui-no-restore-points": "ロールバックポイントがありません",
     "tr-tui-restore-confirm": "この時点の設定に戻しますか？",
-    "tr-tui-restore-warning": "現在の設定は、ロールバック前に自動的にバックアップされます。",
+    "tr-tui-restore-warning": "※現在の設定は、ロールバック前に自動的にバックアップされます。",
     "tr-tui-restore-success": "設定を元に戻しました",
     "tr-tui-restore-failed": "ロールバックに失敗しました",
     "tr-tui-creating-backup": "ロールバックポイントを作成中...",
