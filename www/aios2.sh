@@ -4424,7 +4424,13 @@ expand_remove_list() {
             found_lang=$(eval "$PKG_LIST_INSTALLED_CMD" 2>/dev/null | grep "^luci-i18n-${base_name}-")
             
             if [ -n "$found_lang" ]; then
-                lang_packages="$lang_packages $found_lang"
+                while read -r lang_pkg; do
+                    [ -z "$lang_pkg" ] && continue
+                    lang_packages="${lang_packages}${lang_pkg}
+"
+                done <<LANG
+$found_lang
+LANG
                 echo "[DEBUG] Found lang package for $pkg: $found_lang" >> "$CONFIG_DIR/debug.log"
             fi
         fi
@@ -4467,17 +4473,19 @@ expand_remove_list() {
                 done
                 
                 if [ "$other_depends" -eq 0 ]; then
-                    dep_packages="$dep_packages $dep"
+                    dep_packages="${dep_packages}${dep}
+"
                     echo "[DEBUG] Found removable dependency for $pkg: $dep" >> "$CONFIG_DIR/debug.log"
                 fi
             done
         fi
         
-        result="$result $pkg"
+        result="${result}${pkg}
+"
     done
     
-    # 順序: 言語パッケージ → 本体 → 依存パッケージ
-    echo "$lang_packages $result $dep_packages" | tr -s ' ' | sed 's/^ //;s/ $//'
+    # 順序: 言語パッケージ → 本体 → 依存パッケージ（改行区切り）
+    echo "${lang_packages}${result}${dep_packages}" | grep -v '^$'
 }
 
 # ========================================
