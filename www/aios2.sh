@@ -427,7 +427,6 @@ load_config_from_js() {
     SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
     
     # テンプレートパスからファイル名を動的に抽出
-    local POSTINST_FILENAME SETUP_FILENAME
     POSTINST_FILENAME=$(basename "$POSTINST_TEMPLATE_PATH")
     SETUP_FILENAME=$(basename "$SETUP_TEMPLATE_PATH")
     
@@ -438,6 +437,10 @@ load_config_from_js() {
     # 生成スクリプトパス
     GENERATED_POSTINST="$CONFIG_DIR/${POSTINST_FILENAME}"
     GENERATED_SETUP="$CONFIG_DIR/${SETUP_FILENAME}"
+    
+    # Export for use in UI modules
+    export GENERATED_POSTINST
+    export GENERATED_SETUP
     
     {
         echo "[DEBUG] Config loaded: BASE_URL=$BASE_URL"
