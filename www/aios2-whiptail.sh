@@ -1801,7 +1801,9 @@ EOF
         
         local packages_to_install=""
         if [ "$HAS_INSTALL" -eq 1 ] && [ -f "$GENERATED_POSTINST" ]; then
-            packages_to_install=$(grep '^INSTALL_CMD=' "$GENERATED_POSTINST" 2>/dev/null | cut -d'"' -f2 | sed 's/.*apk add //;s/.*opkg install //' | tr ' ' '\n' | grep -v '^-' | grep -v '^$')
+            local raw_install_cmd
+            raw_install_cmd=$(grep '^INSTALL_CMD=' "$GENERATED_POSTINST" 2>/dev/null | cut -d'"' -f2 | sed 's/.*apk add //;s/.*opkg install //')
+            packages_to_install=$(pkg_list_normalize "$raw_install_cmd" | pkg_list_filter_out '^-')
         fi
         
         if [ "$HAS_REMOVE" -eq 1 ]; then
