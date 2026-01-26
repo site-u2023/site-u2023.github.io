@@ -5602,6 +5602,10 @@ create_backup() {
             echo "================================="
         } > "$meta_file"
     fi
+    
+    cleanup_old_backups "$backup_path"
+    return 0
+}
 
 cleanup_old_backups() {
     local backup_count
