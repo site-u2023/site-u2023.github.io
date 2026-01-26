@@ -1247,6 +1247,51 @@ build_deviceinfo_display() {
 # Package Management
 
 # =============================================================================
+# Package List Format Utilities
+# =============================================================================
+# Centralized package list format conversion functions
+# Internal format: newline-separated (easy for grep/awk)
+# Command format: space-separated (for shell command arguments)
+# Display format: newline-separated (for UI display)
+# =============================================================================
+
+# Convert space-separated to newline-separated
+pkg_list_normalize() {
+    local input="$1"
+    echo "$input" | tr ' ' '\n' | grep -v '^$'
+}
+
+# Convert newline-separated to space-separated (for command execution)
+pkg_list_to_command_args() {
+    local input="$1"
+    echo "$input" | tr '\n' ' ' | tr -s ' ' | sed 's/^ //;s/ $//'
+}
+
+# Remove empty lines and duplicates
+pkg_list_clean() {
+    local input="$1"
+    echo "$input" | grep -v '^$' | sort -u
+}
+
+# Merge multiple package lists (newline-separated)
+pkg_list_merge() {
+    local result=""
+    for list in "$@"; do
+        [ -z "$list" ] && continue
+        result="${result}${list}
+"
+    done
+    echo "$result" | grep -v '^$'
+}
+
+# Filter out packages by pattern
+pkg_list_filter_out() {
+    local input="$1"
+    local pattern="$2"
+    echo "$input" | grep -v "$pattern"
+}
+
+# =============================================================================
 # Package Availability Check
 # =============================================================================
 # Checks if a package is available in the package manager's repository
@@ -4437,7 +4482,7 @@ LANG
         
         # 2. 依存パッケージ（opkgのみ、JSONから取得したコマンドを使用）
         if [ "$PKG_MGR" = "opkg" ]; then
-            local deps_cmd depends_cmd
+            local deps_cmd
             deps_cmd=$(expand_template "$PKG_DEPENDS_CMD" "package" "$pkg")
             
             local deps
@@ -4485,7 +4530,7 @@ LANG
     done
     
     # 順序: 言語パッケージ → 本体 → 依存パッケージ（改行区切り）
-    echo "${lang_packages}${result}${dep_packages}" | grep -v '^$'
+    pkg_list_merge "$lang_packages" "$result" "$dep_packages"
 }
 
 # ========================================
@@ -4506,10 +4551,16 @@ generate_remove_script() {
     local expanded_packages
     expanded_packages=$(expand_remove_list "$packages_to_remove")
     
-    echo "[DEBUG] Expanded packages: $expanded_packages" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] Expanded packages (newline): $expanded_packages" >> "$CONFIG_DIR/debug.log"
+    
+    # コマンド引数用にスペース区切りに変換
+    local cmd_args
+    cmd_args=$(pkg_list_to_command_args "$expanded_packages")
+    
+    echo "[DEBUG] Command args (space): $cmd_args" >> "$CONFIG_DIR/debug.log"
     
     local remove_cmd
-    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$expanded_packages")
+    remove_cmd=$(expand_template "$PKG_REMOVE_CMD_TEMPLATE" "package" "$cmd_args")
     
     cat > "$output_file" <<'REMOVE_EOF'
 #!/bin/sh
