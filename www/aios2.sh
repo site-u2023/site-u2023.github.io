@@ -1286,9 +1286,8 @@ pkg_list_merge() {
 
 # Filter out packages by pattern
 pkg_list_filter_out() {
-    local input="$1"
-    local pattern="$2"
-    echo "$input" | grep -v "$pattern"
+    local pattern="$1"
+    grep -v "$pattern"
 }
 
 # =============================================================================
