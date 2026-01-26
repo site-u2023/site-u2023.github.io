@@ -1726,7 +1726,6 @@ EOF
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
-    initialize_language_packages
     
     summary_file=$(generate_config_summary)
     
