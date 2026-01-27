@@ -56,6 +56,9 @@ check_os_version() {
             if grep -q "SNAPSHOT" /etc/openwrt_release; then
                 IS_SNAPSHOT=true
             fi
+        elif [ "$OS_MAJOR_VERSION" -lt 21 ]; then
+            # OpenWrt < 21 has no adguardhome package in repository
+            INSTALL_MODE="official"
         fi
     fi
 }
@@ -990,13 +993,6 @@ download_text_file() {
 
 install_openwrt() {
     printf "Installing adguardhome (OpenWrt package)\n"
-
-    if [ "$OS_MAJOR_VERSION" -ne 0 ] && [ "$OS_MAJOR_VERSION" -lt 21 ] && [ "$IS_SNAPSHOT" != true ]; then
-        printf "\033[1;33mOpenWrt %s does not have adguardhome in repository (requires 23+)\033[0m\n" "$OS_MAJOR_VERSION"
-        printf "\033[1;33mFalling back to official binary installation\033[0m\n"
-        install_official
-        return
-    fi
     
     case "$PACKAGE_MANAGER" in
         apk)
