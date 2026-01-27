@@ -2060,9 +2060,10 @@ PKGS
         fi
         
         echo "[DEBUG] Cleaning up after script execution..." >> "$CONFIG_DIR/debug.log"
-        reset_state_for_next_session
         
         enable_installed_services "$breadcrumb" "$HAS_SETUP"
+
+        reset_state_for_next_session
     fi
     
     return 0
