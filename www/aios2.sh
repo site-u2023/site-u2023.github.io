@@ -2680,11 +2680,6 @@ download_customscripts_json() {
     return $?
 }
 
-download_information_json() {
-    download_file_with_cache "${BASE_URL}/auto-config/information.json" "$CONFIG_DIR/information.json"
-    return $?
-}
-
 get_customscript_all_scripts() {
     jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e '@.scripts[*].id' 2>/dev/null | grep -v '^$'
 }
@@ -5697,9 +5692,6 @@ aios2_main() {
     
     (download_customscripts_json >/dev/null 2>&1) &
     CUSTOMSCRIPTS_PID=$!
-
-	(download_information_json >/dev/null 2>&1) &
-    INFORMATION_PID=$!
 	
     (prefetch_templates) &
     TEMPLATES_PID=$!
@@ -5812,7 +5804,7 @@ aios2_main() {
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-	wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $INFORMATION_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID $INIT_PKG_PID
+	wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID $INIT_PKG_PID
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
