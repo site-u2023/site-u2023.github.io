@@ -35,8 +35,10 @@ var config = {
   auto_config_api_url: "https://auto-config.site-u.workers.dev/",
   // auto-config.js database URL
   auto_config_json_path: "auto-config/auto-config.json",
+  
   // Extended build information JSON URL
-  information_path: "auto-config/information.json",
+  // information_path: "auto-config/information.json",
+  
   // Package manager configuration
   package_manager_config_path: "variables/package-manager.json",
   // packages.sh database URL
