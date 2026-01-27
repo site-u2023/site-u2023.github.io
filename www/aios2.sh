@@ -175,6 +175,8 @@ _LANGUAGE_EXCLUDE_PATTERNS=""
 _LANGUAGE_EXCLUDE_PATTERNS_LOADED=0
 _LANGUAGE_PREFIXES=""
 _LANGUAGE_PREFIXES_LOADED=0
+_VERSION_COMPAT_CACHE=""
+_VERSION_COMPAT_LOADED=0
 # =============================================================================
 # Package Operation Helpers
 # =============================================================================
@@ -766,6 +768,7 @@ init() {
     unset _CURRENT_LANG
     unset _CATEGORY_PACKAGES_CACHE
     unset _LANGUAGE_MODULE_PATTERNS
+    unset _VERSION_COMPAT_CACHE
     
     _PACKAGE_NAME_LOADED=0
     _SELECTED_PACKAGES_CACHE_LOADED=0
@@ -778,6 +781,7 @@ init() {
     _PACKAGE_AVAILABILITY_LOADED=0
     _CATEGORY_PACKAGES_LOADED=0
     _LANGUAGE_MODULE_PATTERNS_LOADED=0
+    _VERSION_COMPAT_LOADED=0
     
     : > "$SELECTED_PACKAGES"
     : > "$SELECTED_CUSTOM_PACKAGES"
@@ -789,6 +793,7 @@ init() {
     download_customfeeds_json >/dev/null 2>&1
 
 	build_conditional_packages_cache
+	build_version_compat_cache
 	
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
 }
@@ -2486,21 +2491,107 @@ download_customfeeds_json() {
     return $?
 }
 
-check_category_version_compatible() {
-    local cat_id="$1"
-    local json_file="$2"
-    local min_version
+# =============================================================================
+# Build version compatibility cache (1回だけ実行)
+# カテゴリIDとその互換性結果を事前にキャッシュ
+# Format: cat_id|compatible (1=OK, 0=NG)
+# =============================================================================
+build_version_compat_cache() {
+    [ "$_VERSION_COMPAT_LOADED" -eq 1 ] && return 0
     
-    min_version=$(jsonfilter -i "$json_file" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+    debug_log "Building version compatibility cache..."
     
-    if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
-        if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
-            debug_log "Category $cat_id requires OpenWrt $min_version+, current is $OPENWRT_VERSION_MAJOR"
-            return 1
-        fi
+    _VERSION_COMPAT_CACHE=""
+    
+    # OPENWRT_VERSION_MAJOR が未設定なら算出
+    if [ -z "$OPENWRT_VERSION_MAJOR" ]; then
+        OPENWRT_VERSION_MAJOR=$(echo "$OPENWRT_VERSION" | cut -c 1-2)
     fi
     
-    return 0
+    debug_log "OPENWRT_VERSION_MAJOR=$OPENWRT_VERSION_MAJOR"
+    
+    # postinst.json のカテゴリ
+    if [ -f "$PACKAGES_JSON" ]; then
+        local all_cats
+        all_cats=$(jsonfilter -i "$PACKAGES_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        
+        while read -r cat_id; do
+            [ -z "$cat_id" ] && continue
+            
+            local min_version compatible
+            min_version=$(jsonfilter -i "$PACKAGES_JSON" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+            
+            compatible=1  # デフォルトは互換性あり
+            
+            if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
+                if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
+                    compatible=0
+                    debug_log "Category $cat_id incompatible: requires $min_version+, current is $OPENWRT_VERSION_MAJOR"
+                fi
+            fi
+            
+            _VERSION_COMPAT_CACHE="${_VERSION_COMPAT_CACHE}${cat_id}|${compatible}
+"
+        done <<EOF
+$all_cats
+EOF
+    fi
+    
+    # customfeeds.json のカテゴリ
+    if [ -f "$CUSTOMFEEDS_JSON" ]; then
+        local all_cats
+        all_cats=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+        
+        while read -r cat_id; do
+            [ -z "$cat_id" ] && continue
+            
+            local min_version compatible
+            min_version=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+            
+            compatible=1
+            
+            if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
+                if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
+                    compatible=0
+                    debug_log "Category $cat_id incompatible: requires $min_version+, current is $OPENWRT_VERSION_MAJOR"
+                fi
+            fi
+            
+            _VERSION_COMPAT_CACHE="${_VERSION_COMPAT_CACHE}${cat_id}|${compatible}
+"
+        done <<EOF
+$all_cats
+EOF
+    fi
+    
+    _VERSION_COMPAT_LOADED=1
+    
+    local count
+    count=$(echo "$_VERSION_COMPAT_CACHE" | grep -c '|' 2>/dev/null || echo 0)
+    debug_log "Version compatibility cache built: $count entries"
+}
+
+# =============================================================================
+# Check if category is version compatible (キャッシュから取得)
+# Args:
+#   $1 - cat_id
+# Returns:
+#   0 if compatible, 1 if not
+# =============================================================================
+is_category_version_compatible() {
+    local cat_id="$1"
+    
+    # キャッシュ未構築なら構築
+    [ "$_VERSION_COMPAT_LOADED" -eq 0 ] && build_version_compat_cache
+    
+    # キャッシュから検索
+    local result
+    result=$(echo "$_VERSION_COMPAT_CACHE" | grep "^${cat_id}|" | cut -d'|' -f2)
+    
+    # デフォルトは互換性あり
+    [ -z "$result" ] && result=1
+    
+    [ "$result" = "1" ]
 }
 
 get_customfeed_categories() {
@@ -2511,7 +2602,7 @@ get_customfeed_categories() {
     visible_cats=""
     while read -r cat_id; do
         [ -z "$cat_id" ] && continue
-        check_category_version_compatible "$cat_id" "$CUSTOMFEEDS_JSON" || continue
+        is_category_version_compatible "$cat_id" || continue
         visible_cats="${visible_cats}${cat_id}
 "
     done <<EOF
@@ -4878,8 +4969,6 @@ CATEOF
                     echo "[DEBUG] No packages selected for $cat_id, skipping script generation" >> "$CONFIG_DIR/debug.log"
                     exit 0
                 fi
-
-                check_category_version_compatible "$cat_id" "$CUSTOMFEEDS_JSON" || exit 0
         
                 template_url=$(get_customfeed_template_url "$cat_id")
                 
