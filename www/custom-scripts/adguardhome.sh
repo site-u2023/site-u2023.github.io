@@ -56,9 +56,6 @@ check_os_version() {
             if grep -q "SNAPSHOT" /etc/openwrt_release; then
                 IS_SNAPSHOT=true
             fi
-        elif [ "$OS_MAJOR_VERSION" -lt 21 ]; then
-            # OpenWrt < 21 has no adguardhome package in repository
-            INSTALL_MODE="official"
         fi
     fi
 }
@@ -1626,6 +1623,11 @@ adguardhome_main() {
     # Phase 2: Apply environment variables
     # =========================================================================
     apply_environment_variables
+    
+    # Force official mode for OpenWrt < 21 (no adguardhome package)
+    if [ "$OS_MAJOR_VERSION" -ne 0 ] && [ "$OS_MAJOR_VERSION" -lt 21 ] && [ "$IS_SNAPSHOT" != true ]; then
+        INSTALL_MODE="official"
+    fi
     
     # =========================================================================
     # Phase 3: Route to appropriate handler based on mode
