@@ -465,14 +465,13 @@ ${notice_text}
         local i
         i=0
         while [ $i -lt 20 ]; do
-            local field_id field_label field_api_path field_condition field_value
+            local field_id field_label field_api_source field_condition field_value field_variable
             
             # 各フィールドのプロパティを取得
             field_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].id" 2>/dev/null)
             [ -z "$field_id" ] && break
             
             field_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].label" 2>/dev/null)
-            local field_api_source
             field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].apiSource" 2>/dev/null)
             field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].variable" 2>/dev/null)
             
@@ -490,10 +489,6 @@ ${notice_text}
                 i=$((i + 1))
                 continue
             fi
-            
-            # setup.jsonからvariable名を取得して保存
-            local field_variable
-            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$field_id'].variable" 2>/dev/null | head -1)
             
             if [ -n "$field_variable" ] && [ -n "$field_value" ]; then
                 echo "${field_variable}=${field_value}" >> "$field_cache"
@@ -534,7 +529,7 @@ $(translate 'tr-tui-use-auto-config')"
             
             # GUA/PD 判定
             local mape_gua_prefix
-            mape_gua_prefix=$(grep "^mape-ip6prefix-gua=" "$field_cache" 2>/dev/null | cut -d= -f2)
+            mape_gua_prefix=$(grep "^ip6prefix_gua=" "$field_cache" 2>/dev/null | cut -d= -f2)
             if [ -n "$mape_gua_prefix" ]; then
                 set_var "mape_type" "gua"
             else
@@ -590,28 +585,23 @@ ${notice_text}
         local i
         i=0
         while [ $i -lt 20 ]; do
-            local field_id field_label field_api_path field_value
+            local field_id field_label field_api_source field_value field_variable
             
             field_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].id" 2>/dev/null)
             [ -z "$field_id" ] && break
             
             field_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].label" 2>/dev/null)
-            local field_api_source
-            field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].variable" 2>/dev/null)
+            field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].apiSource" 2>/dev/null)
             field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].variable" 2>/dev/null)
             
             # API から値を取得
-            if [ -n "$field_api_path" ]; then
-                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_path}" 2>/dev/null)
+            if [ -n "$field_api_source" ]; then
+                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_source}" 2>/dev/null)
             else
                 field_value=""
             fi
             
             echo "[DEBUG] DS-Lite field[$i]: id='$field_id', label='$field_label', value='$field_value'" >> "$CONFIG_DIR/debug.log"
-            
-            # setup.jsonからvariable名を取得して保存
-            local field_variable
-            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$field_id'].variable" 2>/dev/null | head -1)
             
             if [ -n "$field_variable" ] && [ -n "$field_value" ]; then
                 echo "${field_variable}=${field_value}" >> "$field_cache"
@@ -668,414 +658,6 @@ ${tr_manual_config}"
     
     show_msgbox "$breadcrumb" "$info"
     return 1
-}
-
-process_items() {
-    local cat_id="$1"
-    local item_id="$2"
-    local breadcrumb="$3"
-    local parent_item_type="${4:-}"
-    local item_type item_label item_breadcrumb nested child_id
-    local variable default current options menu_opts i opt opt_label value exit_code selected_opt
-    local field_type source aftr_type area computed cat_idx item_idx cid citems idx itm content class
-    
-    echo "[DEBUG] process_items: cat_id=$cat_id, item_id=$item_id, parent_type=$parent_item_type" >> "$CONFIG_DIR/debug.log"
-    
-    if ! should_show_item "$item_id" "$cat_id"; then
-        echo "[DEBUG] Item $item_id hidden by showWhen/guiOnly" >> "$CONFIG_DIR/debug.log"
-        return $RETURN_STAY
-    fi
-    
-    item_type=$(get_setup_item_type "$item_id")
-    echo "[DEBUG] Item type: $item_type" >> "$CONFIG_DIR/debug.log"
-    
-    item_label=$(get_setup_item_label "$item_id")
-    item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${item_label}"
-    
-    case "$item_type" in
-        section)
-            echo "[DEBUG] Processing section: $item_id" >> "$CONFIG_DIR/debug.log"
-            
-            local radio_info
-            radio_info=$(get_section_controlling_radio_info "$item_id")
-            
-            if [ -n "$radio_info" ]; then
-                local radio_label option_label
-                radio_label=$(echo "$radio_info" | cut -d'|' -f1)
-                option_label=$(echo "$radio_info" | cut -d'|' -f2)
-                
-                item_breadcrumb="${breadcrumb}${BREADCRUMB_SEP}${radio_label}${BREADCRUMB_SEP}${option_label}"
-                
-                if [ -n "$item_label" ]; then
-                    item_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${item_label}"
-                fi
-                
-                echo "[DEBUG] Updated breadcrumb: $item_breadcrumb" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            while true; do
-                nested=$(get_section_nested_items "$item_id")
-                local all_completed=1
-                local first_field=1
-                
-                for child_id in $nested; do
-                    if ! should_show_item "$child_id"; then
-                        continue
-                    fi
-                    
-                    local ret
-                    process_items "$cat_id" "$child_id" "$item_breadcrumb" "section"
-                    ret=$?
-                    
-                    case $ret in
-                        $RETURN_STAY)
-                            first_field=0
-                            continue
-                            ;;
-                        $RETURN_BACK)
-                            if [ "$first_field" -eq 1 ]; then
-                                echo "[DEBUG] First field cancelled, exiting section" >> "$CONFIG_DIR/debug.log"
-                                return $RETURN_BACK
-                            else
-                                echo "[DEBUG] Non-first field cancelled, restarting section" >> "$CONFIG_DIR/debug.log"
-                                all_completed=0
-                                break
-                            fi
-                            ;;
-                        $RETURN_MAIN)
-                            return $RETURN_MAIN
-                            ;;
-                    esac
-                    
-                    first_field=0
-                done
-                
-                [ "$all_completed" -eq 1 ] && break
-            done
-            
-            return $RETURN_STAY
-            ;;
-            
-        radio-group)
-            variable=$(get_setup_item_variable "$item_id")
-            default=$(get_setup_item_default "$item_id")
-            
-            echo "[DEBUG] radio-group: var=$variable, default=$default" >> "$CONFIG_DIR/debug.log"
-            
-            if [ "$item_id" = "mape-type" ]; then
-                if [ -n "$MAPE_GUA_PREFIX" ]; then
-                    default="gua"
-                else
-                    default="pd"
-                fi
-            fi
-
-            if [ "$item_id" = "dslite-aftr-type" ]; then
-                if [ -n "$DSLITE_AFTR" ]; then
-                    case "$DSLITE_AFTR" in
-                        2404:8e00::*|2404:8e01::*)
-                            default="transix"
-                            ;;
-                        *xpass*|*dgw.xpass.jp*)
-                            default="xpass"
-                            ;;
-                        *v6connect*|*dslite.v6connect.net*)
-                            default="v6connect"
-                            ;;
-                    esac
-                fi
-            fi
-            
-            current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            [ -z "$current" ] && current="$default"
-            
-            echo "[DEBUG] Current value: $current" >> "$CONFIG_DIR/debug.log"
-            
-            options=$(get_setup_item_options "$item_id")
-            
-            options=$(echo "$options" | sed 's/^___EMPTY___$//')
-            
-            if [ "$variable" = "connection_type" ] && [ "$DETECTED_CONN_TYPE" = "unknown" ]; then
-                options=$(echo "$options" | grep -v "^auto\$")
-                echo "[DEBUG] Removed 'auto' option due to Unknown connection type" >> "$CONFIG_DIR/debug.log"
-            fi
-            
-            echo "[DEBUG] Options: $options" >> "$CONFIG_DIR/debug.log"
-            
-            menu_opts=""
-            i=1
-            for opt in $options; do
-                opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                menu_opts="$menu_opts $i \"$opt_label\""
-                i=$((i+1))
-            done
-            
-            value=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_opts")
-            exit_code=$?
-            
-            if ! [ "$exit_code" -eq 0 ]; then
-                echo "[DEBUG] Radio-group cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
-                return $RETURN_BACK
-            fi
-            
-            if [ -n "$value" ]; then
-                selected_opt=$(echo "$options" | sed -n "${value}p")
-                echo "[DEBUG] Selected: $selected_opt" >> "$CONFIG_DIR/debug.log"
-                
-                # 変数を保存（disabled含む全オプション共通）
-                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                echo "[DEBUG] Saved ${variable}='${selected_opt}' to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-
-                cleanup_radio_group_exclusive_vars "$item_id" "$selected_opt"
-                
-                # option配下のitemsを処理
-                local opt_label option_breadcrumb option_items opt_child_id
-                opt_label=$(get_setup_item_option_label "$item_id" "$selected_opt")
-                option_breadcrumb="${item_breadcrumb}${BREADCRUMB_SEP}${opt_label}"
-                
-                option_items=$(jsonfilter -i "$SETUP_JSON" \
-                    -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].options[@.id='$selected_opt'].items[*].id" 2>/dev/null)
-                
-                if [ -z "$option_items" ]; then
-                    option_items=$(jsonfilter -i "$SETUP_JSON" \
-                        -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].options[@.id='$selected_opt'].items[*].id" 2>/dev/null)
-                fi
-                
-                echo "[DEBUG] Option items: $option_items" >> "$CONFIG_DIR/debug.log"
-                
-                for opt_child_id in $option_items; do
-                    [ -z "$opt_child_id" ] && continue
-                    
-                    if ! should_show_item "$opt_child_id" "$cat_id"; then
-                        continue
-                    fi
-                    
-                    process_items "$cat_id" "$opt_child_id" "$option_breadcrumb" "radio-group"
-                    local opt_ret=$?
-                    
-                    case $opt_ret in
-                        $RETURN_MAIN)
-                            return $RETURN_MAIN
-                            ;;
-                    esac
-                done
-            fi
-            return $RETURN_STAY
-            ;;
-            
-        field)
-            variable=$(get_setup_item_variable "$item_id")
-            
-            # variableが空の場合はSETUP_VARSへの保存をスキップ（lookupトリガー等の特殊フィールド）
-            if [ -z "$variable" ]; then
-                echo "[DEBUG] field $item_id has no variable, skipping save to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-                
-                # 入力ボックスは表示するが、値は保存しない
-                default=$(get_setup_item_default "$item_id")
-                field_type=$(get_setup_item_field_type "$item_id")
-                
-                local api_source api_value
-                api_source=$(get_setup_item_api_source "$item_id")
-                if [ -n "$api_source" ]; then
-                    api_value=$(get_api_value "$api_source")
-                    current="${api_value:-$default}"
-                else
-                    current="$default"
-                fi
-                
-                value=$(show_inputbox "$item_breadcrumb" "" "$current")
-                exit_code=$?
-                
-                if ! [ "$exit_code" -eq 0 ]; then
-                    echo "[DEBUG] Inputbox cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
-                    return $RETURN_BACK
-                fi
-                
-                echo "[DEBUG] Input received but not saved (no variable): '$value'" >> "$CONFIG_DIR/debug.log"
-                return $RETURN_STAY
-            fi
-            
-            default=$(get_setup_item_default "$item_id")
-            field_type=$(get_setup_item_field_type "$item_id")
-            
-            echo "[DEBUG] field processing: item_id=$item_id" >> "$CONFIG_DIR/debug.log"
-            echo "[DEBUG] label='$item_label'" >> "$CONFIG_DIR/debug.log"
-            echo "[DEBUG] variable='$variable'" >> "$CONFIG_DIR/debug.log"
-            echo "[DEBUG] default='$default'" >> "$CONFIG_DIR/debug.log"
-            echo "[DEBUG] field_type='$field_type'" >> "$CONFIG_DIR/debug.log"
-            echo "[DEBUG] parent_item_type='$parent_item_type'" >> "$CONFIG_DIR/debug.log"
-            
-            current=$(grep "^${variable}=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-            
-            if [ -z "$current" ]; then
-                local api_source api_value
-                api_source=$(get_setup_item_api_source "$item_id")
-                if [ -n "$api_source" ]; then
-                    api_value=$(get_api_value "$api_source")
-                    current="${api_value:-$default}"
-                else
-                    current="$default"
-                fi
-            fi
-            
-            echo "[DEBUG] current='$current'" >> "$CONFIG_DIR/debug.log"
-            
-            if [ "$field_type" = "computed" ]; then
-                if [ "$item_id" = "dslite-aftr-address" ]; then
-                    aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    area=$(grep "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                    
-                    if [ -n "$aftr_type" ] && [ -n "$area" ]; then
-                        computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                        if [ -n "$computed" ]; then
-                            current="$computed"
-                            sed -i "/^${variable}=/d" "$SETUP_VARS"
-                            echo "${variable}='${computed}'" >> "$SETUP_VARS"
-                        fi
-                    fi
-                fi
-            fi
-            
-            if [ "$field_type" = "select" ]; then
-                source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='$item_id'].source" 2>/dev/null | head -1)
-                
-                if [ -n "$source" ]; then
-                    echo "[DEBUG] Field uses dynamic source: $source" >> "$CONFIG_DIR/debug.log"
-                    
-                    case "$source" in
-                        "browser-languages")
-                            return $RETURN_STAY
-                            ;;
-                        *)
-                            echo ""
-                            printf "%s [%s]: " "$item_label" "$current"
-                            read -r value
-                            
-                            if [ -z "$value" ]; then
-                                value="$current"
-                            fi
-                            
-                            if [ -n "$value" ]; then
-                                sed -i "/^${variable}=/d" "$SETUP_VARS"
-                                echo "${variable}='${value}'" >> "$SETUP_VARS"
-                            fi
-                            ;;
-                    esac
-                    return $RETURN_STAY
-                fi
-                
-                options=$(get_setup_item_options "$item_id")
-                
-                options=$(echo "$options" | sed 's/^___EMPTY___$//')
-                
-                echo "[DEBUG] Raw options output: '$options'" >> "$CONFIG_DIR/debug.log"
-                
-                if [ -z "$options" ]; then
-                    echo "[DEBUG] ERROR: No options found for $item_id, skipping" >> "$CONFIG_DIR/debug.log"
-                    show_msgbox "$item_breadcrumb" "Error: No options available for $item_label"
-                    return $RETURN_STAY
-                fi
-                
-                menu_opts=""
-                i=1
-                for opt in $options; do
-                    opt_label=$(get_setup_item_option_label "$item_id" "$opt")
-                    echo "[DEBUG] Option $i: value='$opt', label='$opt_label'" >> "$CONFIG_DIR/debug.log"
-                    menu_opts="$menu_opts $i \"$opt_label\""
-                    i=$((i+1))
-                done
-                
-                echo "[DEBUG] Final menu_opts='$menu_opts'" >> "$CONFIG_DIR/debug.log"
-                
-                value=$(eval "show_menu \"\$item_breadcrumb\" \"\" \"\" \"\" $menu_opts")
-                exit_code=$?
-                
-                echo "[DEBUG] select exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
-                
-                if ! [ "$exit_code" -eq 0 ]; then
-                    echo "[DEBUG] Select cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
-                    return $RETURN_BACK
-                fi
-                
-                if [ -n "$value" ]; then
-                    selected_opt=$(echo "$options" | sed -n "${value}p")
-                    echo "[DEBUG] selected_opt='$selected_opt'" >> "$CONFIG_DIR/debug.log"
-                    
-                    # 変数を保存（disabled含む全オプション共通）
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${selected_opt}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved ${variable}='${selected_opt}' to SETUP_VARS" >> "$CONFIG_DIR/debug.log"
-                    
-                    auto_add_conditional_packages "$cat_id"
-                    auto_cleanup_conditional_variables "$cat_id"
-                    cleanup_orphaned_enablevars "$cat_id"
-                    
-                    if [ "$item_id" = "dslite-aftr-type" ] || [ "$item_id" = "dslite-jurisdiction" ]; then
-                        aftr_type=$(grep "^dslite_aftr_type=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        area=$(grep "^dslite_jurisdiction=" "$SETUP_VARS" 2>/dev/null | cut -d"'" -f2)
-                        computed=$(compute_dslite_aftr "$aftr_type" "$area")
-                        if [ -n "$computed" ]; then
-                            sed -i "/^dslite_aftr_address=/d" "$SETUP_VARS"
-                            echo "dslite_aftr_address='${computed}'" >> "$SETUP_VARS"
-                        fi
-                    fi
-                fi
-            else
-                echo "[DEBUG] About to show inputbox for '$item_label'" >> "$CONFIG_DIR/debug.log"
-                
-                value=$(show_inputbox "$item_breadcrumb" "" "$current")
-                exit_code=$?
-                
-                echo "[DEBUG] inputbox exit_code=$exit_code, value='$value'" >> "$CONFIG_DIR/debug.log"
-                
-                if ! [ "$exit_code" -eq 0 ]; then
-                    echo "[DEBUG] Inputbox cancelled, returning RETURN_BACK" >> "$CONFIG_DIR/debug.log"
-                    return $RETURN_BACK
-                fi
-
-                if [ -z "$value" ]; then
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "[DEBUG] Empty input, removed ${variable}" >> "$CONFIG_DIR/debug.log"
-                elif [ -n "$value" ]; then
-                    sed -i "/^${variable}=/d" "$SETUP_VARS"
-                    echo "${variable}='${value}'" >> "$SETUP_VARS"
-                    echo "[DEBUG] Saved ${variable}='${value}'" >> "$CONFIG_DIR/debug.log"
-                fi
-            fi
-            return $RETURN_STAY
-            ;;
-            
-        info-display)
-            local raw_content raw_class
-            
-            raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].content" 2>/dev/null | head -1)
-            raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[@.id='$item_id'].class" 2>/dev/null | head -1)
-            
-            if [ -z "$raw_content" ] && [ -z "$raw_class" ]; then
-                raw_content=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].content" 2>/dev/null | head -1)
-                raw_class=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='$cat_id'].items[*].items[@.id='$item_id'].class" 2>/dev/null | head -1)
-            fi
-
-            if [ "$item_id" = "auto-info" ]; then
-                if show_network_info "$item_breadcrumb"; then
-                    return $RETURN_STAY
-                else
-                    return $RETURN_BACK
-                fi
-            fi
-            
-            content="$raw_content"
-            if [ -n "$raw_class" ] && [ "${raw_class#tr-}" != "$raw_class" ]; then
-                content=$(translate "$raw_class")
-            fi
-            
-            [ -n "$content" ] && show_msgbox "$item_breadcrumb" "$content"
-            return $RETURN_STAY
-            ;;
-    esac
-    
-    return $RETURN_STAY
 }
 
 show_auto_detection_if_available() {
