@@ -2117,16 +2117,15 @@ EOF
     
     selected_backup=$(echo "$backups" | sed -n "${choice}p")
     
-    # ★ メタデータファイルを読み込む
-    local meta_file confirm_msg
+    # メタデータファイルを読み込む
+    local meta_file meta_content confirm_msg
     meta_file=$(echo "$selected_backup" | sed 's/\.tar\.gz$/.meta.txt/')
     
     if [ -f "$meta_file" ]; then
-        # メタデータ表示（スクロール可能）
-        show_textbox "$breadcrumb" "$meta_file"
-        
-        # 復元確認（短いメッセージのみ）
-        confirm_msg="$(translate 'tr-tui-restore-confirm')
+        meta_content=$(cat "$meta_file")
+        confirm_msg="${meta_content}
+
+$(translate 'tr-tui-restore-confirm')
 
 $(translate 'tr-tui-restore-warning')"
     else
