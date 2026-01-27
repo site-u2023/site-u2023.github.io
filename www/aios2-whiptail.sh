@@ -78,12 +78,8 @@ show_yesno() {
     local message="$2"
     local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
     local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
-    local lines height
     
-    lines=$(printf '%b\n' "$message" | wc -l)
-    height=$((lines + 7))
-    
-    whiptail --title "$breadcrumb" --scrolltext --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$height" "$UI_WIDTH"
+    whiptail --title "$breadcrumb" --scrolltext --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$UI_HEIGHT" "$UI_WIDTH"
 }
 
 show_msgbox() {
