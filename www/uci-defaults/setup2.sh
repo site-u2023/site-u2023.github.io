@@ -298,7 +298,7 @@ firewall_wan() {
 [ -n "${ttyd}" ] && {
     SEC=ttyd
     SET @ttyd[0].command='/bin/login -f root'
-    SET @ttyd[0].interface="${LAN}"
+    # SET @ttyd[0].interface="${LAN}"
 }
 [ -n "${irqbalance}" ] && {
     SEC=irqbalance
