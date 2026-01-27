@@ -149,20 +149,18 @@ build_summary_section() {
     
     [ -z "$items" ] && return 0
     
-    local result="${header}:\n"
+    echo "${header}:"
     while read -r item; do
         [ -z "$item" ] && continue
         if [ -n "$action" ]; then
-            result="${result}${action} ${item}\n"
+            echo "${action} ${item}"
         else
-            result="${result}${item}\n"
+            echo "${item}"
         fi
     done <<EOF
 $items
 EOF
-    result="${result}\n"
-    
-    printf '%s' "$result"
+    echo ""
 }
 
 # Package Compatibility Check for Custom Feeds
