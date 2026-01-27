@@ -793,7 +793,6 @@ init() {
     download_customfeeds_json >/dev/null 2>&1
 
 	build_conditional_packages_cache
-	build_version_compat_cache
 	
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
 }
@@ -5840,6 +5839,8 @@ aios2_main() {
     wait $API_PID
     
     get_extended_device_info
+    
+    build_version_compat_cache
 
     export DEVICE_TARGET
     export OPENWRT_VERSION
