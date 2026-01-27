@@ -2718,6 +2718,7 @@ async function loadCustomTranslations(lang) {
             const resp = await fetch(fallbackFile, { cache: 'no-store' });
             if (resp.ok) {
                 const fallbackMap = JSON.parse(await resp.text());
+                Object.keys(current_language_json).forEach(key => delete current_language_json[key]);
                 Object.assign(current_language_json, fallbackMap);
                 console.log(`Fallback translations loaded: ${fallback}`);
             }
