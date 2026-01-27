@@ -303,6 +303,12 @@ firewall_wan() {
     SET irqbalance=irqbalance
     SET irqbalance.enabled='1'
 }
+[ -n "${prometheus}" ] && {
+    SEC=prometheus-node-exporter-lua
+    SET @prometheus-node-exporter-lua[0]=prometheus-node-exporter-lua
+    SET @prometheus-node-exporter-lua[0].listen_address='0.0.0.0'
+    SET @prometheus-node-exporter-lua[0].listen_port='9100'
+}
 [ -n "${samba4}" ] && {
     SEC=samba4
     SET @samba[0]=samba
