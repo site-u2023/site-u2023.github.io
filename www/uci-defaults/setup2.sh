@@ -182,7 +182,7 @@ firewall_wan() {
     disable_wan
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
-    SET ${DSL6}.ifname="${WAN}" 2>&- || SET ${DSL6}.device="${WAN}"
+    SET ${DSL6}.ifname="${WAN}"
     SET ${DSL6}.reqaddress='try'
     SET ${DSL6}.reqprefix='auto'
     SET ${DSL}=interface
@@ -200,7 +200,7 @@ firewall_wan() {
     disable_wan
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
-    SET ${MAPE6}.ifname="${WAN}" 2>&- || SET ${MAPE6}.device="${WAN}"
+    SET ${MAPE6}.ifname="${WAN}"
     SET ${MAPE6}.reqaddress='try'
     SET ${MAPE6}.reqprefix='auto'
     SET ${MAPE}=interface
@@ -272,14 +272,14 @@ firewall_wan() {
         RESET
         SET ${AP}=interface
         SET ${AP}.proto='static'
-        SET ${AP}.ifname="${LAN}" 2>&- || SET ${AP}.device="${LAN}"
+        SET ${AP}.ifname="${LAN}"
         SET ${AP}.ipaddr="${ap_ipaddr}"
         SET ${AP}.gateway="${gateway}"
         SET ${AP}.dns="${gateway}"
         SET ${AP}.delegate='0'
         SET ${AP6}=interface
         SET ${AP6}.proto='dhcpv6'
-        SET ${AP6}.ifname="@${AP}" 2>&- || SET ${AP6}.device="@${AP}"
+        SET ${AP6}.ifname="@${AP}"
         SET ${AP6}.reqaddress='try'
         SET ${AP6}.reqprefix='no'
     }
