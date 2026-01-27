@@ -6,7 +6,7 @@
 
 BASE_DIR="/tmp"
 CONFIG_DIR="$BASE_DIR/aios2"
-exec > >(tee -a "$CONFIG_DIR/debug.log") 2>&1
+exec >> "$CONFIG_DIR/debug.log" 2>&1
 
 echo "Using package manager: ${PKG_MGR}"
 
