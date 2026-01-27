@@ -2631,9 +2631,16 @@ function setupLanguageSelector() {
     console.log('Language setup - Browser:', current_language, 'Device:', state.ui.language.selected);
 
     if (mainLanguageSelect) {
-        mainLanguageSelect.removeEventListener('change', handleMainLanguageChange);
-        mainLanguageSelect.addEventListener('change', handleMainLanguageChange);
+        const originalOnChange = mainLanguageSelect.onchange;
+        
+        mainLanguageSelect.onchange = async function(e) {
+            if (originalOnChange) {
+                originalOnChange.call(this, e);
+            }
+            await handleMainLanguageChange(e);
+        };
     }
+    
     if (customLanguageSelect) {
         customLanguageSelect.removeEventListener('change', handleCustomLanguageChange);
         customLanguageSelect.addEventListener('change', handleCustomLanguageChange);
@@ -2653,15 +2660,8 @@ function syncDeviceLanguageSelector(lang) {
 
 async function handleMainLanguageChange(e) {
     const newLanguage = e?.target?.value || config.fallback_language;
-    if (newLanguage === current_language) return;
-
-    const isUserAction = e && e.isTrusted === true;
     
-    console.log('Main language change:', {
-        newLanguage,
-        oldLanguage: current_language,
-        isUserAction
-    });
+    console.log('Applying custom translations for:', newLanguage);
 
     current_language = newLanguage;
     state.ui.language.current = newLanguage;
@@ -2670,21 +2670,18 @@ async function handleMainLanguageChange(e) {
     
     updatePackageListToTextarea('language-changed');
 
-    if (isUserAction) {
-        const oldDeviceLanguage = state.ui.language.selected;
-        config.device_language = current_language;
-        state.ui.language.selected = current_language;
-        
-        syncDeviceLanguageSelector(state.ui.language.selected);
-        
-        if (oldDeviceLanguage !== state.ui.language.selected) {
-            updateAllPackageState('browser-language-changed');
-        }
+    const oldDeviceLanguage = state.ui.language.selected;
+    config.device_language = current_language;
+    state.ui.language.selected = current_language;
+    
+    syncDeviceLanguageSelector(state.ui.language.selected);
+    
+    if (oldDeviceLanguage !== state.ui.language.selected) {
+        updateAllPackageState('browser-language-changed');
     }
 
-    if (typeof updateAutoConnectionInfo === 'function') {
-        const info = state.apiInfo;
-        if (info) updateAutoConnectionInfo(info);
+    if (typeof updateAutoConnectionInfo === 'function' && state.apiInfo) {
+        updateAutoConnectionInfo(state.apiInfo);
     }
 }
 
@@ -2715,7 +2712,7 @@ async function loadCustomTranslations(lang) {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
 
         if (!resp.ok) {
-            console.log(`Custom translation not found for ${lang}, skipping custom translations`);
+            console.log(`Custom translation file not found for ${lang}`);
             return;
         }
 
@@ -2723,7 +2720,7 @@ async function loadCustomTranslations(lang) {
         Object.assign(current_language_json, langMap);
         applyCustomTranslations(current_language_json);
         
-        console.log(`Custom translations loaded and applied for: ${lang}`);
+        console.log(`Custom translations loaded for: ${lang}`);
     } catch (err) {
         console.error(`Error loading custom translations for ${lang}:`, err);
     }
