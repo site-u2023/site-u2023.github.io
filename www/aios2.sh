@@ -2578,7 +2578,7 @@ EOF
 # Returns:
 #   0 if compatible, 1 if not
 # =============================================================================
-is_category_version_compatible() {
+check_category_version_compatible() {
     local cat_id="$1"
     
     # キャッシュ未構築なら構築
@@ -2602,7 +2602,7 @@ get_customfeed_categories() {
     visible_cats=""
     while read -r cat_id; do
         [ -z "$cat_id" ] && continue
-        is_category_version_compatible "$cat_id" || continue
+        check_category_version_compatible "$cat_id" || continue
         visible_cats="${visible_cats}${cat_id}
 "
     done <<EOF
