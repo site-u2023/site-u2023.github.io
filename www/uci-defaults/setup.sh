@@ -22,8 +22,8 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-LAN="$(GET network.lan.device 2>&- || GET network.lan.ifname 2>&- || echo lan)"
-WAN="$(GET network.wan.device 2>&- || GET network.wan.ifname 2>&- || echo wan)"
+LAN="$(GET network.lan.ifname 2>&- || echo lan)"
+WAN="$(GET network.wan.ifname 2>&- || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
