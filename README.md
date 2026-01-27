@@ -18,11 +18,11 @@ SNAPSHOT builds:
 ```mermaid
 graph TB
 A([
-**Landing Page**
+**Portal Site **
 ])
     
 B([
-**Kitting Tool**
+**Custom Build Tool**
 GUI Version
 ])
 C([
@@ -76,7 +76,7 @@ Config
     style G2 fill:#c5e1a5,color:#000
 ```
 
-### Landing Page (Portal Site)
+### Portal Site
 [site-u.pages.dev/](https://site-u.pages.dev/)
 
 <img width="1924" height="1036" alt="portal" src="https://github.com/user-attachments/assets/5996d4ee-ef9e-43e1-9771-1f333208a1ae" />
@@ -88,7 +88,7 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 - Removal
 [delete.reg](https://github.com/site-u2023/site-u2023.github.io/blob/main/file/delete.reg) > Download raw file (Download) > Install (double-click)
 
-### Kitting Tool (Custom Builder)
+### Custom Build Tool (Kitting Tool)
 [site-u.pages.dev/www/](https://site-u.pages.dev/www/)
 
 ![Kitting Tool.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/c0a81a9a-03b9-4f6b-827a-b9ac54a5e289.png)
