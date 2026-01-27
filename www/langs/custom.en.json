@@ -62,8 +62,8 @@
     "tr-mobility-domain": "Mobility Domain",
     "tr-min-snr": "Minimum SNR",
     "tr-standard": "Standard",
-    "tr-usteer": "Usteer",
-    "tr-mlo": "MLO: Wi-Fi 7 (BE)[Experimental] ",
+    "tr-usteer": "Usteer [DFS Mitigation]"
+    "tr-mlo": "MLO: Wi-Fi 7 (BE) [Experimental] ",
     "tr-wifi-mld-id": "MLD ID",
     "tr-disabled": "Disabled",
     "tr-wifi-optimization-disabled": "Wi-Fi Disabled",
