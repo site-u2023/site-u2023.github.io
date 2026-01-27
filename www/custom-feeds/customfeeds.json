@@ -138,6 +138,7 @@
     {
       "id": "jerrykuku",
       "name": "jerrykuku Repository",
+      "minVersion": "23",
       "class": "tr-tui-feed-jerrykuku",
       "description": "Argon theme and related packages from jerrykuku",
       "template_path": "custom-feeds/jerrykuku.sh",
