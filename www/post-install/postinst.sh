@@ -4,7 +4,9 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
-# exec > >(tee -a /tmp/aios2/debug.log) 2>&1
+BASE_DIR="/tmp"
+CONFIG_DIR="$BASE_DIR/aios2"
+exec >> "$CONFIG_DIR/debug.log" 2>&1
 
 [ -n "$INSTALL_CMD" ] && eval "$INSTALL_CMD"
 
