@@ -3,6 +3,7 @@
     {
       "id": "gspotx2f",
       "name": "gSpotx2f Repository",
+      "minVersion": "21",
       "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
       "template_path": "custom-feeds/gSpotx2f.sh",
