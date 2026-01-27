@@ -2486,15 +2486,39 @@ download_customfeeds_json() {
     return $?
 }
 
-get_customfeed_categories() {
-    local cache_file="$CONFIG_DIR/customfeed_categories_cache.txt"
+check_category_version_compatible() {
+    local cat_id="$1"
+    local json_file="$2"
+    local min_version
     
-    if [ ! -f "$cache_file" ]; then
-        jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$' > "$cache_file"
-        debug_log "Custom feed categories cache built"
+    min_version=$(jsonfilter -i "$json_file" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
+    
+    if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
+        if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
+            debug_log "Category $cat_id requires OpenWrt $min_version+, current is $OPENWRT_VERSION_MAJOR"
+            return 1
+        fi
     fi
     
-    cat "$cache_file"
+    return 0
+}
+
+get_customfeed_categories() {
+    local all_cats visible_cats cat_id
+    
+    all_cats=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e '@.categories[*].id' 2>/dev/null | grep -v '^$')
+    
+    visible_cats=""
+    while read -r cat_id; do
+        [ -z "$cat_id" ] && continue
+        check_category_version_compatible "$cat_id" "$CUSTOMFEEDS_JSON" || continue
+        visible_cats="${visible_cats}${cat_id}
+"
+    done <<EOF
+$all_cats
+EOF
+    
+    echo "$visible_cats"
 }
 
 custom_feeds_selection_prepare() {
@@ -4855,13 +4879,7 @@ CATEOF
                     exit 0
                 fi
 
-                min_version=$(jsonfilter -i "$CUSTOMFEEDS_JSON" -e "@.categories[@.id='$cat_id'].minVersion" 2>/dev/null)
-                if [ -n "$min_version" ] && [ "$OPENWRT_VERSION_MAJOR" != "SN" ]; then
-                    if [ "$OPENWRT_VERSION_MAJOR" -lt "$min_version" ] 2>/dev/null; then
-                        echo "[DEBUG] Skipping $cat_id: requires OpenWrt $min_version+, current is $OPENWRT_VERSION_MAJOR" >> "$CONFIG_DIR/debug.log"
-                        exit 0
-                    fi
-                fi
+                check_category_version_compatible "$cat_id" "$CUSTOMFEEDS_JSON" || exit 0
         
                 template_url=$(get_customfeed_template_url "$cat_id")
                 
