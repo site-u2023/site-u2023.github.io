@@ -17,7 +17,7 @@ const DEFAULT_ADDRESSES = [
 const DEFAULT_SERVICES = {
     luci: { name: 'LuCI', port: '80', protocol: 'http' },
     ttyd: { name: 'ttyd', port: '7681', protocol: 'http' },
-    filebrowser: { name: 'filebrowser', port: '8080', protocol: 'http' },
+    netdata: { name: 'netdata', port: '19999', protocol: 'http' },
     adguard: { name: 'AdGuardHome', port: '8000', protocol: 'http' }
 };
 const AIOS_URL = 'https://raw.githubusercontent.com/site-u2023/aios/main/aios';
