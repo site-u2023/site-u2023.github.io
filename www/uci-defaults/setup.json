@@ -1,7 +1,6 @@
 {
   "version": "R7.0106.1800",
   "description": "Simplified setup configuration - packages.json style",
-  "reboot": true,
   "columns": 2,
   
   "_schema": {
