@@ -18,7 +18,7 @@ SNAPSHOT builds:
 ```mermaid
 graph TB
 A([
-**Portal Site **
+**Portal Site**
 ])
     
 B([
