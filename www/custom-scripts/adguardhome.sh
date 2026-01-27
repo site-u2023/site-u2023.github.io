@@ -1624,13 +1624,15 @@ adguardhome_main() {
     # =========================================================================
     apply_environment_variables
     
-    # Force official mode for OpenWrt < 21 (no adguardhome package)
+    # =========================================================================
+    # Phase 3: Force official mode for OpenWrt < 21 (no adguardhome package)
+    # =========================================================================
     if [ "$OS_MAJOR_VERSION" -ne 0 ] && [ "$OS_MAJOR_VERSION" -lt 21 ] && [ "$IS_SNAPSHOT" != true ]; then
         INSTALL_MODE="official"
     fi
     
     # =========================================================================
-    # Phase 3: Route to appropriate handler based on mode
+    # Phase 4: Route to appropriate handler based on mode
     # =========================================================================
     
     # --- Update Credentials Mode ---
@@ -1711,7 +1713,7 @@ adguardhome_main() {
     }
     
     # =========================================================================
-    # Phase 4: Handle credentials based on mode
+    # Phase 5: Handle credentials based on mode
     # =========================================================================
     if is_interactive_mode; then
         # Interactive mode: prompt for credentials
@@ -1728,7 +1730,7 @@ adguardhome_main() {
     }
     
     # =========================================================================
-    # Phase 5: Install and configure
+    # Phase 6: Install and configure
     # =========================================================================
     
     install_cacertificates
