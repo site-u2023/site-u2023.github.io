@@ -91,7 +91,7 @@ Terminal > Protocol Handler Registration > Download > Install (double-click)
 ### Custom Build Tool (Kitting Tool)
 [site-u.pages.dev/www/](https://site-u.pages.dev/www/)
 
-![Kitting Tool.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/c0a81a9a-03b9-4f6b-827a-b9ac54a5e289.png)
+<img width="1924" height="1036" alt="builder" src="https://github.com/user-attachments/assets/38363af0-bff1-4a98-98d6-39be25c1d0bd" />
 
 | Feature Comparison | Official Builder | Custom Builder |
 |---------|-------------|-----------------|
@@ -135,7 +135,9 @@ IPv6 bridge/passthrough function settings for each manufacturer:
 ### Console Tool
 [aios2 TUI Version (whiptail)](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2.sh)
 
-![aios-tui.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/3a05ca3f-8cf8-4a25-954b-10815e502383.png)
+<img width="1119" height="632" alt="image" src="https://github.com/user-attachments/assets/6eb4580d-5ed6-4f4c-830c-ad88171722f6" />
+<img width="1119" height="632" alt="image" src="https://github.com/user-attachments/assets/7b885706-b0e4-4ebe-b240-77aab169f837" />
+
 
 - Cloudflare Pages
 ```sh
