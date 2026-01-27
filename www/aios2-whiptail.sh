@@ -78,8 +78,12 @@ show_yesno() {
     local message="$2"
     local yes_btn="${3:-$(translate "$DEFAULT_BTN_YES")}"
     local no_btn="${4:-$(translate "$DEFAULT_BTN_NO")}"
+    local lines height
     
-    whiptail --title "$breadcrumb" --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$UI_HEIGHT" "$UI_WIDTH"
+    lines=$(printf '%b\n' "$message" | wc -l)
+    height=$((lines + 7))
+    
+    whiptail --title "$breadcrumb" --scrolltext --yes-button "$yes_btn" --no-button "$no_btn" --yesno "$message" "$height" "$UI_WIDTH"
 }
 
 show_msgbox() {
@@ -1815,7 +1819,7 @@ EOF
 
 🟣 $(translate 'tr-tui-apply-confirm-question')"
     
-    if whiptail --title "$breadcrumb" --scrolltext --yes-button "$(translate "$DEFAULT_BTN_YES")" --no-button "$(translate "$DEFAULT_BTN_NO")" --yesno "$confirm_msg" 20 "$UI_WIDTH"; then
+    if show_yesno "$breadcrumb" "$confirm_msg"; then
         clear
         
         local packages_to_remove
