@@ -6,8 +6,14 @@
       "class": "tr-tui-feed-gspotx2f",
       "description": "Community packages from gSpotx2f",
       "template_path": "custom-feeds/gSpotx2f.sh",
-      "api_base": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/{version}",
-      "download_base": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/{version}",
+      "api_base": {
+        "opkg": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/24.10",
+        "apk": "https://api.github.com/repos/gSpotx2f/packages-openwrt/contents/25.12"
+      },
+      "download_base": {
+        "opkg": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/24.10",
+        "apk": "https://raw.githubusercontent.com/gSpotx2f/packages-openwrt/master/25.12"
+      },
       "packages": [
         {
           "id": "luci-app-log-viewer",
