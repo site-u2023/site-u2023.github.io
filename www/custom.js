@@ -2710,32 +2710,12 @@ async function loadCustomTranslations(lang) {
         lang = current_language || navigator.language.split('-')[0];
     }
     
-    const fallback = config.fallback_language;
-    
-    if (lang !== fallback) {
-        const fallbackFile = config.language_path_template.replace('{lang}', fallback);
-        try {
-            const resp = await fetch(fallbackFile, { cache: 'no-store' });
-            if (resp.ok) {
-                const fallbackMap = JSON.parse(await resp.text());
-                Object.keys(current_language_json).forEach(key => delete current_language_json[key]);
-                Object.assign(current_language_json, fallbackMap);
-                console.log(`Fallback translations loaded: ${fallback}`);
-            }
-        } catch (err) {
-            console.error(`Error loading fallback translations:`, err);
-        }
-    }
-    
     const customLangFile = config.language_path_template.replace('{lang}', lang);
     try {
         const resp = await fetch(customLangFile, { cache: 'no-store' });
 
         if (!resp.ok) {
-            if (lang !== fallback) {
-                console.log(`Custom translation not found for ${lang}, using fallback only`);
-            }
-            applyCustomTranslations(current_language_json);
+            console.log(`Custom translation not found for ${lang}, skipping custom translations`);
             return;
         }
 
@@ -2743,10 +2723,9 @@ async function loadCustomTranslations(lang) {
         Object.assign(current_language_json, langMap);
         applyCustomTranslations(current_language_json);
         
-        console.log(`Custom translations loaded for UI language: ${lang}`);
+        console.log(`Custom translations loaded and applied for: ${lang}`);
     } catch (err) {
         console.error(`Error loading custom translations for ${lang}:`, err);
-        applyCustomTranslations(current_language_json);
     }
 }
 
