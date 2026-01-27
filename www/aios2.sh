@@ -718,7 +718,8 @@ init() {
           "$CONFIG_DIR"/customfeeds.json \
           "$CONFIG_DIR"/customscripts.json \
           "$CONFIG_DIR"/*.txt \
-          "$CONFIG_DIR"/debug.log 2>/dev/null
+		  "$CONFIG_DIR"/debug.log \
+          "$CONFIG_DIR"/tpl_*.sh 2>/dev/null
 
     for file in "$CONFIG_DIR"/*.sh; do
         [ -f "$file" ] || continue
