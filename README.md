@@ -203,20 +203,32 @@ cat > "/tmp/openwrt-network-auto-config.sh" << 'SCRIPT_END'
 #!/bin/sh
 set -eu
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
+
 echo "NOTICE=$(echo "$API_RESPONSE" | jsonfilter -e '@.notice')"
 echo "LANGUAGE=$(echo "$API_RESPONSE" | jsonfilter -e '@.language')"
-echo "IPV4=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv4')"
-echo "IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv6')"
 echo "COUNTRY=$(echo "$API_RESPONSE" | jsonfilter -e '@.country')"
-echo "TIMEZONE=$(echo "$API_RESPONSE" | jsonfilter -e '@.timezone')"
-echo "ZONENAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.zonename')"
-echo "ISP=$(echo "$API_RESPONSE" | jsonfilter -e '@.isp')"
-echo "AS=$(echo "$API_RESPONSE" | jsonfilter -e '@.as')"
 echo "REGION_NAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.regionName')"
 echo "REGION_CODE=$(echo "$API_RESPONSE" | jsonfilter -e '@.region')"
+echo "TIMEZONE=$(echo "$API_RESPONSE" | jsonfilter -e '@.timezone')"
+echo "ZONENAME=$(echo "$API_RESPONSE" | jsonfilter -e '@.zonename')"
+
+echo "IPV4=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv4')"
+echo "IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.ipv6')"
+echo "ISP=$(echo "$API_RESPONSE" | jsonfilter -e '@.isp')"
+echo "AS=$(echo "$API_RESPONSE" | jsonfilter -e '@.as')"
+
 echo "AFTR_TYPE=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrType')"
+echo "AFTR_FQDN=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrFqdn')"
+echo "AFTR_IPV6_EAST=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftrAddresses.east')"
+echo "AFTR_IPV6_WEST=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftrAddresses.west')"
+
+
 echo "AFTR_JURISDICTION=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.jurisdiction')"
 echo "AFTR_IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrIpv6Address')"
+
+echo "AFTR_PEERADDR=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.peeraddr')"
+echo "AFTR_ADDRESS=$(echo "$API_RESPONSE" | jsonfilter -e '@.aftr.aftrAddress')"
+
 echo "MAPE_BR_IPV6=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.brIpv6Address')"
 echo "MAPE_EA_BITS=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.eaBitLength')"
 echo "MAPE_IPV4_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv4Prefix')"
@@ -225,7 +237,9 @@ echo "MAPE_IPV6_PREFIX=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix
 echo "MAPE_IPV6_PLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6PrefixLength')"
 echo "MAPE_PSID_OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')"
 echo "MAPE_PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')"
+echo "MAPE_CALC_OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.calculatedOffset')"
 echo "MAPE_IPV6_PREFIX_GUA=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.ipv6Prefix_gua')"
+
 SCRIPT_END
 sh "/tmp/openwrt-network-auto-config.sh"
 ```
