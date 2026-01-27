@@ -1770,6 +1770,8 @@ enable_installed_services() {
                 /etc/init.d/$svc enable 2>/dev/null
                 /etc/init.d/$svc start 2>/dev/null
             done
+            # LuCI メニュー更新のため uhttpd リロード
+            /etc/init.d/uhttpd reload 2>/dev/null
         fi
     fi
 }
