@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R8.0123.1651"
+VERSION="R8.0127.1319"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -406,19 +406,12 @@ device_info() {
 show_network_info() {
     local breadcrumb="$1"
     local tr_isp tr_as tr_auto_detection info
-    local info_json="$CONFIG_DIR/information.json"
     local api_json="$CONFIG_DIR/auto_config.json"
     
     echo "[DEBUG] show_network_info called" >> "$CONFIG_DIR/debug.log"
     
     tr_isp=$(translate "tr-isp")
     tr_as=$(translate "tr-as")
-    
-    # information.json がなければダウンロード
-    if [ ! -f "$info_json" ]; then
-        echo "[DEBUG] Downloading information.json..." >> "$CONFIG_DIR/debug.log"
-        download_information_json
-    fi
     
     # API レスポンスから接続タイプを判定
     local detected_type=""
@@ -475,16 +468,17 @@ ${notice_text}
             local field_id field_label field_api_path field_condition field_value
             
             # 各フィールドのプロパティを取得
-            field_id=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].id" 2>/dev/null)
+            field_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].id" 2>/dev/null)
             [ -z "$field_id" ] && break
             
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].label" 2>/dev/null)
-            field_api_path=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].apiPath" 2>/dev/null)
-            field_condition=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].fields[$i].condition" 2>/dev/null)
+            field_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].label" 2>/dev/null)
+            local field_api_source
+            field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].apiSource" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].variable" 2>/dev/null)
             
-            # API から値を取得
-            if [ -n "$field_api_path" ]; then
-                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_path}" 2>/dev/null)
+            # API から値を取得（apiSourceを使用）
+            if [ -n "$field_api_source" ]; then
+                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_source}" 2>/dev/null)
             else
                 field_value=""
             fi
@@ -497,9 +491,12 @@ ${notice_text}
                 continue
             fi
             
-            # 値を保存（id=値 形式）
-            if [ -n "$field_id" ] && [ -n "$field_value" ]; then
-                echo "${field_id}=${field_value}" >> "$field_cache"
+            # setup.jsonからvariable名を取得して保存
+            local field_variable
+            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$field_id'].variable" 2>/dev/null | head -1)
+            
+            if [ -n "$field_variable" ] && [ -n "$field_value" ]; then
+                echo "${field_variable}=${field_value}" >> "$field_cache"
             fi
             
             # 値がある場合のみ表示
@@ -595,11 +592,13 @@ ${notice_text}
         while [ $i -lt 20 ]; do
             local field_id field_label field_api_path field_value
             
-            field_id=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].id" 2>/dev/null)
+            field_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].id" 2>/dev/null)
             [ -z "$field_id" ] && break
             
-            field_label=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].label" 2>/dev/null)
-            field_api_path=$(jsonfilter -i "$info_json" -e "@.categories[@.id='dslite-info'].fields[$i].apiPath" 2>/dev/null)
+            field_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].label" 2>/dev/null)
+            local field_api_source
+            field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].variable" 2>/dev/null)
+            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='dslite-section'].items[$i].variable" 2>/dev/null)
             
             # API から値を取得
             if [ -n "$field_api_path" ]; then
@@ -610,9 +609,12 @@ ${notice_text}
             
             echo "[DEBUG] DS-Lite field[$i]: id='$field_id', label='$field_label', value='$field_value'" >> "$CONFIG_DIR/debug.log"
             
-            # 値を保存
-            if [ -n "$field_id" ] && [ -n "$field_value" ]; then
-                echo "${field_id}=${field_value}" >> "$field_cache"
+            # setup.jsonからvariable名を取得して保存
+            local field_variable
+            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='$field_id'].variable" 2>/dev/null | head -1)
+            
+            if [ -n "$field_variable" ] && [ -n "$field_value" ]; then
+                echo "${field_variable}=${field_value}" >> "$field_cache"
             fi
             
             # 値がある場合のみ表示
