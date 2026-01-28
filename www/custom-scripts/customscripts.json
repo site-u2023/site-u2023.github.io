@@ -158,8 +158,7 @@
           "label": "tr-tui-customscript-language",
           "default": "en",
           "envVar": "FB_LANG",
-          "apiSource": "language",
-          "hidden": "true"
+          "apiSource": "language"
         },
         {
           "id": "root_path",
@@ -175,7 +174,7 @@
           "id": "install",
           "label": "tr-tui-customscript-install-filebrowser",
           "requiresUpdate": "false",
-          "requiredInputs": ["username", "password", "web_port", "root_path"],
+          "requiredInputs": ["username", "password", "web_port", "language", "root_path"],
           "requiresConfirmation": "true",
           "requireNotInstalled": "true"
         },
