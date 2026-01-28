@@ -207,7 +207,8 @@ filebrowser_main() {
             install_filebrowser || return 1
             configure_filebrowser || return 1
             create_init_script
-            start_service || return 1
+            "/etc/init.d/$SERVICE_NAME" enable 2>/dev/null
+            "/etc/init.d/$SERVICE_NAME" start 2>/dev/null
             show_access_info
             ;;
         remove)
@@ -226,7 +227,8 @@ filebrowser_main() {
                         install_filebrowser || exit 1
                         configure_filebrowser || exit 1
                         create_init_script
-                        start_service || exit 1
+                        "/etc/init.d/$SERVICE_NAME" enable 2>/dev/null
+                        "/etc/init.d/$SERVICE_NAME" start 2>/dev/null
                         show_access_info
                         ;;
                     *) print_warn "Cancelled" ;;
