@@ -76,17 +76,28 @@ configure_filebrowser() {
     if [ ! -f "$DB_FILE" ]; then
         print_msg "Initializing database..."
         filebrowser config init --database "$DB_FILE" >/dev/null 2>&1
+        
+        # Set config BEFORE creating user
+        filebrowser config set \
+            --database "$DB_FILE" \
+            --root "$FB_ROOT" \
+            --address "0.0.0.0" \
+            --port "$FB_PORT" \
+            --locale "$FB_LANG" \
+            >/dev/null 2>&1
+        
+        # Create user (will inherit locale from config)
         filebrowser users add "$FB_USER" "$FB_PASS" --perm.admin --database "$DB_FILE" >/dev/null 2>&1
+    else
+        # Update config for existing installation
+        filebrowser config set \
+            --database "$DB_FILE" \
+            --root "$FB_ROOT" \
+            --address "0.0.0.0" \
+            --port "$FB_PORT" \
+            --locale "$FB_LANG" \
+            >/dev/null 2>&1
     fi
-    
-    # Update config
-    filebrowser config set \
-        --database "$DB_FILE" \
-        --root "$FB_ROOT" \
-        --address "0.0.0.0" \
-        --port "$FB_PORT" \
-        --locale "$FB_LANG" \
-        >/dev/null 2>&1
     
     print_ok "Configuration completed"
 }
