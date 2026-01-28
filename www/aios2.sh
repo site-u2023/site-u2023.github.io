@@ -3104,6 +3104,16 @@ collect_script_inputs() {
     for input_id in $inputs; do
         input_label=$(get_customscript_input_label "$script_id" "$input_id")
         input_default=$(get_customscript_input_default "$script_id" "$input_id")
+        
+        # Check for apiSource
+        local api_source
+        api_source=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].apiSource" 2>/dev/null | head -1)
+        if [ -n "$api_source" ]; then
+            local api_value
+            api_value=$(jsonfilter -i "$AUTO_CONFIG_JSON" -e "@.${api_source}" 2>/dev/null)
+            [ -n "$api_value" ] && input_default="$api_value"
+        fi
+        
         input_envvar=$(get_customscript_input_envvar "$script_id" "$input_id")
         input_hidden=$(get_customscript_input_hidden "$script_id" "$input_id")
         min_length=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$script_id'].inputs[@.id='$input_id'].minlength" 2>/dev/null | head -1)
