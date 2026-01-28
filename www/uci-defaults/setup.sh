@@ -357,9 +357,8 @@ firewall_wan() {
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
     }
-    CONG="${netopt_congestion:-cubic}"
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\nnet.ipv4.tcp_congestion_control=%s\n" \
-        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" "$CONG" > "$C"
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
