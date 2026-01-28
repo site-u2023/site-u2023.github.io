@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SCRIPT_VERSION="0101.1103"
+SCRIPT_VERSION="R8.0128.1048"
 
 # =============================================================================
 # BEGIN_VARIABLE_DEFINITIONS
@@ -113,19 +113,6 @@ stop_service() {
 INITEOF
     chmod +x "/etc/init.d/$SERVICE_NAME"
     print_ok "Init script created"
-}
-
-start_service() {
-    "/etc/init.d/$SERVICE_NAME" enable
-    "/etc/init.d/$SERVICE_NAME" start
-    sleep 2
-    
-    if pgrep -x filebrowser >/dev/null; then
-        print_ok "Service started"
-    else
-        print_err "Service failed to start"
-        return 1
-    fi
 }
 
 show_access_info() {
