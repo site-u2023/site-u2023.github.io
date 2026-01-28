@@ -30,7 +30,7 @@ cat > /etc/firewall.user << 'EOF'
 
 . /lib/functions/network.sh
 network_get_ipaddr IP4 lan
-TUNDEV='map-wan6'           # 実際のインターフェース名に合わせて変更
+TUNDEV='mape6'           # 実際のインターフェース名に合わせて変更
 
 # 重要: 既存ルールを消去せず、必要なマーク・SNATだけ追加
 
