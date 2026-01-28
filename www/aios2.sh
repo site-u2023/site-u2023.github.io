@@ -2777,21 +2777,32 @@ EOF
         fi
     fi
     
-    # オプションが1つだけの場合はオプション選択画面をスキップ
+# オプションが1つだけの場合はオプション選択画面をスキップ
     local option_count=$(echo "$filtered_options" | grep -c .)
     if [ "$option_count" -eq 1 ]; then
         local single_option=$(echo "$filtered_options" | head -1)
         
+        # SELECTED_OPTION を保存
+        : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+        echo "SELECTED_OPTION='${single_option}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+        write_option_envvars "$script_id" "$single_option"
+        
         local requires_confirmation
         requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$single_option")
         if [ "$requires_confirmation" = "true" ]; then
-            custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"
+            if ! custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"; then
+                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+                return 0
+            fi
         fi
         
         local skip_inputs
         skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$single_option")
         if [ "$skip_inputs" != "true" ]; then
-            collect_script_inputs "$script_id" "$breadcrumb" "$single_option"
+            if ! collect_script_inputs "$script_id" "$breadcrumb" "$single_option"; then
+                rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+                return 0
+            fi
         fi
         return 0
     fi
