@@ -286,37 +286,33 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
-        # UI切り替え
-        if [ "$installed" -eq 1 ]; then
-            # リムーブ → セレクター
-            choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
-        else
-            # インストール → ラジオボタン（排他式）
-            choice=$(eval "$DIALOG --title \"\$breadcrumb\" \
-                --ok-button \"$(translate 'tr-tui-select')\" \
-                --cancel-button \"$(translate 'tr-tui-back')\" \
-                --radiolist \"\" \
-                $UI_HEIGHT $UI_WIDTH 0 \
-                $radio_items" 3>&1 1>&2 2>&3) || return 0
-        fi
+        # 常にメニュー形式で選択（インストール済みかどうかに関わらず）
+        choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
+            
+            # SELECTED_OPTION を保存
+            : > "$CONFIG_DIR/script_vars_${script_id}.txt"
+            echo "SELECTED_OPTION='${selected_option}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
+            write_option_envvars "$script_id" "$selected_option"
             
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
                 
-                if ! grep -q "^CONFIRMED='1'$" "$CONFIG_DIR/script_vars_${script_id}.txt" 2>/dev/null; then
-                    continue
-                fi
+                # CONFIRMEDが設定されていなくても入力収集へ進む
             fi
             
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
-                collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"
+                if ! collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"; then
+                    # 入力がキャンセルされた場合、vars ファイルを削除
+                    rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
+                    continue
+                fi
             fi
             return 0
         fi
