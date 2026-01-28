@@ -1829,12 +1829,16 @@ EOF
             local cs_script_id cs_script_name
             cs_script_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
             
-            grep -q "^CONFIRMED=" "$var_file" 2>/dev/null || continue
-            
             local cs_installed=0
             local cs_confirmed=0
             is_script_installed "$cs_script_id" && cs_installed=1
-            grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && cs_confirmed=1
+            
+            # CONFIRMED 行がある場合のみチェック、ない場合はデフォルトで confirmed=1
+            if grep -q "^CONFIRMED=" "$var_file" 2>/dev/null; then
+                grep -q "^CONFIRMED='1'$" "$var_file" 2>/dev/null && cs_confirmed=1
+            else
+                cs_confirmed=1
+            fi
             
             [ "$cs_installed" -eq "$cs_confirmed" ] && continue
             
