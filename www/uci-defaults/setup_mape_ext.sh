@@ -6,7 +6,8 @@ echo "=== MAP-Eポートセット拡張設定開始 ==="
 
 # 1. 必要モジュールの確認
 opkg update
-opkg install iptables-mod-ipopt iptables-mod-statistic
+opkg install iptables-mod-ipopt
+# iptables-mod-statistic
 
 # 2. MAPパラメータ取得（お使いのAPI）
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
