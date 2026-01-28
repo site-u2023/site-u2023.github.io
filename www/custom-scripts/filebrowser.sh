@@ -85,6 +85,7 @@ configure_filebrowser() {
         --root "$FB_ROOT" \
         --address "0.0.0.0" \
         --port "$FB_PORT" \
+        --locale "$FB_LANG" \
         >/dev/null 2>&1
     
     print_ok "Configuration completed"
