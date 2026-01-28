@@ -153,6 +153,15 @@
           }
         },
         {
+          "id": "language",
+          "type": "text",
+          "label": "tr-tui-customscript-language",
+          "default": "en",
+          "envVar": "FB_LANG",
+          "apiSource": "language",
+          "hidden": "true"
+        },
+        {
           "id": "root_path",
           "type": "text",
           "label": "tr-tui-customscript-rootpath",
