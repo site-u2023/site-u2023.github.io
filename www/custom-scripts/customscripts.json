@@ -179,7 +179,6 @@
           "requiresUpdate": "false",
           "requiresConfirmation": "true",
           "envVars": {
-            "SELECTED_OPTION": "remove",
             "REMOVE_MODE": "auto"
           },
           "skipInputs": "true",
