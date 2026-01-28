@@ -2781,8 +2781,23 @@ EOF
     local option_count=$(echo "$filtered_options" | grep -c .)
     if [ "$option_count" -eq 1 ]; then
         local single_option=$(echo "$filtered_options" | head -1)
-        custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"
-        return $?
+        
+        local requires_confirmation
+        requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$single_option")
+        if [ "$requires_confirmation" = "true" ]; then
+            if ! custom_script_confirm_ui "$script_id" "$single_option" "$breadcrumb"; then
+                return 0
+            fi
+        fi
+        
+        local skip_inputs
+        skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$single_option")
+        if [ "$skip_inputs" != "true" ]; then
+            if ! collect_script_inputs "$script_id" "$breadcrumb" "$single_option"; then
+                return 0
+            fi
+        fi
+        return 0
     fi
     
     custom_script_options_ui "$script_id" "$breadcrumb" "$filtered_options"
