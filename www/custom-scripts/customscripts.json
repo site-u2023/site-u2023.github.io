@@ -167,7 +167,7 @@
           "label": "tr-tui-customscript-install-filebrowser",
           "requiresUpdate": "false",
           "requiredInputs": ["username", "password", "web_port", "root_path"],
-          "requiresConfirmation": "false",
+          "requiresConfirmation": "true",
           "requireNotInstalled": "true"
         },
         {
