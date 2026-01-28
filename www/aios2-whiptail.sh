@@ -301,12 +301,12 @@ EOF
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
                 if ! custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"; then
-                    # ユーザーがキャンセル → オプション選択画面に戻る
+                    # ユーザーが「戻る」を押した → オプション選択に戻る
                     continue
                 fi
+                # ★「更新」を押した場合、CONFIRMED の値に関わらず次へ進む
             fi
             
-            # confirmation を通過したら必ず入力収集へ
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
