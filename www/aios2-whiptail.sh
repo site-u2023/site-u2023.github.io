@@ -286,13 +286,13 @@ custom_script_options_ui() {
 $filtered_options
 EOF
         
-        # 常にメニュー形式で選択（インストール済みかどうかに関わらず）
+        # 常にメニュー形式で選択
         choice=$(eval "show_menu \"\$breadcrumb\" \"\" \"$(translate 'tr-tui-select')\" \"$(translate 'tr-tui-back')\" $menu_items") || return 0
         
         if [ -n "$choice" ]; then
             selected_option=$(echo "$filtered_options" | sed -n "${choice}p")
             
-            # SELECTED_OPTION を保存
+            # SELECTED_OPTION を即座に保存
             : > "$CONFIG_DIR/script_vars_${script_id}.txt"
             echo "SELECTED_OPTION='${selected_option}'" >> "$CONFIG_DIR/script_vars_${script_id}.txt"
             write_option_envvars "$script_id" "$selected_option"
@@ -300,16 +300,18 @@ EOF
             local requires_confirmation
             requires_confirmation=$(get_customscript_option_requires_confirmation "$script_id" "$selected_option")
             if [ "$requires_confirmation" = "true" ]; then
-                custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"
-                
-                # CONFIRMEDが設定されていなくても入力収集へ進む
+                if ! custom_script_confirm_ui "$script_id" "$selected_option" "$breadcrumb"; then
+                    # ユーザーがキャンセル → オプション選択画面に戻る
+                    continue
+                fi
             fi
             
+            # confirmation を通過したら必ず入力収集へ
             local skip_inputs
             skip_inputs=$(get_customscript_option_skip_inputs "$script_id" "$selected_option")
             if [ "$skip_inputs" != "true" ]; then
                 if ! collect_script_inputs "$script_id" "$breadcrumb" "$selected_option"; then
-                    # 入力がキャンセルされた場合、vars ファイルを削除
+                    # 入力キャンセル → 変数ファイル削除してオプション選択に戻る
                     rm -f "$CONFIG_DIR/script_vars_${script_id}.txt"
                     continue
                 fi
