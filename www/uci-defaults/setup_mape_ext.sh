@@ -25,23 +25,12 @@ iptables -t nat -L POSTROUTING --line-numbers -n | \
 
 echo "既存ルール削除完了"
 
-# === WAN zone の MASQUERADE を無効化 ===
-echo "WAN zone の MASQUERADE を無効化中..."
-
-# wan zone のインデックスを取得（通常は@zone[1]だが念のため検索）
-wan_zone_idx=$(uci show firewall | grep "\.name='wan'" | cut -d'[' -f2 | cut -d']' -f1 | head -n1)
-
-if [ -n "$wan_zone_idx" ]; then
-    uci set firewall.@zone[$wan_zone_idx].masq='0'
-    uci commit firewall
-    echo "  firewall.@zone[$wan_zone_idx].masq='0' に設定"
-else
-    echo "  警告: wan zone が見つかりませんでした"
-fi
+# === WAN zone の MASQUERADE は有効のまま（共存方式） ===
+echo "MASQUERADE との共存モードで動作します"
 
 # === 新しいルール書き込み ===
 cat > /etc/firewall.user << 'EOF'
-# MAP-E Port Set Expansion (全ポートセット活用)
+# MAP-E Port Set Expansion (全ポートセット活用 - MASQUERADE共存版)
 
 # ubus生成のMAP-E natルールを削除（冪等性確保）
 echo "ubus生成MAP-Eルールをクリア中..."
@@ -85,21 +74,19 @@ while [ $rule -le 15 ]; do
     portl=$((PSID * PORT_SET_WIDTH + rule * PORTS_PER_RULE))
     portr=$((portl + PORTS_PER_RULE - 1))
 
-    # TCPのみをstatisticで分散
+    # TCPのみをstatisticで分散（全パケットにマーク）
     iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
     iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
 
-    # マークごとのSNAT（TCP） - postrouting_wan_ruleチェーンに追加
-    iptables -t nat -A postrouting_wan_rule -p tcp -o $TUNDEV -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-
-    # ICMP/UDPは全ポートセットでSNAT - postrouting_wan_ruleチェーンに追加
-    iptables -t nat -A postrouting_wan_rule -p icmp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
-    iptables -t nat -A postrouting_wan_rule -p udp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
+    # マークされたTCPパケットのみSNAT（MASQUERADEと共存）
+    iptables -t nat -A postrouting_wan_rule -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
 
     rule=$((rule + 1))
 done
 
-echo "MAP-Eポートセット拡張ルール適用完了"
+# ICMP/UDPはMASQUERADEに任せる（デフォルト動作）
+
+echo "MAP-Eポートセット拡張ルール適用完了（MASQUERADE共存モード）"
 EOF
 
 # ホットプラグスクリプト作成
