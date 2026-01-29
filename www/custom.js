@@ -2784,11 +2784,7 @@ function applyCustomTranslations(map) {
             if ('placeholder' in e) {
                 e.placeholder = translationMap[tr];
             } else {
-                if (!e.hasAttribute('data-translation-template')) {
-                    e.setAttribute('data-translation-template', translationMap[tr]);
-                }
-                
-                let content = e.getAttribute('data-translation-template');
+                let content = translationMap[tr];
                 let hasHtml = false;
                 
                 const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
@@ -2798,7 +2794,6 @@ function applyCustomTranslations(map) {
                     content = content.replace(`$${varName}`, value);
                 }
                 
-                // リンク処理
                 const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
                 if (linkMatch) {
                     const url = linkMatch[1];
@@ -2807,21 +2802,10 @@ function applyCustomTranslations(map) {
                     hasHtml = true;
                 }
                 
-                if (e.classList.contains('info-display') || e.classList.contains('info-link')) {
-                    const textNode = e.querySelector('span, a');
-                    if (textNode) {
-                        if (hasHtml) {
-                            textNode.innerHTML = content;
-                        } else {
-                            textNode.textContent = content;
-                        }
-                    }
+                if (hasHtml) {
+                    e.innerHTML = content;
                 } else {
-                    if (hasHtml) {
-                        e.innerHTML = content;
-                    } else {
-                        e.innerText = content;
-                    }
+                    e.innerText = content;
                 }
             }
         });
