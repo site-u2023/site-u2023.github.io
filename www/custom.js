@@ -2864,6 +2864,9 @@ function applyCustomTranslations(map) {
             }
         }
     });
+    
+    console.log('Custom translations applied to DOM');
+}
 
 // ==================== 共通マルチインプット管理 ====================
 class MultiInputManager {
