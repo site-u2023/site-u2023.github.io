@@ -25,19 +25,8 @@ iptables -t nat -L POSTROUTING --line-numbers -n | \
 
 echo "既存ルール削除完了"
 
-# === WAN zone の MASQUERADE を無効化（全プロトコル拡張SNAT使用） ===
-echo "WAN zone の MASQUERADE を無効化中..."
-
-# wan zone のインデックスを取得（通常は@zone[1]だが念のため検索）
-wan_zone_idx=$(uci show firewall | grep "\.name='wan'" | cut -d'[' -f2 | cut -d']' -f1 | head -n1)
-
-if [ -n "$wan_zone_idx" ]; then
-    uci set firewall.@zone[$wan_zone_idx].masq='0'
-    uci commit firewall
-    echo "  firewall.@zone[$wan_zone_idx].masq='0' に設定"
-else
-    echo "  警告: wan zone が見つかりませんでした"
-fi
+# === WAN zone の MASQUERADE は有効のまま（eth4用に必要） ===
+echo "MASQUERADE は有効のまま（map-mape以外のインターフェース用）"
 
 # === 新しいルール書き込み ===
 cat > /etc/firewall.user << 'EOF'
@@ -57,6 +46,8 @@ iptables -t nat -L POSTROUTING --line-numbers -n | \
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
 PSID=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psid')
 PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')
+OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')
+OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')
 
 # units = 2^PSIDLEN
 UNITS=$((1 << PSIDLEN))
@@ -75,14 +66,16 @@ network_flush_cache
 network_find_wan NET_IF
 network_get_ipaddr NET_ADDR "${NET_IF}"
 
-# 既存のpostrouting_wan_ruleチェーンをクリア
-iptables -t nat -F postrouting_wan_rule 2>/dev/null
+# 既存の拡張SNATルールをクリア（冪等性確保）
+iptables -t nat -S POSTROUTING | grep "SNAT.*$NET_ADDR" | sed 's/^-A/-D/' | while read rule; do
+    iptables -t nat $rule 2>/dev/null
+done
 
 rule=0
 while [ $rule -le 15 ]; do
     mark=$((rule + 16))
     pn=$rule
-    portl=$((PSID * PORT_SET_WIDTH + rule * PORTS_PER_RULE))
+    portl=$((PSID * PORT_SET_WIDTH + OFFSET + rule * PORTS_PER_RULE))
     portr=$((portl + PORTS_PER_RULE - 1))
 
     if [ $rule -le 14 ]; then
@@ -95,15 +88,15 @@ while [ $rule -le 15 ]; do
         iptables -t nat -A OUTPUT -p udp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
         iptables -t nat -A OUTPUT -p icmp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
 
-        # マーク付きパケットをSNAT
-        iptables -t nat -A postrouting_wan_rule -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -A postrouting_wan_rule -p udp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -A postrouting_wan_rule -p icmp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+        # マーク付きパケットをSNAT（POSTROUTINGに直接追加、map-mape経由のみ）
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p udp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p icmp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
     else
-        # ルール15: マーク無し（残り全部を拾う）
-        iptables -t nat -A postrouting_wan_rule -p tcp -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -A postrouting_wan_rule -p udp -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -A postrouting_wan_rule -p icmp -j SNAT --to $NET_ADDR:$portl-$portr
+        # ルール15: マーク無し（残り全部を拾う、map-mape経由のみ）
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p tcp -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p udp -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A POSTROUTING -o $TUNDEV -p icmp -j SNAT --to $NET_ADDR:$portl-$portr
     fi
 
     rule=$((rule + 1))
@@ -140,4 +133,4 @@ chmod +x /etc/hotplug.d/iface/99-mape-portset
 echo "設定完了。"
 
 ping -c 3 8.8.8.8
-iptables -t nat -L postrouting_wan_rule -n -v
+iptables -t nat -L POSTROUTING -n -v | grep "SNAT"
