@@ -11,11 +11,6 @@ opkg install iptables-mod-ipopt
 # firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
 
-# /etc/config/firewall から既存のMAP-E natルールを削除
-uci -q delete firewall.@nat[0]
-while uci -q delete firewall.@nat[0]; do :; done
-uci commit firewall
-
 # 新しいルール書き込み
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
