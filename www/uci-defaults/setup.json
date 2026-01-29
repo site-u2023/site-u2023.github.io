@@ -1159,7 +1159,7 @@
             {
               "type": "info-display",
               "id": "adguardhome-admin-url",
-              "description": "<http://$device_name:$agh_web_port>"
+              "description": "<http://{device_name}:{agh_web_port}>"
             },
             {
               "type": "field",
