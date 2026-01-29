@@ -1,64 +1,15 @@
 #!/bin/sh
 # MAP-Eポートセット拡張スクリプト (OpenWrt 19.07 用)
-# 全ポートセットを有効活用するための設定
+# ニチバン問題対策 - 全ポートセットを有効活用
 
 echo "=== MAP-Eポートセット拡張設定開始 ==="
 
 # firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
 
-# 必要モジュールの確認
-opkg update
-opkg install iptables-mod-ipopt
-
-# === ubus生成のMAP-E natルールを削除 ===
-echo "既存のubus生成MAP-Eルールを削除中..."
-
-# POSTROUTING の ubus:mape ルールを全削除（逆順で番号ズレ防止）
-iptables -t nat -L POSTROUTING --line-numbers -n | \
-    grep 'ubus:mape\[map\]' | \
-    awk '{print $1}' | \
-    sort -rn | \
-    while read linenum; do
-        iptables -t nat -D POSTROUTING $linenum && echo "  削除: POSTROUTING ルール#$linenum"
-    done
-
-echo "既存ルール削除完了"
-
-# === zone_wan_postrouting の MASQUERADE を削除 ===
-echo "zone_wan_postrouting の MASQUERADE を削除中..."
-iptables -t nat -D zone_wan_postrouting -j MASQUERADE 2>/dev/null && echo "  MASQUERADE削除成功"
-
-# === WAN zone の MASQUERADE を無効化 ===
-echo "WAN zone の MASQUERADE を無効化中..."
-
-# wan zone のインデックスを取得（通常は@zone[1]だが念のため検索）
-wan_zone_idx=$(uci show firewall | grep "\.name='wan'" | cut -d'[' -f2 | cut -d']' -f1 | head -n1)
-
-if [ -n "$wan_zone_idx" ]; then
-    uci set firewall.@zone[$wan_zone_idx].masq='0'
-    uci commit firewall
-    echo "  firewall.@zone[$wan_zone_idx].masq='0' に設定"
-else
-    echo "  警告: wan zone が見つかりませんでした"
-fi
-
 # === 新しいルール書き込み ===
 cat > /etc/firewall.user << 'EOF'
-# MAP-E Port Set Expansion (全ポートセット完全活用版)
-
-# ubus生成のMAP-E natルールを削除（冪等性確保）
-echo "ubus生成MAP-Eルールをクリア中..."
-iptables -t nat -L POSTROUTING --line-numbers -n | \
-    grep 'ubus:mape\[map\]' | \
-    awk '{print $1}' | \
-    sort -rn | \
-    while read linenum; do
-        iptables -t nat -D POSTROUTING $linenum 2>/dev/null
-    done
-
-# zone_wan_postrouting の MASQUERADE を削除（冪等性確保）
-iptables -t nat -D zone_wan_postrouting -j MASQUERADE 2>/dev/null
+# MAP-E Port Set Expansion (ニチバン対策完全版)
 
 # MAPパラメータ取得
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
@@ -73,53 +24,54 @@ UNITS=$((1 << PSIDLEN))
 PORT_SET_WIDTH=$((65536 / UNITS))
 PORTS_PER_RULE=$((PORT_SET_WIDTH / 16))
 
-# MAP-Eインターフェース自動検出
-TUNDEV=$(ip -o link show | grep 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n 1)
-TUNDEV=${TUNDEV:-map-mape}
+# インターフェース自動検出
+LANDEV=$(uci -q get network.lan.ifname || echo br-lan)
+WAN6DEV=$(ip -o link show | grep -E '@(eth|wan)' | grep -v 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n1)
+TUNDEV=$(ip -o link show | grep 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n1)
 
 # WANのIPv4アドレス取得
 . /lib/functions/network.sh
 network_flush_cache
 network_find_wan NET_IF
-network_get_ipaddr NET_ADDR "${NET_IF}"
+network_get_ipaddr IP4 "${NET_IF}"
 
-# 既存の拡張SNATルールをクリア（冪等性確保）
-iptables -t nat -S POSTROUTING | grep "SNAT.*$NET_ADDR" | sed 's/^-A/-D/' | while read rule; do
-    iptables -t nat $rule 2>/dev/null
-done
+# NAT テーブルクリア
+iptables -t nat -F PREROUTING
+iptables -t nat -F OUTPUT
+iptables -t nat -F POSTROUTING
 
-rule=0
-while [ $rule -le 15 ]; do
+# ポートセットごとにルール生成
+rule=1
+while [ $rule -le $UNITS ]; do
     mark=$((rule + 16))
-    pn=$rule
+    pn=$((rule - 1))
     portl=$((PSID * PORT_SET_WIDTH + OFFSET + rule * PORTS_PER_RULE))
     portr=$((portl + PORTS_PER_RULE - 1))
 
-    if [ $rule -le 14 ]; then
-        # ルール0-14: statisticで分散してマーク
-        iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-        iptables -t nat -A PREROUTING -p udp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-        iptables -t nat -A PREROUTING -p icmp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-        
-        iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-        iptables -t nat -A OUTPUT -p udp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-        iptables -t nat -A OUTPUT -p icmp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+    # TCP: statisticで分散してMARK
+    iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every $UNITS --packet $pn -j MARK --set-mark $mark
+    iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every $UNITS --packet $pn -j MARK --set-mark $mark
 
-        # マーク付きパケットをSNAT（zone_wan_postroutingより前に挿入）
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p icmp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p udp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-    else
-        # ルール15: マーク無し（残り全部を拾う、zone_wan_postroutingより前に挿入）
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p icmp -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p udp -j SNAT --to $NET_ADDR:$portl-$portr
-        iptables -t nat -I POSTROUTING 1 -o $TUNDEV -p tcp -j SNAT --to $NET_ADDR:$portl-$portr
-    fi
+    # POSTROUTING: プロトコル別にSNAT
+    iptables -t nat -A POSTROUTING -p icmp -m connlimit --connlimit-daddr --connlimit-upto $PORTS_PER_RULE --connlimit-mask 0 -o $TUNDEV -j SNAT --to $IP4:$portl-$portr
+    iptables -t nat -A POSTROUTING -p tcp -o $TUNDEV -m mark --mark $mark -j SNAT --to $IP4:$portl-$portr
+    iptables -t nat -A POSTROUTING -p udp -m connlimit --connlimit-daddr --connlimit-upto $PORTS_PER_RULE --connlimit-mask 0 -o $TUNDEV -j SNAT --to $IP4:$portl-$portr
 
     rule=$((rule + 1))
 done
 
-echo "MAP-Eポートセット拡張ルール適用完了（TCP/UDP/ICMP全16ポートセット活用）"
+sleep 5
+
+# zone チェーン復元
+iptables -t nat -A PREROUTING -i $LANDEV -j zone_lan_prerouting
+iptables -t nat -A PREROUTING -i $WAN6DEV -j zone_wan_prerouting
+iptables -t nat -A PREROUTING -i $TUNDEV -j zone_wan_prerouting
+
+iptables -t nat -A POSTROUTING -o $LANDEV -j zone_lan_postrouting
+iptables -t nat -A POSTROUTING -o $WAN6DEV -j zone_wan_postrouting
+iptables -t nat -A POSTROUTING -o $TUNDEV -j zone_wan_postrouting
+
+echo "MAP-Eポートセット拡張ルール適用完了（全${UNITS}ポートセット活用）"
 EOF
 
 # ホットプラグスクリプト作成
