@@ -8,10 +8,6 @@ echo "=== MAP-Eポートセット拡張設定開始 ==="
 opkg update
 opkg install iptables-mod-ipopt
 
-# legacymap無効化
-uci delete network.mape.legacymap 2>/dev/null
-uci commit network
-
 # firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
 
