@@ -2826,10 +2826,19 @@ function applyCustomTranslations(map) {
             content = content.replace(`{${varName}}`, value);
         }
         
-        if (el.tagName === 'A') {
-            el.href = content;
+        const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
+        if (linkMatch) {
+            const url = linkMatch[1];
+            const href = url.startsWith('http') ? url : `https://${url}`;
+            const textBefore = content.substring(0, linkMatch.index);
+            const textAfter = content.substring(linkMatch.index + linkMatch[0].length);
+            el.innerHTML = `${textBefore}<a href="${href}" target="_blank" class="linked-title">${url}</a>${textAfter}`;
         } else {
-            el.textContent = content;
+            if (el.tagName === 'A') {
+                el.href = content;
+            } else {
+                el.textContent = content;
+            }
         }
     });
     
