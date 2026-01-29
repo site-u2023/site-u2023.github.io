@@ -52,7 +52,7 @@
     "tr-flow-offloading-type": "Flow Offloading Type",
     "tr-software-flow-offloading": "Software Flow Offloading",
     "tr-hardware-flow-offloading": "Hardware Flow Offloading",
-    "tr-restore-backup-path": "Restore Backup Path",
+    "tr-restore-backup-path": "Rollback Backup Path",
     "tr-tui-restore-point-state-before-apply": "Restore to State Before This Configuration",
     
     "tr-wi-fi-configuration": "Wi-Fi Configuration",
