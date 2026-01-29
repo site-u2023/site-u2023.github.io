@@ -4787,10 +4787,10 @@ function checkDSLiteRule(ipv6, userAsn = null) {
    * @returns {number|null} PSID値
    */
   function calculatePsid(ipv6, rule) {
-    if (!ipv6 || !rule) return null;
+  	if (!ipv6 || !rule) return null;
 
-    const psidStartBit = rule.ipv6PrefixLength + rule.psIdOffset;
-    const psidEndBit = psidStartBit + rule.psidlen - 1;
+  	const psidStartBit = parseInt(rule.ipv6PrefixLength, 10) + parseInt(rule.psIdOffset, 10);
+  	const psidEndBit = psidStartBit + parseInt(rule.psidlen, 10) - 1;
 
     function normalizeIPv6(ip) {
       const parts = ip.split(':');
