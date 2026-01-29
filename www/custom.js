@@ -2784,7 +2784,11 @@ function applyCustomTranslations(map) {
             if ('placeholder' in e) {
                 e.placeholder = translationMap[tr];
             } else {
-                let content = translationMap[tr];
+                if (!e.hasAttribute('data-translation-template')) {
+                    e.setAttribute('data-translation-template', translationMap[tr]);
+                }
+                
+                let content = e.getAttribute('data-translation-template');
                 let hasHtml = false;
                 
                 const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
@@ -2794,6 +2798,7 @@ function applyCustomTranslations(map) {
                     content = content.replace(`$${varName}`, value);
                 }
                 
+                // リンク処理
                 const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
                 if (linkMatch) {
                     const url = linkMatch[1];
