@@ -1052,11 +1052,13 @@ function buildInfoDisplay(item) {
         div.style.textAlign = 'center';
     }
     
-    const el = buildLinkOrSpan(item, item.content || '');
-    div.appendChild(el);
-    
     if (item.description) {
-        addTooltip(div, item.description);
+        const el = buildLinkOrSpan(item, '');
+        el.setAttribute('data-url-template', item.description);
+        div.appendChild(el);
+    } else {
+        const el = buildLinkOrSpan(item, item.content || '');
+        div.appendChild(el);
     }
     
     const reqEl = buildRequirementsDisplay(item.requirements);
