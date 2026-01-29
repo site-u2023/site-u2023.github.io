@@ -2768,6 +2768,26 @@ function resolveVariableValue(varName) {
     return '';
 }
 
+function resolveTemplateVariables(template) {
+    if (!template || typeof template !== 'string') return template;
+    
+    let result = template;
+    const varMatches = template.matchAll(/\{([a-z_][a-z0-9_]*)\}/gi);
+    
+    for (const match of varMatches) {
+        const varName = match[1];
+        let value = resolveVariableValue(varName);
+        
+        if (value && value.includes('/')) {
+            value = value.split('/')[0];
+        }
+        
+        result = result.replace(`{${varName}}`, value || '');
+    }
+    
+    return result;
+}
+
 function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
@@ -2825,17 +2845,8 @@ function applyCustomTranslations(map) {
     }
     
     document.querySelectorAll('[data-url-template]').forEach(el => {
-        let content = el.getAttribute('data-url-template');
-        
-        const varMatches = content.matchAll(/\{([a-z_][a-z0-9_]*)\}/gi);
-        for (const match of varMatches) {
-            const varName = match[1];
-            let value = resolveVariableValue(varName);
-            if (value.includes('/')) {
-                value = value.split('/')[0];
-            }
-            content = content.replace(`{${varName}}`, value);
-        }
+        const template = el.getAttribute('data-url-template');
+        const content = resolveTemplateVariables(template);
         
         const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
         if (linkMatch) {
@@ -2853,9 +2864,6 @@ function applyCustomTranslations(map) {
             }
         }
     });
-    
-    console.log('Custom translations applied to DOM');
-}
 
 // ==================== 共通マルチインプット管理 ====================
 class MultiInputManager {
@@ -3833,8 +3841,9 @@ function addTooltip(element, descriptionSource) {
     element.addEventListener('mouseenter', async function() {
         if (isTooltipLoaded) return;
         
-        const description = await getPackageDescription(descriptionSource);
+        let description = await getPackageDescription(descriptionSource);
         if (description) {
+            description = resolveTemplateVariables(description);
             tooltip.textContent = description;
             isTooltipLoaded = true;
         } else {
