@@ -15,6 +15,10 @@ opkg install iptables-mod-ipopt
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
 
+# map-mapeインターフェースのifupイベントのみ処理
+[ "$ACTION" = "ifup" ] || exit 0
+[ "$INTERFACE" = "mape" ] || exit 0
+
 # MAPパラメータ取得
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
 PSID=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psid')
