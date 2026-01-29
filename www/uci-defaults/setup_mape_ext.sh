@@ -28,7 +28,7 @@ echo "既存ルール削除完了"
 # === WAN zone の MASQUERADE を無効化 ===
 echo "WAN zone の MASQUERADE を無効化中..."
 
-# wan zone のインデックスを取得
+# wan zone のインデックスを取得（通常は@zone[1]だが念のため検索）
 wan_zone_idx=$(uci show firewall | grep "\.name='wan'" | cut -d'[' -f2 | cut -d']' -f1 | head -n1)
 
 if [ -n "$wan_zone_idx" ]; then
@@ -43,7 +43,7 @@ fi
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
 
-# ubus生成のMAP-E natルールを削除
+# ubus生成のMAP-E natルールを削除（冪等性確保）
 echo "ubus生成MAP-Eルールをクリア中..."
 iptables -t nat -L POSTROUTING --line-numbers -n | \
     grep 'ubus:mape\[map\]' | \
@@ -75,6 +75,9 @@ network_flush_cache
 network_find_wan NET_IF
 network_get_ipaddr NET_ADDR "${NET_IF}"
 
+# 既存のpostrouting_wan_ruleチェーンをクリア
+iptables -t nat -F postrouting_wan_rule 2>/dev/null
+
 rule=0
 while [ $rule -le 15 ]; do
     mark=$((rule + 16))
@@ -86,12 +89,12 @@ while [ $rule -le 15 ]; do
     iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
     iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
 
-    # マークごとのSNAT（TCP）
-    iptables -t nat -A POSTROUTING -p tcp -o $TUNDEV -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+    # マークごとのSNAT（TCP） - postrouting_wan_ruleチェーンに追加
+    iptables -t nat -A postrouting_wan_rule -p tcp -o $TUNDEV -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
 
-    # ICMP/UDPは全ポートセットでSNAT
-    iptables -t nat -A POSTROUTING -p icmp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
-    iptables -t nat -A POSTROUTING -p udp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
+    # ICMP/UDPは全ポートセットでSNAT - postrouting_wan_ruleチェーンに追加
+    iptables -t nat -A postrouting_wan_rule -p icmp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
+    iptables -t nat -A postrouting_wan_rule -p udp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
 
     rule=$((rule + 1))
 done
@@ -124,5 +127,7 @@ chmod +x /etc/hotplug.d/iface/99-mape-portset
 # ファイアウォール再起動
 /etc/init.d/firewall restart
 
-echo "設定完了。動作確認をお願いします。"
-echo "確認コマンド例: iptables -t nat -L -v -n"
+echo "設定完了。"
+
+ping -c 3 8.8.8.8
+iptables -t nat -L postrouting_wan_rule -n -v
