@@ -39,10 +39,10 @@ network_get_ipaddr NET_ADDR "${NET_IF}"
 
 rule=0
 while [ $rule -le 15 ]; do
-    mark=$(expr $rule + 16)
+    mark=$((rule + 16))
     pn=$rule
-    portl=$(expr $PSID \* $PORT_SET_WIDTH + $rule \* $PORTS_PER_RULE)
-    portr=$(expr $portl + $PORTS_PER_RULE - 1)
+    portl=$((PSID * PORT_SET_WIDTH + rule * PORTS_PER_RULE))
+    portr=$((portl + PORTS_PER_RULE - 1))
 
     # TCPのみをstatisticで分散
     iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
@@ -55,7 +55,7 @@ while [ $rule -le 15 ]; do
     iptables -t nat -A POSTROUTING -p icmp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
     iptables -t nat -A POSTROUTING -p udp -o $TUNDEV -j SNAT --to $NET_ADDR:$portl-$portr
 
-    rule=$(expr $rule + 1)
+    rule=$((rule + 1))
 done
 EOF
 
