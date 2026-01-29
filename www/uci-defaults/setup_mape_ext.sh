@@ -34,7 +34,7 @@ network_find_wan NET_IF
 network_get_ipaddr NET_ADDR "${NET_IF}"
 
 echo "TUNDEV: $TUNDEV"
-echo "WAN IPv4: $WAN_IP4"
+echo "WAN IPv4: $NET_ADDR"
 
 # 5. firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
