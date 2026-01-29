@@ -6,7 +6,7 @@ echo "=== MAP-Eポートセット拡張設定開始 ==="
 
 # 1. 必要モジュールの確認
 opkg update
-opkg install kmod-ipt-ipopt
+opkg install iptables-mod-ipopt
 
 # 2. firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
