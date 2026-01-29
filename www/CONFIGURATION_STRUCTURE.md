@@ -1,271 +1,353 @@
 # 設定構造
 
-### メインメニュー
-<details><summary>1 基本設定</summary>
+### all in one scripts 2 
+<details><summary><b>1 基本設定</b></summary>
 
 - 言語 [auto]
 - 国コード [auto]
-- エリア [auto]
 - タイムゾーン [auto]
 - 地域名 [auto]
 - デバイス名
 - ルートパスワード
-- LAN IPv4アドレス [192.168.1.1]
-- LAN IPv6アドレス
+- LAN IPv4アドレス [192.168.1.1/24]
+- LAN IPv6アドレス [fd00::1/64]
 - SSHインターフェース [lan]
 - SSHポート [22]
-- フローオフロード方式 [無効]
-- バックアップ復元パス [/root/backup.tar.gz] [GUI版]
+- NTPドメイン [pool.ntp.org]
+- 診断用アドレス [one.one.one.one]
+- フローオフロード方式 [1 無効 /2 ソフトウェアフローオフロード /3 ハードウェアフローオフロード]
 
 </details>
 
-<details><summary>2 Wi-Fi設定</summary>
-
-- Wi-Fiモード [標準]
-  - 標準
+<details><summary><b>2 Wi-Fi設定</b></summary>
+  
+- Wi-Fiモード
+  - 1 標準
     - Wi-Fi SSID [OpenWrt]
     - Wi-Fiパスワード [password]
-  - Usteer
+  - 2 Usteer【DFS対策兼】
     - Wi-Fi SSID [OpenWrt]
     - Wi-Fiパスワード [password]
     - モビリティドメイン [4f57]
     - ミニマムSNR [30 15 5]
-  - 無効
+  - 3 3 MLO: Wi-Fi 7 (BE)【検証用】
+    - Wi-Fi SSID [OpenWrt]
+    - Wi-Fiパスワード [password]
+    - MLD ID [4f575254]
+  - 4 無効
+    - Wi-Fi無効
 
 </details>
 
-<details><summary>3 インターネット接続</summary>
+<details><summary><b>3 インターネット接続</b></summary>
 
-- 接続タイプ [自動]
-  - 自動
-    - MAP-E
-    - DS-Lite
-  - DHCP
-  - PPPoE
+- 自動検出
+   - 自動検出: MAP-E
+     - ISP:
+     - AS番号:
+     - IPv6 Address for Lookup
+     - GUA Prefix（検出時のみ）
+     - Peer Address (BR)
+     - IPv4 Address
+     - IPv4 Prefix
+     - IPv6 Prefix
+     - IPv6 Prefix Length
+     - EA-len
+     - PSID Length
+     - PSID Offset
+     - この自動検出された設定を使用しますか？ 
+   - 自動検出: DS-LITE
+     - ISP情報
+     - AFTRアドレス
+- 接続タイプ
+  - 1 自動
+    - 自動検出（ループ）
+  - 2 DHCP
+    - DHCP
+  - 3 PPPoE
     - ユーザー名
     - パスワード
-  - DS-Lite
+  - 4 DS-Lite
     - AFTRタイプ
-      - gw.transix.jp
+      - transix
         - エリア
           - East Japan
             - AFTRアドレス [2404:8e00::feed:100]
           - West Japan
             - AFTRアドレス [2404:8e01::feed:100]
-      - dgw.xpass.jp
+      - Xpass
         - AFTRアドレス [dgw.xpass.jp]
-      - dslite.v6connect.net
+      - v6connect
         - AFTRアドレス [dslite.v6connect.net]
-  - MAP-E
+  - 5 MAP-E
+    - IPv6アドレス（[自動取得]
     - アドレスタイプ [GUA/PD]
       - GUA
+        - GUA Prefix（自動生成）
       - PD
-    - GUAプレフィックス
-    - ピアアドレス
-    - EA長
+    - Peer Address (BR)
     - IPv4アドレス
-    - IPv4プレフィックス長
-    - IPv6プレフィックス
-    - IPv6プレフィックス長
-    - PSIDオフセット
+    - IPv4 Prefix長
+    - IPv6 Prefix
+    - IPv6 Prefix長
+    - EA-len
     - PSID長
-  - APモード
-    - IPアドレス [192.168.1.2]
-    - ゲートウェイ [192.168.1.1]
+    - PSID Offset
+  - 6 Dumb AP
+    - IPアドレス [192.168.1.2/24]
+    - ゲートウェイ [192.168.1.1/24]
+  - 7 無効
+    - インターネット無効
 
 </details>
 
-<details><summary>4 チューニング</summary>
+<details><summary><b>4 チューニング</b></summary>
 
 - 動的ネットワーク最適化 [自動]
-  - 自動
+  - 1 自動
+    - 自動最適化
+  - 2 手動
+    - TCPライトメモリ [4096 131072 8388608]
+    - コネクショントラッキング最大値 [131072]
+    - ネットワークデバイスバックログ [5000]
+    - ソケット最大接続数 [16384]
+    - TCP輻輳制御 [cubic/BBR]
+  - 3 無効
+    - 最適化無効 
+- DNSサーバー設定 [自動]
+  - 1 自動
+    - 自動最適化 
   - 手動
+    - キャッシュサイズ [10000]
+    - ネガティブキャッシュ [0]
   - 無効
-- 手動設定項目
-  - TCPリードメモリ [4096 131072 8388608]
-  - TCPライトメモリ [4096 131072 8388608]
-  - コネクショントラッキング最大値 [131072]
-  - ネットワークデバイスバックログ [5000]
-  - ソケット最大接続数 [16384]
-  - TCP輻輳制御 [cubic]
-- DNSサーバー最適化 [自動]
-  - 自動
-  - 手動
-  - 無効
-- DNS手動設定項目
-  - キャッシュサイズ [10000]
-  - ネガティブキャッシュ [0]
+    - 最適化無効 
 
 </details>
 
-<details><summary>5 パッケージインストール</summary>
+<details><summary><b>5 パッケージ</b></summary>
 
-- 基本システム機能
-  - luci-app-ttyd [✓ GUI版]
-  - openssh-sftp-server [✓ GUI版]
-  - luci-app-commands
-  - luci-app-filebrowser
-- システム管理
-  - luci-app-irqbalance
-- ネットワーク管理
-  - luci-app-sqm
-    - tc-full
-  - luci-app-statistics
-    - collectd
-    - rrdtool1
-  - luci-app-nlbwmon
-  - luci-app-vnstat2
-  - luci-app-wol
-  - luci-app-ddns
-  - luci-app-tor
-  - luci-app-mwan3
-    - mwan3
-- Wi-Fi管理
-  - luci-app-wifischedule
-  - luci-app-travelmate
-- モデム対応
-  - luci-proto-modemmanager
-    - kmod-usb-wdm
-    - kmod-usb-net-cdc-mbim
-    - kmod-usb-net-qmi-wwan
-    - uqmi
-    - mbim-utils
-    - screen
-- セキュリティツール
-  - fail2ban
-  - luci-app-banip
-  - luci-app-acme
-- システム監視
-  - luci-app-watchcat
-- ネットワーク診断ツール
-  - htop
-    - collectd
-    - collectd-mod-thermal
-  - mtr-nojson
-  - nmap
-  - tcpdump
-  - iperf3
-  - speedtest-netperf
-  - iftop
-  - bind-dig
-  - ethtool
-- システム管理ツール
-  - tmux
-  - nano-plus
-  - lsof
-  - rsync
-  - curl
-  - netdata
-- テーマとダッシュボード
-  - luci-mod-dashboard [✓ GUI版]
-  - luci-theme-openwrt
-    - luci-theme-material
-    - luci-theme-openwrt-2020
-- ユーティリティ
-  - luci-app-attendedsysupgrade [✓ GUI版]
-    - owut
-    - auc
-  - luci-proto-wireguard
-    - luci-app-wireguard
-    - wireguard-tools
-  - zerotier
-  - tailscale
-  - luci-app-dockerman
-    - docker-compose
-      - docker
-  - luci-app-openvpn
-  - luci-app-minidlna
-  - smartmontools
-  - logrotate
-  - whiptail
-    - libnewt
-- USBストレージ対応
-  - kmod-usb-storage-uas
-    - block-mount
-    - usbutils
-    - gdisk
-  - dosfstools
-    - kmod-fs-vfat
-  - e2fsprogs
-    - kmod-fs-ext4
+1 言語パッケージ
+- 動的言語選択UI
+  - LuCIインターフェースの言語を選択
+    - bg
+    - ca
+    - cs
+    - de
+    - el
+    - en
+    - es
+    - fr
+    - he
+    - hi
+    - hu
+    - it
+    - ja
+    - ko
+    - mr
+    - ms
+    - no
+    - pl
+    - pt-br
+    - ro
+    - ru
+    - sk
+    - sv
+    - tr
+    - uk
+    - vi
+    - zh-cn
+    - zhtw
+
+2 基本システム機能
+- luci-app-ttyd
+- openssh-sftp-server
+- luci-app-commands
+- luci-app-filebrowser
+
+3 システム管理
+- luci-app-attendedsysupgrade [GUI版で初期選択]
+- owut [✓]
+- auc
+- luci-app-irqbalance
+- logrotate
+
+4 システム監視
+- luci-app-watchcat
+- netdata
+- htop
+  - collectd
+  - collectd-mod-thermal
+- btop
+- prometheus-node-exporter-lua
+  - prometheus-node-exporter-lua-openwrt
+  - prometheus-node-exporter-lua-nat_traffic
+  - prometheus-node-exporter-lua-thermal
+
+5 ネットワーク管理
+- luci-app-sqm
+  - tc-full
+- luci-app-statistics
+  - collectd
+  - rrdtool1
+- luci-app-nlbwmon
+- luci-app-vnstat2
+- luci-app-wol
+- luci-app-ddns
+  - wget-ssl
+  - bind-host
+- luci-app-tor
+- luci-app-mwan3
+  - mwan3
+- luci-app-pbr
+
+6 Wi-Fi管理
+- luci-app-wifischedule
+- luci-app-travelmate
+
+7 モデム対応
+- luci-proto-modemmanager
+  - kmod-usb-wdm
+  - kmod-usb-net-cdc-mbim
+  - kmod-usb-net-qmi-wwan
+  - uqmi
+  - mbim-utils
+  - screen
+
+8 セキュリティツール
+- fail2ban
+- luci-app-banip
+- luci-app-acme
+
+9 ネットワーク診断ツール
+- mtr-nojson
+- nmap
+- tcpdump
+- iperf3
+- speedtest-netperf
+- iftop
+- bind-dig
+- ethtool
+
+10 システム管理ツール
+- tmux
+- nano-plus
+- lsof
+- rsync
+- curl
+
+11 テーマとダッシュボード
+- luci-mod-dashboard [GUI版]
+- luci-theme-openwrt
+  - luci-theme-material
+  - luci-theme-openwrt-2020
+
+12 ユーティリティ
+- luci-app-advanced-reboot
+- luci-proto-wireguard
+  - luci-app-wireguard
+  - wireguard-tools
+- zerotier
+- tailscale
+- luci-app-dockerman
+  - docker-compose
+  - docker
+- luci-app-openvpn
+- luci-app-minidlna
+- smartmontools
+- whiptail [✓]
+  - libnewt
+
+13 USBストレージ対応
+- kmod-usb-storage-uas
+  - block-mount
+  - usbutils
+  - gdisk
+- dosfstools
+  - kmod-fs-vfat
+- e2fsprogs
+  - kmod-fs-ext4
+- f2fs-tools
+  - kmod-fs-f2fs
+- exfat-fsck
+  - kmod-fs-exfat
+- ntfs-3g
+  - kmod-fs-ntfs3
+- hfsfsck
+  - kmod-fs-hfs
+  - kmod-fs-hfsplus
+- luci-app-hd-idle
+- kmod-usb-ledtrig-usbport
+- kmod-usb-net-rndis
+  - kmod-usb-net-cdc-ether
+- kmod-usb-gadget-eth
+  - kmod-usb-dwc2
+- resize2fs
+  - parted
   - f2fs-tools
-    - kmod-fs-f2fs
-  - exfat-fsck
-    - kmod-fs-exfat
-  - ntfs-3g
-    - kmod-fs-ntfs3
-  - hfsfsck
-    - kmod-fs-hfs
-    - kmod-fs-hfsplus
-  - luci-app-hd-idle
-  - kmod-usb-ledtrig-usbport
-  - kmod-usb-net-rndis
-    - kmod-usb-net-cdc-ether
-  - kmod-usb-gadget-eth
-    - kmod-usb-dwc2
-  - resize2fs
-    - parted
-    - f2fs-tools
-- ファイル共有
-  - luci-app-samba4
-    - wsdd2
-  - luci-app-transmission
-  - syncthing
-- DNS & プライバシー
-  - luci-app-adblock-fast
-    - japan-tofukko-filter
-  - luci-app-https-dns-proxy
-  - stubby
-  - luci-app-nextdns
 
-- Setup連動パッケージ（自動管理）
-  - map（MAP-E用）
-  - coreutils-sha1sum（MAP-E用）
-  - ds-lite（DS-Lite用）
-  - luci-app-usteer（Usteer Wi-Fi用）
+14 ファイル共有
+- luci-app-samba4
+  - wsdd2
+- luci-app-ksmbd
+  - ksmbd-avahi-service
+- luci-app-transmission
+- syncthing
+
+15 Webサーバーツール
+- apache
+  - htpasswd機能を含む
+
+16 暗号化DNS
+- luci-app-https-dns-proxy (DoH)
+- stubby (DoT)
 
 </details>
 
-<details><summary>6 カスタムフィードパッケージインストール</summary>
+<details><summary><b>6 カスタムフィード</b></summary>
 
-- [1 gSpotx2fリポジトリ](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-feeds/gSpotx2f.sh)
-- [2 jerrykukuリポジトリ](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-feeds/jerrykuku.sh)
+1 gSpotx2fリポジトリ 
 
-</details>
-
-<details><summary>7 カスタムスクリプト</summary>
-
-- [アドガードホーム](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/custom-script/adguardhome.sh)
-  - OpenWrtパッケージのインストール    
-  - 公式バイナリのインストール
-  - 削除
+2 jerrykukuリポジトリ
 
 </details>
 
-<details><summary>8 復元ポイント [TUI版]</summary>
+<details><summary><b>7 カスタムスクリプト</b></summary>
+
+1 AdGuard Home
+
+2 File Browser
+
+</details>
+
+<details><summary><b>8 ロールバック</b></summary>
 
 - バックアップ復元パス [/etc/aios2/backup]
-- 復元ポイント一覧
-  - backup-YYYYMMDD_HHMMSS.tar.gz
-  - 最大保存数: 10個
-  - 復元時に現在の設定を自動バックアップ
+- ロールバックポイント一覧
+  - === この設定適用前の状態に復元 ===
+  - ※ロールバックで復元されるのは設定のみです
+  - `YYYYMMDD HHMMSS`（最大保存数: 10個）
+  - =================================
+  - この時点の設定に戻しますか？
+  - ※現在の設定は、ロールバック前に自動的にバックアップされます。
 
 </details>
 
-<details><summary>9 設定確認と適用</summary>
+<details><summary><b>9 設定確認と適用</b></summary>
 
-- Select/Exit
-  - デバイス情報
-  - 設定パッケージ
-  - 設定カスタムパッケージ
-    - 1 gSpotx2fリポジトリ
-    - 2 jerrykukuリポジトリ
-  - 設定変数
-  - postinst.sh
-  - customfeeds.sh
-    - 1 gSpotx2fリポジトリ
-    - 2 jerrykukuリポジトリ
-  - setup.sh
-  - 設定適用
+- 🔵 パッケージ変更
+  - 削除対象（remove）
+  - インストール対象（install）
+  - 言語パッケージの自動追加
+  - 依存関係の自動解決
+- 🟢 カスタムフィード変更
+  - 削除対象（remove）
+  - インストール対象（install）
+- 🟡 設定変数
+  - SETUP_VARSの内容を全表示
+- 🔴 カスタムスクリプト
+  - インストール（install）
+  - 削除（remove）
+  - 設定変数（SELECTED_OPTION、CONFIRMED以外）
 
 </details>
