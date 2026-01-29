@@ -11,9 +11,47 @@ echo "=== MAP-Eポートセット拡張設定開始 ==="
 opkg update
 opkg install iptables-mod-ipopt
 
-# 新しいルール書き込み
+# === ubus生成のMAP-E natルールを削除 ===
+echo "既存のubus生成MAP-Eルールを削除中..."
+
+# POSTROUTING の ubus:mape ルールを全削除（逆順で番号ズレ防止）
+iptables -t nat -L POSTROUTING --line-numbers -n | \
+    grep 'ubus:mape\[map\]' | \
+    awk '{print $1}' | \
+    sort -rn | \
+    while read linenum; do
+        iptables -t nat -D POSTROUTING $linenum && echo "  削除: POSTROUTING ルール#$linenum"
+    done
+
+echo "既存ルール削除完了"
+
+# === WAN zone の MASQUERADE を無効化 ===
+echo "WAN zone の MASQUERADE を無効化中..."
+
+# wan zone のインデックスを取得
+wan_zone_idx=$(uci show firewall | grep "\.name='wan'" | cut -d'[' -f2 | cut -d']' -f1 | head -n1)
+
+if [ -n "$wan_zone_idx" ]; then
+    uci set firewall.@zone[$wan_zone_idx].masq='0'
+    uci commit firewall
+    echo "  firewall.@zone[$wan_zone_idx].masq='0' に設定"
+else
+    echo "  警告: wan zone が見つかりませんでした"
+fi
+
+# === 新しいルール書き込み ===
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
+
+# ubus生成のMAP-E natルールを削除
+echo "ubus生成MAP-Eルールをクリア中..."
+iptables -t nat -L POSTROUTING --line-numbers -n | \
+    grep 'ubus:mape\[map\]' | \
+    awk '{print $1}' | \
+    sort -rn | \
+    while read linenum; do
+        iptables -t nat -D POSTROUTING $linenum 2>/dev/null
+    done
 
 # MAPパラメータ取得
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
@@ -57,6 +95,8 @@ while [ $rule -le 15 ]; do
 
     rule=$((rule + 1))
 done
+
+echo "MAP-Eポートセット拡張ルール適用完了"
 EOF
 
 # ホットプラグスクリプト作成
@@ -81,7 +121,7 @@ EOF
 
 chmod +x /etc/hotplug.d/iface/99-mape-portset
 
-# 4. ファイアウォール再起動
+# ファイアウォール再起動
 /etc/init.d/firewall restart
 
 echo "設定完了。動作確認をお願いします。"
