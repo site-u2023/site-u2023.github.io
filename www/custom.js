@@ -1053,9 +1053,20 @@ function buildInfoDisplay(item) {
     }
     
     if (item.description) {
-        const el = buildLinkOrSpan(item, '');
-        el.setAttribute('data-url-template', item.description);
-        div.appendChild(el);
+        const isUrlTemplate = item.description.includes('{');
+        
+        if (isUrlTemplate) {
+            const linkEl = document.createElement('a');
+            linkEl.className = 'linked-title';
+            linkEl.target = '_blank';
+            linkEl.setAttribute('data-url-template', item.description);
+            linkEl.textContent = item.description;
+            div.appendChild(linkEl);
+        } else {
+            const el = buildLinkOrSpan(item, '');
+            el.setAttribute('data-url-template', item.description);
+            div.appendChild(el);
+        }
     } else {
         const el = buildLinkOrSpan(item, item.content || '');
         div.appendChild(el);
@@ -2836,6 +2847,7 @@ function applyCustomTranslations(map) {
         } else {
             if (el.tagName === 'A') {
                 el.href = content;
+                el.textContent = content;
             } else {
                 el.textContent = content;
             }
