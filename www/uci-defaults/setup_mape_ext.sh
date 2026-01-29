@@ -85,16 +85,26 @@ while [ $rule -le 15 ]; do
     portl=$((PSID * PORT_SET_WIDTH + rule * PORTS_PER_RULE))
     portr=$((portl + PORTS_PER_RULE - 1))
 
-    # TCPのみをstatisticで分散してマーク
-    iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
-    iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+    if [ $rule -le 14 ]; then
+        # ルール0-14: statisticで分散してマーク
+        iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+        iptables -t nat -A PREROUTING -p udp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+        iptables -t nat -A PREROUTING -p icmp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+        
+        iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+        iptables -t nat -A OUTPUT -p udp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
+        iptables -t nat -A OUTPUT -p icmp -m statistic --mode nth --every 16 --packet $pn -j MARK --set-mark $mark
 
-    # マークされたTCPをSNAT
-    iptables -t nat -A postrouting_wan_rule -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
-
-    # ICMP/UDPは全ポートセットでSNAT（マーク不要）
-    iptables -t nat -A postrouting_wan_rule -p icmp -j SNAT --to $NET_ADDR:$portl-$portr
-    iptables -t nat -A postrouting_wan_rule -p udp -j SNAT --to $NET_ADDR:$portl-$portr
+        # マーク付きパケットをSNAT
+        iptables -t nat -A postrouting_wan_rule -p tcp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A postrouting_wan_rule -p udp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A postrouting_wan_rule -p icmp -m mark --mark $mark -j SNAT --to $NET_ADDR:$portl-$portr
+    else
+        # ルール15: マーク無し（残り全部を拾う）
+        iptables -t nat -A postrouting_wan_rule -p tcp -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A postrouting_wan_rule -p udp -j SNAT --to $NET_ADDR:$portl-$portr
+        iptables -t nat -A postrouting_wan_rule -p icmp -j SNAT --to $NET_ADDR:$portl-$portr
+    fi
 
     rule=$((rule + 1))
 done
