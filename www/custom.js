@@ -1063,9 +1063,14 @@ function buildInfoDisplay(item) {
             linkEl.textContent = item.description;
             div.appendChild(linkEl);
         } else {
-            const el = buildLinkOrSpan(item, '');
-            el.setAttribute('data-url-template', item.description);
-            div.appendChild(el);
+            const span = document.createElement('span');
+            if (item.class) {
+                span.classList.add(item.class);
+                span.textContent = item.class;
+            } else {
+                span.textContent = item.description;
+            }
+            div.appendChild(span);
         }
     } else {
         const el = buildLinkOrSpan(item, item.content || '');
