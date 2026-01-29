@@ -4779,8 +4779,57 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     const country = (cf && cf.country) ? cf.country.toUpperCase() : '';
     return COUNTRY_TO_LANGUAGE[country] || 'en';
   }
-  
-// ========================================
+
+  /**
+   * IPv6アドレスからPSIDを計算
+   * @param {string} ipv6 - ユーザーのIPv6アドレス
+   * @param {object} rule - MAP-Eルール
+   * @returns {number|null} PSID値
+   */
+  function calculatePsid(ipv6, rule) {
+    if (!ipv6 || !rule) return null;
+
+    const psidStartBit = rule.ipv6PrefixLength + rule.psIdOffset;
+    const psidEndBit = psidStartBit + rule.psidlen - 1;
+
+    function normalizeIPv6(ip) {
+      const parts = ip.split(':');
+      const groups = [];
+      let zeroStart = -1;
+
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i] === '') {
+          if (zeroStart === -1) zeroStart = i;
+        } else {
+          groups.push(parseInt(parts[i], 16));
+        }
+      }
+
+      if (zeroStart !== -1) {
+        const zeros = 8 - groups.length;
+        const before = groups.slice(0, zeroStart);
+        const after = groups.slice(zeroStart);
+        return [...before, ...Array(zeros).fill(0), ...after];
+      }
+
+      return groups;
+    }
+
+    const groups = normalizeIPv6(ipv6);
+    if (groups.length !== 8) return null;
+
+    let binary = '';
+    for (let i = 0; i < 8; i++) {
+      binary += groups[i].toString(2).padStart(16, '0');
+    }
+
+    const psidBinary = binary.substring(psidStartBit, psidEndBit + 1);
+    const psid = parseInt(psidBinary, 2);
+
+    return psid;
+  }
+
+  // ========================================
   // メインハンドラー
   // ========================================
   
@@ -4865,6 +4914,9 @@ function checkDSLiteRule(ipv6, userAsn = null) {
           if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
             const guaPrefix = extractGUAPrefix(lookupIPv6);
             if (guaPrefix) mapRule.ipv6Prefix_gua = guaPrefix;
+
+			const psid = calculatePsid(lookupIPv6, mapRule);
+    		if (psid !== null) mapRule.psid = psid;
           }
         }
       }
