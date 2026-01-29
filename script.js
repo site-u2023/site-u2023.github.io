@@ -1010,27 +1010,22 @@ function updateSetupContent() {
     }
     
     // 説明文の更新
-    let explanationKey;
+    let explanationKey, linkKey;
     switch(selectedType) {
         case 'windows':
             explanationKey = 'windowsSetupExplanation';
+            linkKey = 'windowsSetupExplanationLink';
             break;
         case 'iphone':
             explanationKey = 'iphoneSetupExplanation';
+            linkKey = null;
             break;
         case 'android':
             explanationKey = 'androidSetupExplanation';
+            linkKey = null;
             break;
         default:
             explanationKey = 'windowsSetupExplanation';
-    }
-    
-    let linkKey;
-    switch(selectedType) {
-        case 'windows':
-            linkKey = 'windowsSetupExplanationLink';
-            break;
-        default:
             linkKey = null;
     }
     
