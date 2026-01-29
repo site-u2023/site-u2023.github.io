@@ -11,15 +11,6 @@ echo "=== MAP-Eポートセット拡張設定開始 ==="
 opkg update
 opkg install iptables-mod-ipopt
 
-# /etc/config/firewall から既存のMAP-E natルールを削除
-while uci -q show firewall.@nat[0] >/dev/null 2>&1; do
-    uci -q delete firewall.@nat[0]
-done
-uci commit firewall
-
-# ubusで生成されたMAP-E natルールを削除
-while iptables -t nat -D POSTROUTING -m comment --comment "ubus:mape" 2>/dev/null; do :; done
-
 # 新しいルール書き込み
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
