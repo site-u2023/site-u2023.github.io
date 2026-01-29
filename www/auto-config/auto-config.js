@@ -4789,48 +4789,31 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   function calculatePsid(ipv6, rule) {
     if (!ipv6 || !rule) return null;
 
-    const ipv6PrefixLength = parseInt(rule.ipv6PrefixLength, 10);
-    const psIdOffset = parseInt(rule.psIdOffset, 10);
     const psidlen = parseInt(rule.psidlen, 10);
+    if (isNaN(psidlen)) return null;
 
-    if (isNaN(ipv6PrefixLength) || isNaN(psIdOffset) || isNaN(psidlen)) return null;
-
-    const psidStartBit = ipv6PrefixLength + psIdOffset;
-    const psidEndBit = psidStartBit + psidlen - 1;
-
-    function normalizeIPv6(ip) {
-      const parts = ip.split(':');
-      const groups = [];
-      let zeroStart = -1;
-
-      for (let i = 0; i < parts.length; i++) {
-        if (parts[i] === '') {
-          if (zeroStart === -1) zeroStart = i;
-        } else {
-          groups.push(parseInt(parts[i], 16));
-        }
+    function parseIPv6ToHextets(ip) {
+      const field = ip.replace("::", ":0::").match(/([0-9a-f]{1,4}):([0-9a-f]{1,4}):([0-9a-f]{1,4}):([0-9a-f]{0,4})/i);
+      if (!field) return null;
+      
+      const hextet = [];
+      for (let i = 0; i < 4; i++) {
+        hextet[i] = field[i + 1] ? parseInt(field[i + 1], 16) : 0;
       }
-
-      if (zeroStart !== -1) {
-        const zeros = 8 - groups.length;
-        const before = groups.slice(0, zeroStart);
-        const after = groups.slice(zeroStart);
-        return [...before, ...Array(zeros).fill(0), ...after];
-      }
-
-      return groups;
+      return hextet;
     }
 
-    const groups = normalizeIPv6(ipv6);
-    if (groups.length !== 8) return null;
+    const hextet = parseIPv6ToHextets(ipv6);
+    if (!hextet) return null;
 
-    let binary = '';
-    for (let i = 0; i < 8; i++) {
-      binary += groups[i].toString(2).padStart(16, '0');
+    let psid;
+    if (psidlen === 8) {
+      psid = (hextet[3] & 0xff00) >> 8;
+    } else if (psidlen === 6) {
+      psid = (hextet[3] & 0x3f00) >> 8;
+    } else {
+      return null;
     }
-
-    const psidBinary = binary.substring(psidStartBit, psidEndBit + 1);
-    const psid = parseInt(psidBinary, 2);
 
     return psid;
   }
