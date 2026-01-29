@@ -4217,18 +4217,33 @@ function createPackageCheckbox(pkg, isChecked = false, isDependency = false) {
     
     if (pkg.description && pkg.description.includes('{lan_ip_address}')) {
         const urlLink = document.createElement('a');
-        urlLink.setAttribute('data-url-template', pkg.description);
+        urlLink.href = '#';
         urlLink.target = '_blank';
         urlLink.textContent = ' 🔗';
         urlLink.className = 'package-webui-link';
-        urlLink.onclick = (e) => e.stopPropagation();
+        urlLink.style.textDecoration = 'none';
+        urlLink.setAttribute('data-package-url-template', pkg.description);
+        
+        urlLink.onclick = (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const template = urlLink.getAttribute('data-package-url-template');
+            const resolvedUrl = resolveTemplateVariables(template);
+            window.open(resolvedUrl, '_blank');
+        };
+        
         label.appendChild(urlLink);
         
         const tooltip = document.createElement('div');
         tooltip.className = 'tooltip';
-        tooltip.setAttribute('data-url-template', pkg.description);
         label.style.position = 'relative';
         label.appendChild(tooltip);
+        
+        urlLink.addEventListener('mouseenter', () => {
+            const template = urlLink.getAttribute('data-package-url-template');
+            const resolvedUrl = resolveTemplateVariables(template);
+            tooltip.textContent = resolvedUrl;
+        });
         
     } else if (pkg.description) {
         addTooltip(label, pkg.description);
