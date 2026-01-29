@@ -16,7 +16,7 @@ PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')
 # units = 2^PSIDLEN
 UNITS=$((1 << PSIDLEN))
 
-# ポートセット幅（修正：動的に計算）
+# ポートセット幅（動的に計算）
 PORT_SET_WIDTH=$((65536 / UNITS))
 PORTS_PER_RULE=$((PORT_SET_WIDTH / 16))
 
@@ -53,7 +53,7 @@ rule=0
 while [ \$rule -le 15 ]; do
     mark=\$(expr \$rule + 16)
     pn=\$rule
-    portl=\$(expr \$rule \\* \$PORT_SET_WIDTH + \$PSID \\* \$PORTS_PER_RULE)
+    portl=\$(expr \$PSID \\* \$PORT_SET_WIDTH + \$rule \\* \$PORTS_PER_RULE)
     portr=\$(expr \$portl + \$PORTS_PER_RULE - 1)
 
     # TCPのみをstatisticで分散
