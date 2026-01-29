@@ -4,14 +4,18 @@
 
 echo "=== MAP-Eポートセット拡張設定開始 ==="
 
-# 1. 必要モジュールの確認
+# 必要モジュールの確認
 opkg update
 opkg install iptables-mod-ipopt
 
-# 2. firewall.user バックアップ
+# legacymap無効化
+uci delete network.mape.legacymap 2>/dev/null
+uci commit network
+
+# firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
 
-# 3. 新しいルール書き込み
+# 新しいルール書き込み
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
 
