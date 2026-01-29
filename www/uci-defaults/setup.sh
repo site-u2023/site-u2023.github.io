@@ -263,6 +263,7 @@ firewall_wan() {
     [ "$HASH" = "$HASH0" ] && {
         cp "$MAPSH" "$MAPSH".old
         sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
+        sed -i 's/json_add_boolean connlimit_ports 1/json_add_string connlimit_ports "1"/' "$MAPSH"
     }
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
