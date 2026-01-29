@@ -957,7 +957,7 @@ function updateTerminalExplanation() {
     
     // Windows の場合のみGitHubリンクを下段に追加
     if (selectedType === 'windows') {
-        explanationText.innerHTML = baseText + '<br><a href="https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg" target="_blank" rel="noopener" style="color: var(--link-color); text-decoration: underline;">https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg</a>';
+        explanationText.innerHTML = baseText + '<br><a href="https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg" target="_blank" rel="noopener">https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg</a>';
     } else {
         explanationText.textContent = baseText;
     }
