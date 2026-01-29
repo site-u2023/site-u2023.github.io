@@ -16,10 +16,12 @@ PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')
 # units = 2^PSIDLEN
 UNITS=$((1 << PSIDLEN))
 
-# ポートセット幅
-PORT_SET_WIDTH=16
+# ポートセット幅（修正：動的に計算）
+PORT_SET_WIDTH=$((65536 / UNITS))
+PORTS_PER_RULE=$((PORT_SET_WIDTH / 16))
 
 echo "PSID=$PSID, PSIDLEN=$PSIDLEN, UNITS=$UNITS"
+echo "PORT_SET_WIDTH=$PORT_SET_WIDTH, PORTS_PER_RULE=$PORTS_PER_RULE"
 
 # 3. LANのIPv4アドレス取得
 . /lib/functions/network.sh
@@ -44,18 +46,19 @@ network_get_ipaddr IP4 lan
 TUNDEV='$TUNDEV'
 PSID=$PSID
 PORT_SET_WIDTH=$PORT_SET_WIDTH
+PORTS_PER_RULE=$PORTS_PER_RULE
 UNITS=$UNITS
 
-rule=1
-while [ \$rule -le \$UNITS ]; do
+rule=0
+while [ \$rule -le 15 ]; do
     mark=\$(expr \$rule + 16)
-    pn=\$(expr \$rule - 1)
-    portl=\$(expr \$rule \\* 4096 + \$PSID \\* \$PORT_SET_WIDTH)
-    portr=\$(expr \$portl + \$(expr \$PORT_SET_WIDTH - 1))
+    pn=\$rule
+    portl=\$(expr \$rule \\* \$PORT_SET_WIDTH + \$PSID \\* \$PORTS_PER_RULE)
+    portr=\$(expr \$portl + \$PORTS_PER_RULE - 1)
 
     # TCPのみをstatisticで分散
-    iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every \$UNITS --packet \$pn -j MARK --set-mark \$mark
-    iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every \$UNITS --packet \$pn -j MARK --set-mark \$mark
+    iptables -t nat -A PREROUTING -p tcp -m statistic --mode nth --every 16 --packet \$pn -j MARK --set-mark \$mark
+    iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet \$pn -j MARK --set-mark \$mark
 
     # マークごとのSNAT（TCP）
     iptables -t nat -A POSTROUTING -p tcp -o \$TUNDEV -m mark --mark \$mark -j SNAT --to \$IP4:\$portl-\$portr
