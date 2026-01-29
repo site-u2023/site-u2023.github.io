@@ -113,6 +113,7 @@ const translations = {
         googlePlay: 'Google Playで開く',
         // Setup Explanations
         windowsSetupExplanation: 'プロトコルハンドラー登録 (レジストリファイルをダウンロードし、ダブルクリックしてインストールして下さい)',
+        windowsSetupExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg',
         iphoneSetupExplanation: 'Termiusインストール (App StoreからTermiusをインストールし、設定したIPアドレスでSSH接続して下さい)',
         androidSetupExplanation: 'JuiceSSHインストール (Google PlayからJuiceSSHをインストールし、設定したIPアドレスでSSH接続して下さい)',
         // Dialog Messages - 日本語追加
@@ -177,6 +178,7 @@ const translations = {
         // Setup Explanations
         setupExplanation: 'Explanation',
         windowsSetupExplanation: 'Protocol handler registration (Please download the registry file and double-click to install)',
+        windowsSetupExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg',
         iphoneSetupExplanation: 'Termius installation (Please install Termius from App Store and connect via SSH using your configured IP address)',
         androidSetupExplanation: 'JuiceSSH installation (Please install JuiceSSH from Google Play and connect via SSH using your configured IP address)',
         // Dialog Messages
@@ -1023,8 +1025,25 @@ function updateSetupContent() {
             explanationKey = 'windowsSetupExplanation';
     }
     
+    let linkKey;
+    switch(selectedType) {
+        case 'windows':
+            linkKey = 'windowsSetupExplanationLink';
+            break;
+        default:
+            linkKey = null;
+    }
+    
+    const text = getText(explanationKey);
+    const link = linkKey ? getText(linkKey) : null;
+    
     explanationText.setAttribute('data-i18n', explanationKey);
-    explanationText.textContent = getText(explanationKey);
+    
+    if (link) {
+        explanationText.innerHTML = `${text}<br><a href="${link}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">${link}</a>`;
+    } else {
+        explanationText.textContent = text;
+    }
 }
 
 // 初期設定リンクを開く機能
