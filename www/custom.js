@@ -2815,10 +2815,21 @@ function applyCustomTranslations(map) {
                     hasHtml = true;
                 }
                 
-                if (hasHtml) {
-                    e.innerHTML = content;
+                if (e.classList.contains('info-display') || e.classList.contains('info-link')) {
+                    const textNode = e.querySelector('span, a');
+                    if (textNode) {
+                        if (hasHtml) {
+                            textNode.innerHTML = content;
+                        } else {
+                            textNode.textContent = content;
+                        }
+                    }
                 } else {
-                    e.innerText = content;
+                    if (hasHtml) {
+                        e.innerHTML = content;
+                    } else {
+                        e.innerText = content;
+                    }
                 }
             }
         });
