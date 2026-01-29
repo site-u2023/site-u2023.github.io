@@ -15,6 +15,11 @@ opkg install iptables-mod-ipopt
 cat > /etc/firewall.user << 'EOF'
 # MAP-E Port Set Expansion (全ポートセット活用)
 
+# 既存のlegacymap自動生成ルールを削除
+iptables -t nat -S POSTROUTING | grep "ubus:mape" | sed 's/-A /-D /' | while read rule; do
+    iptables -t nat $rule 2>/dev/null
+done
+
 # MAPパラメータ取得
 API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
 PSID=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psid')
