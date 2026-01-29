@@ -1024,7 +1024,14 @@ function updateSetupContent() {
     }
     
     explanationText.setAttribute('data-i18n', explanationKey);
-    explanationText.textContent = getText(explanationKey);
+    const baseText = getText(explanationKey);
+    
+    // Windows の場合のみGitHubリンクを追加
+    if (selectedType === 'windows') {
+        explanationText.innerHTML = `${baseText}<br><a href="https://github.com/site-u2023/site-u2023.github.io/blob/main/file/sshcmd.reg" target="_blank" rel="noopener" style="color: var(--link-color); text-decoration: underline; font-size: 0.9em; margin-top: 8px; display: inline-block;">View file on GitHub</a>`;
+    } else {
+        explanationText.textContent = baseText;
+    }
 }
 
 // 初期設定リンクを開く機能
