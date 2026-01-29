@@ -66,11 +66,14 @@ cat > /etc/hotplug.d/iface/99-mape-portset << 'EOF'
 # ifupイベントのみ処理
 [ "$ACTION" = "ifup" ] || exit 0
 
-# MAP-Eインターフェース判定
-TUNDEV=$(ip -o link show | grep 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n 1)
-[ -z "$TUNDEV" ] && exit 0
-IFACE=$(echo $TUNDEV | sed 's/^map-//')
-[ "$INTERFACE" = "$IFACE" ] || exit 0
+# MAP-Eインターフェース判定（DEVICEが map- で始まる）
+case "$DEVICE" in
+    map-*)
+        ;;
+    *)
+        exit 0
+        ;;
+esac
 
 # /etc/firewall.user を実行
 . /etc/firewall.user
