@@ -59,6 +59,25 @@ while [ $rule -le 15 ]; do
 done
 EOF
 
+# ホットプラグスクリプト作成
+cat > /etc/hotplug.d/iface/99-mape-portset << 'EOF'
+#!/bin/sh
+
+# ifupイベントのみ処理
+[ "$ACTION" = "ifup" ] || exit 0
+
+# MAP-Eインターフェース判定
+TUNDEV=$(ip -o link show | grep 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n 1)
+[ -z "$TUNDEV" ] && exit 0
+IFACE=$(echo $TUNDEV | sed 's/^map-//')
+[ "$INTERFACE" = "$IFACE" ] || exit 0
+
+# /etc/firewall.user を実行
+. /etc/firewall.user
+EOF
+
+chmod +x /etc/hotplug.d/iface/99-mape-portset
+
 # 4. ファイアウォール再起動
 /etc/init.d/firewall restart
 
