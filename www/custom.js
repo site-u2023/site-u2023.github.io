@@ -1052,20 +1052,7 @@ function buildInfoDisplay(item) {
         div.style.textAlign = 'center';
     }
     
-    let content = item.content || '';
-    
-    if (content.includes('$')) {
-        div.setAttribute('data-content-template', content);
-    }
-    
-    const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
-    for (const match of varMatches) {
-        const varName = match[1];
-        const value = resolveVariableValue(varName);
-        content = content.replace(`$${varName}`, value);
-    }
-    
-    const el = buildLinkOrSpan({...item, content: content}, content);
+    const el = buildLinkOrSpan(item, item.content || '');
     div.appendChild(el);
     
     if (item.description) {
@@ -2834,38 +2821,6 @@ function applyCustomTranslations(map) {
             }
         });
     }
-    
-    document.querySelectorAll('.info-display, .info-link').forEach(el => {
-        const template = el.getAttribute('data-content-template');
-        if (!template) return;
-        
-        const textNode = el.querySelector('span, a');
-        if (textNode) {
-            let content = template;
-            let hasHtml = false;
-            
-            const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
-            for (const match of varMatches) {
-                const varName = match[1];
-                const value = resolveVariableValue(varName);
-                content = content.replace(`$${varName}`, value);
-            }
-            
-            const linkMatch = content.match(/<(https?:\/\/[^>]+|[^>]+\.[^>]+)>/);
-            if (linkMatch) {
-                const url = linkMatch[1];
-                const href = url.startsWith('http') ? url : `https://${url}`;
-                content = content.replace(`<${url}>`, `<a href="${href}" target="_blank" class="linked-title">${url}</a>`);
-                hasHtml = true;
-            }
-            
-            if (hasHtml) {
-                textNode.innerHTML = content;
-            } else {
-                textNode.textContent = content;
-            }
-        }
-    });
     
     document.querySelectorAll('[data-url-template]').forEach(el => {
         let content = el.getAttribute('data-url-template');
