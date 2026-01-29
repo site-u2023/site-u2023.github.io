@@ -23,16 +23,18 @@ PORTS_PER_RULE=$((PORT_SET_WIDTH / 16))
 echo "PSID=$PSID, PSIDLEN=$PSIDLEN, UNITS=$UNITS"
 echo "PORT_SET_WIDTH=$PORT_SET_WIDTH, PORTS_PER_RULE=$PORTS_PER_RULE"
 
-# 3. LANのIPv4アドレス取得
-. /lib/functions/network.sh
-network_get_ipaddr LAN_IP4 lan
-
-# 4. MAP-Eインターフェース自動検出
+# 3. MAP-Eインターフェース自動検出
 TUNDEV=$(ip -o link show | grep 'map-' | awk '{print $2}' | cut -d@ -f1 | head -n 1)
-TUNDEV=${TUNDEV:-mape6}
+TUNDEV=${TUNDEV:-map-mape}
 
-echo "LAN IPv4: $LAN_IP4"
+# 4. WANのIPv4アドレス取得
+. /lib/functions/network.sh
+network_flush_cache
+network_find_wan NET_IF
+network_get_ipaddr NET_ADDR "${NET_IF}"
+
 echo "TUNDEV: $TUNDEV"
+echo "WAN IPv4: $WAN_IP4"
 
 # 5. firewall.user バックアップ
 [ -f /etc/firewall.user ] && cp /etc/firewall.user /etc/firewall.user.bak_$(date +%Y%m%d)
@@ -41,8 +43,7 @@ echo "TUNDEV: $TUNDEV"
 cat > /etc/firewall.user << EOF
 # MAP-E Port Set Expansion (全ポートセット活用)
 
-. /lib/functions/network.sh
-network_get_ipaddr IP4 lan
+NET_ADDR="${NET_ADDR}"
 TUNDEV='$TUNDEV'
 PSID=$PSID
 PORT_SET_WIDTH=$PORT_SET_WIDTH
@@ -61,11 +62,11 @@ while [ \$rule -le 15 ]; do
     iptables -t nat -A OUTPUT -p tcp -m statistic --mode nth --every 16 --packet \$pn -j MARK --set-mark \$mark
 
     # マークごとのSNAT（TCP）
-    iptables -t nat -A POSTROUTING -p tcp -o \$TUNDEV -m mark --mark \$mark -j SNAT --to \$IP4:\$portl-\$portr
+    iptables -t nat -A POSTROUTING -p tcp -o \$TUNDEV -m mark --mark \$mark -j SNAT --to \$NET_ADDR:\$portl-\$portr
 
     # ICMP/UDPは全ポートセットでSNAT
-    iptables -t nat -A POSTROUTING -p icmp -o \$TUNDEV -j SNAT --to \$IP4:\$portl-\$portr
-    iptables -t nat -A POSTROUTING -p udp -o \$TUNDEV -j SNAT --to \$IP4:\$portl-\$portr
+    iptables -t nat -A POSTROUTING -p icmp -o \$TUNDEV -j SNAT --to \$NET_ADDR:\$portl-\$portr
+    iptables -t nat -A POSTROUTING -p udp -o \$TUNDEV -j SNAT --to \$NET_ADDR:\$portl-\$portr
 
     rule=\$(expr \$rule + 1)
 done
