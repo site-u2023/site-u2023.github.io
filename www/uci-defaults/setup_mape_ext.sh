@@ -47,7 +47,6 @@ API_RESPONSE="$(wget -qO- https://auto-config.site-u.workers.dev/)"
 PSID=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psid')
 PSIDLEN=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psidlen')
 OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')
-OFFSET=$(echo "$API_RESPONSE" | jsonfilter -e '@.mape.psIdOffset')
 
 # units = 2^PSIDLEN
 UNITS=$((1 << PSIDLEN))
@@ -134,3 +133,4 @@ echo "設定完了。"
 
 ping -c 3 8.8.8.8
 iptables -t nat -L POSTROUTING -n -v | grep "SNAT"
+EOF
