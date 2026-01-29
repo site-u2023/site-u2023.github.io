@@ -1053,6 +1053,11 @@ function buildInfoDisplay(item) {
     }
     
     let content = item.content || '';
+    
+    if (content.includes('$')) {
+        div.setAttribute('data-content-template', content);
+    }
+    
     const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
     for (const match of varMatches) {
         const varName = match[1];
@@ -2820,9 +2825,12 @@ function applyCustomTranslations(map) {
     }
     
     document.querySelectorAll('.info-display, .info-link').forEach(el => {
+        const template = el.getAttribute('data-content-template');
+        if (!template) return;
+        
         const textNode = el.querySelector('span, a');
         if (textNode) {
-            let content = textNode.textContent;
+            let content = template;
             let hasHtml = false;
             
             const varMatches = content.matchAll(/\$([a-z_][a-z0-9_]*)/gi);
