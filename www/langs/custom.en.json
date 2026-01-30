@@ -96,8 +96,8 @@
     "tr-dslite-notice1": "Note: Actual values may differ.",
 
     "tr-mape-lookup-ipv6": "Enter IPv6 prefix or address",
-    "tr-mape-type": "Address Type",
-    "tr-gua-prefix": "option ip6prefix (GUA)",
+    "tr-static-prefix": "Static Prefix",
+    "tr-static-prefix": "option ip6prefix (Static)",
     "tr-br": "option peeraddr (BR)",
     "tr-ipv4-prefix": "option ipaddr",
     "tr-ipv4-prefix-length": "option ip4prefixlen",
@@ -222,7 +222,7 @@
     "tr-tui-ui-installing": "Installing whiptail",
     "tr-tui-ui-install-success": "whiptail installed successfully!",
     "tr-tui-ui-install-failed": "Installation failed, using simple mode",
-    "tr-tui-gua": "GUA",
+    "tr-static": "Static",
     "tr-tui-pd": "PD",
 
     "tr-tui-isp-info": "ISP Information:",
