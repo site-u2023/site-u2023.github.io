@@ -26,7 +26,7 @@
       { "varName": "MAPE_PSIDLEN", "jsonPath": "mape.psidlen" },
       { "varName": "MAPE_PSID_OFFSET", "jsonPath": "mape.psIdOffset" },
       { "varName": "MAPE_CALC_OFFSET", "jsonPath": "mape.calculatedOffset" },
-      { "varName": "MAPE_GUA_PREFIX", "jsonPath": "mape.ipv6Prefix_gua" }
+      { "varName": "MAPE_STATIC_EFIX", "jsonPath": "mape.ipv6Prefix_static" }
     ],
     "dslite": [
       { "varName": "DSLITE_AFTR_TYPE", "jsonPath": "aftr.aftrType" },
@@ -74,7 +74,7 @@
         "default": "Note: Actual values may differ."
       },
       "fields": [
-        { "id": "mape-ip6prefix-gua", "label": "option ip6prefix_gua", "varName": "MAPE_GUA_PREFIX", "condition": "computeGuaPrefix" },
+        { "id": "mape-ip6prefix-static", "label": "option ip6prefix_static", "varName": "MAPE_STATIC_PREFIX", "condition": "computeGuaPrefix" },
         { "id": "mape-peeraddr", "label": "option peeraddr", "varName": "MAPE_BR" },
         { "id": "mape-ipaddr", "label": "option ipaddr", "varName": "MAPE_IPV4_PREFIX" },
         { "id": "mape-ip4prefixlen", "label": "option ip4prefixlen", "varName": "MAPE_IPV4_PREFIXLEN" },
