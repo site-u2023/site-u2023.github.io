@@ -1,6 +1,5 @@
-# 設定構造
+# all in one scripts 2
 
-### all in one scripts 2 
 <details><summary><b>1 基本設定</b></summary>
 
 - 言語 [auto]
