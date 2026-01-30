@@ -96,7 +96,6 @@
     "tr-dslite-notice1": "Note: Actual values may differ.",
 
     "tr-mape-lookup-ipv6": "Enter IPv6 prefix or address",
-    "tr-static-prefix": "Static Prefix",
     "tr-static-prefix": "option ip6prefix (Static)",
     "tr-br": "option peeraddr (BR)",
     "tr-ipv4-prefix": "option ipaddr",
@@ -223,7 +222,7 @@
     "tr-tui-ui-install-success": "whiptail installed successfully!",
     "tr-tui-ui-install-failed": "Installation failed, using simple mode",
     "tr-static": "Static",
-    "tr-tui-pd": "PD",
+    "tr-tui-pd": "Prefix Delegation",
 
     "tr-tui-isp-info": "ISP Information:",
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
