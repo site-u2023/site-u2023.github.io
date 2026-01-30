@@ -217,7 +217,7 @@ firewall_wan() {
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.tunlink="${MAPE6}"
-    [ -n "${ip6prefix_gua}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_gua}"
+    [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     MAPSH="/lib/netifd/proto/map.sh"
