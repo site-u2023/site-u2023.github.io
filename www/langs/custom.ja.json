@@ -97,7 +97,7 @@
 
     "tr-mape-lookup-ipv6": "IPv6 プレフィックスかアドレスを入力",
     "tr-mape-type": "アドレスタイプ",
-    "tr-gua-prefix": "option ip6prefix (GUA)",
+    "tr-static-prefix": "option ip6prefix (Static)",
     "tr-br": "option peeraddr (BR)",
     "tr-ipv4-prefix": "option ipaddr",
     "tr-ipv4-prefix-length": "option ip4prefixlen",
@@ -222,7 +222,7 @@
     "tr-tui-ui-installing": "whiptailをインストール中",
     "tr-tui-ui-install-success": "whiptailのインストールに成功しました！",
     "tr-tui-ui-install-failed": "インストール失敗、simpleモードを使用します",   
-    "tr-tui-gua": "GUA",
+    "tr-static": "Static",
     "tr-tui-pd": "PD",
 
     "tr-tui-isp-info": "ISP情報:",
