@@ -595,7 +595,7 @@ show_network_info() {
     
     if [ "$DETECTED_CONN_TYPE" = "mape" ] && [ -n "$MAPE_BR" ]; then
         echo "$(translate 'tr-mape'):"
-        [ -n "$MAPE_GUA_PREFIX" ] && echo "  option ip6prefix_gua $MAPE_GUA_PREFIX"
+        [ -n "$MAPE_STATIC_PREFIX" ] && echo "  option ip6prefix_static $MAPE_STATIC_PREFIX"
         echo "  option peeraddr $MAPE_BR"
         [ -n "$MAPE_IPV4_PREFIX" ] && echo "  option ipaddr $MAPE_IPV4_PREFIX"
         [ -n "$MAPE_IPV4_PREFIXLEN" ] && echo "  option ip4prefixlen $MAPE_IPV4_PREFIXLEN"
@@ -614,7 +614,7 @@ show_network_info() {
         set_var "connection_type" "auto"
         
         if [ "$DETECTED_CONN_TYPE" = "mape" ]; then
-            set_var "mape_gua_prefix" "$MAPE_GUA_PREFIX"
+            set_var "mape_static_prefix" "$MAPE_STATIC_PREFIX"
             set_var "mape_br" "$MAPE_BR"
             set_var "mape_ipv4_prefix" "$MAPE_IPV4_PREFIX"
             set_var "mape_ipv4_prefixlen" "$MAPE_IPV4_PREFIXLEN"
@@ -667,8 +667,8 @@ process_items() {
                 default=$(get_setup_item_default "$item_id")
                 
                 if [ "$item_id" = "mape-type" ]; then
-                    if [ -n "$MAPE_GUA_PREFIX" ]; then
-                        default="gua"
+                    if [ -n "$MAPE_STATIC_PREFIX" ]; then
+                        default="static"
                     else
                         default="pd"
                     fi
