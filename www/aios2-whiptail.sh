@@ -527,11 +527,11 @@ $(translate 'tr-tui-use-auto-config')"
             set_var "connection_type" "auto"
             set_var "connection_auto" "mape"
             
-            # GUA/PD 判定
-            local mape_gua_prefix
-            mape_gua_prefix=$(grep "^ip6prefix_gua=" "$field_cache" 2>/dev/null | cut -d= -f2)
-            if [ -n "$mape_gua_prefix" ]; then
-                set_var "mape_type" "gua"
+            # Static/PD 判定
+            local mape_static_prefix
+            mape_static_prefix=$(grep "^ip6prefix_static=" "$field_cache" 2>/dev/null | cut -d= -f2)
+            if [ -n "$mape_static_prefix" ]; then
+                set_var "mape_type" "static"
             else
                 set_var "mape_type" "pd"
             fi
@@ -754,8 +754,8 @@ process_items() {
             echo "[DEBUG] radio-group: var=$variable, default=$default" >> "$CONFIG_DIR/debug.log"
             
             if [ "$item_id" = "mape-type" ]; then
-                if [ -n "$MAPE_GUA_PREFIX" ]; then
-                    default="gua"
+                if [ -n "$MAPE_STATIC_PREFIX" ]; then
+                    default="static"
                 else
                     default="pd"
                 fi
