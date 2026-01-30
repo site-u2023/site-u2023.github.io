@@ -46,7 +46,7 @@
      - ISP:
      - AS番号:
      - IPv6 Address for Lookup
-     - GUA Prefix（検出時のみ）
+     - Static Prefix
      - Peer Address (BR)
      - IPv4 Address
      - IPv4 Prefix
@@ -82,17 +82,17 @@
   - 5 MAP-E
     - IPv6アドレス（[自動取得]
     - アドレスタイプ [GUA/PD]
-      - GUA
-        - GUA Prefix（自動生成）
-      - PD
-    - Peer Address (BR)
-    - IPv4アドレス
-    - IPv4 Prefix長
-    - IPv6 Prefix
-    - IPv6 Prefix長
-    - EA-len
-    - PSID長
-    - PSID Offset
+      - 固定 (Static) 
+        - option ip6prefix (Static)
+      - 委任 (PD) 
+    - option peeraddr (BR)
+    - option ipaddr
+    - option ip4prefixlen
+    - option ip6prefix
+    - option ip6prefixlen
+    - option ealen
+    - option psidlen
+    - option offset
   - 6 Dumb AP
     - IPアドレス [192.168.1.2/24]
     - ゲートウェイ [192.168.1.1/24]
