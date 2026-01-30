@@ -912,7 +912,7 @@ ext4ファイルシステムリサイズツール
 
 </details>
 
-### ファイル共有
+### ファイルサーバー
 
 Samba4ファイルサーバー
 <details>
@@ -979,7 +979,7 @@ Webサーバー
 
 </details>
 
-### DNS & プライバシー
+### 暗号化DNS
 
 HTTPS経由で暗号化DNS通信（DoH）
 <details>
@@ -995,88 +995,5 @@ TLS経由で暗号化DNS通信（DoT）
 <summary>stubby</summary>
 
 DNS over TLS
-
-</details>
-
-### Setup連動パッケージ
-
-MAP-Eプロトコル
-<details>
-<summary>map</summary>
-
-- IPv4 over IPv6カプセル化方式
-- OCNバーチャルコネクト、v6オプション、NURO光で使用
-- setup.jsonで connection_type: "mape" 選択時に自動インストール
-
-</details>
-
-SHA1チェックサムユーティリティ
-<details>
-<summary>coreutils-sha1sum</summary>
-
-- MAP-E用SHA1計算ツール
-
-</details>
-
-DS-Liteプロトコル
-<details>
-<summary>ds-lite</summary>
-
-- IPv4 over IPv6カプセル化方式
-- transix、v6プラス、クロスパス等で使用
-- setup.jsonで connection_type: "dslite" 選択時に自動インストール
-
-</details>
-
-Usteerバンドステアリング
-<details>
-<summary>luci-app-usteer</summary>
-
-- バンドステアリングとローミング最適化
-- 5GHz帯への自動誘導
-- 負荷分散機能
-- setup.jsonで wifi_mode: "usteer" 選択時に自動インストール
-
-</details>
-
-AdGuard Home DNS広告ブロック
-<details>
-<summary>adguardhome</summary>
-
-- DNS over HTTPS (DoH)対応の広告ブロッカー
-- Webインターフェースで詳細設定
-- ブロックリスト管理、統計表示
-- カスタムスクリプトで管理
-- 必須: メモリ 20MB / ストレージ 25MB
-- 推奨: メモリ 50MB / ストレージ 100MB
-
-</details>
-
-広告ブロック
-<details>
-<summary>luci-app-adblock-fast</summary>
-
-- DNS応答を書き換えて広告をブロック
-- dnsmasq/unboundベース
-- ブロックリストに対応
-- カスタムスクリプトで管理
-
-</details>
-
-NextDNS
-<details>
-<summary>luci-app-nextdns</summary>
-
-- クラウドベースDNSフィルタリング
-- カスタムスクリプトで管理
-
-</details>
-
-BBR TCP輻輳制御
-<details>
-<summary>kmod-tcp-bbr</summary>
-
-- Googleが開発したTCP輻輳制御アルゴリズム
-- ネットワークチューニングで選択時に自動インストール
 
 </details>
