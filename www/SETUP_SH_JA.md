@@ -498,23 +498,24 @@
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
+
+    # Static IPv6プレフィックス設定
+    [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     
-    # GUA（Global Unicast Address）プレフィックス設定
-    [ -n "${mape_gua_prefix}" ] && SET ${MAPE6}.ip6prefix="${mape_gua_prefix}"
-
     # map.shスクリプトのパッチ適用（日本IPv6 IPoE対応）
-    MAP_SH="/lib/netifd/proto/map.sh"
-    EXPECTED_HASH="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    ACTUAL_HASH=$(sha1sum "$MAP_SH" | awk '{print $1}')
-    
-    if [ "$ACTUAL_HASH" = "$EXPECTED_HASH" ]; then
-        cp "$MAP_SH" "$MAP_SH".bak
-        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAP_SH"
-        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAP_SH"
-        sed -i '137,158d' "$MAP_SH"
+    MAPSH="/lib/netifd/proto/map.sh"
+    HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
+    HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
+    HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
+    [ "$HASH" = "$HASH1" ] && {
+        SET ${MAPE}.legacymap='1'
+        cp "$MAPSH" "$MAPSH".old
+        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
+        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
+        sed -i '137,158d' "$MAPSH"
         sed -i '136a\
 \t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
 \t    json_add_object ""\
@@ -541,10 +542,15 @@
 \t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
 \t\tlocal counter=0\
 \t    for proto in icmp tcp udp; do\
-\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter packets 0 bytes 0 snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports }\
+\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
 \t    done\
-\t  fi' "$MAP_SH"
-    fi
+\t  fi' "$MAPSH"
+    }
+    [ "$HASH" = "$HASH0" ] && {
+        cp "$MAPSH" "$MAPSH".old
+        sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
+        sed -i 's/json_add_boolean connlimit_ports 1/json_add_string connlimit_ports "1"/' "$MAPSH"
+    }
 }
 ```
 
