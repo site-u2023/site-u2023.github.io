@@ -643,28 +643,28 @@
               "class": "tr-mape-type",
               "variable": "mape_type",
               "ui_variable": "ui_mape_type",
-              "default": "gua",
+              "default": "static",
               "options": [
-                {"value": "gua", "label": "GUA"},
+                {"value": "static", "label": "Static", "class": "tr-static"},
                 {"value": "pd", "label": "PD"}
               ],
               "exclusiveVars": {
-                "gua": ["ip6prefix_gua"],
+                "static": ["ip6prefix_static"],
                 "pd": []
               }
             },
             {
               "type": "field",
-              "id": "mape-gua-prefix",
-              "label": "GUA Prefix",
-              "class": "tr-gua-prefix",
+              "id": "mape-static-prefix",
+              "label": "Static Prefix",
+              "class": "tr-static-prefix",
               "fieldType": "text",
-              "variable": "ip6prefix_gua",
-              "placeholder": "optional for GUA",
-              "description": "IPv6 GUA prefix with /64 suffix",
-              "apiSource": "mape.ipv6Prefix_gua",
-              "computeFrom": "generateGuaPrefix",
-              "showWhen": {"mape_type": "gua"},
+              "variable": "ip6prefix_static",
+              "placeholder": "optional for Static",
+              "description": "IPv6 Static prefix with /64 suffix",
+              "apiSource": "mape.ipv6Prefix_static",
+              "computeFrom": "generateStaticPrefix",
+              "showWhen": {"mape_type": "static"},
               "fullWidth": "true"
             },
             {
