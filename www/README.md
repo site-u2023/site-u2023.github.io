@@ -305,17 +305,49 @@
 
 <details><summary><b>6 カスタムフィード</b></summary>
 
-1 gSpotx2fリポジトリ 
-
-2 jerrykukuリポジトリ
+- gSpotx2fリポジトリ
+  - luci-app-log-viewer
+  - luci-app-cpu-status
+  - luci-app-cpu-perf
+  - luci-app-temp-status
+  - luci-app-disks-info
+  - internet-detector
+  - luci-app-internet-detector
+  - internet-detector-mod-modem
+  - internet-detector-mod-email
+- jerrykukuリポジトリ
+  - luci-theme-argon
 
 </details>
 
 <details><summary><b>7 カスタムスクリプト</b></summary>
 
-1 AdGuard Home
-
-2 File Browser
+- アドガードホーム
+  - OpenWrtパッケージのインストール
+    - ユーザーID [admin]
+    - パスワード（8文字以上） [password]
+    - WEBポート [8000]
+    - DNSポート [53]
+    - LANアドレス [192.168.1.1]
+  - 公式バイナリのインストール
+    - ユーザーID [admin]
+    - パスワード（8文字以上） [password]
+    - WEBポート [8000]
+    - DNSポート [53]
+    - LANアドレス [192.168.1.1]
+  - ID及びパスワード変更
+    - ユーザーID
+    - パスワード（8文字以上）
+    - WEBポート
+  - アドガードホームをリムーブ
+- ファイルブラウザー
+  - ファイルブラウザーをインストール
+    - ユーザーID [admin]
+    - パスワード（8文字以上） [admin12345678]
+    - WEBポート [8080]
+    - 言語 [en]
+    - ルートパス [/]
+  - ファイルブラウザーをリムーブ
 
 </details>
 
