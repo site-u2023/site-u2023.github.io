@@ -340,12 +340,12 @@ const CustomUtils = {
         return full.map(seg => parseInt(seg, 16).toString(2).padStart(16, '0')).join('');
     },
     
-    generateGuaPrefixFromFullAddress: function(apiInfo) {
+    generateStaticPrefixFromFullAddress: function(apiInfo) {
         if (!apiInfo?.ipv6) return null;
         const ipv6 = apiInfo.ipv6.toLowerCase();
 
-        const guaPrefixCheck = state.config.constants.gua_validation.prefix_check;
-        const excludeCidrs = state.config.constants.gua_validation.exclude_cidrs;
+        const guaPrefixCheck = state.config.constants.static_validation.prefix_check;
+        const excludeCidrs = state.config.constants.static_validation.exclude_cidrs;
 
         if (!this.inCidr(ipv6, guaPrefixCheck)) return null;
 
@@ -360,12 +360,12 @@ const CustomUtils = {
         return null;
     },
 
-    setGuaPrefixIfAvailable: function() {
-        const guaPrefixField = document.getElementById('mape-gua-prefix');
-        if (!guaPrefixField || !state.apiInfo?.ipv6) return;
-        const guaPrefix = this.generateGuaPrefixFromFullAddress(state.apiInfo);
-        if (guaPrefix) {
-            UI.updateElement(guaPrefixField, { value: guaPrefix });
+    setStaticPrefixIfAvailable: function() {
+        const staticPrefixField = document.getElementById('mape-static-prefix');
+        if (!staticPrefixField || !state.apiInfo?.ipv6) return;
+        const staticPrefix = this.generateStaticPrefixFromFullAddress(state.apiInfo);
+        if (staticPrefix) {
+            UI.updateElement(staticPrefixField, { value: staticPrefix });
         }
     },
 
@@ -822,8 +822,8 @@ function buildField(field) {
                             }
                             
                             if (field.computeField) {
-                                const computed = field.computeField.method === 'generateGuaPrefix'
-                                    ? CustomUtils.generateGuaPrefixFromFullAddress({ ipv6: ipv6 })
+                                const computed = field.computeField.method === 'generateStaticPrefix'
+                                    ? CustomUtils.generateStaticPrefixFromFullAddress({ ipv6: ipv6 })
                                     : null;
                                 if (computed) {
                                     const targetField = document.getElementById(field.computeField.target);
@@ -2346,7 +2346,7 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
         
         displayIspInfo(apiInfo);
         updateAutoConnectionInfo(apiInfo);
-        CustomUtils.setGuaPrefixIfAvailable();
+        CustomUtils.setStaticPrefixIfAvailable();
         
         const connectionType = getFieldValue('input[name="connection_type"]:checked');
         if (connectionType === 'auto') {
@@ -2473,12 +2473,12 @@ function renderConnectionInfo(container, displayConfig) {
         displayConfig.fields.forEach(field => {
             let value = state.apiValues?.[field.varName];
             
-            if (field.condition === 'computeGuaPrefix') {
+            if (field.condition === 'computeStaticPrefix') {
                 if (!value) {
-                    value = CustomUtils.generateGuaPrefixFromFullAddress(state.apiInfo);
+                    value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
                     if (!value) {
-                        const guaField = document.querySelector('#mape-gua-prefix');
-                        if (guaField && guaField.value) value = guaField.value;
+                        const staticField = document.querySelector('#mape-static-prefix');
+                        if (staticField && staticField.value) value = staticField.value;
                     }
                     if (value) state.apiValues[field.varName] = value;
                 }
