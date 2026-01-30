@@ -923,15 +923,15 @@ detect_ipv6_type() {
     . /lib/functions/network.sh
     network_flush_cache
     
-    DETECTED_GUA=""
+    DETECTED_STATIC=""
     DETECTED_PD=""
-    MAPE_GUA_PREFIX=""
+    MAPE_STATIC_PREFIX=""
     
     for iface in $(ubus call network.interface dump | jsonfilter -e '@.interface[*].interface'); do
         ipv6_addr=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@["ipv6-address"][0].address' 2>/dev/null)
         case "$ipv6_addr" in
             fe80:*|FE80:*|"") ;;
-            2*|3*) [ -z "$DETECTED_GUA" ] && DETECTED_GUA="$ipv6_addr" ;;
+            2*|3*) [ -z "$DETECTED_STATIC" ] && DETECTED_STATIC="$ipv6_addr" ;;
         esac
         
         ipv6_prefix=$(ubus call network.interface."$iface" status 2>/dev/null | jsonfilter -e '@["ipv6-prefix"][0].address' 2>/dev/null)
@@ -940,7 +940,7 @@ detect_ipv6_type() {
         esac
     done
     
-    [ -n "$DETECTED_GUA" ] && MAPE_GUA_PREFIX="$(echo "$DETECTED_GUA" | cut -d: -f1-4)::/64"
+    [ -n "$DETECTED_STATIC" ] && MAPE_STATIC_PREFIX="$(echo "$DETECTED_STATIC" | cut -d: -f1-4)::/64"
 }
 
 # APIダウンロード
@@ -1160,7 +1160,7 @@ get_extended_device_info() {
         LAN_ADDR6=$(ip -6 -o addr show dev "$LAN_IF" scope global 2>/dev/null | grep -v temporary | awk 'NR==1{sub(/\/.*/,"",$4); print $4}')
     fi
     
-    echo "[DEBUG] MAPE_GUA_PREFIX='$MAPE_GUA_PREFIX'" >> "$CONFIG_DIR/debug.log"
+    echo "[DEBUG] MAPE_STATIC_PREFIX='$MAPE_STATIC_PREFIX'" >> "$CONFIG_DIR/debug.log"
 }
 
 # Device Info (JSON-driven)
