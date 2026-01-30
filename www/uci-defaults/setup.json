@@ -646,7 +646,7 @@
               "default": "static",
               "options": [
                 {"value": "static", "label": "Static", "class": "tr-static"},
-                {"value": "pd", "label": "PD"}
+                {"value": "pd", "label": "PD", "class": "tr-tui-pd"}
               ],
               "exclusiveVars": {
                 "static": ["ip6prefix_static"],
