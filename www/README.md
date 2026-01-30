@@ -1,4 +1,4 @@
-# all in one scripts 2
+# all in one scripts 2 解説
 
 <details><summary><b>1 基本設定</b></summary>
 
