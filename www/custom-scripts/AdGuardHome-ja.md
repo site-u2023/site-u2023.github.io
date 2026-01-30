@@ -146,7 +146,7 @@ YAMLテンプレートダウンロード元URLを指定する。デフォルト�
 
 ## YAML設定ファイル仕様（カスタム仕様）
 
-本スクリプトは `-n` オプションまたは `NO_YAML=1` が指定されていない場合、`https://site-u.pages.dev/www/custom-script/adguardhome.yaml` からテンプレートを取得し、以下のプレースホルダーを環境変数で置換して `AdGuardHome.yaml` を生成します。
+本スクリプトは `-n` オプションまたは `NO_YAML=1` が指定されていない場合、`https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml` からテンプレートを取得し、以下のプレースホルダーを環境変数で置換して `AdGuardHome.yaml` を生成します。
 
 | プレースホルダー         | 置換される値                   | デフォルト値 |
 |---------------------------|--------------------------------|--------------|
@@ -155,17 +155,12 @@ YAMLテンプレートダウンロード元URLを指定する。デフォルト�
 | `{{WEB_PORT}}`            | Web管理画面ポート              | `8000`       |
 | `{{DNS_PORT}}`            | DNSサービスポート              | `53`         |
 | `{{DNS_BACKUP_PORT}}`     | dnsmasqバックアップポート      | `54`         |
-
-### schema_version
-```yaml
-schema_version: 29
-```
+| `{{NTP_DOMAIN}}`          | NTPサーバードメイン            | （システム設定から取得、未設定時は行削除） |
 
 ### http セクション
 ```yaml
 http:
   address: 0.0.0.0:{{WEB_PORT}}
-  session_ttl: 720h
 ```
 
 ### users セクション
@@ -173,8 +168,6 @@ http:
 users:
   - name: {{AGH_USER}}
     password: {{AGH_PASS_HASH}}
-auth_attempts: 5
-block_auth_min: 15
 ```
 
 ### dns セクション
@@ -184,66 +177,46 @@ dns:
   refuse_any: true
   upstream_dns:
     - '# LAN domain intercept'
-    - '[/lan/]127.0.0.1:54'
+    - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
     - '# NTP service'
-    - '[/*.pool.ntp.org/]1.1.1.1'
-    - '[/*.pool.ntp.org/]1.0.0.1'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
+    - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
+    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - '# DNS-over-QUIC'
     - quic://unfiltered.adguard-dns.com
+    - quic://dns.nextdns.io
     - '# DNS-over-TLS'
-    - tls://1dot1dot1dot1.cloudflare-dns.com
+    - tls://unfiltered.adguard-dns.com
+    - tls://one.one.one.one
     - tls://dns.google
-    - tls://jp.tiar.app
-    - tls://dns.nextdns.io
+    - tls://dns10.quad9.net
     - '# DNS-over-HTTPS(coercion HTTP/3)'
-    - h3://cloudflare-dns.com/dns-query
-    - h3://dns.google/dns-query
-    - h3://unfiltered.adguard-dns.com/dns-query
-    - h3://jp.tiarap.org/dns-query
-    - h3://dns.nextdns.io
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+    - https://unfiltered.adguard-dns.com/dns-query
+    - https://dns.nextdns.io
+    - https://dns10.quad9.net/dns-query
 ```
 
 ### bootstrap_dns セクション
 ```yaml
   bootstrap_dns:
-    - 1.1.1.1
-    - 1.0.0.1
-    - 8.8.8.8
-    - 8.8.4.4
-    - 172.104.93.80
-    - 129.250.35.250
-    - 129.250.35.251
     - 2606:4700:4700::1111
-    - 2606:4700:4700::1001
     - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
-    - 2400:8902::f03c:91ff:feda:c514
-    - 2001:418:3ff::53
-    - 2001:418:3ff::1:53
+    - 1.1.1.1
+    - 8.8.8.8
 ```
 
 ### fallback_dns セクション
 ```yaml
   fallback_dns:
-    - https://cloudflare-dns.com/dns-query
+    - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
-    - https://jp.tiar.app/dns-query
-    - https://dns.nextdns.io
+    - https://dns.nextdns.io/dns-query
+    - https://dns10.quad9.net/dns-query
   upstream_mode: parallel
-  cache_size: 1048576
-  enable_dnssec: false
-  use_private_ptr_resolvers: true
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
-```
-
-### tls セクション
-```yaml
-tls:
-  enabled: false
 ```
 
 ### filters セクション
@@ -252,52 +225,79 @@ filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
-    id: 1
   - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
-    id: 2
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_10_Chinese/filter.txt
+    name: AdGuard Chinese filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt
+    name: AdGuard Dutch filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt
+    name: AdGuard French filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt
+    name: AdGuard German filter
   - enabled: false
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
     name: AdGuard Japanese filter
-    id: 1764215105
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt
+    name: AdGuard Russian filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt
+    name: AdGuard Spanish/Portuguese filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt
+    name: AdGuard Turkish filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt
+    name: AdGuard Ukrainian filter
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: 豆腐フィルタ
-    id: 1764215106
 ```
 
 ### user_rules セクション
 ```yaml
 user_rules:
-  - '# google analytecs'
+  - '# google analytics'
   - '@@||analytics.google.com'
   - '# 日本の主要サービス'
   - '@@||amazon.co.jp^$important'
   - '@@||rakuten.co.jp^$important'
   - '@@||yahoo.co.jp^$important'
+  - '@@||mercari.com^$important'
+  - '@@||zozo.jp^$important'
+  - '@@||cookpad.com^$important'
+  - '# SNS関連'
+  - '@@||twitter.com^$important'
+  - '@@||facebook.com^$important'
+  - '@@||instagram.com^$important'
+  - '@@||messenger.com^$important'
   - '# LINE関連'
   - '@@||line.me^$important'
   - '@@||line-scdn.net^$important'
-```
-
-### dhcp セクション
-```yaml
-dhcp:
-  enabled: false
-```
-
-### filtering セクション
-```yaml
-filtering:
-  parental_enabled: false
-  safebrowsing_enabled: false
+  - '# 動画・配信サービス'
+  - '@@||youtube.com^$important'
+  - '@@||nicovideo.jp^$important'
+  - '@@||abema.tv^$important'
+  - '# 汎用広告除外'
+  - '@@||google-analytics.com^$important'
+  - '@@||doubleclick.net^$important'
 ```
 
 ### log セクション
 ```yaml
 log:
   file: ""
+```
+
+### schema_version
+```yaml
+schema_version: 29
 ```
 
 ## 非対話モード実行
@@ -326,7 +326,7 @@ opkgまたはapkを自動検出する。いずれも存在しない場合はエ�
 
 ## バックアップと復元機能
 
-スクリプトはインストール時に`/etc/config/`配下の設定ファイルを自動的にバックアップする。バックアップ対象は`dhcp`、`firewall`の2ファイルであり、それぞれタイムスタンプ付きの`.backup.YYYYMMDDHHMMSS`拡張子を付与した形で保存される（例: `dhcp.backup.20231210132600`）。
+スクリプトはインストール時に`/etc/config/`配下の設定ファイルを自動的にバックアップする。バックアップ対象は`dhcp`、`firewall`の2ファイルであり、それぞれタイムスタンプ付きの`.adguard.bak`拡張子を付与した形で保存される（例: `dhcp.adguard.bak`）。
 
 削除時にバックアップファイルが存在する場合、自動的に元の設定へ復元される。バックアップファイルが存在しない場合は、dnsmasqの設定のみデフォルト値へリセットされる。バックアップファイルは削除処理の完了後に自動的に削除される。
 
@@ -376,7 +376,6 @@ opkgまたはapkを自動検出する。いずれも存在しない場合はエ�
 LANインターフェースに対して以下のDNSサーバーオプションが設定される。
 
 - IPv4: `dhcp_option='6,${NET_ADDR}'`
-- IPv6: `dhcp_option6="option6:dns=[${NET_ADDR6}]"`(検出された全てのグローバルアドレス)
 
 ### ファイアウォール設定
 
@@ -435,11 +434,19 @@ IPv4アドレスは`ip -4 -o addr show dev ${LAN} scope global`により取得�
 
 `INSTALL_MODE=openwrt`が指定された場合、パッケージマネージャーのリポジトリから`adguardhome`パッケージをインストールする。
 
-パッケージマネージャーがopkgの場合、`opkg list`により利用可能なバージョンを確認し、`opkg install --verbosity=0 adguardhome`を実行する。apkの場合は`apk search adguardhome`および`apk add adguardhome`を実行する。
+パッケージマネージャーがopkgの場合、`opkg list`により利用可能なバージョンを確認し、`opkg install adguardhome`を実行する。apkの場合は`apk search adguardhome`および`apk add adguardhome`を実行する。
 
 リポジトリにパッケージが存在しない場合、警告メッセージを表示して自動的に公式バイナリインストールへフォールバックする。ネットワークエラーが発生した場合はエラーメッセージを表示して終了する。
 
 OpenWrtパッケージインストール時のサービス名は`adguardhome`となる。
+
+## 設定ファイルパスの決定
+
+設定ファイルのパスはOSバージョンとパッケージマネージャーに基づいて自動決定される。
+
+- OpenWrt 24.10以降、SNAPSHOT、またはAPKベースのシステム: `/etc/adguardhome/adguardhome.yaml`
+- OpenWrt 23.05以前: `/etc/adguardhome.yaml`
+- 公式バイナリ: `/etc/AdGuardHome/AdGuardHome.yaml`
 
 ## YAML設定ファイルの生成タイミング
 
@@ -524,7 +531,7 @@ dnsmasq、odhcpd、firewallの再起動に失敗した場合、エラーメッ�
 
 Webインターフェースのポート番号は以下の優先順位で決定される。
 
-1. YAML設定ファイル(`/etc/AdGuardHome/AdGuardHome.yaml`または`/etc/adguardhome.yaml`)の`http:`セクションの`address:`フィールドから取得
+1. YAML設定ファイル(`/etc/AdGuardHome/AdGuardHome.yaml`、`/etc/adguardhome/adguardhome.yaml`、または`/etc/adguardhome.yaml`)の`http:`セクションの`address:`フィールドから取得
 2. 設定ファイルが存在しない場合、または読み取れない場合は環境変数`WEB_PORT`の値を使用
 
 ### IPv4アクセスURL
