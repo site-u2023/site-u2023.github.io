@@ -3,23 +3,11 @@
 ### システム情報記録
 
 <details>
-<summary>enable_notes</summary>
-
+<summary>system description</summary>
+    
 ```sh
-[ -n "${enable_notes}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    DATE="$(date '+%Y-%m-%d %H:%M')"  # 現在日時
-    
-    local SEC=system
-    # システムの説明フィールドにセットアップ日時を記録
-    SET @system[0].description="${DATE}"
-    # ノートフィールドに参照URLを記録
-    SET @system[0].notes="site-u.pages.dev"
-}
+SEC=system
+SET @system[0].description="$(date +%F\ %H:%M) siteU"
 ```
 
 </details>
@@ -27,54 +15,25 @@
 ### NTPサーバー設定
 
 <details>
-<summary>enable_ntp</summary>
-
+<summary>ntp</summary>
+    
 ```sh
-[ -n "${enable_ntp}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
-    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    NTPDOMAIN=".pool.ntp.org"          # NTPドメインサフィックス
-    COUNTRY="${country:-00}"           # 国コード（デフォルト00）
-    
-    local SEC=system
+[ -n "${ntp}" ] && {
+    SEC=system
+    DEL ntp
     SET ntp=timeserver
-    SET ntp.enabled='1'              # NTPクライアント有効化
-    SET ntp.enable_server='1'        # NTPサーバー機能有効化
-    SET ntp.interface='lan'          # LANインターフェースで提供
-    DEL ntp.server                   # 既存サーバーリストをクリア
-    
-    # 国コードを小文字に変換
-    COUNTRY_LC=$(printf '%s' "$COUNTRY" | tr 'A-Z' 'a-z')
-    
-    # 4つのNTPサーバーを追加（0〜1は国別、2〜3はグローバル）
-    for i in 0 1 2 3; do
-        s="${i:0:2}.${COUNTRY_LC}${NTPDOMAIN}"  # 例: 0.jp.pool.ntp.org
-        [ $i -gt 1 ] && s="${i}${NTPDOMAIN}"    # 2以降はグローバル
-        ADDLIST ntp.server="$s"
+    SET ntp.enabled='1'
+    SET ntp.enable_server='1'
+    SET ntp.interface='lan'
+    DEL ntp.server
+    # 国別NTPサーバー（0-1）
+    for i in 0 1; do
+        ADDLIST ntp.server="${i}.$(echo "${country}" | tr 'A-Z' 'a-z').${ntp}"
     done
-}
-```
-
-</details>
-
-### ログ設定
-
-<details>
-<summary>enable_log</summary>
-
-```sh
-[ -n "${enable_log}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=system
-    SET @system[0].log_size='32'      # ログバッファサイズ32KB
-    SET @system[0].conloglevel='1'    # コンソールログレベル（ALERT以上）
-    SET @system[0].cronloglevel='9'   # cronログレベル（全て記録しない）
+    # グローバルNTPサーバー（0-1）
+    for i in 0 1; do
+        ADDLIST ntp.server="${i}.${ntp}"
+    done
 }
 ```
 
@@ -83,21 +42,15 @@
 ### LuCI診断設定
 
 <details>
-<summary>enable_diag</summary>
-
+<summary>diag</summary>
+    
 ```sh
-[ -n "${enable_diag}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    DIAG="one.one.one.one"  # 診断用ドメイン（Cloudflare DNS）
-    
-    local SEC=luci
+[ -n "${diag}" ] && {
+    SEC=luci
     SET diag=diag
-    SET diag.ping="${DIAG}"   # ping診断先（1.1.1.1）
-    SET diag.route="${DIAG}"  # traceroute診断先
-    SET diag.dns="${DIAG}"    # DNS診断先
+    SET diag.ping="${diag}"   # ping診断先
+    SET diag.route="${diag}"  # traceroute診断先
+    SET diag.dns="${diag}"    # DNS診断先
 }
 ```
 
@@ -107,15 +60,9 @@
 
 <details>
 <summary>device_name</summary>
-
-```sh
-[ -n "${device_name}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
     
-    local SEC=system
-    SET @system[0].hostname="${device_name}" # ホスト名を設定
-}
+```sh
+[ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
 ```
 
 </details>
@@ -124,11 +71,9 @@
 
 <details>
 <summary>root_password</summary>
-
+    
 ```sh
-[ -n "${root_password}" ] && 
-    # パスワードを2回入力してpasswdコマンドに渡す
-    printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd >/dev/null
+[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd 2>&-
 ```
 
 </details>
@@ -137,15 +82,9 @@
 
 <details>
 <summary>lan_ip_address</summary>
-
-```sh
-[ -n "${lan_ip_address}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
     
-    local SEC=network
-    SET lan.ipaddr="${lan_ip_address}" # LAN側IPアドレスを設定
-}
+```sh
+[ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
 ```
 
 </details>
@@ -154,17 +93,9 @@
 
 <details>
 <summary>lan_ipv6_address</summary>
-
-```sh
-[ -n "${lan_ipv6_address}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
     
-    local SEC=network
-    DEL lan.ip6assign              # IPv6プレフィックス委譲を無効化
-    SET lan.ip6addr="${lan_ipv6_address}" # 固定IPv6アドレスを設定
-}
+```sh
+[ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
 ```
 
 </details>
@@ -173,31 +104,11 @@
 
 <details>
 <summary>language / timezone / zonename</summary>
-
+    
 ```sh
-[ -n "${language}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=system
-    SET @system[0].language="${language}" # UI言語設定
-}
-
-[ -n "${timezone}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=system
-    SET @system[0].timezone="${timezone}" # タイムゾーン（例: JST-9）
-}
-
-[ -n "${zonename}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=system
-    SET @system[0].zonename="${zonename}" # ゾーン名（例: Asia/Tokyo）
-}
+[ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
+[ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
+[ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
 ```
 
 </details>
@@ -206,23 +117,10 @@
 
 <details>
 <summary>ssh_interface / ssh_port</summary>
-
+    
 ```sh
-[ -n "${ssh_interface}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=dropbear
-    SET @dropbear[0].Interface="${ssh_interface}" # SSH待受インターフェース
-}
-
-[ -n "${ssh_port}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=dropbear
-    SET @dropbear[0].Port="${ssh_port}" # SSH待受ポート番号
-}
+[ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
+[ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
 ```
 
 </details>
@@ -230,18 +128,13 @@
 ### フローオフローディング設定
 
 <details>
-<summary>flow_offloading_type</summary>
-
-```sh
-[ -n "${flow_offloading_type}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+<summary>offload</summary>
     
-    local SEC=firewall
-    SET @defaults[0].flow_offloading='1' # ソフトウェアオフローディング有効化
-    # ハードウェアオフローディング対応の場合
-    [ "${flow_offloading_type}" = "hardware" ] && 
-        SET @defaults[0].flow_offloading_hw='1'
+```sh
+[ -n "${offload}" ] && {
+    SEC=firewall
+    SET @defaults[0].flow_offloading='1'
+    [ "${offload}" = "hardware" ] && SET @defaults[0].flow_offloading_hw='1'
 }
 ```
 
@@ -250,70 +143,97 @@
 ### Wi-Fi設定
 
 <details>
-<summary>wifi_mode (standard / usteer)</summary>
-
+<summary>wifi_mode (standard / usteer / mlo)</summary>
+    
 ```sh
-{ [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ]; } && 
+{ [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && 
 [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    COUNTRY="${country:-00}"  # 規制国コード
-    
-    local SEC=wireless
+    SEC=wireless
+    RESET
     wireless_cfg=$(uci -q show wireless)
+    link_id=0
+    radio_count=0
     
     # 全ての無線デバイスに対して設定
-    for radio in $(printf '%s\n' "${wireless_cfg}" | grep "wireless\.radio[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        SET ${radio}.disabled='0'           # 無線デバイスを有効化
-        SET ${radio}.country="${COUNTRY}"   # 規制国コード設定
+    for radio in $(printf '%s\n' "${wireless_cfg}" | grep -E "wireless\.(radio|wifi)[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        SET "${radio}".disabled='0'
+        SET ${radio}.country="${country}"
+        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
         
-        # 周波数帯に応じた設定
-        band=$(uci -q get wireless.${radio}.band)
-        set -- 30 15 5  # SNR閾値（2g=30, 5g=15, 6g=5）
+        # 周波数帯判定
+        band=$(GET wireless.${radio}.band 2>&-)
+        if [ -z "$band" ]; then
+            hwmode=$(GET wireless.${radio}.hwmode)
+            band_attr=$(GET wireless.${radio}.band 2>&-)
+            case "${hwmode}" in
+                11axg|11ng|11bg|11g) band='2g' ;;
+                11bea|11na|11ac|11a) [ "${band_attr}" = "3" ] && band='6g' || band='5g' ;;
+            esac
+        fi
+        
+        # SNR閾値とencryption設定
+        S="30 15 5"
+        set -- ${snr:-$S}
         case "${band}" in
-            2g) encryption='psk-mixed'; nasid_suffix='-2g'; band_snr=$1;;
-            5g) encryption='sae-mixed'; nasid_suffix='-5g'; band_snr=$2;;
-            6g) encryption='sae'; nasid_suffix='-6g'; band_snr=$3;;
-            *)  encryption='psk-mixed'; nasid_suffix=''; band_snr=20;;
+            2g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$1 ;;
+            5g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$2
+                [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1' ;;
+            6g) encryption='sae'; band_snr=$3 ;;
+            *) continue ;;
         esac
         
-        # SSID設定（usteerモードは統一、standardは帯域別）
+        # SSID設定
         suffix=${band:+-$band}
-        [ "${wifi_mode}" = "usteer" ] && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
+        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
         
         iface="default_${radio}"
-        [ -n "$(uci -q get wireless.${iface})" ] && {
+        [ -n "$(GET wireless.${iface})" ] && {
+            # 既存設定をクリア
+            for o in rnr background_radar; do DEL ${radio}.$o; done
+            for o in isolate ieee80211r mobility_domain ft_over_ds nasid ieee80211k ieee80211v usteer_min_snr ieee80211w mlo mld_id mlo_link_id; do DEL ${iface}.$o; done
+            
+            # 基本設定
             SET ${iface}.disabled='0'
             SET ${iface}.encryption="${encryption}"
             SET ${iface}.ssid="${ssid}"
             SET ${iface}.key="${wlan_password}"
+            [ "${encryption}" = "sae" ] && SET ${iface}.ieee80211w='2' || SET ${iface}.ieee80211w='0'
             
-            # usteerモード時は802.11r/k/v（高速ローミング）を有効化
-            [ "${wifi_mode}" = "usteer" ] && {
-                SET ${iface}.isolate='1'                              # クライアント間通信禁止
-                SET ${iface}.ocv='1'                                  # Operating Channel Validation
-                SET ${iface}.ieee80211r='1'                           # Fast BSS Transition
-                SET ${iface}.mobility_domain="${mobility_domain:-4f57}" # モビリティドメインID
-                SET ${iface}.ft_over_ds='1'                          # DS経由のFT
-                SET ${iface}.nasid="${wlan_ssid}${nasid_suffix}"     # NAS識別子
-                SET ${iface}.usteer_min_snr="${band_snr}"            # 最低SNR閾値
-                SET ${iface}.ieee80211k='1'                          # Radio Resource Management
-                SET ${iface}.ieee80211v='1'                          # BSS Transition Management
+            # usteer/mlo共通設定
+            { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
+                SET ${iface}.isolate='1'
+                
+                # usteer固有設定（802.11r/k/v）
+                [ "${wifi_mode}" = "usteer" ] && {
+                    SET ${iface}.ieee80211r='1'
+                    SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
+                    SET ${iface}.ft_over_ds='1'
+                    SET ${iface}.nasid="${wlan_ssid}-${radio_count}"
+                    SET ${iface}.ieee80211k='1'
+                    SET ${iface}.ieee80211v='1'
+                    SET ${iface}.usteer_min_snr="${band_snr}"
+                }
+            }
+            
+            # MLO固有設定
+            [ "${wifi_mode}" = "mlo" ] && {
+                SET ${iface}.ieee80211w='2'
+                SET ${iface}.mlo='1'
+                SET ${iface}.mld_id="${mld_id:-4f575254}"
+                SET ${iface}.mlo_link_id="${link_id}"
             }
         }
+        link_id=$((link_id + 1))
+        radio_count=$((radio_count + 1))
     done
     
-    # usteerデーモン設定（バンドステアリング・負荷分散）
+    # usteerデーモン設定
     [ "${wifi_mode}" = "usteer" ] && {
-        local SEC=usteer
-        SET @usteer[0].band_steering='1'           # 5GHz帯への誘導
-        SET @usteer[0].load_balancing='1'          # AP間負荷分散
-        SET @usteer[0].sta_block_timeout='300'     # ブロックタイムアウト（秒）
-        SET @usteer[0].min_snr='20'                # 最低SNR（全体）
-        SET @usteer[0].max_snr='80'                # 最大SNR
-        SET @usteer[0].signal_diff_threshold='10'  # AP切替の信号差閾値
+        SEC=usteer
+        SET @usteer[0].roam_scan_snr='-65'
+        SET @usteer[0].signal_diff_threshold='10'
+        SET @usteer[0].min_snr='20'
+        SET @usteer[0].max_snr='80'
     }
 }
 ```
@@ -324,17 +244,14 @@
 
 <details>
 <summary>connection_type: pppoe</summary>
-
+    
 ```sh
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=network
-    SET wan.proto='pppoe'                   # WANプロトコルをPPPoEに変更
-    SET wan.username="${pppoe_username}"    # プロバイダユーザー名
-    [ -n "${pppoe_password}" ] && 
-        SET wan.password="${pppoe_password}" # プロバイダパスワード
+    SEC=network
+    RESET
+    SET wan.proto='pppoe'
+    SET wan.username="${pppoe_username}"
+    [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
 }
 ```
 
@@ -344,76 +261,31 @@
 
 <details>
 <summary>connection_type: dslite</summary>
-
+    
 ```sh
-[ "${connection_type}" = "auto" -o "${connection_type}" = "dslite" ] && 
-[ -n "${dslite_aftr_address}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
-    DELLIST() { uci del_list "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    WAN="$(uci -q get network.wan.device || echo wan)"  # WANデバイス名
-    DSL="dsl"       # DS-Lite IPv4インターフェース
-    DSL6="dsl6"     # DS-Lite IPv6インターフェース
-    
-    # WAN接続を無効化する関数
-    disable_wan() {
-        local SEC=network
-        SET wan.disabled='1'   # WANインターフェース無効化
-        SET wan.auto='0'       # 自動起動無効化
-        SET wan6.disabled='1'  # WAN IPv6無効化
-        SET wan6.auto='0'
-    }
-    
-    # DHCPリレーモードを設定する関数
-    dhcp_relay() {
-        local SEC=dhcp
-        SET $1=dhcp
-        SET $1.interface="$1"
-        SET $1.master='1'           # マスターモード
-        SET $1.ra='relay'           # Router Advertisementリレー
-        SET $1.dhcpv6='relay'       # DHCPv6リレー
-        SET $1.ndp='relay'          # NDPリレー
-        SET $1.ignore='1'           # DHCPサーバー機能無効
-        SET lan.ra='relay'
-        SET lan.dhcpv6='relay'
-        SET lan.ndp='relay'
-        SET lan.force='1'
-    }
-    
-    # ファイアウォールのWANゾーンを変更する関数
-    firewall_wan() {
-        local SEC=firewall
-        DELLIST @zone[1].network="wan"   # 既存のwan/wan6を削除
-        DELLIST @zone[1].network="wan6"
-        ADDLIST @zone[1].network="$1"    # 新しいインターフェースを追加
-        ADDLIST @zone[1].network="$2"
-        SET @zone[1].masq='1'            # NATマスカレード有効化
-        SET @zone[1].mtu_fix='1'         # MTU自動調整有効化
-    }
-    
-    local SEC=network
-    disable_wan  # 既存WAN設定を無効化
+{ [ "${connection_type}" = "dslite" ] || { [ "${connection_type}" = "auto" ] && [ "${connection_auto}" = "dslite" ]; }; } && 
+[ -n "${dslite_peeraddr}" ] && {
+    SEC=network
+    RESET
+    disable_wan
     
     # IPv6接続（DHCPv6）
     SET ${DSL6}=interface
     SET ${DSL6}.proto='dhcpv6'
-    SET ${DSL6}.device="${WAN}"
-    SET ${DSL6}.reqaddress='try'    # IPv6アドレス取得試行
-    SET ${DSL6}.reqprefix='auto'    # プレフィックス委譲自動
+    SET ${DSL6}.ifname="${WAN}"
+    SET ${DSL6}.reqaddress='try'
+    SET ${DSL6}.reqprefix='auto'
     
     # DS-Liteトンネル（IPv4 over IPv6）
     SET ${DSL}=interface
     SET ${DSL}.proto='dslite'
-    SET ${DSL}.peeraddr="${dslite_aftr_address}" # AFTRアドレス（例: dgw.xpass.jp）
-    SET ${DSL}.tunlink="${DSL6}"                 # IPv6インターフェースをリンク
-    SET ${DSL}.mtu='1460'                        # MTU値（トンネルオーバーヘッド考慮）
-    SET ${DSL}.encaplimit='ignore'               # Encapsulation Limitを無視
+    SET ${DSL}.peeraddr="${dslite_peeraddr}"
+    SET ${DSL}.tunlink="${DSL6}"
+    SET ${DSL}.mtu='1460'
+    SET ${DSL}.encaplimit='ignore'
     
-    dhcp_relay "${DSL6}"           # DHCPリレー設定
-    firewall_wan "${DSL}" "${DSL6}" # ファイアウォールゾーン変更
+    dhcp_relay "${DSL6}"
+    firewall_wan "${DSL}" "${DSL6}"
 }
 ```
 
@@ -423,62 +295,18 @@
 
 <details>
 <summary>connection_type: mape</summary>
+    
 ```sh
-[ "${connection_type}" = "auto" -o "${connection_type}" = "mape" ] && 
-[ -n "${mape_br}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
-    DELLIST() { uci del_list "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    WAN="$(uci -q get network.wan.device || echo wan)"  # WANデバイス名
-    MAPE="mape"     # MAP-E IPv4インターフェース
-    MAPE6="mape6"   # MAP-E IPv6インターフェース
-    
-    # WAN接続を無効化する関数
-    disable_wan() {
-        local SEC=network
-        SET wan.disabled='1'
-        SET wan.auto='0'
-        SET wan6.disabled='1'
-        SET wan6.auto='0'
-    }
-    
-    # DHCPリレーモードを設定する関数
-    dhcp_relay() {
-        local SEC=dhcp
-        SET $1=dhcp
-        SET $1.interface="$1"
-        SET $1.master='1'
-        SET $1.ra='relay'
-        SET $1.dhcpv6='relay'
-        SET $1.ndp='relay'
-        SET $1.ignore='1'
-        SET lan.ra='relay'
-        SET lan.dhcpv6='relay'
-        SET lan.ndp='relay'
-        SET lan.force='1'
-    }
-    
-    # ファイアウォールのWANゾーンを変更する関数
-    firewall_wan() {
-        local SEC=firewall
-        DELLIST @zone[1].network="wan"
-        DELLIST @zone[1].network="wan6"
-        ADDLIST @zone[1].network="$1"
-        ADDLIST @zone[1].network="$2"
-        SET @zone[1].masq='1'
-        SET @zone[1].mtu_fix='1'
-    }
-    
-    local SEC=network
+{ [ "${connection_type}" = "mape" ] || { [ "${connection_type}" = "auto" ] && [ "${connection_auto}" = "mape" ]; }; } && 
+[ -n "${peeraddr}" ] && {
+    SEC=network
+    RESET
     disable_wan
     
-    # IPv6接続
+    # IPv6接続（DHCPv6）
     SET ${MAPE6}=interface
     SET ${MAPE6}.proto='dhcpv6'
-    SET ${MAPE6}.device="${WAN}"
+    SET ${MAPE6}.ifname="${WAN}"
     SET ${MAPE6}.reqaddress='try'
     SET ${MAPE6}.reqprefix='auto'
     
@@ -486,19 +314,18 @@
     SET ${MAPE}=interface
     SET ${MAPE}.proto='map'
     SET ${MAPE}.maptype='map-e'
-    SET ${MAPE}.peeraddr="${mape_br}"
-    SET ${MAPE}.ipaddr="${mape_ipv4_prefix}"
-    SET ${MAPE}.ip4prefixlen="${mape_ipv4_prefixlen}"
-    SET ${MAPE}.ip6prefix="${mape_ipv6_prefix}"
-    SET ${MAPE}.ip6prefixlen="${mape_ipv6_prefixlen}"
-    SET ${MAPE}.ealen="${mape_ealen}"
-    SET ${MAPE}.psidlen="${mape_psidlen}"
-    SET ${MAPE}.offset="${mape_psid_offset}"
+    SET ${MAPE}.peeraddr="${peeraddr}"
+    SET ${MAPE}.ipaddr="${ipaddr}"
+    SET ${MAPE}.ip4prefixlen="${ip4prefixlen}"
+    SET ${MAPE}.ip6prefix="${ip6prefix}"
+    SET ${MAPE}.ip6prefixlen="${ip6prefixlen}"
+    SET ${MAPE}.ealen="${ealen}"
+    SET ${MAPE}.psidlen="${psidlen}"
+    SET ${MAPE}.offset="${offset}"
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
-    SET ${MAPE}.legacymap='1'
     SET ${MAPE}.tunlink="${MAPE6}"
-
+    
     # Static IPv6プレフィックス設定
     [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     
@@ -510,6 +337,8 @@
     HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
     HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
     HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
+    
+    # HASH1の場合のパッチ
     [ "$HASH" = "$HASH1" ] && {
         SET ${MAPE}.legacymap='1'
         cp "$MAPSH" "$MAPSH".old
@@ -546,6 +375,8 @@
 \t    done\
 \t  fi' "$MAPSH"
     }
+    
+    # HASH0の場合のパッチ
     [ "$HASH" = "$HASH0" ] && {
         cp "$MAPSH" "$MAPSH".old
         sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
@@ -556,82 +387,44 @@
 
 </details>
 
-### Webターミナル有効化
-
-<details>
-<summary>enable_ttyd</summary>
-```sh
-[ -n "${enable_ttyd}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=ttyd
-    SET @ttyd[0].command='/bin/login -f root'
-}
-```
-
-</details>
-
 ### アクセスポイントモード設定
 
 <details>
 <summary>connection_type: ap</summary>
-
+    
 ```sh
-[ "${connection_type}" = "ap" ] && [ -n "${ap_ip_address}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+[ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
+    disable_wan
     
-    # このセクション固有の変数
-    LAN="$(uci -q get network.lan.device || echo lan)"  # LANデバイス名
-    AP="ap"         # アクセスポイントモードIPv4
-    AP6="ap6"       # アクセスポイントモードIPv6
-    
-    # WAN接続を無効化する関数
-    disable_wan() {
-        local SEC=network
-        SET wan.disabled='1'
-        SET wan.auto='0'
-        SET wan6.disabled='1'
-        SET wan6.auto='0'
-    }
-    
-    disable_wan  # WAN機能を無効化
-    
+    # ネットワーク設定
     {
-        local SEC=network
-        # LANブリッジに静的IPを設定
+        SEC=network
+        RESET
         SET ${AP}=interface
         SET ${AP}.proto='static'
-        SET ${AP}.device="${LAN}"
-        SET ${AP}.ipaddr="${ap_ip_address}"     # AP自身のIPアドレス
-        SET ${AP}.netmask='255.255.255.0'
-        SET ${AP}.gateway="${ap_gateway}"       # 上位ルーターのIP
-        SET ${AP}.dns="${ap_gateway}"           # DNS（上位ルーター）
-        SET ${AP}.delegate='0'                  # プレフィックス委譲無効
-        
-        # IPv6（DHCPv6クライアント）
+        SET ${AP}.ifname="${LAN}"
+        SET ${AP}.ipaddr="${ap_ipaddr}"
+        SET ${AP}.gateway="${gateway}"
+        SET ${AP}.dns="${gateway}"
+        SET ${AP}.delegate='0'
         SET ${AP6}=interface
         SET ${AP6}.proto='dhcpv6'
-        SET ${AP6}.device="@${AP}"              # AP interfaceをリンク
+        SET ${AP6}.ifname="@${AP}"
         SET ${AP6}.reqaddress='try'
-        SET ${AP6}.reqprefix='no'               # プレフィックス要求なし
+        SET ${AP6}.reqprefix='no'
     }
     
-    {
-        local SEC=wireless
-        # 全無線インターフェースをAPネットワークに接続
-        for r in 0 1 2; do
-            [ -n "$(uci -q get wireless.default_radio$r)" ] && 
-                SET default_radio$r.network="${AP}"
-        done
-    }
+    # 無線インターフェース設定
+    SEC=wireless
+    for r in 0 1 2; do
+        GET wireless.default_radio$r >&- && SET default_radio$r.network="${AP}"
+    done
     
-    # ルーター機能を完全無効化
-    [ -x /etc/init.d/odhcpd ] && /etc/init.d/odhcpd disable   # DHCPv6サーバー停止
-    [ -x /etc/init.d/dnsmasq ] && /etc/init.d/dnsmasq disable # DHCP/DNSサーバー停止
-    uci -q delete firewall                                     # ファイアウォール削除
-    [ -x /etc/init.d/firewall ] && /etc/init.d/firewall disable
+    # ルーター機能無効化
+    ${INIT}/odhcpd disable 2>&-
+    ${INIT}/dnsmasq disable 2>&-
+    uci -q delete firewall
+    ${INIT}/firewall disable 2>&-
 }
 ```
 
@@ -640,16 +433,12 @@
 ### Webターミナル有効化
 
 <details>
-<summary>enable_ttyd</summary>
-
-```sh
-[ -n "${enable_ttyd}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+<summary>ttyd</summary>
     
-    local SEC=ttyd
-    SET @ttyd[0].ipv6='1'                     # IPv6対応
-    SET @ttyd[0].command='/bin/login -f root' # rootで自動ログイン
+```sh
+[ -n "${ttyd}" ] && {
+    SEC=ttyd
+    SET @ttyd[0].command='/bin/login -f root'
 }
 ```
 
@@ -658,16 +447,29 @@
 ### IRQバランサー有効化
 
 <details>
-<summary>enable_irqbalance</summary>
-
-```sh
-[ -n "${enable_irqbalance}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
+<summary>irqbalance</summary>
     
-    local SEC=irqbalance
+```sh
+[ -n "${irqbalance}" ] && {
+    SEC=irqbalance
     SET irqbalance=irqbalance
-    SET irqbalance.enabled='1'  # IRQ割り込みを複数CPUに分散
+    SET irqbalance.enabled='1'
+}
+```
+
+</details>
+
+### Prometheus監視設定
+
+<details>
+<summary>prometheus</summary>
+    
+```sh
+[ -n "${prometheus}" ] && {
+    SEC=prometheus-node-exporter-lua
+    SET @prometheus-node-exporter-lua[0]=prometheus-node-exporter-lua
+    SET @prometheus-node-exporter-lua[0].listen_address='0.0.0.0'
+    SET @prometheus-node-exporter-lua[0].listen_port='9100'
 }
 ```
 
@@ -676,62 +478,26 @@
 ### Sambaファイル共有設定
 
 <details>
-<summary>enable_samba4</summary>
-
+<summary>samba4</summary>
+    
 ```sh
-[ -n "${enable_samba4}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    NAS="openwrt"   # Samba共有名
-    MNT="/mnt/sda"  # マウントポイント
-    
-    local SEC=samba4
+[ -n "${samba4}" ] && {
+    SEC=samba4
     SET @samba[0]=samba
-    SET @samba[0].workgroup='WORKGROUP'              # ワークグループ名
-    SET @samba[0].charset='UTF-8'                    # 文字コード
-    SET @samba[0].description='Samba on OpenWRT'     # サーバー説明
-    SET @samba[0].enable_extra_tuning='1'            # パフォーマンスチューニング有効
-    SET @samba[0].interface='lan'                    # LANインターフェースのみ
-    
-    # 共有設定
+    SET @samba[0].workgroup='WORKGROUP'
+    SET @samba[0].charset='UTF-8'
+    SET @samba[0].description='Samba on OpenWRT'
+    SET @samba[0].enable_extra_tuning='1'
+    SET @samba[0].interface='lan'
     SET sambashare=sambashare
-    SET sambashare.name="${NAS}"                     # 共有名（openwrt）
-    SET sambashare.path="${MNT}"                     # 共有パス（/mnt/sda）
-    SET sambashare.read_only='no'                    # 読み書き可能
-    SET sambashare.force_root='1'                    # 全アクセスをrootとして扱う
-    SET sambashare.guest_ok='yes'                    # ゲストアクセス許可
-    SET sambashare.inherit_owner='yes'               # 所有者継承
-    SET sambashare.create_mask='0777'                # ファイル作成時パーミッション
-    SET sambashare.dir_mask='0777'                   # ディレクトリ作成時パーミッション
-}
-```
-
-</details>
-
-### 広告ブロック設定
-
-<details>
-<summary>enable_adblock_fast</summary>
-
-```sh
-[ -n "${enable_adblock_fast}" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    local SEC=adblock-fast
-    SET config.enabled='1'              # 広告ブロック有効化
-    SET config.procd_trigger_wan6='1'   # IPv6接続時もトリガー
-    
-    # Tofukkoフィルター追加（日本向け広告ブロックリスト）
-    [ -n "${enable_tofukko_filter}" ] && {
-        local IDX=$(uci add "$SEC" file_url)
-        SET "$IDX".name='Tofukko Filter'
-        SET "$IDX".url='https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt'
-        SET "$IDX".action='block'
-        SET "$IDX".enabled='1'
-    }
+    SET sambashare.name="${NAS}"
+    SET sambashare.path="${MNT}"
+    SET sambashare.read_only='no'
+    SET sambashare.force_root='1'
+    SET sambashare.guest_ok='yes'
+    SET sambashare.inherit_owner='yes'
+    SET sambashare.create_mask='0777'
+    SET sambashare.dir_mask='0777'
 }
 ```
 
@@ -740,17 +506,13 @@
 ### USB RNDIS有効化
 
 <details>
-<summary>enable_usb_rndis</summary>
-
-```sh
-[ -n "${enable_usb_rndis}" ] && {
-    # UCI操作用ヘルパー関数
-    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+<summary>usb_rndis</summary>
     
-    # USBテザリング用カーネルモジュールを自動読込
+```sh
+[ -n "${usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
-    local SEC=network
-    ADDLIST @device[0].ports='usb0'  # LANブリッジにusb0を追加
+    SEC=network
+    ADDLIST @device[0].ports='usb0'
 }
 ```
 
@@ -759,21 +521,15 @@
 ### USB Gadgetモード設定
 
 <details>
-<summary>enable_usb_gadget</summary>
-
-```sh
-[ -n "${enable_usb_gadget}" ] && [ -d /boot ] && {
-    # UCI操作用ヘルパー関数
-    ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
+<summary>usb_gadget</summary>
     
-    # Raspberry Pi config.txtにdwc2オーバーレイ追加
+```sh
+[ -n "${usb_gadget}" ] && {
     echo 'dtoverlay=dwc2' >> /boot/config.txt
-    # カーネルコマンドラインにモジュール読込指定
     sed -i 's/\(root=[^ ]*\)/\1 modules-load=dwc2,g_ether/' /boot/cmdline.txt
-    # カーネルモジュール設定
     printf '%s\n%s\n' "dwc2" "g_ether" > /etc/modules.d/99-gadget
-    local SEC=network
-    ADDLIST @device[0].ports='usb0'  # LANブリッジにusb0を追加
+    SEC=network
+    ADDLIST @device[0].ports='usb0'
 }
 ```
 
@@ -783,24 +539,20 @@
 
 <details>
 <summary>net_optimizer</summary>
-
+    
 ```sh
-[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && {
-    # このセクション固有の変数
-    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
+[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
-    P=$(grep -c ^processor /proc/cpuinfo)  # CPU数を取得
+    P=$(grep -c ^processor /proc/cpuinfo)
     
     # autoモード：メモリ量に応じて自動調整
     [ "${net_optimizer}" = "auto" ] && {
-        if   [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-        elif [ $MEM -ge 1200 ]; then R=8388608  W=8388608  TR="4096 131072 8388608"  TW=$TR CT=131072 NB=2500 SC=8192
-        elif [ $MEM -ge  400 ]; then R=4194304  W=4194304  TR="4096 65536  4194304"  TW=$TR CT=65536  NB=1000 SC=4096
+        if [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ $MEM -ge 400 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
         fi
-        # CPU数に応じてバッファ調整
-        [ $P -gt 4 ] && { NB=$((NB*2));   SC=$((SC*2)); }
+        [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
         [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
-        CONG=cubic
     }
     
     # manualモード：ユーザー指定値を使用
@@ -812,12 +564,11 @@
         CT="${netopt_conntrack}"
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
-        CONG="${netopt_congestion:-cubic}"
     }
     
     # sysctl設定ファイルを生成・適用
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_congestion_control=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
-    "$R" "$W" "$TR" "$TW" "$CONG" "$CT" "$NB" "$SC" > "$C"
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 ```
@@ -827,48 +578,71 @@
 ### DNSキャッシュ最適化
 
 <details>
-<summary>enable_dnsmasq</summary>
-
+<summary>dnsmasq</summary>
+    
 ```sh
-[ -n "${enable_dnsmasq}" ] && [ "${enable_dnsmasq}" != "disabled" ] && {
-    # UCI操作用ヘルパー関数
-    SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-    
-    # このセクション固有の変数
-    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
-    
-    local SEC=dhcp
+[ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
+    SEC=dhcp
     
     # autoモード：メモリ量に応じてキャッシュサイズを自動設定
-    [ "${enable_dnsmasq}" = "auto" ] && {
-        if   [ "$MEM" -ge 800 ]; then CACHE_SIZE=10000
-        elif [ "$MEM" -ge 400 ]; then CACHE_SIZE=5000
-        elif [ "$MEM" -ge 200 ]; then CACHE_SIZE=1000
-        fi
-        NEG_CACHE=1  # ネガティブキャッシュ有効化
-    }
-    
-    # manualモード：ユーザー指定値を使用
-    [ "${enable_dnsmasq}" = "manual" ] && {
+    if [ "${dnsmasq}" = "auto" ] && [ "$MEM" -ge 200 ]; then
+        [ "$MEM" -ge 800 ] && CACHE_SIZE=10000 || \
+        [ "$MEM" -ge 400 ] && CACHE_SIZE=5000 || CACHE_SIZE=1000
+        NEG_CACHE=1
+    else
         CACHE_SIZE="${dnsmasq_cache}"
         NEG_CACHE="${dnsmasq_negcache}"
-    }
+    fi
     
-    SET @dnsmasq[0].cachesize="${CACHE_SIZE}"      # DNSキャッシュサイズ
-    SET @dnsmasq[0].nonegcache="${NEG_CACHE}"      # ネガティブキャッシュ（0=無効、1=有効）
+    SET @dnsmasq[0].cachesize="${CACHE_SIZE}"
+    SET @dnsmasq[0].nonegcache="${NEG_CACHE}"
 }
 ```
 
 </details>
 
-### SDカードリサイズ
+### 広告ブロック設定（Adblock Fast）
 
 <details>
-<summary>enable_sd_resize</summary>
-
+<summary>dns_adblock: adblock_fast</summary>
+    
 ```sh
-[ -n "${enable_sd_resize}" ] && {
-    :  # 将来の実装用プレースホルダー
+[ "${dns_adblock}" = "adblock_fast" ] && {
+    SEC=adblock-fast
+    SET config.enabled='1'
+    SET config.procd_trigger_wan6='1'
+    
+    # フィルターURL設定
+    [ -n "${filter_url}" ] && {
+        local IDX
+        IDX=$(uci add "$SEC" file_url)
+        SET "$IDX".url="${filter_url}"
+        SET "$IDX".action='block'
+        SET "$IDX".enabled='1'
+    }
+}
+```
+
+</details>
+
+### htpasswd抽出
+
+<details>
+<summary>dns_adblock: adguardhome (htpasswd準備)</summary>
+    
+```sh
+[ "${dns_adblock}" = "adguardhome" ] && {
+    if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
+        [ -z "${apache_keep}" ] && {
+            ${INIT}/apache stop 2>&- || true
+            LIBS="libapr*.so* libexpat.so* libuuid.so*"
+            [ -f /usr/bin/htpasswd ] && cp /usr/bin/htpasswd /tmp/
+            for L in $LIBS; do cp /usr/lib/$L /tmp/ 2>&-; done
+            apk del apache 2>&- || opkg remove apache 2>&-
+            mv /tmp/htpasswd /usr/bin/ 2>&-
+            for L in $LIBS; do mv /tmp/$L /usr/lib/ 2>&-; done
+        }
+    fi
 }
 ```
 
@@ -877,64 +651,88 @@
 ### AdGuard Home設定
 
 <details>
-<summary>enable_adguardhome</summary>
+<summary>dns_adblock: adguardhome</summary>
     
 ```sh
-[ -n "${enable_adguardhome}" ] && {
-    # このセクション固有の変数
-    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)  # 搭載メモリ(MB)
-    FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')        # 空きフラッシュ(MB)
-    AGH_MIN_MEM="${agh_min_memory:-20}"                        # 最小メモリ要件
-    AGH_MIN_FLASH="${agh_min_flash:-25}"                       # 最小ストレージ要件
+[ "${dns_adblock}" = "adguardhome" ] && {
+    lan_ip_address=$(GET network.lan.ipaddr | cut -d/ -f1)
     
-    # リソースチェック
-    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
-        # UCI操作用ヘルパー関数
-        SET() { uci -q set "${SEC}${SEC:+.}" "$@"; }
-        DEL() { uci -q delete "${SEC}${SEC:+.}" "$@"; }
-        ADDLIST() { uci add_list "${SEC}${SEC:+.}" "$@"; }
-        
-        agh_yaml="/etc/adguardhome.yaml"
-        cfg_dhcp="/etc/config/dhcp"
-        cfg_fw="/etc/config/firewall"
-        
-        # 設定ファイルのバックアップ
+    if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
+        mkdir -p "${agh_dir}"
+        cfg_dhcp="${CONF}/dhcp"
+        cfg_fw="${CONF}/firewall"
         cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
         cp "$cfg_fw" "$cfg_fw.adguard.bak"
         
         # htpasswdでパスワードハッシュ生成
-        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>/dev/null | cut -d: -f2)
-        [ -z "$agh_hash" ] && { echo "Error: Failed to generate password hash"; exit 1; }
+        agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>&- | cut -d: -f2)
         
-        # AdGuard Home設定ファイル生成（/etc/adguardhome.yaml）
-        # - Webポート: ${agh_web_port}
-        # - DNSポート: ${agh_dns_port}
-        # - DNSバックアップポート: ${agh_dns_backup_port} (LANドメイン用)
-        # - 上流DNS: DoH/DoT/DoQ対応プロバイダ
-        # - ローカルドメイン(.lan)はdnsmasqに転送
+        [ -n "$agh_hash" ] && {
+        # AdGuard Home設定ファイル生成
+        cat > "$agh_yaml" << 'AGHEOF'
+http:
+  address: 0.0.0.0:{{WEB_PORT}}
+users:
+  - name: {{AGH_USER}}
+    password: {{AGH_HASH}}
+dns:
+  port: {{DNS_PORT}}
+  refuse_any: true
+  upstream_dns:
+    - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
+    - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
+    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
+    - quic://unfiltered.adguard-dns.com
+    - tls://unfiltered.adguard-dns.com
+    - https://unfiltered.adguard-dns.com/dns-query
+  bootstrap_dns:
+    - 2606:4700:4700::1111
+    - 2001:4860:4860::8888
+    - 1.1.1.1
+    - 8.8.8.8
+  fallback_dns:
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+  upstream_mode: fastest_addr
+  local_ptr_upstreams:
+    - 127.0.0.1:{{DNS_BACKUP_PORT}}
+filters:
+  - enabled: true
+    url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
+    name: AdGuard DNS filter
+  - enabled: false
+    url: {{FILTER_URL}}
+    name: AdGuard language filter
+log:
+  file: ""
+schema_version: 29
+AGHEOF
         
-        # dnsmasqをDNS転送モードに変更
-        local SEC=dhcp
-        SET @dnsmasq[0].noresolv='1'                    # resolv.conf無視
-        SET @dnsmasq[0].cachesize='0'                   # キャッシュ無効化
-        SET @dnsmasq[0].rebind_protection='0'           # リバインド保護無効
-        SET @dnsmasq[0].port="${agh_dns_backup_port}"   # バックアップポート待受
-        SET @dnsmasq[0].domain='lan'                    # LANドメイン設定
-        SET @dnsmasq[0].local='/lan/'                   # ローカルドメイン処理
-        SET @dnsmasq[0].expandhosts='1'                 # ホスト名展開
-        DEL @dnsmasq[0].server                          # 既存DNS削除
+        # プレースホルダー置換
+        sed -i "s|{{AGH_USER}}|${agh_user}|g;s|{{AGH_HASH}}|${agh_hash}|g;s|{{WEB_PORT}}|${agh_web_port}|g;s|{{DNS_PORT}}|${agh_dns_port}|g;s|{{DNS_BACKUP_PORT}}|${agh_dns_backup_port}|g;s|{{FILTER_URL}}|${filter_url}|g" "$agh_yaml"
+        sed -i "s|{{NTP_DOMAIN}}|$(GET system.ntp.server | head -n1 | awk -F. '{if (NF==4) print $0; else if (NF>=3) print $(NF-2)"."$(NF-1)"."$NF; else if (NF==2) print $(NF-1)"."$NF; else print $0}' 2>&-)|g" "$agh_yaml"
+        chmod 600 "$agh_yaml"
+        
+        # dnsmasq設定
+        SEC=dhcp
+        SET @dnsmasq[0].noresolv='1'
+        SET @dnsmasq[0].cachesize='0'
+        SET @dnsmasq[0].rebind_protection='0'
+        SET @dnsmasq[0].port="${agh_dns_backup_port}"
+        SET @dnsmasq[0].domain='lan'
+        SET @dnsmasq[0].local='/lan/'
+        SET @dnsmasq[0].expandhosts='1'
+        DEL @dnsmasq[0].server
         ADDLIST @dnsmasq[0].server="127.0.0.1#${agh_dns_port}"
         ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
-        
-        # DHCPでLAN IPアドレスをDNSサーバーとして配布
         DEL lan.dhcp_option
-        [ -n "${lan_ip_address}" ] && ADDLIST lan.dhcp_option="6,${lan_ip_address}"
         DEL lan.dhcp_option6
+        ADDLIST lan.dhcp_option="6,${lan_ip_address}"
         
-        # ファイアウォールにDNSリダイレクトルール追加
-        local SEC=firewall
+        # ファイアウォール設定
+        SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
-        DEL "${agh_rule}" 2>/dev/null || true
+        DEL "${agh_rule}" 2>&-
         SET ${agh_rule}=redirect
         SET ${agh_rule}.name="AdGuard Home DNS Redirect"
         SET ${agh_rule}.family='any'
@@ -945,57 +743,12 @@
         SET ${agh_rule}.src_dport="${agh_dns_port}"
         SET ${agh_rule}.dest_port="${agh_dns_port}"
         SET ${agh_rule}.target='DNAT'
-    else
-        # リソース不足の場合はサービス停止
-        /etc/init.d/adguardhome stop 2>/dev/null
-        /etc/init.d/adguardhome disable 2>/dev/null
-    fi
-}
-```
-
-</details>
-
-### htpasswd抽出
-
-<details>
-<summary>enable_htpasswd</summary>
-
-```sh
-[ -n "${enable_htpasswd}" ] && {
-    # このセクション固有の変数
-    MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
-    FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
-    AGH_MIN_MEM="${agh_min_memory:-20}"
-    AGH_MIN_FLASH="${agh_min_flash:-25}"
-    PACKAGE_MANAGER="$(command -v apk >/dev/null 2>&1 && echo apk || echo opkg)"
-    
-    # AdGuard Home用にリソースが十分な場合のみ実行
-    if [ "$MEM" -ge "$AGH_MIN_MEM" ] && [ "$FLASH" -ge "$AGH_MIN_FLASH" ]; then
-        # apache_keep変数が設定されていない場合のみhtpasswdを抽出
-        [ -z "${apache_keep}" ] && {
-            htpasswd_bin="/usr/bin/htpasswd"
-            htpasswd_libs="/usr/lib/libapr*.so* /usr/lib/libexpat.so* /usr/lib/libuuid.so*"
-            tmp_libs="/tmp/libapr*.so* /tmp/libexpat.so* /tmp/libuuid.so*"
-            
-            # htpasswdバイナリと依存ライブラリを一時退避
-            [ -f "$htpasswd_bin" ] && cp "$htpasswd_bin" /tmp/htpasswd
-            for lib in $htpasswd_libs; do
-                [ -f "$lib" ] && cp "$lib" /tmp/
-            done
-            
-            # Apacheパッケージを削除
-            case "$PACKAGE_MANAGER" in
-                opkg) opkg remove apache >/dev/null 2>&1 || true ;;
-                apk) apk del apache >/dev/null 2>&1 || true ;;
-            esac
-            
-            # htpasswdとライブラリを復元
-            mv /tmp/htpasswd "$htpasswd_bin"
-            chmod +x "$htpasswd_bin"
-            for lib in $tmp_libs; do
-                [ -f "$lib" ] && mv "$lib" /usr/lib/
-            done
         }
+    else
+        # リソース不足の場合
+        ${INIT}/adguardhome stop 2>&-
+        ${INIT}/adguardhome disable 2>&-
+        echo "AdGuardHome: ${INIT}/adguardhome start then ${lan_ip_address}:3000"
     fi
 }
 ```
@@ -1006,13 +759,13 @@
 
 <details>
 <summary>設定のコミットとバックアップ</summary>
-
+    
 ```sh
 # BEGIN_CMDS
 # END_CMDS
 
 # UCI設定をコミット（永続化）
-uci commit 2>/dev/null
+uci commit 2>&-
 
 # バックアップパスが指定されている場合、設定をバックアップ
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
