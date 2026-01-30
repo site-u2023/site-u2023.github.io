@@ -146,7 +146,7 @@ When set to `1`, runs in TUI (integrated) mode. Equivalent to command-line optio
 
 ## YAML Configuration File Specification (Custom Specification)
 
-When `-n` option or `NO_YAML=1` is not specified, this script retrieves a template from `https://site-u.pages.dev/www/custom-script/adguardhome.yaml` and generates `AdGuardHome.yaml` by replacing the following placeholders with environment variable values.
+When `-n` option or `NO_YAML=1` is not specified, this script retrieves a template from `https://site-u.pages.dev/www/custom-scripts/adguardhome.yaml` and generates `AdGuardHome.yaml` by replacing the following placeholders with environment variable values.
 
 | Placeholder             | Replaced Value                  | Default Value |
 |-------------------------|--------------------------------|---------------|
@@ -155,12 +155,12 @@ When `-n` option or `NO_YAML=1` is not specified, this script retrieves a templa
 | `{{WEB_PORT}}`          | Web admin panel port            | `8000`        |
 | `{{DNS_PORT}}`          | DNS service port                | `53`          |
 | `{{DNS_BACKUP_PORT}}`   | dnsmasq backup port             | `54`          |
+| `{{NTP_DOMAIN}}`        | NTP server domain               | (obtained from system settings, line removed if not set) |
 
 ### http Section
 ```yaml
 http:
   address: 0.0.0.0:{{WEB_PORT}}
-  session_ttl: 720h
 ```
 
 ### users Section
@@ -168,8 +168,6 @@ http:
 users:
   - name: {{AGH_USER}}
     password: {{AGH_PASS_HASH}}
-auth_attempts: 5
-block_auth_min: 15
 ```
 
 ### dns Section
@@ -179,66 +177,46 @@ dns:
   refuse_any: true
   upstream_dns:
     - '# LAN domain intercept'
-    - '[/lan/]127.0.0.1:54'
+    - '[/lan/]127.0.0.1:{{DNS_BACKUP_PORT}}'
     - '# NTP service'
-    - '[/*.pool.ntp.org/]1.1.1.1'
-    - '[/*.pool.ntp.org/]1.0.0.1'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1111'
-    - '[/*.pool.ntp.org/]2606:4700:4700::1001'
+    - '[/{{NTP_DOMAIN}}/]2606:4700:4700::1111'
+    - '[/{{NTP_DOMAIN}}/]1.1.1.1'
     - '# DNS-over-QUIC'
     - quic://unfiltered.adguard-dns.com
+    - quic://dns.nextdns.io
     - '# DNS-over-TLS'
-    - tls://1dot1dot1dot1.cloudflare-dns.com
+    - tls://unfiltered.adguard-dns.com
+    - tls://one.one.one.one
     - tls://dns.google
-    - tls://jp.tiar.app
-    - tls://dns.nextdns.io
+    - tls://dns10.quad9.net
     - '# DNS-over-HTTPS(coercion HTTP/3)'
-    - h3://cloudflare-dns.com/dns-query
-    - h3://dns.google/dns-query
-    - h3://unfiltered.adguard-dns.com/dns-query
-    - h3://jp.tiarap.org/dns-query
-    - h3://dns.nextdns.io
+    - https://dns.cloudflare.com/dns-query
+    - https://dns.google/dns-query
+    - https://unfiltered.adguard-dns.com/dns-query
+    - https://dns.nextdns.io
+    - https://dns10.quad9.net/dns-query
 ```
 
 ### bootstrap_dns Section
 ```yaml
   bootstrap_dns:
-    - 1.1.1.1
-    - 1.0.0.1
-    - 8.8.8.8
-    - 8.8.4.4
-    - 172.104.93.80
-    - 129.250.35.250
-    - 129.250.35.251
     - 2606:4700:4700::1111
-    - 2606:4700:4700::1001
     - 2001:4860:4860::8888
-    - 2001:4860:4860::8844
-    - 2400:8902::f03c:91ff:feda:c514
-    - 2001:418:3ff::53
-    - 2001:418:3ff::1:53
+    - 1.1.1.1
+    - 8.8.8.8
 ```
 
 ### fallback_dns Section
 ```yaml
   fallback_dns:
-    - https://cloudflare-dns.com/dns-query
+    - https://dns.cloudflare.com/dns-query
     - https://dns.google/dns-query
     - https://unfiltered.adguard-dns.com/dns-query
-    - https://jp.tiar.app/dns-query
-    - https://dns.nextdns.io
+    - https://dns.nextdns.io/dns-query
+    - https://dns10.quad9.net/dns-query
   upstream_mode: parallel
-  cache_size: 1048576
-  enable_dnssec: false
-  use_private_ptr_resolvers: true
   local_ptr_upstreams:
     - 127.0.0.1:{{DNS_BACKUP_PORT}}
-```
-
-### tls Section
-```yaml
-tls:
-  enabled: false
 ```
 
 ### filters Section
@@ -247,46 +225,68 @@ filters:
   - enabled: true
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_1.txt
     name: AdGuard DNS filter
-    id: 1
   - enabled: false
     url: https://adguardteam.github.io/HostlistsRegistry/assets/filter_2.txt
     name: AdAway Default Blocklist
-    id: 2
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_10_Chinese/filter.txt
+    name: AdGuard Chinese filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt
+    name: AdGuard Dutch filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt
+    name: AdGuard French filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt
+    name: AdGuard German filter
   - enabled: false
     url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt
     name: AdGuard Japanese filter
-    id: 1764215105
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt
+    name: AdGuard Russian filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt
+    name: AdGuard Spanish/Portuguese filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt
+    name: AdGuard Turkish filter
+  - enabled: false
+    url: https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt
+    name: AdGuard Ukrainian filter
   - enabled: false
     url: https://raw.githubusercontent.com/tofukko/filter/master/Adblock_Plus_list.txt
     name: Tofu Filter
-    id: 1764215106
 ```
 
 ### user_rules Section
 ```yaml
 user_rules:
-  - '# Google Analytics'
+  - '# google analytics'
   - '@@||analytics.google.com'
   - '# Major Japanese Services'
   - '@@||amazon.co.jp^$important'
   - '@@||rakuten.co.jp^$important'
   - '@@||yahoo.co.jp^$important'
+  - '@@||mercari.com^$important'
+  - '@@||zozo.jp^$important'
+  - '@@||cookpad.com^$important'
+  - '# SNS Related'
+  - '@@||twitter.com^$important'
+  - '@@||facebook.com^$important'
+  - '@@||instagram.com^$important'
+  - '@@||messenger.com^$important'
   - '# LINE Related'
   - '@@||line.me^$important'
   - '@@||line-scdn.net^$important'
-```
-
-### dhcp Section
-```yaml
-dhcp:
-  enabled: false
-```
-
-### filtering Section
-```yaml
-filtering:
-  parental_enabled: false
-  safebrowsing_enabled: false
+  - '# Video/Streaming Services'
+  - '@@||youtube.com^$important'
+  - '@@||nicovideo.jp^$important'
+  - '@@||abema.tv^$important'
+  - '# General Ad Exclusions'
+  - '@@||google-analytics.com^$important'
+  - '@@||doubleclick.net^$important'
 ```
 
 ### log Section
@@ -326,7 +326,7 @@ opkg or apk is auto-detected. If neither exists, the script exits with an error.
 
 ## Backup and Restore Functionality
 
-The script automatically backs up configuration files under `/etc/config/` during installation. Backup targets are the 2 files `dhcp` and `firewall`, each saved with a timestamped `.backup.YYYYMMDDHHMMSS` extension (e.g., `dhcp.backup.20231210132600`).
+The script automatically backs up configuration files under `/etc/config/` during installation. Backup targets are the 2 files `dhcp` and `firewall`, each saved with a `.adguard.bak` extension (e.g., `dhcp.adguard.bak`).
 
 During removal, if backup files exist, settings are automatically restored to their original state. If backup files do not exist, only dnsmasq settings are reset to default values. Backup files are automatically deleted after the removal process completes.
 
@@ -376,7 +376,6 @@ The following configuration changes are executed during installation:
 The following DNS server options are set for the LAN interface:
 
 - IPv4: `dhcp_option='6,${NET_ADDR}'`
-- IPv6: `dhcp_option6="option6:dns=[${NET_ADDR6}]"` (all detected global addresses)
 
 ### Firewall Configuration
 
@@ -435,11 +434,19 @@ The service name for official binary installation is `AdGuardHome`, which differ
 
 When `INSTALL_MODE=openwrt` is specified, the `adguardhome` package is installed from the package manager repository.
 
-For opkg, available versions are checked via `opkg list`, and `opkg install --verbosity=0 adguardhome` is executed. For apk, `apk search adguardhome` and `apk add adguardhome` are executed.
+For opkg, available versions are checked via `opkg list`, and `opkg install adguardhome` is executed. For apk, `apk search adguardhome` and `apk add adguardhome` are executed.
 
 If the package does not exist in the repository, a warning message is displayed and automatic fallback to official binary installation occurs. If a network error occurs, an error message is displayed and the script exits.
 
 The service name for OpenWrt package installation is `adguardhome`.
+
+## Configuration File Path Determination
+
+The configuration file path is automatically determined based on the OS version and package manager.
+
+- OpenWrt 24.10 or later, SNAPSHOT, or APK-based systems: `/etc/adguardhome/adguardhome.yaml`
+- OpenWrt 23.05 or earlier: `/etc/adguardhome.yaml`
+- Official binary: `/etc/AdGuardHome/AdGuardHome.yaml`
 
 ## YAML Configuration File Generation Timing
 
@@ -524,7 +531,7 @@ At installation completion, access information is displayed in the following for
 
 Web interface port number is determined in the following priority order:
 
-1. Retrieved from the `address:` field in the `http:` section of the YAML configuration file (`/etc/AdGuardHome/AdGuardHome.yaml` or `/etc/adguardhome.yaml`)
+1. Retrieved from the `address:` field in the `http:` section of the YAML configuration file (`/etc/AdGuardHome/AdGuardHome.yaml`, `/etc/adguardhome/adguardhome.yaml`, or `/etc/adguardhome.yaml`)
 2. If the configuration file does not exist or cannot be read, the value of environment variable `WEB_PORT` is used
 
 ### IPv4 Access URL
