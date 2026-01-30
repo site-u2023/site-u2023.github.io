@@ -1,8 +1,8 @@
 # postinst.json 解説
 
-## 基本システム機能
+### 基本システム機能
 
-### Webターミナル
+Webターミナル
 <details>
 <summary>luci-app-ttyd</summary>
 
@@ -11,7 +11,7 @@
 
 </details>
 
-### SFTPサーバー
+SFTPサーバー
 <details>
 <summary>openssh-sftp-server</summary>
 
@@ -21,7 +21,7 @@
 
 </details>
 
-### カスタムコマンド実行
+カスタムコマンド実行
 <details>
 <summary>luci-app-commands</summary>
 
@@ -30,7 +30,7 @@
 
 </details>
 
-### Webファイルブラウザ
+Webファイルブラウザ
 <details>
 <summary>luci-app-filebrowser</summary>
 
@@ -39,9 +39,35 @@
 
 </details>
 
-## システム管理
+### システム管理
 
-### IRQ割り込みバランサー
+自動システムアップグレード
+<details>
+<summary>luci-app-attendedsysupgrade</summary>
+
+- LuCI上でファームウェア更新を自動化
+- 現在のパッケージを維持したまま更新
+- 依存: owut, auc
+
+</details>
+
+ファームウェア更新ツール
+<details>
+<summary>owut</summary>
+
+- OpenWrt Update Tool
+
+</details>
+
+システムアップグレードクライアント
+<details>
+<summary>auc</summary>
+
+Attended sysUpgrade Client
+
+</details>
+
+IRQ割り込みバランサー
 <details>
 <summary>luci-app-irqbalance</summary>
 
@@ -50,9 +76,111 @@
 
 </details>
 
-## ネットワーク管理
+ログローテーション
+<details>
+<summary>logrotate</summary>
 
-### 帯域制御
+- ログファイルを自動で圧縮・削除
+- ディスク容量の節約
+
+</details>
+
+### システム監視
+
+Watchcatシステム監視
+<details>
+<summary>luci-app-watchcat</summary>
+
+- ネットワーク接続を定期的にチェック
+- 接続断が続く場合、自動再起動
+- Pingテストやインターフェース監視
+
+</details>
+
+netdataリアルタイム監視
+<details>
+<summary>netdata</summary>
+
+- Webダッシュボードでシステム監視
+- CPU、メモリ、ネットワーク、ディスクI/Oを可視化
+- アラート機能
+- 注意: メモリ512MB以上推奨
+
+</details>
+
+htopプロセスモニター
+<details>
+<summary>htop</summary>
+
+- CPUコア別使用率をリアルタイム表示
+- メモリ、スワップ使用量を視覚化
+- プロセス一覧とソート、検索機能
+- 依存: collectd, collectd-mod-thermal
+
+</details>
+
+データ収集デーモン
+<details>
+<summary>collectd</summary>
+
+- システム統計情報を収集
+
+</details>
+
+CPU温度センサーモジュール
+<details>
+<summary>collectd-mod-thermal</summary>
+
+- 温度データの収集
+
+</details>
+
+btopプロセスモニター
+<details>
+<summary>btop</summary>
+
+- 高機能リソースモニター
+- CPU、メモリ、ディスク、ネットワークを視覚化
+
+</details>
+
+Prometheus Node Exporter
+<details>
+<summary>prometheus-node-exporter-lua</summary>
+
+- Prometheusメトリクスエンドポイント
+- OpenWrt、NAT、温度データをエクスポート
+- 依存: prometheus-node-exporter-lua-openwrt, prometheus-node-exporter-lua-nat_traffic, prometheus-node-exporter-lua-thermal
+
+</details>
+
+Prometheus OpenWrtモジュール
+<details>
+<summary>prometheus-node-exporter-lua-openwrt</summary>
+
+- OpenWrt固有のメトリクス収集
+
+</details>
+
+Prometheus NATトラフィックモジュール
+<details>
+<summary>prometheus-node-exporter-lua-nat_traffic</summary>
+
+- NATトラフィックメトリクス収集
+
+</details>
+
+Prometheus温度モジュール
+<details>
+<summary>prometheus-node-exporter-lua-thermal</summary>
+
+- 温度メトリクス収集
+
+</details>
+
+### ネットワーク管理
+
+帯域制御
 <details>
 <summary>luci-app-sqm</summary>
 
@@ -61,7 +189,7 @@
 
 </details>
 
-### トラフィック制御ツール
+トラフィック制御ツール
 <details>
 <summary>tc-full</summary>
 
@@ -69,7 +197,7 @@
 
 </details>
 
-### システム統計グラフ
+システム統計グラフ
 <details>
 <summary>luci-app-statistics</summary>
 
@@ -78,15 +206,7 @@
 
 </details>
 
-### データ収集デーモン
-<details>
-<summary>collectd</summary>
-
-- システム統計情報を収集
-
-</details>
-
-### 時系列データベースとグラフ生成
+時系列データベースとグラフ生成
 <details>
 <summary>rrdtool1</summary>
 
@@ -94,7 +214,7 @@
 
 </details>
 
-### 帯域幅モニター
+帯域幅モニター
 <details>
 <summary>luci-app-nlbwmon</summary>
 
@@ -103,7 +223,7 @@
 
 </details>
 
-### vnStat2トラフィック統計
+vnStat2トラフィック統計
 <details>
 <summary>luci-app-vnstat2</summary>
 
@@ -112,7 +232,7 @@
 
 </details>
 
-### LAN内のPCをネットワーク経由で起動
+LAN内のPCをネットワーク経由で起動
 <details>
 <summary>luci-app-wol</summary>
 
@@ -121,16 +241,33 @@
 
 </details>
 
-### 動的IPアドレスをドメイン名に自動更新
+動的IPアドレスをドメイン名に自動更新
 <details>
 <summary>luci-app-ddns</summary>
 
 - Dynamic DNS
 - No-IP、DuckDNS等のサービスに対応
+- 依存: wget-ssl, bind-host
 
 </details>
 
-### Tor匿名化ネットワーク
+wget SSL版
+<details>
+<summary>wget-ssl</summary>
+
+- HTTPS対応版wget
+
+</details>
+
+DNSホストルックアップツール
+<details>
+<summary>bind-host</summary>
+
+- DNS問い合わせツール
+
+</details>
+
+Tor匿名化ネットワーク
 <details>
 <summary>luci-app-tor</summary>
 
@@ -138,7 +275,7 @@
 
 </details>
 
-### マルチWAN管理
+マルチWAN管理
 <details>
 <summary>luci-app-mwan3</summary>
 
@@ -150,7 +287,7 @@
 
 </details>
 
-### マルチWANデーモン
+マルチWANデーモン
 <details>
 <summary>mwan3</summary>
 
@@ -158,9 +295,19 @@
 
 </details>
 
-## Wi-Fi管理
+ポリシーベースルーティング
+<details>
+<summary>luci-app-pbr</summary>
 
-### Wi-Fiスケジューラー
+- 送信元/宛先IPやポートに基づくルーティング
+- VPN経由ルーティング設定
+- ドメインベースルーティング
+
+</details>
+
+### Wi-Fi管理
+
+Wi-Fiスケジューラー
 <details>
 <summary>luci-app-wifischedule</summary>
 
@@ -169,7 +316,7 @@
 
 </details>
 
-### ルーター自身を他のWi-Fiに接続
+ルーター自身を他のWi-Fiに接続
 <details>
 <summary>luci-app-travelmate</summary>
 
@@ -177,9 +324,9 @@
 
 </details>
 
-## モデムサポート
+### モデムサポート
 
-### ModemManagerプロトコル
+ModemManagerプロトコル
 <details>
 <summary>luci-proto-modemmanager</summary>
 
@@ -190,7 +337,7 @@
 
 </details>
 
-### USBワイヤレスデバイス管理カーネルモジュール
+USBワイヤレスデバイス管理カーネルモジュール
 <details>
 <summary>kmod-usb-wdm</summary>
 
@@ -198,7 +345,7 @@
 
 </details>
 
-### MBIMプロトコルカーネルモジュール
+MBIMプロトコルカーネルモジュール
 <details>
 <summary>kmod-usb-net-cdc-mbim</summary>
 
@@ -206,7 +353,7 @@
 
 </details>
 
-### QMIプロトコルカーネルモジュール
+QMIプロトコルカーネルモジュール
 <details>
 <summary>kmod-usb-net-qmi-wwan</summary>
 
@@ -214,7 +361,7 @@
 
 </details>
 
-### QMI管理ツール
+QMI管理ツール
 <details>
 <summary>uqmi</summary>
 
@@ -222,7 +369,7 @@
 
 </details>
 
-### MBIM管理ツール
+MBIM管理ツール
 <details>
 <summary>mbim-utils</summary>
 
@@ -230,7 +377,7 @@
 
 </details>
 
-### ターミナルマルチプレクサ
+ターミナルマルチプレクサ
 <details>
 <summary>screen</summary>
 
@@ -238,9 +385,9 @@
 
 </details>
 
-## セキュリティツール
+### セキュリティツール
 
-### Fail2Ban侵入防止
+Fail2Ban侵入防止
 <details>
 <summary>fail2ban</summary>
 
@@ -250,7 +397,7 @@
 
 </details>
 
-### BanIP IPブロック
+BanIP IPブロック
 <details>
 <summary>luci-app-banip</summary>
 
@@ -260,7 +407,7 @@
 
 </details>
 
-### ACME SSL証明書
+ACME SSL証明書
 <details>
 <summary>luci-app-acme</summary>
 
@@ -269,40 +416,9 @@
 
 </details>
 
-## システム監視
+### ネットワーク診断ツール
 
-### Watchcatシステム監視
-<details>
-<summary>luci-app-watchcat</summary>
-
-- ネットワーク接続を定期的にチェック
-- 接続断が続く場合、自動再起動
-- Pingテストやインターフェース監視
-
-</details>
-
-## ネットワーク診断ツール
-
-### htopプロセスモニター
-<details>
-<summary>htop</summary>
-
-- CPUコア別使用率をリアルタイム表示
-- メモリ、スワップ使用量を視覚化
-- プロセス一覧とソート、検索機能
-- 依存: collectd, collectd-mod-thermal
-
-</details>
-
-### CPU温度センサーモジュール
-<details>
-<summary>collectd-mod-thermal</summary>
-
-- 温度データの収集
-
-</details>
-
-### tracerouteとpingを組み合わせ
+tracerouteとpingを組み合わせ
 <details>
 <summary>mtr-nojson</summary>
 
@@ -311,7 +427,7 @@ MTR
 
 </details>
 
-### Nmapポートスキャナー
+Nmapポートスキャナー
 <details>
 <summary>nmap</summary>
 
@@ -320,7 +436,7 @@ MTR
 
 </details>
 
-### tcpdumpパケットキャプチャ
+tcpdumpパケットキャプチャ
 <details>
 <summary>tcpdump</summary>
 
@@ -330,7 +446,7 @@ MTR
 
 </details>
 
-### iPerf3帯域測定
+iPerf3帯域測定
 <details>
 <summary>iperf3</summary>
 
@@ -339,7 +455,7 @@ MTR
 
 </details>
 
-### インターネット速度テスト
+インターネット速度テスト
 <details>
 <summary>speedtest-netperf</summary>
 
@@ -347,7 +463,7 @@ MTR
 
 </details>
 
-### iftop帯域幅モニター
+iftop帯域幅モニター
 <details>
 <summary>iftop</summary>
 
@@ -356,7 +472,7 @@ MTR
 
 </details>
 
-### dig DNSクエリツール
+dig DNSクエリツール
 <details>
 <summary>bind-dig</summary>
 
@@ -366,7 +482,7 @@ MTR
 
 </details>
 
-### ethtoolイーサネット診断
+ethtoolイーサネット診断
 <details>
 <summary>ethtool</summary>
 
@@ -376,9 +492,9 @@ MTR
 
 </details>
 
-## システム管理ツール
+### システム管理ツール
 
-### tmuxターミナルマルチプレクサ
+tmuxターミナルマルチプレクサ
 <details>
 <summary>tmux</summary>
 
@@ -388,7 +504,7 @@ MTR
 
 </details>
 
-### nanoテキストエディタ
+nanoテキストエディタ
 <details>
 <summary>nano-plus</summary>
 
@@ -397,7 +513,7 @@ MTR
 
 </details>
 
-### lsofファイル/ポート使用確認
+lsofファイル/ポート使用確認
 <details>
 <summary>lsof</summary>
 
@@ -406,7 +522,7 @@ MTR
 
 </details>
 
-### rsyncファイル同期
+rsyncファイル同期
 <details>
 <summary>rsync</summary>
 
@@ -415,7 +531,7 @@ MTR
 
 </details>
 
-### curl HTTPクライアント
+curl HTTPクライアント
 <details>
 <summary>curl</summary>
 
@@ -424,20 +540,9 @@ MTR
 
 </details>
 
-### netdataリアルタイム監視
-<details>
-<summary>netdata</summary>
+### テーマとダッシュボード
 
-- Webダッシュボードでシステム監視
-- CPU、メモリ、ネットワーク、ディスクI/Oを可視化
-- アラート機能
-- 注意: メモリ512MB以上推奨
-
-</details>
-
-## テーマとダッシュボード
-
-### LuCIダッシュボード
+LuCIダッシュボード
 <details>
 <summary>luci-mod-dashboard</summary>
 
@@ -447,53 +552,37 @@ MTR
 
 </details>
 
-### OpenWrt公式テーマ
+OpenWrt公式テーマ
 <details>
 <summary>luci-theme-openwrt</summary>
 
 </details>
 
-### マテリアルデザインテーマ
+マテリアルデザインテーマ
 <details>
 <summary>luci-theme-material</summary>
 
 </details>
 
-### OpenWrt 2020版テーマ
+OpenWrt 2020版テーマ
 <details>
 <summary>luci-theme-openwrt-2020</summary>
 
 </details>
 
-## ユーティリティ
+### ユーティリティ
 
-### 自動システムアップグレード
+デュアルファームウェア再起動管理
 <details>
-<summary>luci-app-attendedsysupgrade</summary>
+<summary>luci-app-advanced-reboot</summary>
 
-- LuCI上でファームウェア更新を自動化
-- 現在のパッケージを維持したまま更新
-- 依存: owut, auc
+- デュアルファームウェア対応デバイス用
+- Linksys、Xiaomi、ZyXEL等で利用可能
+- パーティション切替と再起動
 
 </details>
 
-### ファームウェア更新ツール
-<details>
-<summary>owut</summary>
-
-- OpenWrt Update Tool
-
-</details>
-
-### システムアップグレードクライアント
-<details>
-<summary>auc</summary>
-
-Attended sysUpgrade Client
-
-</details>
-
-### WireGuardプロトコル
+WireGuardプロトコル
 <details>
 <summary>luci-proto-wireguard</summary>
 
@@ -502,7 +591,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### WireGuard LuCI管理画面
+WireGuard LuCI管理画面
 <details>
 <summary>luci-app-wireguard</summary>
 
@@ -510,7 +599,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### WireGuardコマンドラインツール
+WireGuardコマンドラインツール
 <details>
 <summary>wireguard-tools</summary>
 
@@ -518,7 +607,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### 仮想LANでデバイスを接続
+仮想LANでデバイスを接続
 <details>
 <summary>zerotier</summary>
 
@@ -526,7 +615,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### Tailscaleメッシュ VPN
+Tailscaleメッシュ VPN
 <details>
 <summary>tailscale</summary>
 
@@ -535,18 +624,18 @@ Attended sysUpgrade Client
 
 </details>
 
-### Docker コンテナ管理
+Docker コンテナ管理
 <details>
 <summary>luci-app-dockerman</summary>
 
 - LuCI上でDockerコンテナを管理
 - イメージ、コンテナ、ネットワーク、ボリューム操作
-- 依存: docker-compose, docker
+- 依存: docker-compose
 - 注意: iptablesベース、メモリ1GB以上推奨
 
 </details>
 
-### コンテナオーケストレーション
+コンテナオーケストレーション
 <details>
 <summary>docker-compose</summary>
 
@@ -554,7 +643,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### Dockerエンジン
+Dockerエンジン
 <details>
 <summary>docker</summary>
 
@@ -562,7 +651,7 @@ Attended sysUpgrade Client
 
 </details>
 
-### サーバー・クライアント両対応
+サーバー・クライアント両対応
 <details>
 <summary>luci-app-openvpn</summary>
 
@@ -570,7 +659,7 @@ OpenVPN
 
 </details>
 
-### MiniDLNAメディアサーバー
+MiniDLNAメディアサーバー
 <details>
 <summary>luci-app-minidlna</summary>
 
@@ -579,7 +668,7 @@ OpenVPN
 
 </details>
 
-### S.M.A.R.T.監視ツール
+S.M.A.R.T.監視ツール
 <details>
 <summary>smartmontools</summary>
 
@@ -589,18 +678,26 @@ OpenVPN
 
 </details>
 
-### ログローテーション
+whiptailダイアログツール
 <details>
-<summary>logrotate</summary>
+<summary>whiptail</summary>
 
-- ログファイルを自動で圧縮・削除
-- ディスク容量の節約
+- TUIダイアログ表示ツール
+- 依存: libnewt
 
 </details>
 
-## USBストレージサポート
+newt ライブラリ
+<details>
+<summary>libnewt</summary>
 
-### USB 3.0高速転送モード（UAS）カーネルモジュール
+- whiptailで使用
+
+</details>
+
+### USBストレージサポート
+
+USB 3.0高速転送モード（UAS）カーネルモジュール
 <details>
 <summary>kmod-usb-storage-uas</summary>
 
@@ -609,7 +706,7 @@ OpenVPN
 
 </details>
 
-### ブロックデバイスの自動マウント
+ブロックデバイスの自動マウント
 <details>
 <summary>block-mount</summary>
 
@@ -617,7 +714,7 @@ OpenVPN
 
 </details>
 
-### USBデバイス情報表示ツール
+USBデバイス情報表示ツール
 <details>
 <summary>usbutils</summary>
 
@@ -625,7 +722,7 @@ OpenVPN
 
 </details>
 
-### GPTパーティション管理ツール
+GPTパーティション管理ツール
 <details>
 <summary>gdisk</summary>
 
@@ -633,7 +730,7 @@ OpenVPN
 
 </details>
 
-### FAT32ファイルシステムツール
+FAT32ファイルシステムツール
 <details>
 <summary>dosfstools</summary>
 
@@ -642,7 +739,7 @@ OpenVPN
 
 </details>
 
-### FAT32ファイルシステムカーネルモジュール
+FAT32ファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-vfat</summary>
 
@@ -650,7 +747,7 @@ OpenVPN
 
 </details>
 
-### ext4ファイルシステムツール
+ext4ファイルシステムツール
 <details>
 <summary>e2fsprogs</summary>
 
@@ -659,7 +756,7 @@ OpenVPN
 
 </details>
 
-### ext4ファイルシステムカーネルモジュール
+ext4ファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-ext4</summary>
 
@@ -667,7 +764,7 @@ OpenVPN
 
 </details>
 
-### F2FSファイルシステムツール
+F2FSファイルシステムツール
 <details>
 <summary>f2fs-tools</summary>
 
@@ -676,7 +773,7 @@ OpenVPN
 
 </details>
 
-### F2FSファイルシステムカーネルモジュール
+F2FSファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-f2fs</summary>
 
@@ -684,7 +781,7 @@ OpenVPN
 
 </details>
 
-### exFATファイルシステムチェックツール
+exFATファイルシステムチェックツール
 <details>
 <summary>exfat-fsck</summary>
 
@@ -693,7 +790,7 @@ OpenVPN
 
 </details>
 
-### exFATファイルシステムカーネルモジュール
+exFATファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-exfat</summary>
 
@@ -701,7 +798,7 @@ OpenVPN
 
 </details>
 
-### NTFSファイルシステムツール
+NTFSファイルシステムツール
 <details>
 <summary>ntfs-3g</summary>
 
@@ -710,7 +807,7 @@ OpenVPN
 
 </details>
 
-### NTFSファイルシステムカーネルモジュール
+NTFSファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-ntfs3</summary>
 
@@ -718,7 +815,7 @@ OpenVPN
 
 </details>
 
-### HFS/HFS+ファイルシステムチェックツール
+HFS/HFS+ファイルシステムチェックツール
 <details>
 <summary>hfsfsck</summary>
 
@@ -727,7 +824,7 @@ OpenVPN
 
 </details>
 
-### HFSファイルシステムカーネルモジュール
+HFSファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-hfs</summary>
 
@@ -735,7 +832,7 @@ OpenVPN
 
 </details>
 
-### HFS+ファイルシステムカーネルモジュール
+HFS+ファイルシステムカーネルモジュール
 <details>
 <summary>kmod-fs-hfsplus</summary>
 
@@ -743,7 +840,7 @@ OpenVPN
 
 </details>
 
-### HD-Idleディスク省電力
+HD-Idleディスク省電力
 <details>
 <summary>luci-app-hd-idle</summary>
 
@@ -752,7 +849,7 @@ OpenVPN
 
 </details>
 
-### USB LEDトリガー
+USB LEDトリガー
 <details>
 <summary>kmod-usb-ledtrig-usbport</summary>
 
@@ -761,7 +858,7 @@ OpenVPN
 
 </details>
 
-### RNDISプロトコルカーネルモジュール
+RNDISプロトコルカーネルモジュール
 <details>
 <summary>kmod-usb-net-rndis</summary>
 
@@ -771,7 +868,7 @@ OpenVPN
 
 </details>
 
-### CDC Ethernetカーネルモジュール
+CDC Ethernetカーネルモジュール
 <details>
 <summary>kmod-usb-net-cdc-ether</summary>
 
@@ -779,7 +876,7 @@ OpenVPN
 
 </details>
 
-### USB Gadget Ethernetカーネルモジュール
+USB Gadget Ethernetカーネルモジュール
 <details>
 <summary>kmod-usb-gadget-eth</summary>
 
@@ -790,7 +887,7 @@ OpenVPN
 
 </details>
 
-### DWC2 USBコントローラカーネルモジュール
+DWC2 USBコントローラカーネルモジュール
 <details>
 <summary>kmod-usb-dwc2</summary>
 
@@ -798,17 +895,16 @@ OpenVPN
 
 </details>
 
-### ext4ファイルシステムリサイズツール
+ext4ファイルシステムリサイズツール
 <details>
 <summary>resize2fs</summary>
 
 - パーティション拡張
 - 依存: parted, f2fs-tools
-- setup.json連携: enable_sd_resize
 
 </details>
 
-### パーティション編集ツール
+パーティション編集ツール
 <details>
 <summary>parted</summary>
 
@@ -816,9 +912,9 @@ OpenVPN
 
 </details>
 
-## ファイル共有
+### ファイル共有
 
-### Samba4ファイルサーバー
+Samba4ファイルサーバー
 <details>
 <summary>luci-app-samba4</summary>
 
@@ -828,7 +924,7 @@ OpenVPN
 
 </details>
 
-### Web Services Discoveryデーモン
+Web Services Discoveryデーモン
 <details>
 <summary>wsdd2</summary>
 
@@ -836,7 +932,25 @@ OpenVPN
 
 </details>
 
-### TransmissionBitTorrentクライアント
+ksmbd ファイルサーバー
+<details>
+<summary>luci-app-ksmbd</summary>
+
+- カーネル実装のSMBサーバー
+- Samba4より軽量
+- 依存: ksmbd-avahi-service
+
+</details>
+
+ksmbd Avahiサービス
+<details>
+<summary>ksmbd-avahi-service</summary>
+
+- ネットワーク自動検出用サービス
+
+</details>
+
+TransmissionBitTorrentクライアント
 <details>
 <summary>luci-app-transmission</summary>
 
@@ -845,47 +959,29 @@ OpenVPN
 
 </details>
 
-## Webサーバーツール
+Syncthingファイル同期
+<details>
+<summary>syncthing</summary>
 
-### Webサーバー
+- P2Pファイル同期ツール
+- 複数デバイス間でリアルタイム同期
+
+</details>
+
+### Webサーバーツール
+
+Webサーバー
 <details>
 <summary>apache</summary>
 
-- Webサーバー
+- Apacheウェブサーバー
+- htpasswdコマンド含む
 
 </details>
 
-### パスワード暗号化
- <details>
-<summary>htpasswd</summary>
+### DNS & プライバシー
 
-- ユーザー名と暗号化されたパスワードファイルを作成
-
-</details>
-
-## DNS & プライバシー
-
-### 広告ブロック
-<details>
-<summary>luci-app-adblock-fast</summary>
-
-- DNS応答を書き換えて広告をブロック
-- dnsmasq/unboundベース
-- ブロックリストに対応
-- setup.json連携: enable_adblock_fast, enable_tofukko_filter
-
-</details>
-
-### 日本向け広告ブロックリスト
-<details>
-<summary>japan-tofukko-filter</summary>
-
-- Tofukko Filter
-- setup.json連携: enable_tofukko_filter
-
-</details>
-
-### HTTPS経由で暗号化DNS通信（DoH）
+HTTPS経由で暗号化DNS通信（DoH）
 <details>
 <summary>luci-app-https-dns-proxy</summary>
 
@@ -894,7 +990,7 @@ DNS over HTTPS
 
 </details>
 
-### TLS経由で暗号化DNS通信（DoT）
+TLS経由で暗号化DNS通信（DoT）
 <details>
 <summary>stubby</summary>
 
@@ -902,9 +998,9 @@ DNS over TLS
 
 </details>
 
-## Setup連動パッケージ
+### Setup連動パッケージ
 
-### MAP-Eプロトコル
+MAP-Eプロトコル
 <details>
 <summary>map</summary>
 
@@ -914,7 +1010,15 @@ DNS over TLS
 
 </details>
 
-### DS-Liteプロトコル
+SHA1チェックサムユーティリティ
+<details>
+<summary>coreutils-sha1sum</summary>
+
+- MAP-E用SHA1計算ツール
+
+</details>
+
+DS-Liteプロトコル
 <details>
 <summary>ds-lite</summary>
 
@@ -924,7 +1028,7 @@ DNS over TLS
 
 </details>
 
-### Usteerバンドステアリング
+Usteerバンドステアリング
 <details>
 <summary>luci-app-usteer</summary>
 
@@ -935,15 +1039,44 @@ DNS over TLS
 
 </details>
 
-### AdGuard Home DNS広告ブロック
+AdGuard Home DNS広告ブロック
 <details>
 <summary>adguardhome</summary>
 
 - DNS over HTTPS (DoH)対応の広告ブロッカー
 - Webインターフェースで詳細設定
 - ブロックリスト管理、統計表示
-- setup.jsonで enable_adguardhome: "enabled" 選択時に自動インストール
+- カスタムスクリプトで管理
 - 必須: メモリ 20MB / ストレージ 25MB
 - 推奨: メモリ 50MB / ストレージ 100MB
+
+</details>
+
+広告ブロック
+<details>
+<summary>luci-app-adblock-fast</summary>
+
+- DNS応答を書き換えて広告をブロック
+- dnsmasq/unboundベース
+- ブロックリストに対応
+- カスタムスクリプトで管理
+
+</details>
+
+NextDNS
+<details>
+<summary>luci-app-nextdns</summary>
+
+- クラウドベースDNSフィルタリング
+- カスタムスクリプトで管理
+
+</details>
+
+BBR TCP輻輳制御
+<details>
+<summary>kmod-tcp-bbr</summary>
+
+- Googleが開発したTCP輻輳制御アルゴリズム
+- ネットワークチューニングで選択時に自動インストール
 
 </details>
