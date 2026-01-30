@@ -154,7 +154,7 @@
       "xpass": "dgw.xpass.jp",
       "v6connect": "dslite.v6connect.net"
     },
-    "gua_validation": {
+    "static_validation": {
       "prefix_check": "2000::/3",
       "exclude_cidrs": [
         "2001:db8::/32",
