@@ -3938,10 +3938,10 @@ const mapRulesData = {
     ]
   }
   /**
-   * GUA（Global Unicast Address）検証ルール
+   * Static Prefix検証ルール
    * RFC 4291に基づくグローバルユニキャストアドレスの判定
    */
-  const guaValidation = {
+  const staticValidation = {
       prefixCheck: "2000::/3",
       prefixLength: 3,
       excludeCidrs: [
@@ -3953,7 +3953,7 @@ const mapRulesData = {
         { prefix: "2001:3::", length: 32 },     // AMT
         { prefix: "2001:4:112::", length: 48 }  // AS112-v6
       ]
-    };  
+    }; 
 
   /**
    * OpenWrt タイムゾーン文字列マッピング
@@ -4681,20 +4681,20 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   }
   
   /**
-   * IPv6アドレスがGUA（Global Unicast Address）かどうかを判定
+   * IPv6アドレスがStatic Prefixとして有効かどうかを判定
    * @param {string} ipv6 - 判定対象のIPv6アドレス
-   * @returns {boolean} GUAの場合true
+   * @returns {boolean} 有効な場合true
    */
   function checkGlobalUnicastAddress(ipv6) {
     if (!ipv6) return false;
   
-    const [prefix, lenStr] = guaValidation.prefixCheck.split('/');
+    const [prefix, lenStr] = staticValidation.prefixCheck.split('/');
     const prefixLen = parseInt(lenStr, 10);
     if (!checkIPv6InRangeJS(ipv6, prefix, prefixLen)) {
       return false;
     }
   
-    for (const exclude of guaValidation.excludeCidrs) {
+    for (const exclude of staticValidation.excludeCidrs) {
       if (checkIPv6InRangeJS(ipv6, exclude.prefix, exclude.length)) {
         return false;
       }
@@ -4708,7 +4708,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
    * @param {string} ipv6 - IPv6アドレス
    * @returns {string|null} /64プレフィックス（例：2400:4151:80e2:7500::/64）
    */
-  function extractGUAPrefix(ipv6) {
+  function extractStaticPrefix(ipv6) {
     if (!ipv6) return null;
     
     function normalizeIPv6(ip) {
@@ -4901,8 +4901,8 @@ function checkDSLiteRule(ipv6, userAsn = null) {
           );
 
           if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
-            const guaPrefix = extractGUAPrefix(lookupIPv6);
-            if (guaPrefix) mapRule.ipv6Prefix_static = guaPrefix;
+            const staticPrefix = extractStaticPrefix(lookupIPv6);
+            if (staticPrefix) mapRule.ipv6Prefix_static = staticPrefix;
 
 			const psid = calculatePsid(lookupIPv6, mapRule);
     		if (psid !== null) mapRule.psid = psid;
