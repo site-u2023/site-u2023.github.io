@@ -96,6 +96,7 @@
     "tr-dslite-notice1": "Note: Actual values may differ.",
 
     "tr-mape-lookup-ipv6": "Enter IPv6 prefix or address",
+    "tr-mape-type": "Address Type",
     "tr-static-prefix": "option ip6prefix (Static)",
     "tr-br": "option peeraddr (BR)",
     "tr-ipv4-prefix": "option ipaddr",
