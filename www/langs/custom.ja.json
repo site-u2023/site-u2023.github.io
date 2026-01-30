@@ -223,7 +223,7 @@
     "tr-tui-ui-install-success": "whiptailのインストールに成功しました！",
     "tr-tui-ui-install-failed": "インストール失敗、simpleモードを使用します",   
     "tr-static": "固定 (Static)",
-    "tr-tui-pd": "委任 (PD)",
+    "tr-pd": "委任 (PD)",
 
     "tr-tui-isp-info": "ISP情報:",
     "tr-tui-manual-config-required": "手動で接続設定を行ってください。",
