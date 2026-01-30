@@ -4902,7 +4902,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
 
           if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
             const guaPrefix = extractGUAPrefix(lookupIPv6);
-            if (guaPrefix) mapRule.ipv6Prefix_gua = guaPrefix;
+            if (guaPrefix) mapRule.ipv6Prefix_static = guaPrefix;
 
 			const psid = calculatePsid(lookupIPv6, mapRule);
     		if (psid !== null) mapRule.psid = psid;
