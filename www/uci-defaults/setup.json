@@ -421,7 +421,7 @@
           "options": [
             {"value": "standard", "label": "Standard", "class": "tr-standard"},
             {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
-            {"value": "mlo", "label": "MLO (β)", "class": "tr-mlo"},
+            {"value": "mlo", "label": "MLO", "class": "tr-mlo"},
             {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
