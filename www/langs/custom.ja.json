@@ -21,6 +21,7 @@
     
     "tr-asu-status-checking": "確認中...",
     "tr-asu-status-online": "オンライン",
+    "tr-asu-queue": "キュー: {queue}件",
     "tr-asu-status-offline": "オフライン",
     "tr-asu-status-error": "エラー",
     "tr-asu-status-200": "ASU サーバーに接続可能です。ステータス: {status}",
