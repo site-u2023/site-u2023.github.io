@@ -21,6 +21,7 @@
     
     "tr-asu-status-checking": "Checking...",
     "tr-asu-status-online": "Online",
+    "tr-asu-queue": "Queue: {queue}",
     "tr-asu-status-offline": "Offline",
     "tr-asu-status-error": "Error",
     "tr-asu-status-200": "ASU server is reachable. Status: {status}",
