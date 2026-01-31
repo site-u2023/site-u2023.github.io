@@ -427,7 +427,6 @@
           "exclusiveVars": {
             "standard": ["wlan_ssid", "wlan_password"],
             "usteer": ["wlan_ssid", "wlan_password", "mobility_domain", "snr"],
-            "mlo": ["wlan_ssid", "wlan_password", "mld_id"],
             "disabled": []
           }
         },
@@ -481,20 +480,6 @@
           "default": "30 15 5",
           "description": "SNR thresholds: 2.4GHz 5GHz 6GHz (e.g. '30 15 5')",
           "showWhen": {"wifi_mode": ["usteer"]}
-        },
-        {
-          "type": "field",
-          "id": "aios-wifi-mld-id",
-          "label": "MLD ID",
-          "class": "tr-wifi-mld-id",
-          "fieldType": "text",
-          "variable": "mld_id",
-          "placeholder": "4f575254",
-          "default": "4f575254",
-          "maxlength": 8,
-          "pattern": "[0-9A-Fa-f]{8}",
-          "description": "8-digit hex (e.g. 4f575254)",
-          "showWhen": {"wifi_mode": ["mlo"]}
         },
         {
           "type": "info-display",
