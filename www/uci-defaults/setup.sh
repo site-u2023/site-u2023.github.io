@@ -152,6 +152,7 @@ firewall_wan() {
             rc=$((rc+1))
         }
     done
+    # github.com/danpawlik/openwrt-builder/blob/master/settings-configs/BPI-R4/wireless-mlo-openwrt
     [ "${wifi_mode}" = "mlo" ] && {
         SET mlo=wifi-iface
         SET mlo.ssid="${wlan_ssid}"
