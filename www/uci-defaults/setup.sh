@@ -104,69 +104,67 @@ firewall_wan() {
 { [ "${wifi_mode}" = "standard" ] || [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && [ -n "${wlan_ssid}" ] && [ -n "${wlan_password}" ] && [ "${#wlan_password}" -ge 8 ] && {
     SEC=wireless
     RESET
-    wireless_cfg=$(uci -q show wireless)
-    link_id=0
-    radio_count=0
-    for radio in $(printf '%s\n' "${wireless_cfg}" | grep -E "wireless\.(radio|wifi)[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
-        SET "${radio}".disabled='0'
-        SET ${radio}.country="${country}"
-        [ "${wifi_mode}" = "mlo" ] && SET ${radio}.rnr='1'
-        band=$(GET wireless.${radio}.band 2>&-)
-        if [ -z "$band" ]; then
-            hwmode=$(GET wireless.${radio}.hwmode)
-            band_attr=$(GET wireless.${radio}.band 2>&-)
-            case "${hwmode}" in
+    S="30 15 5"; set -- ${snr:-$S}; rc=0; radios=""
+    for r in $(uci -q show wireless | grep -E "wireless\.(radio|wifi)[0-9]*=" | cut -d. -f2 | cut -d= -f1); do
+        SET ${r}.disabled='0'
+        SET ${r}.country="${country}"
+        band=$(GET wireless.${r}.band 2>&-)
+        [ -z "$band" ] && {
+            case "$(GET wireless.${r}.hwmode)" in
                 11axg|11ng|11bg|11g) band='2g' ;;
-                11bea|11na|11ac|11a) [ "${band_attr}" = "3" ] && band='6g' || band='5g' ;;
+                11bea|11na|11ac|11a) [ "$(GET wireless.${r}.band 2>&-)" = "3" ] && band='6g' || band='5g' ;;
             esac
-        fi
-        S="30 15 5"
-        set -- ${snr:-$S}
-        case "${band}" in
-            2g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$1 ;;
-            5g) [ "${wifi_mode}" = "mlo" ] && encryption='sae' || encryption='psk2'; band_snr=$2; [ "${wifi_mode}" = "mlo" ] && SET ${radio}.background_radar='1' ;;
-            6g) encryption='sae'; band_snr=$3 ;;
-            *) continue ;;
-        esac
-        suffix=${band:+-$band}
-        { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && ssid="${wlan_ssid}" || ssid="${wlan_ssid}${suffix}"
-        iface="default_${radio}"
-        [ -n "$(GET wireless.${iface})" ] && {
-            for o in rnr background_radar; do DEL ${radio}.$o; done
-            for o in isolate ieee80211r mobility_domain ft_over_ds nasid ieee80211k ieee80211v usteer_min_snr ieee80211w mlo mld_id mlo_link_id; do DEL ${iface}.$o; done
-            SET ${iface}.disabled='0'
-            SET ${iface}.encryption="${encryption}"
-            SET ${iface}.ssid="${ssid}"
-            SET ${iface}.key="${wlan_password}"
-            [ "${encryption}" = "sae" ] && SET ${iface}.ieee80211w='2' || SET ${iface}.ieee80211w='0'
-            { [ "${wifi_mode}" = "usteer" ] || [ "${wifi_mode}" = "mlo" ]; } && {
-                SET ${iface}.isolate='1'
+        }
+        [ "${wifi_mode}" = "mlo" ] && {
+            SET ${r}.rnr='1'
+            [ "$band" = "5g" ] && SET ${r}.background_radar='1'
+            radios="${radios} ${r}"
+            iface="default_${r}"
+            [ -n "$(GET wireless.${iface})" ] && DEL ${iface}
+        } || {
+            case "$band" in
+                2g) enc='psk2'; snr=$1 ;;
+                5g) enc='psk2'; snr=$2 ;;
+                6g) enc='sae'; snr=$3 ;;
+                *) continue ;;
+            esac
+            [ "${wifi_mode}" = "usteer" ] && ssid="${wlan_ssid}" || ssid="${wlan_ssid}-${band}"
+            iface="default_${r}"
+            [ -n "$(GET wireless.${iface})" ] && {
+                for o in rnr background_radar; do DEL ${r}.$o; done
+                for o in isolate ieee80211r mobility_domain ft_over_ds nasid ieee80211k ieee80211v usteer_min_snr ieee80211w; do DEL ${iface}.$o; done
+                SET ${iface}.disabled='0'
+                SET ${iface}.ssid="$ssid"
+                SET ${iface}.encryption="$enc"
+                SET ${iface}.key="${wlan_password}"
+                [ "$enc" = "sae" ] && SET ${iface}.ieee80211w='2' || SET ${iface}.ieee80211w='0'
                 [ "${wifi_mode}" = "usteer" ] && {
+                    SET ${iface}.isolate='1'
                     SET ${iface}.ieee80211r='1'
                     SET ${iface}.mobility_domain="${mobility_domain:-4f57}"
                     SET ${iface}.ft_over_ds='1'
-                    SET ${iface}.nasid="${wlan_ssid}-${radio_count}"
+                    SET ${iface}.nasid="${wlan_ssid}-${rc}"
                     SET ${iface}.ieee80211k='1'
                     SET ${iface}.ieee80211v='1'
+                    SET ${iface}.usteer_min_snr="$snr"
                 }
-                [ "${wifi_mode}" = "usteer" ] && SET ${iface}.usteer_min_snr="${band_snr}"
             }
-            [ "${wifi_mode}" = "mlo" ] && {
-                SET ${iface}.ieee80211w='2'
-                SET ${iface}.mlo='1'
-                SET ${iface}.mld_id="${mld_id:-4f575254}"
-                SET ${iface}.mlo_link_id="${link_id}"
-            }
+            rc=$((rc+1))
         }
-        link_id=$((link_id + 1))
-        radio_count=$((radio_count + 1))
     done
+    [ "${wifi_mode}" = "mlo" ] && {
+        SET mlo=wifi-iface
+        SET mlo.ssid="${wlan_ssid}"
+        SET mlo.encryption='sae'
+        SET mlo.key="${wlan_password}"
+        SET mlo.ieee80211w='2'
+        SET mlo.mlo='1'
+        for r in $radios; do ADDLIST mlo.device="$r"; done
+    }
     [ "${wifi_mode}" = "usteer" ] && {
         SEC=usteer
         SET @usteer[0].roam_scan_snr='-65'
-        SET @usteer[0].signal_diff_threshold='10'
-        SET @usteer[0].min_snr='20'
-        SET @usteer[0].max_snr='80'
+        SET @usteer[0].signal_diff_threshold='8'
     }
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
