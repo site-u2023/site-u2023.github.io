@@ -4825,6 +4825,99 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
+// ==================== ASU Server Status Check ====================
+async function checkAsuServerStatus() {
+    const statusIndicator = document.getElementById('asu-status-indicator');
+    const statusText = document.getElementById('asu-status-text');
+    
+    if (!statusIndicator || !statusText) {
+        console.log('ASU status elements not found');
+        return;
+    }
+    
+    if (!config?.asu_url) {
+        console.log('ASU URL not configured');
+        updateAsuStatus('offline', 'ASU not configured');
+        return;
+    }
+    
+    try {
+        statusIndicator.className = 'status-indicator status-checking';
+        statusText.className = 'status-text tr-asu-status-checking';
+        
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+        
+        const response = await fetch(config.asu_url + '/api/v1/overview', {
+            method: 'GET',
+            signal: controller.signal,
+            cache: 'no-store'
+        });
+        
+        if (!response.ok) {
+            clearTimeout(timeoutId);
+            if (response.status >= 500) {
+                updateAsuStatus('error', response.status);
+                console.warn(`ASU server error: HTTP ${response.status}`);
+            } else {
+                updateAsuStatus('offline', response.status);
+                console.warn(`ASU server unexpected status: HTTP ${response.status}`);
+            }
+            return;
+        }
+        
+        // キュー長を取得
+        let queueLength = null;
+        try {
+            const statsResponse = await fetch(config.asu_url + '/api/v1/stats', {
+                method: 'GET',
+                signal: controller.signal,
+                cache: 'no-store'
+            });
+            if (statsResponse.ok) {
+                const statsData = await statsResponse.json();
+                queueLength = statsData.queue_length ?? null;
+                console.log(`ASU queue length: ${queueLength}`);
+            }
+        } catch (statsErr) {
+            console.warn('Failed to fetch ASU stats:', statsErr);
+        }
+        
+        const versionSelect = document.getElementById('versions');
+        const version = versionSelect?.value || config.versions?.[0];
+        
+        if (version && config.overview_urls?.[version]) {
+            const overview_url = `${config.overview_urls[version]}/.overview.json`;
+            const overviewResponse = await fetch(overview_url, { 
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (overviewResponse.status != 200) {
+                updateAsuStatus('offline', 'Overview JSON unavailable', queueLength);
+                console.error(`Failed to fetch ${overview_url}`);
+                return;
+            }
+        } else {
+            clearTimeout(timeoutId);
+        }
+        
+        updateAsuStatus('online', response.status, queueLength);
+        console.log('ASU server is online');
+        
+    } catch (error) {
+        if (error.name === 'AbortError') {
+            updateAsuStatus('offline', 'timeout');
+            console.error('ASU server check timeout');
+        } else {
+            updateAsuStatus('offline', error.message);
+            console.error('ASU server check failed:', error);
+        }
+    }
+}
+
 function updateAsuStatus(status, detail, queueLength = null) {
     const statusIndicator = document.getElementById('asu-status-indicator');
     const statusText = document.getElementById('asu-status-text');
@@ -4838,6 +4931,7 @@ function updateAsuStatus(status, detail, queueLength = null) {
     
     const detailText = detail ? ` (${detail})` : '';
     
+    // キュー表示文字列（翻訳対応）
     let queueText = '';
     if (typeof queueLength === 'number' && queueLength >= 0) {
         const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
