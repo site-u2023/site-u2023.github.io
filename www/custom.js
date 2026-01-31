@@ -4825,83 +4825,7 @@ function replaceAsuSection(asuSection, temp) {
     asuSection.parentNode.replaceChild(newDiv, asuSection);
 }
 
-// ==================== ASU Server Status Check ====================
-async function checkAsuServerStatus() {
-    const statusIndicator = document.getElementById('asu-status-indicator');
-    const statusText = document.getElementById('asu-status-text');
-    
-    if (!statusIndicator || !statusText) {
-        console.log('ASU status elements not found');
-        return;
-    }
-    
-    if (!config?.asu_url) {
-        console.log('ASU URL not configured');
-        updateAsuStatus('offline', 'ASU not configured');
-        return;
-    }
-    
-    try {
-        statusIndicator.className = 'status-indicator status-checking';
-        statusText.className = 'status-text tr-asu-status-checking';
-        
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000);
-        
-        const response = await fetch(config.asu_url + '/overview', {
-            method: 'GET',
-            signal: controller.signal,
-            cache: 'no-store'
-        });
-        
-        if (!response.ok) {
-            clearTimeout(timeoutId);
-            if (response.status >= 500) {
-                updateAsuStatus('error', response.status);
-                console.warn(`ASU server error: HTTP ${response.status}`);
-            } else {
-                updateAsuStatus('offline', response.status);
-                console.warn(`ASU server unexpected status: HTTP ${response.status}`);
-            }
-            return;
-        }
-        
-        const versionSelect = document.getElementById('versions');
-        const version = versionSelect?.value || config.versions?.[0];
-        
-        if (version && config.overview_urls?.[version]) {
-            const overview_url = `${config.overview_urls[version]}/.overview.json`;
-            const overviewResponse = await fetch(overview_url, { 
-                cache: 'no-cache',
-                signal: controller.signal
-            });
-            
-            clearTimeout(timeoutId);
-            
-            if (overviewResponse.status != 200) {
-                updateAsuStatus('offline', 'Overview JSON unavailable');
-                console.error(`Failed to fetch ${overview_url}`);
-                return;
-            }
-        } else {
-            clearTimeout(timeoutId);
-        }
-        
-        updateAsuStatus('online', response.status);
-        console.log('ASU server is online');
-        
-    } catch (error) {
-        if (error.name === 'AbortError') {
-            updateAsuStatus('offline', 'timeout');
-            console.error('ASU server check timeout');
-        } else {
-            updateAsuStatus('offline', error.message);
-            console.error('ASU server check failed:', error);
-        }
-    }
-}
-
-function updateAsuStatus(status, detail) {
+function updateAsuStatus(status, detail, queueLength = null) {
     const statusIndicator = document.getElementById('asu-status-indicator');
     const statusText = document.getElementById('asu-status-text');
     
@@ -4914,35 +4838,41 @@ function updateAsuStatus(status, detail) {
     
     const detailText = detail ? ` (${detail})` : '';
     
+    let queueText = '';
+    if (typeof queueLength === 'number' && queueLength >= 0) {
+        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+        queueText = ' (' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+    }
+    
     if (current_language_json && current_language_json[translationKey]) {
         const baseText = current_language_json[translationKey];
         
         if (status === 'online' && typeof detail === 'number') {
-            statusText.textContent = baseText.replace('{status}', detail);
+            statusText.textContent = baseText.replace('{status}', detail) + queueText;
         } else if (status === 'error' && typeof detail === 'number') {
-            statusText.textContent = baseText.replace('{status}', detail);
+            statusText.textContent = baseText.replace('{status}', detail) + queueText;
         } else if (status === 'offline') {
             if (detail === 'timeout') {
-                statusText.textContent = baseText;
+                statusText.textContent = baseText + queueText;
             } else if (typeof detail === 'number') {
-                statusText.textContent = baseText.replace('{status}', detail);
+                statusText.textContent = baseText.replace('{status}', detail) + queueText;
             } else {
-                statusText.textContent = baseText.replace('{error}', detail || 'Unknown');
+                statusText.textContent = baseText.replace('{error}', detail || 'Unknown') + queueText;
             }
         } else {
-            statusText.textContent = baseText;
+            statusText.textContent = baseText + queueText;
         }
     } else {
         const statusMap = {
             checking: 'Checking...',
-            online: `Online${detailText}`,
-            offline: `Offline${detailText}`,
-            error: `Error${detailText}`
+            online: `Online${detailText}${queueText}`,
+            offline: `Offline${detailText}${queueText}`,
+            error: `Error${detailText}${queueText}`
         };
         statusText.textContent = statusMap[status] || 'Unknown';
     }
     
-    console.log(`ASU Status updated: ${status} - ${detail || 'no detail'}`);
+    console.log(`ASU Status updated: ${status} - ${detail || 'no detail'} - Queue: ${queueLength ?? 'N/A'}`);
 }
 
 // ==================== 初期化 ====================
