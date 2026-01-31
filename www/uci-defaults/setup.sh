@@ -109,10 +109,15 @@ firewall_wan() {
         SET ${r}.disabled='0'
         SET ${r}.country="${country}"
         band=$(GET wireless.${r}.band 2>&-)
+        case "$band" in
+            1) band='2g' ;;
+            2) band='5g' ;;
+            3) band='6g' ;;
+        esac
         [ -z "$band" ] && {
             case "$(GET wireless.${r}.hwmode)" in
                 11axg|11ng|11bg|11g) band='2g' ;;
-                11bea|11na|11ac|11a) [ "$(GET wireless.${r}.band 2>&-)" = "3" ] && band='6g' || band='5g' ;;
+                11bea|11na|11ac|11a) band='5g' ;;
             esac
         }
         [ "${wifi_mode}" = "mlo" ] && {
