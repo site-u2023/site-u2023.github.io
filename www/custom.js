@@ -941,6 +941,20 @@ function buildRadioGroup(item) {
     radioWrap.className = 'radio-group';
     
     (item.options || []).forEach(opt => {
+        if (opt.type === 'separator') {
+            const sep = document.createElement('div');
+            sep.className = 'radio-group-separator';
+            const sepLabel = document.createElement('span');
+            if (opt.class) {
+                sepLabel.classList.add(opt.class);
+                sepLabel.textContent = opt.class;
+            } else {
+                sepLabel.textContent = opt.label || '';
+            }
+            sep.appendChild(sepLabel);
+            radioWrap.appendChild(sep);
+            return;
+        }
         const lbl = document.createElement('label');
         const radio = document.createElement('input');
         radio.type = 'radio';
