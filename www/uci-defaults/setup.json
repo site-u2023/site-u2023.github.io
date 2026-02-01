@@ -514,14 +514,13 @@
           "variable": "connection_type",
           "default": "auto",
           "options": [
+            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
             {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
             {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
-            {"value": "ap", "label": "Dumb AP", "class": "tr-dumb-ap"},
-            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"},
-            {"type": "separator", "label": "ISP", "class": "tr-isp"},
-            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
+            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
             {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
-            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"}
+            {"value": "ap", "label": "AP", "class": "tr-ap"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
           ],
           "exclusiveVars": {
             "auto": [
