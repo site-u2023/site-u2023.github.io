@@ -4837,9 +4837,13 @@ function replaceAsuSection(asuSection, temp) {
 // ==================== ASU Queue Display ====================
 function updateQueueDisplay(queueLength) {
     const queueDisplay = document.getElementById('asu-queue-display');
-    if (queueDisplay && typeof queueLength === 'number' && queueLength >= 0) {
-        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
-        queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+    if (queueDisplay) {
+        if (typeof queueLength === 'number' && queueLength > 0) {
+            const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+            queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+        } else {
+            queueDisplay.textContent = '';
+        }
     }
 }
 
@@ -4884,7 +4888,6 @@ async function checkAsuServerStatus() {
             return;
         }
         
-        // キュー長を取得
         let queueLength = null;
         try {
             const statsResponse = await fetch(config.asu_url + '/api/v1/stats', {
@@ -4896,6 +4899,16 @@ async function checkAsuServerStatus() {
                 const statsData = await statsResponse.json();
                 queueLength = statsData.queue_length ?? null;
                 console.log(`ASU queue length: ${queueLength}`);
+                
+                const queueDisplay = document.getElementById('asu-queue-display');
+                if (queueDisplay) {
+                    if (typeof queueLength === 'number' && queueLength > 0) {
+                        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+                        queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+                    } else {
+                        queueDisplay.textContent = '';
+                    }
+                }
             }
         } catch (statsErr) {
             console.warn('Failed to fetch ASU stats:', statsErr);
