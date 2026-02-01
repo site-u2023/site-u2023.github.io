@@ -129,7 +129,7 @@
   color: #ff6b6b;
 }
 
-.asu-queue-display:empty {
+.queue-display:empty {
   display: none;
 }
 
