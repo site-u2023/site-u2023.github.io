@@ -129,6 +129,10 @@
   color: #ff6b6b;
 }
 
+.asu-queue-display:empty {
+  display: none;
+}
+
 .settings-btn {
   background-color: #00a3e1;
   color: #fff;
