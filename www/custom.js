@@ -4921,6 +4921,7 @@ async function checkAsuServerStatus() {
 function updateAsuStatus(status, detail, queueLength = null) {
     const statusIndicator = document.getElementById('asu-status-indicator');
     const statusText = document.getElementById('asu-status-text');
+    const queueDisplay = document.getElementById('asu-queue-display');
     
     if (!statusIndicator || !statusText) return;
     
@@ -4931,37 +4932,39 @@ function updateAsuStatus(status, detail, queueLength = null) {
     
     const detailText = detail ? ` (${detail})` : '';
     
-    // キュー表示文字列（翻訳対応）
-    let queueText = '';
-    if (typeof queueLength === 'number' && queueLength >= 0) {
-        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
-        queueText = ' (' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+    if (queueDisplay) {
+        if (typeof queueLength === 'number' && queueLength >= 0) {
+            const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+            queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+        } else {
+            queueDisplay.textContent = '';
+        }
     }
     
     if (current_language_json && current_language_json[translationKey]) {
         const baseText = current_language_json[translationKey];
         
         if (status === 'online' && typeof detail === 'number') {
-            statusText.textContent = baseText.replace('{status}', detail) + queueText;
+            statusText.textContent = baseText.replace('{status}', detail);
         } else if (status === 'error' && typeof detail === 'number') {
-            statusText.textContent = baseText.replace('{status}', detail) + queueText;
+            statusText.textContent = baseText.replace('{status}', detail);
         } else if (status === 'offline') {
             if (detail === 'timeout') {
-                statusText.textContent = baseText + queueText;
+                statusText.textContent = baseText;
             } else if (typeof detail === 'number') {
-                statusText.textContent = baseText.replace('{status}', detail) + queueText;
+                statusText.textContent = baseText.replace('{status}', detail);
             } else {
-                statusText.textContent = baseText.replace('{error}', detail || 'Unknown') + queueText;
+                statusText.textContent = baseText.replace('{error}', detail || 'Unknown');
             }
         } else {
-            statusText.textContent = baseText + queueText;
+            statusText.textContent = baseText;
         }
     } else {
         const statusMap = {
             checking: 'Checking...',
-            online: `Online${detailText}${queueText}`,
-            offline: `Offline${detailText}${queueText}`,
-            error: `Error${detailText}${queueText}`
+            online: `Online${detailText}`,
+            offline: `Offline${detailText}`,
+            error: `Error${detailText}`
         };
         statusText.textContent = statusMap[status] || 'Unknown';
     }
