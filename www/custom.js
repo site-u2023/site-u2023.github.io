@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0201.1655) loaded');
+console.log('custom.js (R8.0201.1703) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -4837,13 +4837,9 @@ function replaceAsuSection(asuSection, temp) {
 // ==================== ASU Queue Display ====================
 function updateQueueDisplay(queueLength) {
     const queueDisplay = document.getElementById('asu-queue-display');
-    if (queueDisplay) {
-        if (typeof queueLength === 'number' && queueLength > 0) {
-            const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
-            queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
-        } else {
-            queueDisplay.textContent = '';
-        }
+    if (queueDisplay && typeof queueLength === 'number' && queueLength >= 0) {
+        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+        queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
     }
 }
 
@@ -4888,6 +4884,7 @@ async function checkAsuServerStatus() {
             return;
         }
         
+        // キュー長を取得
         let queueLength = null;
         try {
             const statsResponse = await fetch(config.asu_url + '/api/v1/stats', {
@@ -4899,16 +4896,6 @@ async function checkAsuServerStatus() {
                 const statsData = await statsResponse.json();
                 queueLength = statsData.queue_length ?? null;
                 console.log(`ASU queue length: ${queueLength}`);
-                
-                const queueDisplay = document.getElementById('asu-queue-display');
-                if (queueDisplay) {
-                    if (typeof queueLength === 'number' && queueLength > 0) {
-                        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
-                        queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
-                    } else {
-                        queueDisplay.textContent = '';
-                    }
-                }
             }
         } catch (statsErr) {
             console.warn('Failed to fetch ASU stats:', statsErr);
@@ -4964,7 +4951,7 @@ function updateAsuStatus(status, detail, queueLength = null) {
     const detailText = detail ? ` (${detail})` : '';
     
     if (queueDisplay) {
-        if (typeof queueLength === 'number' && queueLength >= 0) {
+        if (typeof queueLength === 'number' && queueLength > 0) {
             const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
             queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
         } else {
