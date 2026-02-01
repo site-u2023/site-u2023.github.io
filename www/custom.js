@@ -2704,6 +2704,15 @@ async function handleMainLanguageChange(e) {
         const info = state.apiInfo;
         if (info) updateAutoConnectionInfo(info);
     }
+
+    const queueDisplay = document.getElementById('asu-queue-display');
+    if (queueDisplay && queueDisplay.textContent) {
+        const match = queueDisplay.textContent.match(/[\d,]+/);
+        if (match) {
+            const queueLength = parseInt(match[0].replace(/,/g, ''));
+            updateQueueDisplay(queueLength);
+        }
+    }
 }
 
 async function handleCustomLanguageChange(e) {
@@ -4823,6 +4832,15 @@ function replaceAsuSection(asuSection, temp) {
     }
     
     asuSection.parentNode.replaceChild(newDiv, asuSection);
+}
+
+// ==================== ASU Queue Display ====================
+function updateQueueDisplay(queueLength) {
+    const queueDisplay = document.getElementById('asu-queue-display');
+    if (queueDisplay && typeof queueLength === 'number' && queueLength >= 0) {
+        const queueTemplate = current_language_json?.['tr-asu-queue'] || 'Queue: {queue}';
+        queueDisplay.textContent = '(' + queueTemplate.replace('{queue}', queueLength.toLocaleString()) + ')';
+    }
 }
 
 // ==================== ASU Server Status Check ====================
