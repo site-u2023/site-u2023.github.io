@@ -695,6 +695,11 @@ details summary::-webkit-details-marker {
   color: var(--owrt-blue);
 }
 
+#asu-server-link {
+  text-decoration: none;
+  color: inherit;
+}
+
 /* ===== 汎用ツールチップ（Package & Setup 共通） ===== */
 .tooltip {
   position: absolute;
