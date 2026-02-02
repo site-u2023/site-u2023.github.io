@@ -4818,34 +4818,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     return psid;
   }
 
-  function calculatePortRange(psid, psidlen, offset) {
-    if (psid == null || !psidlen || !offset) return null;
-  
-    const psidlenNum = parseInt(psidlen, 10);
-    const offsetNum = parseInt(offset, 10);
-  
-    if (isNaN(psidlenNum) || isNaN(offsetNum)) return null;
-  
-    const portStart = (psid << (16 - psidlenNum - offsetNum)) + offsetNum;
-    const portCount = 1 << (16 - psidlenNum - offsetNum);
-    const portEnd = portStart + portCount - 1;
-  
-    return {
-      portStart,
-      portEnd,
-      portCount
-    };
-  }
-
-  if (psid !== null) {
-  	mapRule.psid = psid;
-  
-  	const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
-  	mapRule.portStart = ports.portStart;
-  	mapRule.portEnd = ports.portEnd;
-  	mapRule.portCount = ports.portCount;
-  }
-
   // ========================================
   // メインハンドラー
   // ========================================
@@ -4931,18 +4903,9 @@ function checkDSLiteRule(ipv6, userAsn = null) {
           if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
             const staticPrefix = extractStaticPrefix(lookupIPv6);
             if (staticPrefix) mapRule.ipv6Prefix_static = staticPrefix;
-            
-            const psid = calculatePsid(lookupIPv6, mapRule);
-            if (psid !== null) {
-              mapRule.psid = psid;
-              
-              const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
-              if (ports) {
-                mapRule.portStart = ports.portStart;
-                mapRule.portEnd = ports.portEnd;
-                mapRule.portCount = ports.portCount;
-              }
-            }
+
+			const psid = calculatePsid(lookupIPv6, mapRule);
+    		if (psid !== null) mapRule.psid = psid;
           }
         }
       }
