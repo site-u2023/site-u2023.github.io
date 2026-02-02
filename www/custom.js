@@ -2480,7 +2480,19 @@ function renderConnectionInfo(container, displayConfig) {
                 
                 if (values.length === 0) return;
                 
-                if (field.format) {
+                // ポート範囲の特別処理
+                if (field.id === 'mape-port-range' && values.length >= 2) {
+                    const portStart = parseInt(values[0]);
+                    const portEnd = parseInt(values[1]);
+                    const portCount = parseInt(values[2]) || 16;
+                    
+                    const ranges = [];
+                    for (let i = portStart; i <= portEnd; i += portCount) {
+                        const rangeEnd = Math.min(i + portCount - 1, portEnd);
+                        ranges.push(`${i}-${rangeEnd}`);
+                    }
+                    displayValue = ranges.join(' ');
+                } else if (field.format) {
                     displayValue = field.format;
                     values.forEach((val, index) => {
                         displayValue = displayValue.replace(`{${index}}`, val);
