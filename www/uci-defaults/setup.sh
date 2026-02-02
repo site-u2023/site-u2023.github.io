@@ -399,7 +399,6 @@ firewall_wan() {
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
     [ -n "${filter_url}" ] && {
-        local IDX
         IDX=$(uci add "$SEC" file_url)
         SET "$IDX".url="${filter_url}"
         SET "$IDX".action='block'
