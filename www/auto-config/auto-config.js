@@ -4819,14 +4819,22 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   }
 
   function calculatePortRange(psid, psidlen, offset) {
-  	const portStart = (psid << (16 - psidlen - offset)) + offset;
-  	const portEnd = portStart + (1 << (16 - psidlen - offset)) - 1;
+    if (psid == null || !psidlen || !offset) return null;
   
-  	return {
-    	portStart: portStart,
-    	portEnd: portEnd,
-    	portCount: portEnd - portStart + 1
-  	};
+    const psidlenNum = parseInt(psidlen, 10);
+    const offsetNum = parseInt(offset, 10);
+  
+    if (isNaN(psidlenNum) || isNaN(offsetNum)) return null;
+  
+    const portStart = (psid << (16 - psidlenNum - offsetNum)) + offsetNum;
+    const portCount = 1 << (16 - psidlenNum - offsetNum);
+    const portEnd = portStart + portCount - 1;
+  
+    return {
+      portStart,
+      portEnd,
+      portCount
+    };
   }
 
   if (psid !== null) {
@@ -4923,9 +4931,18 @@ function checkDSLiteRule(ipv6, userAsn = null) {
           if (isMatchedPrefix && checkGlobalUnicastAddress(lookupIPv6)) {
             const staticPrefix = extractStaticPrefix(lookupIPv6);
             if (staticPrefix) mapRule.ipv6Prefix_static = staticPrefix;
-
-			const psid = calculatePsid(lookupIPv6, mapRule);
-    		if (psid !== null) mapRule.psid = psid;
+            
+            const psid = calculatePsid(lookupIPv6, mapRule);
+            if (psid !== null) {
+              mapRule.psid = psid;
+              
+              const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
+              if (ports) {
+                mapRule.portStart = ports.portStart;
+                mapRule.portEnd = ports.portEnd;
+                mapRule.portCount = ports.portCount;
+              }
+            }
           }
         }
       }
