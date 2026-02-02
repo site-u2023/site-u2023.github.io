@@ -24,8 +24,8 @@ RESET() {
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
 DATE="$(date '+%Y-%m-%d %H:%M')"
-LAN="$(GET network.lan.ifname 2>&- || echo lan)"
-WAN="$(GET network.wan.ifname 2>&- || echo wan)"
+LAN="$(GET network.lan.ifname 2>&- || echo @lan)"
+WAN="$(GET network.wan.ifname 2>&- || echo @wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
 ZONE="${ZONE:-@zone[1]}"
 MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
@@ -353,17 +353,17 @@ firewall_wan() {
     SEC=network
     ADDLIST @device[0].ports='usb0'
 }
-[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
+[ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ "$MEM" -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
-    if [ $MEM -ge 2400 ]; then V6="512 1024 2048"
-    elif [ $MEM -ge 1200 ]; then V6="256 512 1024"
+    if [ "$MEM" -ge 2400 ]; then V6="512 1024 2048"
+    elif [ "$MEM" -ge 1200 ]; then V6="256 512 1024"
     else V6="128 256 512"
     fi
     [ "${net_optimizer}" = "auto" ] && {
-        if [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
-        elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
-        elif [ $MEM -ge 400 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
+        if [ "$MEM" -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
+        elif [ "$MEM" -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
+        elif [ "$MEM" -ge 400 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
         fi
         [ "$P" -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
         [ "$P" -gt 2 ] && [ "$P" -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
