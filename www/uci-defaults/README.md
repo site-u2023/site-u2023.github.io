@@ -17,6 +17,7 @@ SET @system[0].notes="site-u.pages.dev"
 <details> <summary>enable_log</summary>
 
 ```sh
+enable_log="1"
 [ -n "${enable_log}" ] && {
     local SEC=system
     SET @system[0].log_size='32'
