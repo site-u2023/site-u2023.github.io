@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0201.1703) loaded');
+console.log('custom.js (R8.0202.1633) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -2471,58 +2471,24 @@ function renderConnectionInfo(container, displayConfig) {
     
     if (displayConfig.fields) {
         displayConfig.fields.forEach(field => {
-            let displayValue = null;
+            let value = state.apiValues?.[field.varName];
             
-            if (field.varNames && Array.isArray(field.varNames)) {
-                const values = field.varNames
-                    .map(varName => state.apiValues?.[varName])
-                    .filter(v => v !== null && v !== undefined && v !== '');
-                
-                if (values.length === 0) return;
-                
-                if (field.id === 'mape-port-range' && values.length >= 2) {
-                    const portStart = parseInt(values[0]);
-                    const portEnd = parseInt(values[1]);
-                    const portCount = parseInt(values[2]) || 16;
-                    
-                    const ranges = [];
-                    for (let i = portStart; i <= portEnd; i += portCount) {
-                        const rangeEnd = Math.min(i + portCount - 1, portEnd);
-                        ranges.push(`${i}-${rangeEnd}`);
-                    }
-                    displayValue = ranges.join(' ');
-                } else if (field.format) {
-                    displayValue = field.format;
-                    values.forEach((val, index) => {
-                        displayValue = displayValue.replace(`{${index}}`, val);
-                    });
-                } else if (field.separator) {
-                    displayValue = values.join(field.separator);
-                } else {
-                    displayValue = values.join(' ');
-                }
-            } else {
-                let value = state.apiValues?.[field.varName];
-                
-                if (field.condition === 'computeStaticPrefix') {
+            if (field.condition === 'computeStaticPrefix') {
+                if (!value) {
+                    value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
                     if (!value) {
-                        value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
-                        if (!value) {
-                            const staticField = document.querySelector('#mape-static-prefix');
-                            if (staticField && staticField.value) value = staticField.value;
-                        }
-                        if (value) state.apiValues[field.varName] = value;
+                        const staticField = document.querySelector('#mape-static-prefix');
+                        if (staticField && staticField.value) value = staticField.value;
                     }
-                    if (!value) return;
-                } else if (field.condition === 'hasValue') {
-                    if (!value) return;
+                    if (value) state.apiValues[field.varName] = value;
                 }
-                
-                displayValue = value;
+                if (!value) return;
+            } else if (field.condition === 'hasValue') {
+                if (!value) return;
             }
             
-            if (displayValue !== null && displayValue !== undefined && displayValue !== '') {
-                container.appendChild(document.createTextNode(`${field.label} ${displayValue}`));
+            if (value !== null && value !== undefined && value !== '') {
+                container.appendChild(document.createTextNode(`${field.label} ${value}`));
                 container.appendChild(document.createElement('br'));
             }
         });
