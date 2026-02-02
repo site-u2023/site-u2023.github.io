@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0202.1154) loaded');
+console.log('custom.js (R8.0202.1210) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -3876,12 +3876,10 @@ function addAnchorLink(element, anchorId) {
     if (!element.id) element.id = anchorId;
     
     element.style.position = 'relative';
-    element.style.paddingLeft = '1.5em';
     
     const link = document.createElement('a');
     link.href = `#${anchorId}`;
     link.className = 'anchor-link';
-    link.innerHTML = '🔗';
     link.style.cssText = 'position: absolute; left: 0; top: 50%; transform: translateY(-50%); text-decoration: none; opacity: 0; transition: opacity 0.2s; font-size: 0.8em;';
     
     element.addEventListener('mouseenter', () => link.style.opacity = '0.6');
