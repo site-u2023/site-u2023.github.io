@@ -4793,14 +4793,19 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     if (isNaN(psidlen)) return null;
 
     function parseIPv6ToHextets(ip) {
-      const field = ip.replace("::", ":0::").match(/([0-9a-f]{1,4}):([0-9a-f]{1,4}):([0-9a-f]{1,4}):([0-9a-f]{0,4})/i);
-      if (!field) return null;
-      
-      const hextet = [];
-      for (let i = 0; i < 4; i++) {
-        hextet[i] = field[i + 1] ? parseInt(field[i + 1], 16) : 0;
+      let normalized = ip;
+      if (ip.includes('::')) {
+        const parts = ip.split('::');
+        const left = parts[0] ? parts[0].split(':') : [];
+        const right = parts[1] ? parts[1].split(':') : [];
+        const zeros = Array(8 - left.length - right.length).fill('0');
+        normalized = [...left, ...zeros, ...right].join(':');
       }
-      return hextet;
+      
+      const groups = normalized.split(':').map(g => parseInt(g || '0', 16));
+      if (groups.length < 4) return null;
+      
+      return groups.slice(0, 4);
     }
 
     const hextet = parseIPv6ToHextets(ipv6);
@@ -4811,11 +4816,40 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       psid = (hextet[3] & 0xff00) >> 8;
     } else if (psidlen === 6) {
       psid = (hextet[3] & 0x3f00) >> 8;
+    } else if (psidlen > 0 && psidlen <= 16) {
+      const mask = (0xffff << (16 - psidlen)) & 0xffff;
+      psid = (hextet[3] & mask) >> (16 - psidlen);
     } else {
       return null;
     }
 
     return psid;
+  }
+
+/**
+   * PSIDからポート範囲を計算
+   * @param {number} psid - PSID値
+   * @param {number} psidlen - PSIDビット長
+   * @param {number} offset - オフセット値
+   * @returns {object|null} ポート範囲情報
+   */
+  function calculatePortRange(psid, psidlen, offset) {
+    if (psid == null || !psidlen || !offset) return null;
+    
+    const psidlenNum = parseInt(psidlen, 10);
+    const offsetNum = parseInt(offset, 10);
+    
+    if (isNaN(psidlenNum) || isNaN(offsetNum)) return null;
+    
+    const portStart = (psid << (16 - psidlenNum - offsetNum)) + offsetNum;
+    const portCount = 1 << (16 - psidlenNum - offsetNum);
+    const portEnd = portStart + portCount - 1;
+    
+    return {
+      portStart,
+      portEnd,
+      portCount
+    };
   }
 
   // ========================================
@@ -4904,8 +4938,17 @@ function checkDSLiteRule(ipv6, userAsn = null) {
             const staticPrefix = extractStaticPrefix(lookupIPv6);
             if (staticPrefix) mapRule.ipv6Prefix_static = staticPrefix;
 
-			const psid = calculatePsid(lookupIPv6, mapRule);
-    		if (psid !== null) mapRule.psid = psid;
+            const psid = calculatePsid(lookupIPv6, mapRule);
+            if (psid !== null && psid !== undefined) {
+              mapRule.psid = psid;
+              
+              const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
+              if (ports) {
+                mapRule.portStart = ports.portStart;
+                mapRule.portEnd = ports.portEnd;
+                mapRule.portCount = ports.portCount;
+              }
+            }
           }
         }
       }
