@@ -35,7 +35,7 @@ SEC=system
 SET @system[0].description="${DATE}"
 SET @system[0].notes="site-u.pages.dev"
 [ -n "${enable_log}" ] && {
-    local SEC=system
+local SEC=system
     SET @system[0].log_size='32'
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
