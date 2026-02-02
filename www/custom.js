@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0202.1210) loaded');
+console.log('custom.js (R8.0201.1703) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -584,8 +584,6 @@ function renderSetupConfig(config) {
         if (category.description || category.descriptionUrl) {
             addTooltip(h4, category.descriptionUrl || category.description);
         }
-
-        addAnchorLink(h4, category.id);
         
         section.appendChild(h4);
         
@@ -3872,29 +3870,6 @@ function addTooltip(element, descriptionSource) {
     });
 }
 
-function addAnchorLink(element, anchorId) {
-    if (!element.id) element.id = anchorId;
-    
-    element.style.position = 'relative';
-    
-    const link = document.createElement('a');
-    link.href = `#${anchorId}`;
-    link.className = 'anchor-link';
-    link.style.cssText = 'position: absolute; left: 0; top: 50%; transform: translateY(-50%); text-decoration: none; opacity: 0; transition: opacity 0.2s; font-size: 0.8em;';
-    
-    element.addEventListener('mouseenter', () => link.style.opacity = '0.6');
-    element.addEventListener('mouseleave', () => link.style.opacity = '0');
-    link.addEventListener('mouseenter', () => link.style.opacity = '1');
-    
-    link.addEventListener('click', (e) => {
-        e.preventDefault();
-        navigator.clipboard.writeText(window.location.origin + window.location.pathname + window.location.search + '#' + anchorId);
-        window.location.hash = anchorId;
-    });
-    
-    element.insertBefore(link, element.firstChild);
-}
-
 function isAvailableInIndex(pkgName, index) {
     for (const feedSet of Object.values(index)) {
         if (feedSet?.has?.(pkgName)) return true;
@@ -4149,7 +4124,7 @@ function createPackageCategory(category) {
         }
     });
     
-    if (!hasVisiblePackages) return null;
+if (!hasVisiblePackages) return null;
     
     const title = document.createElement('h4');
     const titleText = document.createElement('span');
@@ -4163,8 +4138,6 @@ function createPackageCategory(category) {
         addTooltip(title, category.description);
     }
     categoryDiv.appendChild(title);
-
-    addAnchorLink(title, category.id);
     
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
