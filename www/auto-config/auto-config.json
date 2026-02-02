@@ -26,7 +26,7 @@
       { "varName": "MAPE_PSIDLEN", "jsonPath": "mape.psidlen" },
       { "varName": "MAPE_PSID_OFFSET", "jsonPath": "mape.psIdOffset" },
       { "varName": "MAPE_CALC_OFFSET", "jsonPath": "mape.calculatedOffset" },
-      { "varName": "MAPE_STATIC_EFIX", "jsonPath": "mape.ipv6Prefix_static" },
+      { "varName": "MAPE_STATIC_PREFIX", "jsonPath": "mape.ipv6Prefix_static" },
       { "varName": "MAPE_PSID", "jsonPath": "mape.psid" },
       { "varName": "MAPE_PORT_START", "jsonPath": "mape.portStart" },
       { "varName": "MAPE_PORT_END", "jsonPath": "mape.portEnd" },
