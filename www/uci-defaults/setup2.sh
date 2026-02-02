@@ -35,7 +35,7 @@ SEC=system
 SET @system[0].description="${DATE}"
 SET @system[0].notes="site-u.pages.dev"
 [ -n "${enable_log}" ] && {
-    local SEC=system
+    SEC=system
     SET @system[0].log_size='32'
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
@@ -399,7 +399,6 @@ firewall_wan() {
     SET config.enabled='1'
     SET config.procd_trigger_wan6='1'
     [ -n "${filter_url}" ] && {
-        local IDX
         IDX=$(uci add "$SEC" file_url)
         SET "$IDX".url="${filter_url}"
         SET "$IDX".action='block'
