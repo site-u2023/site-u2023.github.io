@@ -2480,7 +2480,6 @@ function renderConnectionInfo(container, displayConfig) {
                 
                 if (values.length === 0) return;
                 
-                // ポート範囲の特別処理
                 if (field.id === 'mape-port-range' && values.length >= 2) {
                     const portStart = parseInt(values[0]);
                     const portEnd = parseInt(values[1]);
