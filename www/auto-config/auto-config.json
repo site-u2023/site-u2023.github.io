@@ -26,7 +26,11 @@
       { "varName": "MAPE_PSIDLEN", "jsonPath": "mape.psidlen" },
       { "varName": "MAPE_PSID_OFFSET", "jsonPath": "mape.psIdOffset" },
       { "varName": "MAPE_CALC_OFFSET", "jsonPath": "mape.calculatedOffset" },
-      { "varName": "MAPE_STATIC_EFIX", "jsonPath": "mape.ipv6Prefix_static" }
+      { "varName": "MAPE_STATIC_EFIX", "jsonPath": "mape.ipv6Prefix_static" },
+      { "varName": "MAPE_PSID", "jsonPath": "mape.psid" },
+      { "varName": "MAPE_PORT_START", "jsonPath": "mape.portStart" },
+      { "varName": "MAPE_PORT_END", "jsonPath": "mape.portEnd" },
+      { "varName": "MAPE_PORT_COUNT", "jsonPath": "mape.portCount" }
     ],
     "dslite": [
       { "varName": "DSLITE_AFTR_TYPE", "jsonPath": "aftr.aftrType" },
@@ -82,7 +86,9 @@
         { "id": "mape-ip6prefixlen", "label": "option ip6prefixlen", "varName": "MAPE_IPV6_PREFIXLEN" },
         { "id": "mape-ealen", "label": "option ealen", "varName": "MAPE_EALEN" },
         { "id": "mape-psidlen", "label": "option psidlen", "varName": "MAPE_PSIDLEN" },
-        { "id": "mape-offset", "label": "option offset", "varName": "MAPE_PSID_OFFSET" }
+        { "id": "mape-offset", "label": "option offset", "varName": "MAPE_PSID_OFFSET" },
+        { "id": "mape-psid", "label": "PSID", "varName": "MAPE_PSID" },
+        { "id": "mape-port-range", "label": "Available Ports", "varNames": ["MAPE_PORT_START", "MAPE_PORT_END", "MAPE_PORT_COUNT"], "separator": "-", "format": "{0}-{1} ({2} ports)" }
       ],
       "footer": {
         "text": "export LEGACY=1"
