@@ -35,7 +35,7 @@ SEC=system
 SET @system[0].description="${DATE}"
 SET @system[0].notes="site-u.pages.dev"
 [ -n "${enable_log}" ] && {
-local SEC=system
+    SEC=system
     SET @system[0].log_size='32'
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
@@ -135,7 +135,6 @@ local SEC=system
             rc=$((rc+1))
         }
     done
-    # github.com/danpawlik/openwrt-builder/blob/master/settings-configs/BPI-R4/wireless-mlo-openwrt
     [ "${wifi_mode}" = "mlo" ] && {
         SET mlo=wifi-iface
         SET mlo.ssid="${wlan_ssid}"
