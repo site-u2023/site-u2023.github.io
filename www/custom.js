@@ -584,6 +584,8 @@ function renderSetupConfig(config) {
         if (category.description || category.descriptionUrl) {
             addTooltip(h4, category.descriptionUrl || category.description);
         }
+
+        addAnchorLink(h4, category.id);
         
         section.appendChild(h4);
         
@@ -4149,7 +4151,7 @@ function createPackageCategory(category) {
         }
     });
     
-if (!hasVisiblePackages) return null;
+    if (!hasVisiblePackages) return null;
     
     const title = document.createElement('h4');
     const titleText = document.createElement('span');
@@ -4163,6 +4165,8 @@ if (!hasVisiblePackages) return null;
         addTooltip(title, category.description);
     }
     categoryDiv.appendChild(title);
+
+    addAnchorLink(title, category.id);
     
     categoryDiv.appendChild(packageGrid);
     return categoryDiv;
