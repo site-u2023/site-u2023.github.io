@@ -22,6 +22,7 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
+DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(GET network.lan.ifname 2>&- || echo lan)"
 WAN="$(GET network.wan.ifname 2>&- || echo wan)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
@@ -30,41 +31,11 @@ MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 exec >/etc/uci-defaults/setup.log 2>&1
 SEC=system
-SET @system[0].description="$(date +%F\ %H:%M) siteU"
-disable_wan() {
-    SEC=network
-    SET wan.disabled='1'
-    SET wan.auto='0'
-    SET wan6.disabled='1'
-    SET wan6.auto='0'
-}
-dhcp_relay() {
-    SEC=dhcp
-    RESET
-    SET "$1"=dhcp
-    SET $1.interface="$1"
-    SET $1.master='1'
-    SET $1.ra='relay'
-    SET $1.dhcpv6='relay'
-    SET $1.ndp='relay'
-    SET $1.ignore='1'
-    SET lan.dhcpv4='server'
-    SET lan.ra='relay'
-    SET lan.dhcpv6='relay'
-    SET lan.ndp='relay'
-    SET lan.force='1'
-}
-firewall_wan() {
-    SEC=firewall
-    DELLIST ${ZONE}.network="wan"
-    DELLIST ${ZONE}.network="wan6"
-    DELLIST ${ZONE}.network="$1"
-    DELLIST ${ZONE}.network="$2"
-    ADDLIST ${ZONE}.network="$1"
-    ADDLIST ${ZONE}.network="$2"
-    SET ${ZONE}.masq='1'
-    SET ${ZONE}.mtu_fix='1'
-}
+SET @system[0].description="${DATE}"
+SET @system[0].notes="site-u.pages.dev"
+SET @system[0].log_size='32'
+SET @system[0].conloglevel='1'
+SET @system[0].cronloglevel='9'
 [ -n "${ntp}" ] && {
     SEC=system
     DEL ntp
@@ -172,6 +143,40 @@ firewall_wan() {
         SET @usteer[0].roam_scan_snr='-65'
         SET @usteer[0].signal_diff_threshold='8'
     }
+}
+disable_wan() {
+    SEC=network
+    SET wan.disabled='1'
+    SET wan.auto='0'
+    SET wan6.disabled='1'
+    SET wan6.auto='0'
+}
+dhcp_relay() {
+    SEC=dhcp
+    RESET
+    SET "$1"=dhcp
+    SET $1.interface="$1"
+    SET $1.master='1'
+    SET $1.ra='relay'
+    SET $1.dhcpv6='relay'
+    SET $1.ndp='relay'
+    SET $1.ignore='1'
+    SET lan.dhcpv4='server'
+    SET lan.ra='relay'
+    SET lan.dhcpv6='relay'
+    SET lan.ndp='relay'
+    SET lan.force='1'
+}
+firewall_wan() {
+    SEC=firewall
+    DELLIST ${ZONE}.network="wan"
+    DELLIST ${ZONE}.network="wan6"
+    DELLIST ${ZONE}.network="$1"
+    DELLIST ${ZONE}.network="$2"
+    ADDLIST ${ZONE}.network="$1"
+    ADDLIST ${ZONE}.network="$2"
+    SET ${ZONE}.masq='1'
+    SET ${ZONE}.mtu_fix='1'
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
     SEC=network
