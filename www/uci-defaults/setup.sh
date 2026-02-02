@@ -1,6 +1,7 @@
 #!/bin/sh
 # BEGIN_VARS
 # END_VARS
+enable_log="1"
 DSL="dsl"
 DSL6="dsl6"
 MAPE="mape"
@@ -33,9 +34,15 @@ exec >/etc/uci-defaults/setup.log 2>&1
 SEC=system
 SET @system[0].description="${DATE}"
 SET @system[0].notes="site-u.pages.dev"
-SET @system[0].log_size='32'
-SET @system[0].conloglevel='1'
-SET @system[0].cronloglevel='9'
+[ -n "${enable_log}" ] && {
+    local SEC=system
+    SET @system[0].log_size='32'
+    SET @system[0].conloglevel='1'
+    SET @system[0].cronloglevel='9'
+    SEC=dhcp
+    SET @dnsmasq[0].quietdhcp='1'
+    SET odhcpd.loglevel='0'
+}
 [ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
 [ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
 [ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
