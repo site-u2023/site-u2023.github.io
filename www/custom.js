@@ -2471,24 +2471,47 @@ function renderConnectionInfo(container, displayConfig) {
     
     if (displayConfig.fields) {
         displayConfig.fields.forEach(field => {
-            let value = state.apiValues?.[field.varName];
+            let displayValue = null;
             
-            if (field.condition === 'computeStaticPrefix') {
-                if (!value) {
-                    value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
-                    if (!value) {
-                        const staticField = document.querySelector('#mape-static-prefix');
-                        if (staticField && staticField.value) value = staticField.value;
-                    }
-                    if (value) state.apiValues[field.varName] = value;
+            if (field.varNames && Array.isArray(field.varNames)) {
+                const values = field.varNames
+                    .map(varName => state.apiValues?.[varName])
+                    .filter(v => v !== null && v !== undefined && v !== '');
+                
+                if (values.length === 0) return;
+                
+                if (field.format) {
+                    displayValue = field.format;
+                    values.forEach((val, index) => {
+                        displayValue = displayValue.replace(`{${index}}`, val);
+                    });
+                } else if (field.separator) {
+                    displayValue = values.join(field.separator);
+                } else {
+                    displayValue = values.join(' ');
                 }
-                if (!value) return;
-            } else if (field.condition === 'hasValue') {
-                if (!value) return;
+            } else {
+                let value = state.apiValues?.[field.varName];
+                
+                if (field.condition === 'computeStaticPrefix') {
+                    if (!value) {
+                        value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
+                        if (!value) {
+                            const staticField = document.querySelector('#mape-static-prefix');
+                            if (staticField && staticField.value) value = staticField.value;
+                        }
+                        if (value) state.apiValues[field.varName] = value;
+                    }
+                    if (!value) return;
+                } else if (field.condition === 'hasValue') {
+                    if (!value) return;
+                }
+                
+                displayValue = value;
             }
             
-            if (value !== null && value !== undefined && value !== '') {
-                container.appendChild(document.createTextNode(`${field.label} ${value}`));
+            if (displayValue !== null && displayValue !== undefined && displayValue !== '') {
+                container.appendChild(document.createTextNode(`${field.label} ${displayValue}`));
                 container.appendChild(document.createElement('br'));
             }
         });
