@@ -4848,7 +4848,12 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       const portStart = (currentPsid << (16 - psidlenNum - offsetNum)) + offsetNum;
       const portCount = 1 << (16 - psidlenNum - offsetNum);
       const portEnd = portStart + portCount - 1;
-      ranges.push(`${portStart}-${portEnd}`);
+      
+      if (portEnd < 1024) continue;
+      
+      const adjustedStart = portStart < 1024 ? 1024 : portStart;
+      
+      ranges.push(`${adjustedStart}-${portEnd}`);
     }
     
     return {
