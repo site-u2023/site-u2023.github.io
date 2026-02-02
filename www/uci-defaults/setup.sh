@@ -365,8 +365,8 @@ firewall_wan() {
         elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
         elif [ $MEM -ge 400 ]; then R=4194304 W=4194304 TR="4096 65536 4194304" TW=$TR CT=65536 NB=1000 SC=4096
         fi
-        [ $P -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
-        [ $P -gt 2 ] && [ $P -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
+        [ "$P" -gt 4 ] && { NB=$((NB*2)); SC=$((SC*2)); }
+        [ "$P" -gt 2 ] && [ "$P" -le 4 ] && { NB=$((NB*3/2)); SC=$((SC*3/2)); }
     }
     [ "${net_optimizer}" = "manual" ] && {
         R=$(echo "${netopt_rmem}" | awk '{print $3}')
