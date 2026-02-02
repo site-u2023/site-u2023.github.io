@@ -86,7 +86,7 @@
         { "id": "mape-psidlen", "label": "option psidlen", "varName": "MAPE_PSIDLEN" },
         { "id": "mape-offset", "label": "option offset", "varName": "MAPE_PSID_OFFSET" },
         { "id": "mape-psid", "label": "PSID", "varName": "MAPE_PSID" },
-         { "id": "mape-port-ranges", "label": "Available Ports", "varName": "MAPE_PORT_RANGES", "condition": "hasValue" }
+         { "id": "mape-port-ranges", "label": "Ports", "varName": "MAPE_PORT_RANGES", "condition": "hasValue" }
       ],
       "footer": {
         "text": "export LEGACY=1"
