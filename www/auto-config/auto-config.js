@@ -4827,8 +4827,8 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   }
 
 /**
-   * PSIDからポート範囲を計算（全PSIDの全範囲を返す）
-   * @param {number} psid - 現在のPSID値
+   * PSIDからポート範囲を計算（全ブロックの全範囲を返す）
+   * @param {number} psid - PSID値
    * @param {number} psidlen - PSIDビット長
    * @param {number} offset - オフセット値
    * @returns {object|null} ポート範囲情報
@@ -4838,22 +4838,19 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     
     const psidlenNum = parseInt(psidlen, 10);
     const offsetNum = parseInt(offset, 10);
+    const psidNum = parseInt(psid, 10);
     
-    if (isNaN(psidlenNum) || isNaN(offsetNum)) return null;
+    if (isNaN(psidlenNum) || isNaN(offsetNum) || isNaN(psidNum)) return null;
     
-    const maxPsid = (1 << psidlenNum) - 1;
+    const blockSize = 1 << (16 - offsetNum - psidlenNum);
+    const Amin = Math.ceil(1024 / blockSize);
+    const Amax = Math.floor(65536 / blockSize) - 1;
     const ranges = [];
     
-    for (let currentPsid = 0; currentPsid <= maxPsid; currentPsid++) {
-      const portStart = (currentPsid << (16 - psidlenNum - offsetNum)) + offsetNum;
-      const portCount = 1 << (16 - psidlenNum - offsetNum);
-      const portEnd = portStart + portCount - 1;
-      
-      if (portEnd < 1024) continue;
-      
-      const adjustedStart = portStart < 1024 ? 1024 : portStart;
-      
-      ranges.push(`${adjustedStart}-${portEnd}`);
+    for (let A = Amin; A <= Amax; A++) {
+      const port = (A << (16 - offsetNum - psidlenNum)) + ((psidNum + (A << psidlenNum)) & ((1 << (16 - offsetNum)) - 1));
+      const portEnd = port + blockSize - 1;
+      ranges.push(`${port}-${portEnd}`);
     }
     
     return {
