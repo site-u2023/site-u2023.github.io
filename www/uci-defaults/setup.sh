@@ -345,10 +345,6 @@ firewall_wan() {
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
-    if [ $MEM -ge 2400 ]; then V6="512 1024 2048"
-    elif [ $MEM -ge 1200 ]; then V6="256 512 1024"
-    else V6="128 256 512"
-    fi
     [ "${net_optimizer}" = "auto" ] && {
         if [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
         elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
@@ -366,8 +362,8 @@ firewall_wan() {
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
     }
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\nnet.ipv6.neigh.default.gc_thresh1=%s\nnet.ipv6.neigh.default.gc_thresh2=%s\nnet.ipv6.neigh.default.gc_thresh3=%s\n" \
-        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" $V6 > "$C"
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
+        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > "$C"
     sysctl -p "$C"
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
