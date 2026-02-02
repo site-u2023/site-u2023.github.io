@@ -36,6 +36,15 @@ SET @system[0].notes="site-u.pages.dev"
 SET @system[0].log_size='32'
 SET @system[0].conloglevel='1'
 SET @system[0].cronloglevel='9'
+[ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
+[ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
+[ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
+[ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
+[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd 2>&-
+[ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
+[ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
+[ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
+[ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
 [ -n "${ntp}" ] && {
     SEC=system
     DEL ntp
@@ -58,15 +67,6 @@ SET @system[0].cronloglevel='9'
     SET diag.route="${diag}"
     SET diag.dns="${diag}"
 }
-[ -n "${device_name}" ] && { SEC=system; SET @system[0].hostname="${device_name}"; }
-[ -n "${root_password}" ] && printf '%s\n%s\n' "${root_password}" "${root_password}" | passwd 2>&-
-[ -n "${lan_ip_address}" ] && { SEC=network; SET lan.ipaddr="${lan_ip_address}"; }
-[ -n "${lan_ipv6_address}" ] && { SEC=network; DEL lan.ip6assign; SET lan.ip6addr="${lan_ipv6_address}"; }
-[ -n "${language}" ] && { SEC=system; SET @system[0].language="${language}"; }
-[ -n "${timezone}" ] && { SEC=system; SET @system[0].timezone="${timezone}"; }
-[ -n "${zonename}" ] && { SEC=system; SET @system[0].zonename="${zonename}"; }
-[ -n "${ssh_interface}" ] && { SEC=dropbear; SET @dropbear[0].Interface="${ssh_interface}"; }
-[ -n "${ssh_port}" ] && { SEC=dropbear; SET @dropbear[0].Port="${ssh_port}"; }
 [ -n "${offload}" ] && {
     SEC=firewall
     SET @defaults[0].flow_offloading='1'
@@ -350,6 +350,10 @@ firewall_wan() {
 [ -n "${net_optimizer}" ] && [ "${net_optimizer}" != "disabled" ] && [ $MEM -ge 400 ] && {
     C=/etc/sysctl.d/99-net-opt.conf
     P=$(grep -c ^processor /proc/cpuinfo)
+    if [ $MEM -ge 2400 ]; then V6="512 1024 2048"
+    elif [ $MEM -ge 1200 ]; then V6="256 512 1024"
+    else V6="128 256 512"
+    fi
     [ "${net_optimizer}" = "auto" ] && {
         if [ $MEM -ge 2400 ]; then R=16777216 W=16777216 TR="4096 262144 16777216" TW=$TR CT=262144 NB=5000 SC=16384
         elif [ $MEM -ge 1200 ]; then R=8388608 W=8388608 TR="4096 131072 8388608" TW=$TR CT=131072 NB=2500 SC=8192
@@ -367,8 +371,8 @@ firewall_wan() {
         NB="${netopt_backlog}"
         SC="${netopt_somaxconn}"
     }
-    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\n" \
-        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" > "$C"
+    printf "net.core.rmem_max=%s\nnet.core.wmem_max=%s\nnet.ipv4.tcp_rmem=%s\nnet.ipv4.tcp_wmem=%s\nnet.ipv4.tcp_fastopen=3\nnet.netfilter.nf_conntrack_max=%s\nnet.core.netdev_max_backlog=%s\nnet.core.somaxconn=%s\nnet.ipv6.neigh.default.gc_thresh1=%s\nnet.ipv6.neigh.default.gc_thresh2=%s\nnet.ipv6.neigh.default.gc_thresh3=%s\n" \
+        "$R" "$W" "$TR" "$TW" "$CT" "$NB" "$SC" $V6 > "$C"
     sysctl -p "$C"
 }
 [ -n "${dnsmasq}" ] && [ "${dnsmasq}" != "disabled" ] && {
