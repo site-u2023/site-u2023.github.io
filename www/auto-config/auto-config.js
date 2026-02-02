@@ -4827,7 +4827,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   }
 
 /**
-   * PSIDからポート範囲を計算（全ブロックの全範囲を返す）
+   * PSIDからポート範囲を計算（FC2互換）
    * @param {number} psid - PSID値
    * @param {number} psidlen - PSIDビット長
    * @param {number} offset - オフセット値
@@ -4843,12 +4843,11 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     if (isNaN(psidlenNum) || isNaN(offsetNum) || isNaN(psidNum)) return null;
     
     const blockSize = 1 << (16 - offsetNum - psidlenNum);
-    const Amin = Math.ceil(1024 / blockSize);
-    const Amax = Math.floor(65536 / blockSize) - 1;
+    const Amax = (1 << offsetNum) - 1;
     const ranges = [];
     
-    for (let A = Amin; A <= Amax; A++) {
-      const port = (A << (16 - offsetNum - psidlenNum)) + ((psidNum + (A << psidlenNum)) & ((1 << (16 - offsetNum)) - 1));
+    for (let A = 1; A <= Amax; A++) {
+      const port = (A << (16 - offsetNum)) | (psidNum << (16 - offsetNum - psidlenNum));
       const portEnd = port + blockSize - 1;
       ranges.push(`${port}-${portEnd}`);
     }
