@@ -4827,8 +4827,8 @@ function checkDSLiteRule(ipv6, userAsn = null) {
   }
 
 /**
-   * PSIDからポート範囲を計算
-   * @param {number} psid - PSID値
+   * PSIDからポート範囲を計算（全PSIDの全範囲を返す）
+   * @param {number} psid - 現在のPSID値
    * @param {number} psidlen - PSIDビット長
    * @param {number} offset - オフセット値
    * @returns {object|null} ポート範囲情報
@@ -4841,14 +4841,18 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     
     if (isNaN(psidlenNum) || isNaN(offsetNum)) return null;
     
-    const portStart = (psid << (16 - psidlenNum - offsetNum)) + offsetNum;
-    const portCount = 1 << (16 - psidlenNum - offsetNum);
-    const portEnd = portStart + portCount - 1;
+    const maxPsid = (1 << psidlenNum) - 1;
+    const ranges = [];
+    
+    for (let currentPsid = 0; currentPsid <= maxPsid; currentPsid++) {
+      const portStart = (currentPsid << (16 - psidlenNum - offsetNum)) + offsetNum;
+      const portCount = 1 << (16 - psidlenNum - offsetNum);
+      const portEnd = portStart + portCount - 1;
+      ranges.push(`${portStart}-${portEnd}`);
+    }
     
     return {
-      portStart,
-      portEnd,
-      portCount
+      portRanges: ranges.join(' ')
     };
   }
 
@@ -4944,9 +4948,7 @@ function checkDSLiteRule(ipv6, userAsn = null) {
               
               const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
               if (ports) {
-                mapRule.portStart = ports.portStart;
-                mapRule.portEnd = ports.portEnd;
-                mapRule.portCount = ports.portCount;
+                mapRule.portRanges = ports.portRanges;
               }
             }
           }
