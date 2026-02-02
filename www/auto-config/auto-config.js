@@ -4818,6 +4818,26 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     return psid;
   }
 
+  function calculatePortRange(psid, psidlen, offset) {
+  	const portStart = (psid << (16 - psidlen - offset)) + offset;
+  	const portEnd = portStart + (1 << (16 - psidlen - offset)) - 1;
+  
+  	return {
+    	portStart: portStart,
+    	portEnd: portEnd,
+    	portCount: portEnd - portStart + 1
+  	};
+  }
+
+  if (psid !== null) {
+  	mapRule.psid = psid;
+  
+  	const ports = calculatePortRange(psid, mapRule.psidlen, mapRule.psIdOffset);
+  	mapRule.portStart = ports.portStart;
+  	mapRule.portEnd = ports.portEnd;
+  	mapRule.portCount = ports.portCount;
+  }
+
   // ========================================
   // メインハンドラー
   // ========================================
