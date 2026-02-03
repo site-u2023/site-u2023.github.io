@@ -6,9 +6,9 @@ cat > "$TMP"/iperf3_setup.sh << 'SCRIPT_END'
 #!/bin/sh
 # Usage: ./iperf3_setup.sh [start|stop|restart|enable|disable|status|interactive]
 
-# パッケージ自動インストール
+# Auto install package
 if ! command -v iperf3 >/dev/null 2>&1; then
-    echo "iperf3 をインストール中..."
+    echo "Installing iperf3..."
     command -v opkg >/dev/null 2>&1 && opkg update >/dev/null 2>&1 && opkg install iperf3
     command -v apk  >/dev/null 2>&1 && apk update >/dev/null 2>&1 && apk add iperf3
 fi
