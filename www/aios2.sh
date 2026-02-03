@@ -408,7 +408,6 @@ load_config_from_js() {
     CUSTOMSCRIPTS_DB_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "customscripts_db_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     LANGUAGE_PATH_TEMPLATE=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "language_path_template:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     WHIPTAIL_UI_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "whiptail_ui_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-    SIMPLE_UI_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "simple_ui_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     WHIPTAIL_FALLBACK_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "whiptail_fallback_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     PACKAGE_MANAGER_CONFIG_PATH=$(echo "$CONFIG_CONTENT" | grep -v '^\s*//' | grep "package_manager_config_path:" | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
     
@@ -426,7 +425,6 @@ load_config_from_js() {
  
     local CACHE_BUSTER="?t=$(date +%s)"
     WHIPTAIL_UI_URL="${BASE_URL}/${WHIPTAIL_UI_PATH}${CACHE_BUSTER}"
-    SIMPLE_UI_URL="${BASE_URL}/${SIMPLE_UI_PATH}${CACHE_BUSTER}"
     
     # テンプレートパスからファイル名を動的に抽出
     POSTINST_FILENAME=$(basename "$POSTINST_TEMPLATE_PATH")
@@ -5908,7 +5906,7 @@ aios2_main() {
     fi
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
-    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
+    TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME}")
     debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
     
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
