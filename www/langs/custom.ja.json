@@ -121,7 +121,8 @@
     "tr-ea-len": "option ealen",
     "tr-psid-length": "option psidlen",
     "tr-psid-offset": "option offset",
-    "tr-mape-notice2": "注: ポート番号 1〜1023 は特権ポートです。詳細はISPに確認して下さい。",
+    "tr-isp-notice": "注: 本当の値とは違う場合があります。",
+    "tr-isp-notice1": "注: ポート番号 1〜1023 は特権ポートです。詳細はISPに確認して下さい。",
     
     "_section_12": "=== AP設定 ===",
     "tr-ap-ip-address": "IPアドレス",
