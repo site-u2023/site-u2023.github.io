@@ -508,6 +508,17 @@ ${notice_text}
         footer_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].footer.text" 2>/dev/null)
         [ -n "$footer_text" ] && info="${info}
 ${footer_text}
+
+"
+        
+        # PSID と Ports を追加
+        local psid_value port_ranges
+        psid_value=$(jsonfilter -i "$api_json" -e "@.mape.psid" 2>/dev/null)
+        port_ranges=$(jsonfilter -i "$api_json" -e "@.mape.portRanges" 2>/dev/null)
+        
+        [ -n "$psid_value" ] && info="${info}PSID ${psid_value}
+"
+        [ -n "$port_ranges" ] && info="${info}Ports ${port_ranges}
 "
         
         # link 取得
