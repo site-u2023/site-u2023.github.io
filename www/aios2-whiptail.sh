@@ -1988,14 +1988,37 @@ EOF
             done
         fi
         
-        if [ "$HAS_SETUP" -eq 1 ]; then
+        # ================================================================
+        # バックアップ判定
+        # - setup.sh: 設定変更の本体なので常にバックアップ対象
+        # - customscripts: JSONのmodifiesConfigフラグで判定
+        # ================================================================
+        local needs_backup=0
+        
+        [ "$HAS_SETUP" -eq 1 ] && needs_backup=1
+        
+        if [ "$HAS_CUSTOMSCRIPTS" -eq 1 ] && [ "$needs_backup" -eq 0 ]; then
+            for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
+                [ -f "$var_file" ] || continue
+                local cs_id=$(basename "$var_file" | sed 's/^script_vars_//;s/\.txt$//')
+                local modifies_config=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" -e "@.scripts[@.id='$cs_id'].modifiesConfig" 2>/dev/null | head -1)
+                if [ "$modifies_config" = "true" ]; then
+                    needs_backup=1
+                    break
+                fi
+            done
+        fi
+        
+        if [ "$needs_backup" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-creating-backup')"
-            if ! create_backup "before_setup" "$summary_content"; then
+            if ! create_backup "before_apply" "$summary_content"; then
                 show_msgbox "$breadcrumb" "$(translate 'tr-tui-backup-failed')"
                 return 1
             fi
-            
+        fi
+        
+        if [ "$HAS_SETUP" -eq 1 ]; then
             echo "$(translate 'tr-tui-applying-config')"
             
             sh "$GENERATED_SETUP"
