@@ -715,10 +715,13 @@ init() {
     local self_script
     self_script="$(basename "$0")"
 
-    # $CONFIG_DIR内の全ファイル・サブディレクトリを削除（実行中スクリプト以外）
-    for f in "$CONFIG_DIR"/* "$CONFIG_DIR"/.*; do
+    # $CONFIG_DIR内の全ファイル・サブディレクトリを削除
+    # 除外対象：実行中スクリプト・ロックファイル・config.js（直前にダウンロード済み）
+    for f in "$CONFIG_DIR"/* "$CONFIG_DIR"/.?*; do
         [ -e "$f" ] || continue
         [ "$(basename "$f")" = "$self_script" ] && continue
+        [ "$f" = "$LOCK_FILE" ] && continue
+        [ "$(basename "$f")" = "config.js" ] && continue
         rm -rf "$f"
     done
 
