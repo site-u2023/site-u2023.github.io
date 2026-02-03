@@ -72,7 +72,7 @@
       "renderIn": "autoConnectionInfo",
       "connectionType": "mape",
       "notice": {
-        "class": "tr-mape-notice1",
+        "class": "tr-isp-notice",
         "default": "Note: Actual values may differ."
       },
       "fields": [
@@ -103,7 +103,7 @@
       "renderIn": "autoConnectionInfo",
       "connectionType": "dslite",
       "notice": {
-        "class": "tr-dslite-notice1",
+        "class": "tr-isp-notice",
         "default": "Note: Actual values may differ."
       },
       "fields": [
