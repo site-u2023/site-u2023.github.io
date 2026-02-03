@@ -5202,7 +5202,14 @@ generate_config_summary() {
         local remove_list="$packages_to_remove"
         local package_header_printed=0
 
-        # ...（削除リスト・インストールリスト構築はそのまま） ...
+        while read -r cache_line; do
+    		[ -z "$cache_line" ] && continue
+    		local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+    		if ! is_package_installed "$pkg_id"; then
+        		install_list="${install_list}${pkg_id}
+"
+    fi
+done < "$SELECTED_PACKAGES"
 
         # ヘッダー出力とリスト出力
         if [ -n "$remove_list" ]; then
