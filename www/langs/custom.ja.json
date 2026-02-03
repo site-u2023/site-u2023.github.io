@@ -122,7 +122,7 @@
     "tr-psid-length": "option psidlen",
     "tr-psid-offset": "option offset",
     "tr-isp-notice": "注: 本当の値とは違う場合があります。",
-    "tr-isp-notice1": "注: ポート番号 1〜1023 はウェルノウンポートです。詳細はISPに確認して下さい。",
+    "tr-isp-notice1": "注: ウェルノウンポート（1〜1023）の詳細については、ご契約のISPへお問い合わせください。",
     
     "_section_12": "=== AP設定 ===",
     "tr-ap-ip-address": "IPアドレス",
