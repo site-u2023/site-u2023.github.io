@@ -2208,9 +2208,9 @@ whiptail_main_menu() {
     tr_main_menu=$(translate "tr-tui-main-menu")
     tr_select=$(translate "tr-tui-select")
     tr_exit=$(translate "tr-tui-exit")
-    packages_label=$(translate "tr-tui-packages")
-    custom_feeds_label=$(translate "tr-tui-custom-feeds")
-    custom_scripts_label=$(translate "tr-tui-custom-scripts")
+    packages_label=$(translate "tr-packages")
+    custom_feeds_label=$(translate "tr-custom-feeds")
+    custom_scripts_label=$(translate "tr-custom-scripts")
     review_label=$(translate "tr-tui-review-configuration")
     
     setup_categories=$(get_setup_categories)
