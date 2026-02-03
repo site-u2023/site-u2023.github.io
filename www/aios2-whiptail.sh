@@ -443,8 +443,18 @@ show_network_info() {
         [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
 "
         
-        # JSON から notice を取得
-        local notice_class no
+        # notice 取得（auto-config.json から）
+        local notice_class notice_text
+        notice_class=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notice.class" 2>/dev/null)
+        if [ -n "$notice_class" ]; then
+            notice_text=$(translate "$notice_class")
+        else
+            notice_text=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notice.default" 2>/dev/null)
+        fi
+        [ -n "$notice_text" ] && info="${info}
+${notice_text}
+
+"
         
         # 値を一時ファイルに保存（id=値 形式）
         local field_cache="$CONFIG_DIR/mape_field_cache.txt"
@@ -507,6 +517,10 @@ show_network_info() {
             i=$((i + 1))
         done
         
+        # fields 後に空行
+        info="${info}
+"
+        
         # footer フィールドを取得してループ（PSID, Ports）
         i=0
         while [ $i -lt 10 ]; do
@@ -540,28 +554,13 @@ show_network_info() {
         done
         
         # link 取得
-        local link_text link_url
+        local link_text
         link_text=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.link.text" 2>/dev/null)
-        link_url=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.link.url" 2>/dev/null)
         [ -n "$link_text" ] && info="${info}
 ${link_text}
 "
-tice_text
-        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.class" 2>/dev/null | head -1)
-        if [ -n "$notice_class" ]; then
-            notice_text=$(translate "$notice_class")
-        else
-            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.default" 2>/dev/null | head -1)
-        fi
-        [ -n "$notice_text" ] && info="${info}
-${notice_text}
-
-"
-        
-   
         
         info="${info}
-
 $(translate 'tr-tui-use-auto-config')"
         
         if show_yesno "$breadcrumb" "$info"; then
