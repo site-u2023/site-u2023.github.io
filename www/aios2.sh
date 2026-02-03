@@ -715,18 +715,11 @@ init() {
     local self_script
     self_script="$(basename "$0")"
 
-    rm -f "$CONFIG_DIR"/postinst.json \
-          "$CONFIG_DIR"/setup.json \
-          "$CONFIG_DIR"/customfeeds.json \
-          "$CONFIG_DIR"/customscripts.json \
-          "$CONFIG_DIR"/*.txt \
-		  "$CONFIG_DIR"/debug.log \
-          "$CONFIG_DIR"/tpl_*.sh 2>/dev/null
-
-    for file in "$CONFIG_DIR"/*.sh; do
-        [ -f "$file" ] || continue
-        [ "$(basename "$file")" = "$self_script" ] && continue
-        rm -f "$file"
+    # $CONFIG_DIR内の全ファイル・サブディレクトリを削除（実行中スクリプト以外）
+    for f in "$CONFIG_DIR"/* "$CONFIG_DIR"/.*; do
+        [ -e "$f" ] || continue
+        [ "$(basename "$f")" = "$self_script" ] && continue
+        rm -rf "$f"
     done
 
     load_config_from_js || {
