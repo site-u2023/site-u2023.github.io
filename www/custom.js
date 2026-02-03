@@ -2489,13 +2489,15 @@ function renderConnectionInfo(container, displayConfig) {
     
     container.appendChild(document.createElement('hr'));
     
-    if (displayConfig.notice) {
-        const notice = document.createElement('p');
-        const noticeSpan = document.createElement('span');
-        noticeSpan.className = displayConfig.notice.class || '';
-        noticeSpan.textContent = current_language_json?.[displayConfig.notice.class] || displayConfig.notice.default || '';
-        notice.appendChild(noticeSpan);
-        container.appendChild(notice);
+    if (displayConfig.notices && Array.isArray(displayConfig.notices)) {
+        displayConfig.notices.forEach(noticeConfig => {
+            const notice = document.createElement('p');
+            const noticeSpan = document.createElement('span');
+            noticeSpan.className = noticeConfig.class || '';
+            noticeSpan.textContent = current_language_json?.[noticeConfig.class] || '';
+            notice.appendChild(noticeSpan);
+            container.appendChild(notice);
+        });
     }
     
     if (displayConfig.fields) {
