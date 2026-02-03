@@ -1,0 +1,1258 @@
+{
+  "version": "R7.0106.1800",
+  "description": "Simplified setup configuration - packages.json style",
+  "columns": 2,
+  
+  "_schema": {
+    "_description": "Setup configuration schema. This block is ignored by custom.js.",
+    "common_options": {
+      "id": "Item identifier (required, unique)",
+      "type": "Item type: select, radio-group, text, conditional-section, input-group, info-display",
+      "title/label": "Display text in UI",
+      "class": "Translation key (tr-xxx format)",
+      "description": "Tooltip text",
+      "variable": "Variable name to set in setup.sh",
+      "default": "Default value",
+      "hidden": "If true, item is not displayed",
+      "apiSource": "API response field to use as default (e.g. 'timezone', 'mape.brIpv6Address')"
+    },
+    "conditional_options": {
+      "showWhen.field": "Variable name to watch",
+      "showWhen.values": "Array of values that trigger display"
+    },
+    "select_options": {
+      "options": "Array of {value, label, class} objects"
+    }
+  },
+  
+  "deviceInfo": {
+    "items": [
+      {
+        "id": "model",
+        "label": "Model",
+        "source": "DEVICE_MODEL"
+      },
+      {
+        "id": "target",
+        "label": "Target",
+        "source": "DEVICE_TARGET"
+      },
+      {
+        "id": "version",
+        "label": "Version",
+        "source": "OPENWRT_VERSION"
+      },
+      {
+        "id": "memory",
+        "label": "Memory",
+        "source": "computed",
+        "format": "{MEM_FREE_MB}MB / {DEVICE_MEM} (available / total)",
+        "condition": ["MEM_FREE_MB", "DEVICE_MEM"]
+      },
+      {
+        "id": "storage",
+        "label": "Storage",
+        "source": "computed",
+        "format": "{DEVICE_STORAGE_AVAIL} / {DEVICE_STORAGE} (available / total)",
+        "condition": ["DEVICE_STORAGE"]
+      },
+      {
+        "id": "usb",
+        "label": "USB",
+        "source": "DEVICE_USB",
+        "condition": ["DEVICE_USB"]
+      },
+      {
+        "id": "pkg_manager",
+        "label": "Package manager",
+        "source": "PKG_MGR"
+      },
+      {
+        "id": "separator",
+        "type": "blank"
+      },
+      {
+        "id": "country",
+        "label": "Country",
+        "source": "AUTO_COUNTRY"
+      },
+      {
+        "id": "language",
+        "label": "Language",
+        "source": "current_lang"
+      },
+      {
+        "id": "zonename",
+        "label": "Zonename",
+        "source": "AUTO_ZONENAME"
+      },
+      {
+        "id": "timezone",
+        "label": "Timezone",
+        "source": "AUTO_TIMEZONE"
+      }
+    ]
+  },
+  
+  "apiMapping": {
+    "basic": {
+      "language": "language",
+      "country": "country",
+      "regionName": "regionName",
+      "region": "region",
+      "timezone": "timezone",
+      "zonename": "zonename"
+    },
+    "connection": {
+      "ipv4": "ipv4",
+      "ipv6": "ipv6",
+      "isp": "isp",
+      "as": "as"
+    },
+    "dslite": {
+      "aftrType": "aftr.aftrType",
+      "jurisdiction": "aftr.jurisdiction",
+      "aftrIpv6Address": "aftr.aftrIpv6Address",
+      "aftrFqdn": "aftr.aftrFqdn",
+      "aftrAddress": "aftr.aftrAddress",
+      "peeraddr": "aftr.peeraddr"
+    },
+    "mape": {
+      "brIpv6Address": "mape.brIpv6Address",
+      "eaBitLength": "mape.eaBitLength",
+      "ipv4Prefix": "mape.ipv4Prefix",
+      "ipv4PrefixLength": "mape.ipv4PrefixLength",
+      "ipv6Prefix": "mape.ipv6Prefix",
+      "ipv6PrefixLength": "mape.ipv6PrefixLength",
+      "psidlen": "mape.psidlen",
+      "psIdOffset": "mape.psIdOffset",
+      "ipv6Prefix_gua": "mape.ipv6Prefix_gua",
+      "calculatedOffset": "mape.calculatedOffset"
+    }
+  },
+  
+  "constants": {
+    "interfaces": {
+      "dsl": "dsl",
+      "dsl6": "dsl6",
+      "mape": "mape",
+      "mape6": "mape6",
+      "ap": "ap",
+      "ap6": "ap6"
+    },
+    "defaults": {
+      "ntp_domain": ".pool.ntp.org",
+      "lan_ip": "192.168.1.1/24",
+      "ap_ip": "192.168.1.2/24",
+      "ap_gateway": "192.168.1.1/24"
+    },
+    "aftr_map": {
+      "transix": {
+        "east": "2404:8e00::feed:100",
+        "west": "2404:8e01::feed:100"
+      },
+      "xpass": "dgw.xpass.jp",
+      "v6connect": "dslite.v6connect.net"
+    },
+    "static_validation": {
+      "prefix_check": "2000::/3",
+      "exclude_cidrs": [
+        "2001:db8::/32",
+        "2002::/16",
+        "2001::/32",
+        "2001:20::/28",
+        "2001:2::/48",
+        "2001:3::/32",
+        "2001:4:112::/48"
+      ]
+    },
+    "variableResolution": {
+      "device_name": {
+        "fallback": [
+          {"field": "aios-device-name", "type": "value"},
+          {"field": "aios-lan-ipv4", "type": "value", "format": "strip_cidr"},
+          {"field": "aios-lan-ipv6", "type": "value", "format": "strip_cidr"},
+          {"field": "aios-device-name", "type": "placeholder"},
+          {"field": "aios-lan-ipv4", "type": "placeholder", "format": "strip_cidr"},
+          {"field": "aios-lan-ipv6", "type": "placeholder", "format": "strip_cidr"}
+        ]
+      },
+      "agh_web_port": {
+        "fallback": [
+          {"field": "agh-web-port", "type": "value"},
+          {"field": "agh-web-port", "type": "placeholder"}
+        ]
+      },
+      "agh_dns_port": {
+        "fallback": [
+          {"field": "agh-dns-port", "type": "value"},
+          {"field": "agh-dns-port", "type": "placeholder"}
+        ]
+      }
+    },
+    "language_prefixes": [
+      "luci-i18n-base-",
+      "luci-i18n-opkg-",
+      "luci-i18n-firewall-",
+      "luci-i18n-package-manager-",
+      "luci-i18n-attendedsysupgrade-"
+    ],    
+    "language_module_patterns": [
+      "luci-app-",
+      "luci-proto-",
+      "luci-mod-"
+    ],
+    "language_exclude_patterns": [
+      "kmod-",
+      "lib",
+      "kernel",
+      "base-files",
+      "luci-i18n-"
+    ],    
+    "export_exclusions": {
+      "connection_type": {
+        "auto": [
+          "peeraddr",
+          "ipaddr",
+          "ip4prefixlen",
+          "ip6prefix",
+          "ip6prefixlen",
+          "ealen",
+          "psidlen",
+          "offset",
+          "ip6prefix_gua"
+        ]
+      },
+      "net_optimizer": {
+        "auto": [
+          "netopt_rmem",
+          "netopt_wmem",
+          "netopt_conntrack",
+          "netopt_backlog",
+          "netopt_somaxconn",
+          "netopt_congestion"
+        ]
+      },
+      "enable_dnsmasq": {
+        "auto": [
+          "dnsmasq_cache",
+          "dnsmasq_negcache"
+        ]
+      }
+    }
+  },
+  
+  "categories": [
+    {
+      "id": "basic-config",
+      "title": "Basic Configuration",
+      "class": "tr-basic-configuration",
+      "link": "https://openwrt.org/docs/guide-user/base-system/start",
+      "description": "Basic system and device configuration",
+      
+      "items": [
+        {
+          "type": "field",
+          "id": "device-language",
+          "label": "Language",
+          "class": "tr-language",
+          "fieldType": "select",
+          "variable": "language",
+          "default": "",
+          "source": "browser-languages"
+        },
+        {
+          "type": "field",
+          "id": "aios-country",
+          "label": "Country",
+          "class": "tr-country",
+          "fieldType": "text",
+          "variable": "country",
+          "placeholder": "00",
+          "default": "00",
+          "maxlength": 2,
+          "apiSource": "country"
+        },
+        {
+          "type": "field",
+          "id": "aios-timezone",
+          "label": "Timezone",
+          "class": "tr-timezone",
+          "fieldType": "text",
+          "variable": "timezone",
+          "placeholder": "UTC",
+          "default": "UTC",
+          "apiSource": "timezone"
+        },
+        {
+          "type": "field",
+          "id": "aios-zonename",
+          "label": "Zonename",
+          "class": "tr-zonename",
+          "fieldType": "text",
+          "variable": "zonename",
+          "placeholder": "UTC",
+          "default": "UTC",
+          "apiSource": "zonename"
+        },
+        {
+          "type": "field",
+          "id": "aios-device-name",
+          "label": "Device name",
+          "class": "tr-device-name",
+          "fieldType": "text",
+          "variable": "device_name",
+          "placeholder": "OpenWrt"
+        },
+        {
+          "type": "field",
+          "id": "aios-root-password",
+          "label": "Root password",
+          "class": "tr-root-password",
+          "fieldType": "text",
+          "variable": "root_password",
+          "placeholder": "8+ characters"
+        },
+        {
+          "type": "field",
+          "id": "aios-lan-ipv4",
+          "label": "LAN IPv4 Address",
+          "class": "tr-lan-ipv4-address",
+          "fieldType": "text",
+          "variable": "lan_ip_address",
+          "placeholder": "192.168.1.1/24"
+        },
+        {
+          "type": "field",
+          "id": "aios-lan-ipv6",
+          "label": "LAN IPv6 Address",
+          "class": "tr-lan-ipv6-address",
+          "fieldType": "text",
+          "variable": "lan_ipv6_address",
+          "placeholder": "fd00::1/64"
+        },
+        {
+          "type": "field",
+          "id": "aios-ssh-interface",
+          "label": "SSH Interface",
+          "class": "tr-ssh-interface",
+          "fieldType": "text",
+          "variable": "ssh_interface",
+          "placeholder": "lan",
+          "default": "lan",
+          "description": "Network interface for SSH access"
+        },
+        {
+          "type": "field",
+          "id": "aios-ssh-port",
+          "label": "SSH Port",
+          "class": "tr-ssh-port",
+          "fieldType": "number",
+          "variable": "ssh_port",
+          "placeholder": "22",
+          "min": "1",
+          "max": "65535",
+          "description": "Port number for SSH access"
+        },
+        {
+          "type": "field",
+          "id": "ntp-domain",
+          "label": "NTP Domain",
+          "class": "tr-ntp-domain",
+          "fieldType": "text",
+          "variable": "ntp",
+          "placeholder": "pool.ntp.org",
+          "default": "pool.ntp.org"
+        },
+        {
+          "type": "field",
+          "id": "diag-address",
+          "label": "Diagnostic Address",
+          "class": "tr-diagnostic-address",
+          "fieldType": "text",
+          "variable": "diag",
+          "placeholder": "one.one.one.one",
+          "default": "one.one.one.one"
+        },
+        {
+          "type": "field",
+          "id": "aios-flow-offloading",
+          "label": "Flow offloading type",
+          "class": "tr-flow-offloading-type",
+          "fieldType": "select",
+          "variable": "offload",
+          "options": [
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"},
+            {"value": "software", "label": "Software flow offloading", "class": "tr-software-flow-offloading"},
+            {"value": "hardware", "label": "Hardware flow offloading", "class": "tr-hardware-flow-offloading"}
+          ]
+        },
+        {
+          "type": "field",
+          "id": "aios-backup-path",
+          "label": "Restore Backup Path",
+          "class": "tr-restore-backup-path",
+          "fieldType": "text",
+          "variable": "backup_path",
+          "placeholder": "/root/backup.tar.gz",
+          "default": "/root/backup.tar.gz",
+          "description": "Path to backup file for restore",
+          "guiOnly": "true"
+        }
+      ]
+    },
+    
+    {
+      "id": "wifi-config",
+      "title": "Wi-Fi Configuration",
+      "class": "tr-wi-fi-configuration",
+      "link": "https://openwrt.org/docs/guide-user/network/wifi/basic",
+      "description": "Configure wireless network settings including SSID, password, and roaming optimization",
+      "requiresUpdate": true,
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "wifi-mode",
+          "title": "Wi-Fi Mode",
+          "class": "tr-wi-fi-mode",
+          "variable": "wifi_mode",
+          "default": "standard",
+          "options": [
+            {"value": "standard", "label": "Standard", "class": "tr-standard"},
+            {"value": "usteer", "label": "Usteer", "class": "tr-usteer"},
+            {"value": "mlo", "label": "MLO", "class": "tr-mlo"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ],
+          "exclusiveVars": {
+            "standard": ["wlan_ssid", "wlan_password"],
+            "usteer": ["wlan_ssid", "wlan_password", "mobility_domain", "snr"],
+            "disabled": []
+          }
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-ssid",
+          "label": "Wi-Fi SSID",
+          "class": "tr-wi-fi-ssid",
+          "fieldType": "text",
+          "variable": "wlan_ssid",
+          "placeholder": "OpenWrt",
+          "default": "OpenWrt",
+          "maxlength": 32,
+          "showWhen": {"wifi_mode": ["standard", "usteer", "mlo"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-password",
+          "label": "Wi-Fi Password",
+          "class": "tr-wi-fi-password",
+          "fieldType": "text",
+          "variable": "wlan_password",
+          "placeholder": "8+ characters",
+          "default": "password",
+          "minlength": 8,
+          "maxlength": 63,
+          "showWhen": {"wifi_mode": ["standard", "usteer", "mlo"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-mobility-domain",
+          "label": "Mobility Domain",
+          "class": "tr-mobility-domain",
+          "fieldType": "text",
+          "variable": "mobility_domain",
+          "placeholder": "4f57",
+          "default": "4f57",
+          "maxlength": 4,
+          "pattern": "[0-9A-Fa-f]{4}",
+          "description": "4-digit hex (e.g. 4f57)",
+          "showWhen": {"wifi_mode": ["usteer"]}
+        },
+        {
+          "type": "field",
+          "id": "aios-wifi-snr",
+          "label": "Min SNR",
+          "class": "tr-min-snr",
+          "fieldType": "text",
+          "variable": "snr",
+          "placeholder": "30 15 5",
+          "default": "30 15 5",
+          "description": "SNR thresholds: 2.4GHz 5GHz 6GHz (e.g. '30 15 5')",
+          "showWhen": {"wifi_mode": ["usteer"]}
+        },
+        {
+          "type": "info-display",
+          "id": "wifi-disabled-info",
+          "class": "tr-wifi-optimization-disabled",
+          "content": "Wi-Fi will be disabled",
+          "showWhen": {"wifi_mode": "disabled"}
+        }
+      ],
+
+      "packages": [
+        {
+          "id": "luci-app-usteer",
+          "when": { "wifi_mode": "usteer" }
+        }
+      ]
+    },
+
+    {
+      "id": "internet-connection",
+      "title": "Internet Connection",
+      "class": "tr-internet-connection",
+      "link": "https://openwrt.org/docs/guide-user/network/start",
+      "description": "Configure your internet connection type",
+      "requiresUpdate": true,
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "connection-type",
+          "title": "Connection type",
+          "class": "tr-connection-type",
+          "variable": "connection_type",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
+            {"value": "dhcp", "label": "DHCP", "class": "tr-dhcp"},
+            {"value": "pppoe", "label": "PPPoE", "class": "tr-pppoe"},
+            {"value": "dslite", "label": "DS-Lite", "class": "tr-dslite"},
+            {"value": "mape", "label": "MAP-E", "class": "tr-mape"},
+            {"value": "ap", "label": "AP", "class": "tr-ap"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ],
+          "exclusiveVars": {
+            "auto": [
+              "peeraddr", "ipaddr", "ip4prefixlen",
+              "ip6prefix", "ip6prefixlen", "ealen",
+              "psidlen", "offset", "ip6prefix_gua"
+            ],
+            "dhcp": [],
+            "pppoe": ["pppoe_username", "pppoe_password"],
+            "dslite": ["dslite_peeraddr"],
+            "mape": [
+              "peeraddr", "ipaddr", "ip4prefixlen",
+              "ip6prefix", "ip6prefixlen", "ealen",
+              "psidlen", "offset", "ip6prefix_gua"
+            ],
+            "ap": ["ipaddr", "gateway"],
+            "disabled": []
+          }
+        },
+        {
+          "type": "field",
+          "id": "connection-auto-type",
+          "label": "Auto-detected type",
+          "fieldType": "text",
+          "variable": "connection_auto",
+          "hidden": "true",
+          "description": "Auto-detected connection type (mape/dslite/dhcp)"
+        },      
+        {
+          "type": "section",
+          "id": "auto-section",
+          "title": "AUTO Detection",
+          "class": "tr-auto-detection",
+          "showWhen": {"connection_type": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "auto-info",
+              "content": "Detecting connection type..."
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dhcp-section",
+          "showWhen": {"connection_type": "dhcp"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dhcp-info",
+              "class": "tr-dhcp",
+              "content": "DHCP client mode"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "pppoe-section",
+          "showWhen": {"connection_type": "pppoe"},
+          "items": [
+            {
+              "type": "field",
+              "id": "pppoe-username",
+              "label": "Username",
+              "class": "tr-pppoe-username",
+              "fieldType": "text",
+              "variable": "pppoe_username",
+              "placeholder": "Username"
+            },
+            {
+              "type": "field",
+              "id": "pppoe-password",
+              "label": "Password",
+              "class": "tr-pppoe-password",
+              "fieldType": "text",
+              "variable": "pppoe_password",
+              "placeholder": "Password"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "mape-section",
+          "showWhen": {"connection_type": "mape"},
+          "items": [
+            {
+              "type": "field",
+              "id": "mape-lookup-ipv6",
+              "label": "IPv6 Address for Lookup",
+              "class": "tr-mape-lookup-ipv6",
+              "fieldType": "text",
+              "placeholder": "2400:xxxx:xxxx:xxxx::1",
+              "description": "Enter IPv6 to auto-fetch MAP-E parameters",
+              "apiSource": "ipv6",
+              "lookupTrigger": true,
+              "targetFields": ["mape-gua-prefix", "mape-br", "mape-ipv4-prefix", "mape-ipv4-prefixlen", "mape-ipv6-prefix", "mape-ipv6-prefixlen", "mape-ealen", "mape-psidlen", "mape-psid-offset"],
+              "clearSection": {"category": "internet-connection", "section": "mape-section"},
+              "computeField": {"target": "mape-gua-prefix", "method": "generateGuaPrefix"},
+              "fullWidth": "true"
+            },
+            {
+              "type": "radio-group",
+              "id": "mape-type",
+              "title": "Type",
+              "class": "tr-mape-type",
+              "variable": "mape_type",
+              "ui_variable": "ui_mape_type",
+              "default": "static",
+              "options": [
+                {"value": "static", "label": "Static", "class": "tr-static"},
+                {"value": "pd", "label": "PD", "class": "tr-pd"}
+              ],
+              "exclusiveVars": {
+                "static": ["ip6prefix_static"],
+                "pd": []
+              }
+            },
+            {
+              "type": "field",
+              "id": "mape-static-prefix",
+              "label": "Static Prefix",
+              "class": "tr-static-prefix",
+              "fieldType": "text",
+              "variable": "ip6prefix_static",
+              "placeholder": "optional for Static",
+              "description": "IPv6 Static prefix with /64 suffix",
+              "apiSource": "mape.ipv6Prefix_static",
+              "computeFrom": "generateStaticPrefix",
+              "showWhen": {"mape_type": "static"},
+              "fullWidth": "true"
+            },
+            {
+              "type": "field",
+              "id": "mape-br",
+              "label": "Peer Address (BR)",
+              "class": "tr-br",
+              "fieldType": "text",
+              "variable": "peeraddr",
+              "placeholder": "2001:380:a120::9",
+              "apiSource": "mape.brIpv6Address"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv4-prefix",
+              "label": "IPv4 Address",
+              "class": "tr-ipv4-prefix",
+              "fieldType": "text",
+              "variable": "ipaddr",
+              "placeholder": "",
+              "apiSource": "mape.ipv4Prefix"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv4-prefixlen",
+              "label": "IPv4 Prefix Length",
+              "class": "tr-ipv4-prefix-length",
+              "fieldType": "number",
+              "variable": "ip4prefixlen",
+              "placeholder": "20",
+              "apiSource": "mape.ipv4PrefixLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv6-prefix",
+              "label": "IPv6 Prefix",
+              "class": "tr-ipv6-prefix",
+              "fieldType": "text",
+              "variable": "ip6prefix",
+              "placeholder": "",
+              "apiSource": "mape.ipv6Prefix"
+            },
+            {
+              "type": "field",
+              "id": "mape-ipv6-prefixlen",
+              "label": "IPv6 Prefix Length",
+              "class": "tr-ipv6-prefix-length",
+              "fieldType": "number",
+              "variable": "ip6prefixlen",
+              "placeholder": "38",
+              "apiSource": "mape.ipv6PrefixLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-ealen",
+              "label": "EA-len",
+              "class": "tr-ea-len",
+              "fieldType": "number",
+              "variable": "ealen",
+              "placeholder": "18",
+              "apiSource": "mape.eaBitLength"
+            },
+            {
+              "type": "field",
+              "id": "mape-psidlen",
+              "label": "PSID Length",
+              "class": "tr-psid-length",
+              "fieldType": "number",
+              "variable": "psidlen",
+              "placeholder": "6",
+              "apiSource": "mape.psidlen"
+            },
+            {
+              "type": "field",
+              "id": "mape-psid-offset",
+              "label": "PSID Offset",
+              "class": "tr-psid-offset",
+              "fieldType": "number",
+              "variable": "offset",
+              "placeholder": "6",
+              "apiSource": "mape.psIdOffset"
+            },
+            {
+              "type": "info-display",
+              "id": "mape-credit-link",
+              "content": "Powered by config-softwire",
+              "link": "https://ipv4.web.fc2.com/map-e.html",
+              "centered": "true",
+              "linkOnly": "true"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dslite-section",
+          "showWhen": {"connection_type": "dslite"},
+          "items": [
+            {
+              "type": "field",
+              "id": "dslite-aftr-type",
+              "label": "AFTR Type",
+              "class": "tr-dslite-aftr-type",
+              "fieldType": "select",
+              "variable": "dslite_aftr_type",
+              "default": "transix",
+              "options": [
+                {"value": "transix", "label": "transix", "class": "tr-transix"},
+                {"value": "xpass", "label": "Xpass", "class": "tr-xpass"},
+                {"value": "v6connect", "label": "v6connect", "class": "tr-v6connect"}
+              ],
+              "exclusiveVars": {
+                "transix": ["dslite_jurisdiction"],
+                "xpass": [],
+                "v6connect": []
+              },
+              "computeTarget": "dslite_peeraddr"
+            },
+            {
+              "type": "field",
+              "id": "dslite-jurisdiction",
+              "label": "Area",
+              "class": "tr-dslite-area",
+              "fieldType": "select",
+              "variable": "dslite_jurisdiction",
+              "options": [
+                {"value": "east", "label": "East Japan", "class": "tr-east-japan"},
+                {"value": "west", "label": "West Japan", "class": "tr-west-japan"}
+              ],
+              "apiSource": "aftr.jurisdiction",
+              "computeTarget": "dslite_peeraddr",
+              "showWhen": {"dslite_aftr_type": ["transix"]}
+            },
+            {
+              "type": "field",
+              "id": "dslite-aftr-address",
+              "label": "AFTR Address",
+              "class": "tr-dslite-aftr-ipv6-address",
+              "fieldType": "text",
+              "variable": "dslite_peeraddr",
+              "placeholder": "gw.transix.jp or IPv6 address",
+              "default": "2404:8e00::feed:100",
+              "apiSource": "aftr.aftrAddress",
+              "computed": {
+                "from": ["dslite_aftr_type", "dslite_jurisdiction"],
+                "map": "aftr_map"
+              }
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "ap-section",
+          "showWhen": {"connection_type": "ap"},
+          "items": [
+            {
+              "type": "field",
+              "id": "ap-ip-address",
+              "label": "IP Address",
+              "class": "tr-ap-ip-address",
+              "fieldType": "text",
+              "variable": "ap_ipaddr",
+              "placeholder": "192.168.1.2/24",
+              "default": "192.168.1.2/24"
+            },
+            {
+              "type": "field",
+              "id": "ap-gateway",
+              "label": "Gateway",
+              "class": "tr-ap-gateway",
+              "fieldType": "text",
+              "variable": "gateway",
+              "placeholder": "192.168.1.1/24",
+              "default": "192.168.1.1/24"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "connection-disabled-section",
+          "showWhen": {"connection_type": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "connection-disabled-info",
+              "class": "tr-internet-optimization-disabled",
+              "content": "Internet connection will be disabled"   
+            }
+          ]
+        }
+      ],
+      
+      "packages": [
+        {
+          "id": "map",
+          "when": {"connection_type": ["mape", "auto"]}
+        },
+        {
+          "id": "coreutils-sha1sum",
+          "when": {"connection_type": ["mape", "auto"]}
+        },
+        {
+          "id": "ds-lite",
+          "when": {"connection_type": ["dslite", "auto"]}
+        }
+      ]
+    },
+    
+    {
+      "id": "tuning-config",
+      "title": "Tuning",
+      "class": "tr-tuning",
+      "description": "System performance and network optimization",
+      
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "net-optimizer",
+          "title": "Dynamic Network Optimizer",
+          "class": "tr-netopt-optimization",
+          "variable": "net_optimizer",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "AUTO", "class": "tr-auto"},
+            {"value": "manual", "label": "Manual", "class": "tr-manual"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ],
+          "exclusiveVars": {
+            "auto": [],
+            "manual": ["netopt_rmem", "netopt_wmem", "netopt_conntrack", "netopt_backlog", "netopt_somaxconn", "netopt_congestion"],
+            "disabled": []
+          }
+        },
+        {
+          "type": "section",
+          "id": "netopt-auto-section",
+          "showWhen": {"net_optimizer": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "netopt-auto-info",
+              "class": "tr-auto-optimization",
+              "content": "Auto mode adjusts parameters based on system resources (Memory, CPU cores, etc.)"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "netopt-manual-section",
+          "showWhen": {"net_optimizer": "manual"},
+          "items": [
+            {
+              "type": "field",
+              "id": "netopt-rmem",
+              "label": "TCP Read Memory",
+              "class": "tr-tcp-read-memory",
+              "fieldType": "text",
+              "variable": "netopt_rmem",
+              "placeholder": "4096 131072 8388608",
+              "default": "4096 131072 8388608",
+              "description": "min default max (bytes)"
+            },
+            {
+              "type": "field",
+              "id": "netopt-wmem",
+              "label": "TCP Write Memory",
+              "class": "tr-tcp-write-memory",
+              "fieldType": "text",
+              "variable": "netopt_wmem",
+              "placeholder": "4096 131072 8388608",
+              "default": "4096 131072 8388608",
+              "description": "min default max (bytes)"
+            },
+            {
+              "type": "field",
+              "id": "netopt-conntrack",
+              "label": "Connection Tracking Max",
+              "class": "tr-connection-tracking-max",
+              "fieldType": "number",
+              "variable": "netopt_conntrack",
+              "placeholder": "131072",
+              "default": "131072",
+              "min": 1024
+            },
+            {
+              "type": "field",
+              "id": "netopt-backlog",
+              "label": "Network Device Backlog",
+              "class": "tr-network-device-backlog",
+              "fieldType": "number",
+              "variable": "netopt_backlog",
+              "placeholder": "5000",
+              "default": "5000",
+              "min": 100
+            }, 
+            {
+              "type": "field",
+              "id": "netopt-somaxconn",
+              "label": "Socket Max Connections",
+              "class": "tr-socket-max-connections",
+              "fieldType": "number",
+              "variable": "netopt_somaxconn",
+              "placeholder": "16384",
+              "default": "16384",
+              "min": 128
+            },
+            {
+              "type": "field",
+              "id": "netopt-congestion",
+              "label": "TCP Congestion Control",
+              "class": "tr-tcp-congestion-control",
+              "description": "BBR selection installs kmod-tcp-bbr",
+              "fieldType": "select",
+              "variable": "netopt_congestion",
+              "options": [
+                {"value": "cubic", "label": "cubic (default)", "class": "tr-cubic-default", "selected": true},
+                {"value": "bbr", "label": "BBR", "class": "tr-bbr"}
+              ]
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "netopt-disabled-section",
+          "showWhen": {"net_optimizer": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "netopt-disabled-info",
+              "class": "tr-netopt-optimization-disabled",
+              "content": "Optimization Disabled"
+            }
+          ]
+        },
+        {
+          "type": "radio-group",
+          "id": "dnsmasq-mode",
+          "title": "DNS Server Settings",
+          "class": "tr-dnsmasq-settings",
+          "variable": "dnsmasq",
+          "default": "auto",
+          "options": [
+            {"value": "auto", "label": "Automatic", "class": "tr-dnsmasq-auto"},
+            {"value": "manual", "label": "Manual", "class": "tr-dnsmasq-manual"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-dnsmasq-disabled"}
+          ],
+          "exclusiveVars": {
+            "auto": [],
+            "manual": ["dnsmasq_cache", "dnsmasq_negcache"],
+            "disabled": []
+          }
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-manual-section",
+          "showWhen": {"dnsmasq": "manual"},
+          "items": [
+            {
+              "type": "field",
+              "id": "dnsmasq-cache",
+              "label": "Cache Size",
+              "class": "tr-dnsmasq-cache",
+              "fieldType": "number",
+              "variable": "dnsmasq_cache",
+              "placeholder": "10000",
+              "default": "10000",
+              "description": "Number of DNS cache entries"
+            },
+            {
+              "type": "field",
+              "id": "dnsmasq-negcache",
+              "label": "Negative Cache",
+              "class": "tr-dnsmasq-negcache",
+              "fieldType": "number",
+              "variable": "dnsmasq_negcache",
+              "placeholder": "0",
+              "default": "0",
+              "description": "0 = disable, >0 = N sec"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-auto-section",
+          "showWhen": {"dnsmasq": "auto"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dnsmasq-auto-info",
+              "class": "tr-dnsmasq-auto-optimization",
+              "content": "In AUTO mode, the cache size is automatically optimized based on the system's memory size."
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "dnsmasq-disabled-section",
+          "showWhen": {"dnsmasq": "disabled"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "dnsmasq-disabled-info",
+              "class": "tr-dnsmasq-optimization-disabled",
+              "content": "DNS optimization will be disabled."
+            }
+          ]
+        }
+      ],
+      "packages": [
+        {
+          "id": "kmod-tcp-bbr",
+          "when": {
+            "netopt_congestion": "bbr"
+          }
+        },
+        {
+          "id": "kmod-tcp-bbr",
+          "when": {
+            "net_optimizer": "auto",
+            "connection_type": ["dhcp", "pppoe", "ap"]
+          }
+        }
+      ]
+    },
+    {
+      "id": "custom-scripts",
+      "title": "Custom Script",
+      "class": "tr-customscripts-title",
+      "description": "User-defined custom scripts for system configuration",
+      "guiOnly": "true",
+      "items": [
+        {
+          "type": "radio-group",
+          "id": "dns_adblock",
+          "title": "DNS Ad Blocking",
+          "class": "tr-dns-adblock-title",
+          "variable": "dns_adblock",
+          "default": "disabled",
+          "options": [
+            {"value": "adguardhome", "label": "AdGuard Home", "class": "tr-tui-customscript-adguardhome"},
+            {"value": "adblock_fast", "label": "Adblock Fast", "class": "tr-dns-adblock-adblock-fast"},
+            {"value": "nextdns", "label": "NextDNS", "class": "tr-dns-adblock-nextdns"},
+            {"value": "disabled", "label": "Disabled", "class": "tr-disabled"}
+          ],
+          "exclusiveVars": {
+            "adguardhome": ["agh_user", "agh_pass", "agh_web_port", "agh_dns_port", "agh_yaml"],
+            "adblock_fast": ["adblock_filter_url"],
+            "nextdns": [],
+            "disabled": []
+          },
+          "dependencies": {
+            "adguardhome": {
+              "htpasswd": "1",
+              "adguardhome": "1"
+            }
+          },
+          "variables": {
+            "agh_dir": "/etc/adguardhome",
+            "agh_yaml": "/etc/adguardhome/adguardhome.yaml",
+            "agh_yaml_old": "/etc/adguardhome.yaml"
+          },  
+          "filterLanguageMap": {
+            "_description": "AdGuard filter URL mapping by language code",
+            "en": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_2_English/filter.txt",
+            "zh-cn": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/fil10_Chinese/filter.txt",
+            "nl": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_8_Dutch/filter.txt",
+            "fr": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_5_French/filter.txt",
+            "de": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_4_German/filter.txt",
+            "ja": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_7_Japanese/filter.txt",
+            "ru": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_3_Russian/filter.txt",
+            "es": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_6_Spanish/filter.txt",
+            "tr": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_9_Turkish/filter.txt",
+            "uk": "https://raw.githubusercontent.com/AdguardTeam/FiltersRegistry/master/filters/filter_13_Ukrainian/filter.txt"
+          }
+        },        
+        {
+          "type": "section",
+          "id": "adguardhome-section",
+          "showWhen": {"dns_adblock": "adguardhome"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "adguardhome-requirements",
+              "requirements": {
+                "minMemoryMB": 20,
+                "minFlashMB": 25,
+                "recommendedMemoryMB": 50,
+                "recommendedFlashMB": 100,
+                "memoryVar": "agh_min_memory",
+                "flashVar": "agh_min_flash"
+              }
+            },
+            {
+              "type": "info-display",
+              "id": "adguardhome-admin-url",
+              "description": "http://{lan_ip_address}:{agh_web_port}"
+            },
+            {
+              "type": "field",
+              "id": "agh-user",
+              "label": "Username",
+              "class": "tr-tui-customscript-username",
+              "fieldType": "text",
+              "variable": "agh_user",
+              "placeholder": "admin",
+              "default": "admin"
+            },
+            {
+              "type": "field",
+              "id": "agh-pass",
+              "label": "Password",
+              "class": "tr-tui-customscript-password",
+              "fieldType": "text",
+              "variable": "agh_pass",
+              "placeholder": "password",
+              "default": "password"
+            },
+            {
+              "type": "field",
+              "id": "agh-web-port",
+              "label": "Web Port",
+              "class": "tr-tui-customscript-webport",
+              "fieldType": "number",
+              "variable": "agh_web_port",
+              "placeholder": "8000",
+              "default": "8000",
+              "min": "1",
+              "max": 65535
+            },
+            {
+              "type": "field",
+              "id": "agh-dns-port",
+              "label": "DNS Port",
+              "class": "tr-tui-customscript-dnsport",
+              "fieldType": "number",
+              "variable": "agh_dns_port",
+              "placeholder": "53",
+              "default": "53",
+              "min": "1",
+              "max": "65535"
+            },
+            {
+              "type": "field",
+              "id": "agh-dns-backup-port",
+              "label": "DNS Backup Port",
+              "class": "tr-tui-customscript-dns-backup-port",
+              "fieldType": "number",
+              "variable": "agh_dns_backup_port",
+              "placeholder": "54",
+              "default": "54",
+              "min": "1",
+              "max": "65535",
+              "hidden": "true"
+            }
+          ]
+        },
+        {
+          "type": "section",
+          "id": "adblock-fast-section",
+          "showWhen": {"dns_adblock": "adblock_fast"},
+          "items": [
+            {
+              "type": "info-display",
+              "id": "adblock-fast-info",
+              "class": "tr-dns-adblock-adblock-fast-info",
+              "content": "Filter automatically selected based on language"
+            }
+          ]
+        },
+        {
+          "type": "info-display",
+          "id": "nextdns-info",
+          "class": "tr-dns-adblock-nextdns-info",
+          "description": "Create account and get Configuration ID before installation",
+          "showWhen": {"dns_adblock": "nextdns"}
+        },
+        {
+          "type": "info-display",
+          "id": "dns-adblock-disabled-info",
+          "class": "tr-dns-adblock-disabled",
+          "content": "DNS ad blocking will not be configured",
+          "showWhen": {"dns_adblock": "disabled"}
+        }
+      ],
+      
+      "packages": [
+        {
+          "id": "adguardhome",
+          "when": {"dns_adblock": "adguardhome"}
+        },
+        {
+          "id": "apache",
+          "uniqueId": "htpasswd-from-apache",
+          "when": {"dns_adblock": "adguardhome"}
+        },
+        {
+          "id": "luci-app-adblock-fast",
+          "when": {"dns_adblock": "adblock_fast"}
+        },
+        {
+          "id": "luci-app-nextdns",
+          "when": {"dns_adblock": "nextdns"}
+        }
+      ]
+    }
+  ]
+}
