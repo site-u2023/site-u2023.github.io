@@ -195,6 +195,7 @@
       "luci-i18n-opkg-",
       "luci-i18n-firewall-",
       "luci-i18n-package-manager-",
+      "luci-i18n-uhttpd-",
       "luci-i18n-attendedsysupgrade-"
     ],    
     "language_module_patterns": [
