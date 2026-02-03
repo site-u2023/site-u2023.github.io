@@ -443,16 +443,21 @@ show_network_info() {
         [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
 "
         
-        # notice 取得（auto-config.json から）
-        local notice_class notice_text
-        notice_class=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notice.class" 2>/dev/null)
-        if [ -n "$notice_class" ]; then
+        # notices 配列を取得してループ（auto-config.json から）
+        local notice_idx=0
+        while [ $notice_idx -lt 10 ]; do
+            local notice_class notice_text
+            notice_class=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notices[$notice_idx].class" 2>/dev/null)
+            [ -z "$notice_class" ] && break
+            
             notice_text=$(translate "$notice_class")
-        else
-            notice_text=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notice.default" 2>/dev/null)
-        fi
-        [ -n "$notice_text" ] && info="${info}
-${notice_text}
+            [ -n "$notice_text" ] && info="${info}
+${notice_text}"
+            
+            notice_idx=$((notice_idx + 1))
+        done
+        
+        info="${info}
 
 "
         
