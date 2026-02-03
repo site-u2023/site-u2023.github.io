@@ -443,6 +443,9 @@ show_network_info() {
         [ -n "$isp_as" ] && info="${info}${tr_as}: $isp_as
 "
         
+        info="${info}
+"
+        
         # notices 配列を取得してループ（auto-config.json から）
         local notice_idx=0
         while [ $notice_idx -lt 10 ]; do
@@ -451,14 +454,13 @@ show_network_info() {
             [ -z "$notice_class" ] && break
             
             notice_text=$(translate "$notice_class")
-            [ -n "$notice_text" ] && info="${info}
-${notice_text}"
+            [ -n "$notice_text" ] && info="${info}${notice_text}
+"
             
             notice_idx=$((notice_idx + 1))
         done
         
         info="${info}
-
 "
         
         # 値を一時ファイルに保存（id=値 形式）
