@@ -483,45 +483,6 @@ set_var() {
     [ -n "$var_value" ] && echo "${var_name}='${var_value}'" >> "$SETUP_VARS"
 }
 
-# UI Mode Selection
-
-select_ui_mode() {
-    local whiptail_pkg="whiptail"
-    local choice
-    
-    echo "Select UI Mode:"
-    echo "1) whiptail (Dialog TUI)"
-    echo "2) simple   (List TUI) [EXPERIMENTAL]"
-    
-    printf "Select [1]: "
-    read -r choice
-    
-    case "$choice" in
-        2)
-            UI_MODE="simple"
-            ;;
-        *)
-            UI_MODE="whiptail"
-            if ! command -v whiptail >/dev/null 2>&1; then
-                echo "Installing whiptail..."
-                
-                # パッケージリストを更新
-                echo "Updating package lists..."
-                eval "$PKG_UPDATE_CMD" || {
-                    echo "Warning: Failed to update package lists"
-                }
-                
-                if install_package $whiptail_pkg; then
-                    echo "Installation successful."
-                else
-                    echo "Installation failed. Falling back to simple mode."
-                    UI_MODE="simple"
-                fi
-            fi
-            ;;
-    esac
-}
-
 # Package Manager Detection
 
 check_packages_installed() {
@@ -5845,9 +5806,8 @@ aios2_main() {
         NATIVE_LANG_PID=$!
     fi
     
-    (
+        (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
-        [ -n "$SIMPLE_UI_URL" ] && __download_file_core "$SIMPLE_UI_URL" "$CONFIG_DIR/aios2-simple.sh"
     ) &
     UI_DL_PID=$!
     
@@ -5912,15 +5872,7 @@ aios2_main() {
     
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
     
-    WHIPTAIL_AVAILABLE=0
-    command -v whiptail >/dev/null 2>&1 && WHIPTAIL_AVAILABLE=1
-    
-    UI_START=$(cut -d' ' -f1 /proc/uptime)
-    select_ui_mode
-    UI_END=$(cut -d' ' -f1 /proc/uptime)
-    UI_DURATION=$(awk "BEGIN {printf \"%.3f\", $UI_END - $UI_START}")
-    
-    if [ "$UI_MODE" = "whiptail" ] && [ "$WHIPTAIL_AVAILABLE" -eq 0 ]; then
+    if ! command -v whiptail >/dev/null 2>&1; then
         echo "Waiting for package manager configuration..."
         wait $PKG_MGR_DL_PID
         
@@ -5936,11 +5888,14 @@ aios2_main() {
         eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
         
         if ! install_package whiptail; then
-            echo "Installation failed. Falling back to simple mode."
-            UI_MODE="simple"
-        else
-            echo "Installation successful."
+            echo ""
+            echo "Error: Failed to install whiptail."
+            echo "Please check your network connection and try again."
+            printf "Press [Enter] to exit. "
+            read -r _
+            return 1
         fi
+        echo "Installation successful."
     fi
     
     TIME_BEFORE_UI=$(elapsed_time)
@@ -5956,18 +5911,13 @@ aios2_main() {
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME - $UI_DURATION}")
     debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
     
-    if [ "$UI_MODE" = "simple" ] && [ -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
-        sed -i 's/"tr-tui-yes": "[^"]*"/"tr-tui-yes": "y"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
-        sed -i 's/"tr-tui-no": "[^"]*"/"tr-tui-no": "n"/' "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json"
-    fi
-    
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
-    if [ -f "$CONFIG_DIR/aios2-${UI_MODE}.sh" ]; then
-        . "$CONFIG_DIR/aios2-${UI_MODE}.sh"
-        aios2_${UI_MODE}_main
+    if [ -f "$CONFIG_DIR/aios2-whiptail.sh" ]; then
+        . "$CONFIG_DIR/aios2-whiptail.sh"
+        aios2_whiptail_main
     else
-        echo "Error: UI module aios2-${UI_MODE}.sh not found."
+        echo "Error: UI module aios2-whiptail.sh not found."
         return 1
     fi
 }
