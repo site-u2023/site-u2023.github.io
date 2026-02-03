@@ -447,18 +447,24 @@ show_network_info() {
 "
         
         # notices 配列を取得してループ（auto-config.json から）
+        echo "[DEBUG] notices: START - AUTO_CONFIG_DEF='$AUTO_CONFIG_DEF'" >> "$CONFIG_DIR/debug.log"
+        [ -f "$AUTO_CONFIG_DEF" ] && echo "[DEBUG] notices: file exists" >> "$CONFIG_DIR/debug.log" || echo "[DEBUG] notices: FILE NOT FOUND!" >> "$CONFIG_DIR/debug.log"
+        
         local notice_idx=0
         while [ $notice_idx -lt 10 ]; do
             local notice_class notice_text
             notice_class=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.notices[$notice_idx].class" 2>/dev/null)
-            [ -z "$notice_class" ] && break
+            echo "[DEBUG] notices: idx=$notice_idx, class='$notice_class'" >> "$CONFIG_DIR/debug.log"
+            [ -z "$notice_class" ] && { echo "[DEBUG] notices: BREAK at idx=$notice_idx" >> "$CONFIG_DIR/debug.log"; break; }
             
             notice_text=$(translate "$notice_class")
+            echo "[DEBUG] notices: translated='$notice_text'" >> "$CONFIG_DIR/debug.log"
             [ -n "$notice_text" ] && info="${info}${notice_text}
 "
             
             notice_idx=$((notice_idx + 1))
         done
+        echo "[DEBUG] notices: END" >> "$CONFIG_DIR/debug.log"
         
         info="${info}
 "
