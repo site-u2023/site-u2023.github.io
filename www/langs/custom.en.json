@@ -121,7 +121,8 @@
     "tr-ea-len": "option ealen",
     "tr-psid-length": "option psidlen",
     "tr-psid-offset": "option offset",
-    "tr-mape-notice2": "Note: Port numbers 1-1023 are privileged ports. Please check with your ISP for details.",
+    "tr-isp-notice": "Note: Actual values may differ.", 
+    "tr-isp-notice1": "Note: Ports 1-1023 are well-known ports. Please check with your ISP for details.",
     
     "_section_12": "=== AP Configuration ===",
     "tr-ap-ip-address": "IP Address",
