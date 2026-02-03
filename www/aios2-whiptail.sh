@@ -521,14 +521,29 @@ ${notice_text}
         info="${info}
 "
         
-        # footer フィールドを取得してループ（PSID, Ports）
+        # footer フィールドを取得してループ（PSID, Ports, notice1等）
         i=0
         while [ $i -lt 10 ]; do
-            local footer_id footer_label footer_var_name footer_condition footer_value footer_json_path
+            local footer_id footer_type footer_label footer_class footer_text footer_var_name footer_condition footer_value footer_json_path
             
             footer_id=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].id" 2>/dev/null)
             [ -z "$footer_id" ] && break
             
+            footer_type=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].type" 2>/dev/null)
+            
+            # type="text" の場合は静的テキスト（翻訳キー処理）
+            if [ "$footer_type" = "text" ]; then
+                footer_class=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].class" 2>/dev/null)
+                if [ -n "$footer_class" ]; then
+                    footer_text=$(translate "$footer_class")
+                    info="${info}${footer_text}
+"
+                fi
+                i=$((i + 1))
+                continue
+            fi
+            
+            # 通常のフィールド処理（PSID, Ports等）
             footer_label=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].label" 2>/dev/null)
             footer_var_name=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].varName" 2>/dev/null)
             footer_condition=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].condition" 2>/dev/null)
