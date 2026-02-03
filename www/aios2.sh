@@ -3969,7 +3969,8 @@ reset_state_for_next_session() {
     # apply後の状態を新しいスナップショットとして保存
     cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
     cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-    : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+    # インストール済み言語パッケージをスナップショットに記録
+    grep "^luci-i18n-" "$CONFIG_DIR/installed_packages_cache.txt" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt" 2>/dev/null || : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
 	
     clear_selection_cache
 }
@@ -5790,7 +5791,8 @@ aios2_main() {
 	
         cp "$SELECTED_PACKAGES" "$CONFIG_DIR/packages_initial_snapshot.txt"
         cp "$SELECTED_CUSTOM_PACKAGES" "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
-        : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
+        # インストール済み言語パッケージをスナップショットに記録
+        grep "^luci-i18n-" "$CONFIG_DIR/installed_packages_cache.txt" > "$CONFIG_DIR/lang_packages_initial_snapshot.txt" 2>/dev/null || : > "$CONFIG_DIR/lang_packages_initial_snapshot.txt"
     ) &
     INIT_PKG_PID=$!
     
