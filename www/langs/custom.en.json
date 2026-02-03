@@ -228,6 +228,10 @@
     "tr-tui-package-removal-failed": "Package removal failed",
     
     "_section_21": "=== TUI Summary ===",
+    "tr-tui-summary-packages": "Packages",
+    "tr-tui-summary-customfeeds": "Custom Feeds",
+    "tr-tui-summary-variables": "Configuration Variables",
+    "tr-tui-summary-customscripts": "Custom Scripts",
     "tr-tui-summary-removed": "Removed",
     "tr-tui-summary-installed": "Installed",
     "tr-tui-no-changes-applied": "No changes were made",
