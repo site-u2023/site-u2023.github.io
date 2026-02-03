@@ -210,37 +210,59 @@
       "luci-i18n-"
     ],    
     "export_exclusions": {
-      "connection_type": {
-        "auto": [
-          "peeraddr",
-          "ipaddr",
-          "ip4prefixlen",
-          "ip6prefix",
-          "ip6prefixlen",
-          "ealen",
-          "psidlen",
-          "offset",
-          "ip6prefix_gua"
+            "connection_type": {
+                "auto": [
+                    "peeraddr",
+                    "ipaddr",
+                    "ip4prefixlen",
+                    "ip6prefix",
+                    "ip6prefixlen",
+                    "ealen",
+                    "psidlen",
+                    "offset",
+                    "ip6prefix_gua"
+                ]
+            },
+            "net_optimizer": {
+                "auto": [
+                    "netopt_rmem",
+                    "netopt_wmem",
+                    "netopt_conntrack",
+                    "netopt_backlog",
+                    "netopt_somaxconn",
+                    "netopt_congestion"
+                ]
+            },
+            "enable_dnsmasq": {
+                "auto": [
+                    "dnsmasq_cache",
+                    "dnsmasq_negcache"
+                ]
+            }
+        },
+        "summary_sections": [
+            {
+                "id": "packages",
+                "class": "tr-tui-summary-packages",
+                "icon": "🔵"
+            },
+            {
+                "id": "customfeeds",
+                "class": "tr-tui-summary-customfeeds",
+                "icon": "🟢"
+            },
+            {
+                "id": "variables",
+                "class": "tr-tui-summary-variables",
+                "icon": "🟡"
+            },
+            {
+                "id": "customscripts",
+                "class": "tr-tui-summary-customscripts",
+                "icon": "🔴"
+            }
         ]
-      },
-      "net_optimizer": {
-        "auto": [
-          "netopt_rmem",
-          "netopt_wmem",
-          "netopt_conntrack",
-          "netopt_backlog",
-          "netopt_somaxconn",
-          "netopt_congestion"
-        ]
-      },
-      "enable_dnsmasq": {
-        "auto": [
-          "dnsmasq_cache",
-          "dnsmasq_negcache"
-        ]
-      }
-    }
-  },
+    },
   
   "categories": [
     {
