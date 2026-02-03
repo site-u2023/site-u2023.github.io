@@ -71,10 +71,14 @@
       "class": "tr-mape-config",
       "renderIn": "autoConnectionInfo",
       "connectionType": "mape",
-      "notice": {
-        "class": "tr-isp-notice",
-        "default": "Note: Actual values may differ."
-      },
+      "notices": [
+        {
+          "class": "tr-isp-notice",
+        },
+        {
+          "class": "tr-isp-notice1",
+        }
+      ],
       "fields": [
         { "id": "mape-ip6prefix-static", "label": "option ip6prefix_static", "varName": "MAPE_STATIC_PREFIX", "condition": "computeStaticPrefix" },
         { "id": "mape-peeraddr", "label": "option peeraddr", "varName": "MAPE_BR" },
@@ -104,7 +108,6 @@
       "connectionType": "dslite",
       "notice": {
         "class": "tr-isp-notice",
-        "default": "Note: Actual values may differ."
       },
       "fields": [
         { "id": "dslite-aftr", "label": "option peeraddr", "varName": "DSLITE_AFTR" }
