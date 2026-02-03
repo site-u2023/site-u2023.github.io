@@ -269,7 +269,7 @@
     "tr-tui-manual-config-required": "手動で接続設定を行ってください。",
     
     "_section_26": "=== カスタムフィード ===",
-    "tr-custom-feeds": "カスタムフィード",
+    "tr-tui-custom-feeds": "カスタムフィード",
     "tr-tui-feed-gspotx2f": "gSpotx2fリポジトリ",
     "tr-tui-feed-jerrykuku": "jerrykukuリポジトリ",
     
