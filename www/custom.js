@@ -2455,6 +2455,35 @@ function updateAutoConnectionInfo(apiInfo) {
 
 // ==================== 接続情報レンダリング ====================
 
+function renderField(container, field) {
+    if (field.text) {
+        container.appendChild(document.createTextNode(field.text));
+        container.appendChild(document.createElement('br'));
+        return;
+    }
+
+    let value = state.apiValues?.[field.varName];
+
+    if (field.condition === 'computeStaticPrefix') {
+        if (!value) {
+            value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
+            if (!value) {
+                const staticField = document.querySelector('#mape-static-prefix');
+                if (staticField && staticField.value) value = staticField.value;
+            }
+            if (value) state.apiValues[field.varName] = value;
+        }
+        if (!value) return;
+    } else if (field.condition === 'hasValue') {
+        if (!value) return;
+    }
+
+    if (value !== null && value !== undefined && value !== '') {
+        container.appendChild(document.createTextNode(`${field.label} ${value}`));
+        container.appendChild(document.createElement('br'));
+    }
+}
+
 function renderConnectionInfo(container, displayConfig) {
     if (!displayConfig) return;
     
@@ -2470,34 +2499,11 @@ function renderConnectionInfo(container, displayConfig) {
     }
     
     if (displayConfig.fields) {
-        displayConfig.fields.forEach(field => {
-            let value = state.apiValues?.[field.varName];
-            
-            if (field.condition === 'computeStaticPrefix') {
-                if (!value) {
-                    value = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
-                    if (!value) {
-                        const staticField = document.querySelector('#mape-static-prefix');
-                        if (staticField && staticField.value) value = staticField.value;
-                    }
-                    if (value) state.apiValues[field.varName] = value;
-                }
-                if (!value) return;
-            } else if (field.condition === 'hasValue') {
-                if (!value) return;
-            }
-            
-            if (value !== null && value !== undefined && value !== '') {
-                container.appendChild(document.createTextNode(`${field.label} ${value}`));
-                container.appendChild(document.createElement('br'));
-            }
-        });
+        displayConfig.fields.forEach(field => renderField(container, field));
     }
-    
-    if (displayConfig.footer?.text) {
-        container.appendChild(document.createElement('br'));
-        container.appendChild(document.createTextNode(displayConfig.footer.text));
-        container.appendChild(document.createElement('br'));
+
+    if (displayConfig.footer) {
+        displayConfig.footer.forEach(field => renderField(container, field));
     }
     
     if (displayConfig.link) {
