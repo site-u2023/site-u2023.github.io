@@ -73,10 +73,10 @@
       "connectionType": "mape",
       "notices": [
         {
-          "class": "tr-isp-notice",
+          "class": "tr-isp-notice"
         },
         {
-          "class": "tr-isp-notice1",
+          "class": "tr-isp-notice1"
         }
       ],
       "fields": [
@@ -107,7 +107,7 @@
       "renderIn": "autoConnectionInfo",
       "connectionType": "dslite",
       "notice": {
-        "class": "tr-isp-notice",
+        "class": "tr-isp-notice"
       },
       "fields": [
         { "id": "dslite-aftr", "label": "option peeraddr", "varName": "DSLITE_AFTR" }
