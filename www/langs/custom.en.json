@@ -171,6 +171,7 @@
     "tr-encrypted-dns": "Encrypted DNS",
     
     "_section_16": "=== TUI Interface ===",
+    "tr-tui-packages": "Packages",
     "tr-tui-main-menu": "Main Menu",
     "tr-tui-select": "Select",
     "tr-tui-back": "Back",
