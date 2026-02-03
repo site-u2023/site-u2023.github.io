@@ -2503,6 +2503,7 @@ function renderConnectionInfo(container, displayConfig) {
     }
 
     if (displayConfig.footer) {
+        container.appendChild(document.createElement('br'));
         displayConfig.footer.forEach(field => renderField(container, field));
     }
     
