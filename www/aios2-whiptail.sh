@@ -444,45 +444,46 @@ show_network_info() {
 "
         
         # JSON から notice を取得
-        local notice_class notice_text
-        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.class" 2>/dev/null | head -1)
-        if [ -n "$notice_class" ]; then
-            notice_text=$(translate "$notice_class")
-        else
-            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.default" 2>/dev/null | head -1)
-        fi
-        [ -n "$notice_text" ] && info="${info}
-${notice_text}
-
-"
+        local notice_class no
         
         # 値を一時ファイルに保存（id=値 形式）
         local field_cache="$CONFIG_DIR/mape_field_cache.txt"
         : > "$field_cache"
         
-        # JSON からフィールドを取得してループ
+        # auto-config.json の mapeInfo.fields からフィールドを取得してループ
         local i
         i=0
         while [ $i -lt 20 ]; do
-            local field_id field_label field_api_path field_condition field_value
+            local field_id field_label field_text field_var_name field_condition field_value field_json_path
             
             # 各フィールドのプロパティを取得
-            field_id=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].id" 2>/dev/null)
-            [ -z "$field_id" ] && break
+            field_id=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.fields[$i].id" 2>/dev/null)
+            field_text=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.fields[$i].text" 2>/dev/null)
             
-            field_label=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].label" 2>/dev/null)
-            local field_api_source
-            field_api_source=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].apiSource" 2>/dev/null)
-            field_variable=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[@.id='internet-connection'].items[@.id='mape-section'].items[$i].variable" 2>/dev/null)
+            # id も text も無ければ終了
+            [ -z "$field_id" ] && [ -z "$field_text" ] && break
             
-            # API から値を取得（apiSourceを使用）
-            if [ -n "$field_api_source" ]; then
-                field_value=$(jsonfilter -i "$api_json" -e "@.${field_api_source}" 2>/dev/null)
-            else
-                field_value=""
+            # text のみのフィールド（静的テキスト）
+            if [ -n "$field_text" ] && [ -z "$field_id" ]; then
+                info="${info}${field_text}
+"
+                i=$((i + 1))
+                continue
             fi
             
-            echo "[DEBUG] MAP-E field[$i]: id='$field_id', label='$field_label', value='$field_value'" >> "$CONFIG_DIR/debug.log"
+            field_label=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.fields[$i].label" 2>/dev/null)
+            field_var_name=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.fields[$i].varName" 2>/dev/null)
+            field_condition=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.fields[$i].condition" 2>/dev/null)
+            
+            # varName から apiFields で jsonPath を検索
+            if [ -n "$field_var_name" ]; then
+                field_json_path=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.apiFields.mape[@.varName='$field_var_name'].jsonPath" 2>/dev/null)
+                if [ -n "$field_json_path" ]; then
+                    field_value=$(jsonfilter -i "$api_json" -e "@.${field_json_path}" 2>/dev/null)
+                fi
+            fi
+            
+            echo "[DEBUG] MAP-E field[$i]: id='$field_id', label='$field_label', varName='$field_var_name', value='$field_value'" >> "$CONFIG_DIR/debug.log"
             
             # condition: hasValue の場合、値がなければスキップ
             if [ "$field_condition" = "hasValue" ] && [ -z "$field_value" ]; then
@@ -490,8 +491,11 @@ ${notice_text}
                 continue
             fi
             
-            if [ -n "$field_variable" ] && [ -n "$field_value" ]; then
-                echo "${field_variable}=${field_value}" >> "$field_cache"
+            # field_cache に保存（変数名を小文字に変換）
+            if [ -n "$field_var_name" ] && [ -n "$field_value" ]; then
+                local var_lower
+                var_lower=$(echo "$field_var_name" | tr 'A-Z' 'a-z')
+                echo "${var_lower}=${field_value}" >> "$field_cache"
             fi
             
             # 値がある場合のみ表示
@@ -503,31 +507,58 @@ ${notice_text}
             i=$((i + 1))
         done
         
-        # footer テキスト取得
-        local footer_text
-        footer_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].footer.text" 2>/dev/null)
-        [ -n "$footer_text" ] && info="${info}
-${footer_text}
-
+        # footer フィールドを取得してループ（PSID, Ports）
+        i=0
+        while [ $i -lt 10 ]; do
+            local footer_id footer_label footer_var_name footer_condition footer_value footer_json_path
+            
+            footer_id=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].id" 2>/dev/null)
+            [ -z "$footer_id" ] && break
+            
+            footer_label=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].label" 2>/dev/null)
+            footer_var_name=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].varName" 2>/dev/null)
+            footer_condition=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.footer[$i].condition" 2>/dev/null)
+            
+            # varName から apiFields で jsonPath を検索
+            if [ -n "$footer_var_name" ]; then
+                footer_json_path=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.apiFields.mape[@.varName='$footer_var_name'].jsonPath" 2>/dev/null)
+                if [ -n "$footer_json_path" ]; then
+                    footer_value=$(jsonfilter -i "$api_json" -e "@.${footer_json_path}" 2>/dev/null)
+                fi
+            fi
+            
+            # condition: hasValue の場合、値がなければスキップ
+            if [ "$footer_condition" = "hasValue" ] && [ -z "$footer_value" ]; then
+                i=$((i + 1))
+                continue
+            fi
+            
+            [ -n "$footer_value" ] && info="${info}${footer_label} ${footer_value}
 "
-        
-        # PSID と Ports を追加
-        local psid_value port_ranges
-        psid_value=$(jsonfilter -i "$api_json" -e "@.mape.psid" 2>/dev/null)
-        port_ranges=$(jsonfilter -i "$api_json" -e "@.mape.portRanges" 2>/dev/null)
-        
-        [ -n "$psid_value" ] && info="${info}PSID ${psid_value}
-"
-        [ -n "$port_ranges" ] && info="${info}Ports ${port_ranges}
-"
+            
+            i=$((i + 1))
+        done
         
         # link 取得
         local link_text link_url
-        link_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].link.text" 2>/dev/null)
-        link_url=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].link.url" 2>/dev/null)
+        link_text=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.link.text" 2>/dev/null)
+        link_url=$(jsonfilter -i "$AUTO_CONFIG_DEF" -e "@.display.mapeInfo.link.url" 2>/dev/null)
         [ -n "$link_text" ] && info="${info}
 ${link_text}
 "
+tice_text
+        notice_class=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.class" 2>/dev/null | head -1)
+        if [ -n "$notice_class" ]; then
+            notice_text=$(translate "$notice_class")
+        else
+            notice_text=$(jsonfilter -i "$info_json" -e "@.categories[@.id='mape-info'].notice.default" 2>/dev/null | head -1)
+        fi
+        [ -n "$notice_text" ] && info="${info}
+${notice_text}
+
+"
+        
+   
         
         info="${info}
 
