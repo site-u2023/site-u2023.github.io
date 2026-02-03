@@ -269,7 +269,7 @@
     "tr-tui-manual-config-required": "Please configure connection settings manually.",
     
     "_section_26": "=== Custom Feeds ===",
-    "tr-custom-feeds": "Custom Feeds",
+    "tr-tui-custom-feeds": "Custom Feeds",
     "tr-tui-feed-gspotx2f": "gSpotx2f Repository",
     "tr-tui-feed-jerrykuku": "jerrykuku Repository",
     
