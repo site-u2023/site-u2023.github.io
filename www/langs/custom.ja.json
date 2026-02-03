@@ -96,12 +96,10 @@
     "tr-pd": "委任 (PD)",
     
     "_section_9": "=== PPPoE設定 ===",
-    "tr-pppoe-credentials": "PPPoE認証情報",
     "tr-pppoe-username": "ユーザー名",
     "tr-pppoe-password": "パスワード",
     
     "_section_10": "=== DS-Lite設定 ===",
-    "tr-dslite-settings": "DS-Lite設定",
     "tr-dslite-aftr-type": "AFTRタイプ",
     "tr-transix": "トランジックス",
     "tr-xpass": "クロスパス",
@@ -126,7 +124,6 @@
     "tr-mape-notice2": "注: ポート番号 1〜1023 は特権ポートです。詳細はISPに確認して下さい。",
     
     "_section_12": "=== AP設定 ===",
-    "tr-ap-network-settings": "APネットワーク設定",
     "tr-ap-ip-address": "IPアドレス",
     "tr-ap-gateway": "ゲートウェイ",
     
@@ -135,10 +132,7 @@
     "tr-netopt-optimization": "動的ネットワーク最適化",
     "tr-netopt-optimization-disabled": "最適化無効",
     "tr-manual": "手動",
-    "tr-auto-mode": "自動モード",
     "tr-auto-optimization": "自動最適化",
-    "tr-manual-mode": "手動モード",
-    "tr-manual-settings": "手動設定",
     "tr-tcp-read-memory": "TCPリードメモリ",
     "tr-tcp-write-memory": "TCPライトメモリ",
     "tr-connection-tracking-max": "コネクショントラッキング最大値",
@@ -147,12 +141,12 @@
     "tr-tcp-congestion-control": "TCP輻輳制御",
     "tr-cubic-default": "cubic(デフォルト)",
     "tr-bbr": "BBR",
-    "tr-reno": "Reno",
-    "tr-disabled-mode": "無効モード",
     
     "_section_14": "=== DNS最適化 ===",
     "tr-dnsmasq-settings": "DNS サーバー最適化",
-    "tr-dnsmasq-mode": "DNS サーバーモード",
+    "tr-dnsmasq-auto": "自動",
+    "tr-dnsmasq-manual": "手動",
+    "tr-dnsmasq-disabled": "無効",
     "tr-dnsmasq-cache": "キャッシュサイズ",
     "tr-dnsmasq-negcache": "ネガティブキャッシュ",
     "tr-dnsmasq-auto-optimization": "自動最適化",
@@ -310,10 +304,10 @@
     "tr-dns-adblock-filter-url": "フィルタURL",
     "tr-dns-adblock-nextdns": "ネクストDNS",
     "tr-dns-adblock-nextdns-info": "外部DNS利用 (デバイスリソース不要)<br><nextdns.io> でアカウント登録とConfiguration IDを取得して下さい",
+    "tr-dns-adblock-disabled": "無効",
     
-    "_section_31": "=== 共通ラベル (統合済み) ===",
+    "_section_31": "=== 共通ラベル ===",
     "tr-disabled": "無効",
-    "tr-notice-values-may-differ": "注: 本当の値とは違う場合があります。",
     
     "_section_32": "=== その他 ===",
     "tr-feedback-link": "フォーラム"
