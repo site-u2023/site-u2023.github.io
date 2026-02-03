@@ -135,7 +135,7 @@ IPv6 bridge/passthrough function settings for each manufacturer:
 ### Console Tool
 [aios2 TUI Version (whiptail)](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2.sh)
 
-<img width="1119" height="632" alt="image" src="https://github.com/user-attachments/assets/6eb4580d-5ed6-4f4c-830c-ad88171722f6" />
+<img width="1119" height="632" alt="image" src="https://github.com/user-attachments/assets/5833a956-e883-44c8-970e-4c8b3f8fee6f" />
 <img width="1119" height="632" alt="image" src="https://github.com/user-attachments/assets/7b885706-b0e4-4ebe-b240-77aab169f837" />
 
 
