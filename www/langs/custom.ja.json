@@ -228,6 +228,10 @@
     "tr-tui-package-removal-failed": "パッケージの削除に失敗しました",
     
     "_section_21": "=== TUIサマリー ===",
+    "tr-tui-summary-packages": "パッケージ",
+    "tr-tui-summary-customfeeds": "カスタムフィード",
+    "tr-tui-summary-variables": "設定変数",
+    "tr-tui-summary-customscripts": "カスタムスクリプト",
     "tr-tui-summary-removed": "リムーブ",
     "tr-tui-summary-installed": "インストール",
     "tr-tui-no-changes-applied": "変更はありませんでした",
