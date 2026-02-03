@@ -274,8 +274,8 @@
     "tr-tui-feed-jerrykuku": "jerrykuku Repository",
     
     "_section_27": "=== Custom Scripts ===",
-    "tr-custom-scripts": "Custom Scripts",
-    "tr-customscripts-title": "Custom Scripts",
+    "tr-tui-custom-scripts": "Custom Scripts",
+    "tr-tui-customscripts-title": "Custom Scripts",
     "tr-tui-customscript-resource-check": "Resource Check",
     "tr-tui-customscript-memory": "Memory",
     "tr-tui-customscript-storage": "Storage",
