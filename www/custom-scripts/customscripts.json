@@ -3,6 +3,7 @@
     {
       "id": "adguardhome",
       "name": "AdGuard Home",
+      "modifiesConfig": true,
       "class": "tr-tui-customscript-adguardhome",
       "description": "Network-wide ad blocking DNS server",
       "script": "adguardhome.sh",
