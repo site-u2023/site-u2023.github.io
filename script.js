@@ -208,8 +208,8 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'メニュー式スクリプト (旧版)',
-        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
+        aiosExplanation: '旧版',
+        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         sshExplanation: 'SSHログイン',
@@ -273,8 +273,8 @@ const translations = {
         langEn: 'English',
         langJa: '日本語',
         // Terminal Explanations
-        aiosExplanation: 'Menu-based script (Old version)',
-        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
+        aiosExplanation: 'Old version',
+        aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         sshExplanation: 'SSH login',
