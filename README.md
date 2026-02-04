@@ -50,12 +50,40 @@ style G2 fill:#c5e1a5,color:#000
 
 <img width="1924" height="1036" alt="image" src="https://github.com/user-attachments/assets/d1fe2e3b-c52f-441d-86bd-69e58c8218ab" />
 
-- Setup
-Terminal > Protocol Handler Registration > Download > Install (double-click)
-※Windows: Terminal links become available by registering in the registry
+<details><summary><b>Features</b></summary>
 
-- Removal
-[delete.reg](https://github.com/site-u2023/site-u2023.github.io/blob/main/file/delete.reg) > Download raw file (Download) > Install (double-click)
+**Address**
+- `IP Address`: (192.168.1.1 etc.)
+- `+` / `-`: Add/Remove address
+- `Apply`: Apply settings
+
+**Browser**
+- `Service`: (LuCI / ttyd / filebrowser / AdGuardHome / netdata)
+- `+` / `-`: Add/Remove service
+- `Port`: Port number
+- `Apply`: Apply settings
+- `Open`: Launch browser
+- `QR Code`: Display QR code
+
+**Terminal (for Windows)**
+※Requires IP address selection (or addition)
+
+- `Type` (aios2 / aios / ssh)
+- `Download`: Get .bat file
+
+**Kitting Tools (Custom Builder)**
+`Download OpenWrt firmware for your device`: Custom build tool link
+
+---
+
+**Delete legacy protocol handler**
+※For those who used previous versions
+
+Registry for deletion: [delete.reg](https://github.com/site-u2023/site-u2023.github.io/blob/main/file/delete.reg)
+
+---
+
+</details>
 
 ### Custom Build Tool (Kitting Tool)
 [site-u.pages.dev/www/](https://site-u.pages.dev/www/)
