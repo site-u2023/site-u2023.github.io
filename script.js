@@ -609,12 +609,6 @@ function bindEvents() {
         });
     }
     
-    if (terminalUpdate) {
-        terminalUpdate.addEventListener('click', function() {
-            updateTerminalExplanation();
-        });
-    }
-    
     if (openTerminal) {
         openTerminal.addEventListener('click', function() {
             const terminalSelector = document.getElementById('terminal-selector');
@@ -622,14 +616,7 @@ function bindEvents() {
             downloadBatFile(terminalType);
         });
     }
-    
-    if (terminalAdd) {
-        openTerminal.addEventListener('click', function() {
-            const terminalSelector = document.getElementById('terminal-selector');
-            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
-            downloadBatFile(terminalType);
-        });
-    }
+}
 
 // ==================================================
 // アドレス管理機能
