@@ -73,26 +73,12 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo Connected.
 echo.
-echo [3/3] Installing aios2 permanently and executing...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "cat << 'EEOF' > /usr/bin/aios2
-#!/bin/sh
-mkdir -p /tmp/aios2 && wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\" && chmod +x /tmp/aios2/aios2.sh && exec /tmp/aios2/aios2.sh \"\\$@\"
-EEOF
-chmod +x /usr/bin/aios2 && aios2"
-
-REM Cleanup registry
-reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
-
-echo.
-echo ====================================
-echo Installation completed successfully!
-echo ====================================
-echo.
-echo From now on, you can start it by typing 'aios2' in the console.
+echo [3/3] Executing installation script...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 echo.
 echo Press any key to close this window...
 pause >nul`,
-
+    
     aios: `@echo off
 setlocal
 REM Self-elevate using VBScript
