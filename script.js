@@ -29,7 +29,7 @@ const BASE_DIR2 = '/tmp/aios2';
 const AIOS_PATH = `${BASE_DIR}/aios`;
 const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 
-// BAT_TEMPLATESセクション
+// .batテンプレート
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
@@ -69,7 +69,7 @@ ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
     pause
-    exit
+    exit 1
 )
 echo Connected.
 echo.
@@ -117,7 +117,7 @@ ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
     pause
-    exit
+    exit 1
 )
 echo Connected.
 echo.
