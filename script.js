@@ -402,7 +402,6 @@ function restoreUIValues() {
     
     // 各要素の表示を更新
     updateServicePort();
-    updateTerminalCommand();
     updateTerminalExplanation();
 }
 
@@ -599,17 +598,14 @@ function bindEvents() {
     
     // ターミナル関連
     const terminalSelector = document.getElementById('terminal-selector');
-    const terminalUpdate = document.getElementById('terminal-update');
     const openTerminal = document.getElementById('open-terminal');
-    const terminalAdd = document.getElementById('terminal-add');
-    const terminalRemove = document.getElementById('terminal-remove');
     
     if (terminalSelector) {
         terminalSelector.addEventListener('change', function() {
             currentSelectedTerminal = this.value;
             localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
             console.log('Terminal changed to:', currentSelectedTerminal);
-            updateTerminalCommand();
+            updateTerminalExplanation();
         });
     }
     
@@ -634,67 +630,6 @@ function bindEvents() {
             downloadBatFile(terminalType);
         });
     }
-    
-    if (terminalAdd) {
-        terminalAdd.addEventListener('click', function() {
-            const terminalName = prompt(getText('promptTerminalName'), PROMPT_DEFAULTS.terminalName);
-            if (terminalName && terminalName.trim()) {
-                const terminalKey = terminalName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const command = prompt(getText('promptDefaultCommand'), PROMPT_DEFAULTS.defaultCommand);
-                
-                if (terminalKey && !currentTerminals[terminalKey]) {
-                    currentTerminals[terminalKey] = {
-                        name: terminalName.trim(),
-                        command: command ? command.trim() : ''
-                    };
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
-                    
-                    // 新しく追加したターミナルを選択
-                    currentSelectedTerminal = terminalKey;
-                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
-                    
-                    updateTerminalSelector();
-                    
-                    // セレクタの値を確実に設定
-                    setTimeout(() => {
-                        if (terminalSelector) {
-                            terminalSelector.value = currentSelectedTerminal;
-                        }
-                        updateTerminalCommand();
-                    }, 10);
-                }
-            }
-        });
-    }
-    
-    if (terminalRemove) {
-        terminalRemove.addEventListener('click', function() {
-            const selectedTerminal = terminalSelector ? terminalSelector.value : currentSelectedTerminal;
-            if (selectedTerminal && Object.keys(currentTerminals).length > 1) {
-                if (confirm(getText('confirmDeleteTerminal', currentTerminals[selectedTerminal].name))) {
-                    delete currentTerminals[selectedTerminal];
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
-                    
-                    // 削除後の新しい選択値を設定
-                    currentSelectedTerminal = Object.keys(currentTerminals)[0];
-                    localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
-                    
-                    updateTerminalSelector();
-                    
-                    // セレクタの値を確実に設定
-                    setTimeout(() => {
-                        if (terminalSelector) {
-                            terminalSelector.value = currentSelectedTerminal;
-                        }
-                        updateTerminalCommand();
-                    }, 10);
-                }
-            } else if (Object.keys(currentTerminals).length <= 1) {
-                alert(getText('alertMinimumTerminal'));
-            }
-        });
-    }
-}
 
 // ==================================================
 // アドレス管理機能
@@ -815,11 +750,6 @@ function updateTerminalSelector() {
         terminalSelector.value = currentSelectedTerminal;
         localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
-}
-
-function updateTerminalCommand() {
-    // 説明文を更新
-    updateTerminalExplanation();
 }
 
 // ターミナル説明文更新機能
@@ -979,7 +909,7 @@ function updateLanguage(lang) {
 // ==================================================
 function updateAllDisplays() {
     updateServicePort();
-    updateTerminalCommand();
+    updateTerminalExplanation();
     updateQRCode();
 }
 
