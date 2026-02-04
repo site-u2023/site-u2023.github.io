@@ -44,6 +44,7 @@ if %errorLevel% neq 0 (
 )
 
 REM Register sshcmd:// protocol
+reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
 reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
 reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
 reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
