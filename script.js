@@ -33,6 +33,15 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
+REM Self-elevate using VBScript
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if %errorLevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    goto :eof
+)
 
 set IP=__IP_ADDRESS__
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
@@ -55,43 +64,21 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing installation script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && cat << 'EOF' > /usr/bin/aios2
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR%
+wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL%
+chmod +x %SCRIPT_PATH%
+%SCRIPT_PATH%
+cat << 'EOF' > /usr/bin/aios2
 #!/bin/sh
-mkdir -p /tmp/aios2 && wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\$(date +%%s)\" && chmod +x /tmp/aios2/aios2.sh && exec /tmp/aios2/aios2.sh \"\$@\"
+mkdir -p /tmp/aios2
+wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\$(date +%%s)\"
+chmod +x /tmp/aios2/aios2.sh
+exec /tmp/aios2/aios2.sh \"\$@\"
 EOF
 chmod +x /usr/bin/aios2"
 echo.
 echo From now on, you can start it by typing 'aios2' in the console.
 echo.
-echo Press any key to close this window...
-pause >nul`,
-    
-    aios: `@echo off
-setlocal
-
-set IP=__IP_ADDRESS__
-set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
-set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
-set BASE_DIR=/tmp/aios
-set SCRIPT_PATH=%BASE_DIR%/aios
-
-echo ========================================
-echo aios - OpenWrt Menu Script
-echo ========================================
-echo.
-echo Target: %IP%
-echo.
-echo [1/2] Checking connection...
-ping -n 1 -w 1000 %IP% >nul 2>&1
-if %ERRORLEVEL% NEQ 0 (
-    echo ERROR: Cannot reach %IP%
-    pause
-    exit 1
-)
-echo Connected.
-echo.
-echo [2/2] Executing menu script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \"%PROXY_URL%%AIOS_URL%\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 echo Press any key to close this window...
 pause >nul`,
     
