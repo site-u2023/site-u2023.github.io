@@ -70,7 +70,7 @@ if %ERRORLEVEL% EQU 0 (
     echo.
     echo Installation completed successfully!
     echo Persistent command '/usr/bin/aios2' has been created.
-    echo You can now run 'aios2' from the OpenWrt console.
+    echo After running aios2.bat, you can run 'aios2' from the OpenWrt console.
 ) else (
     echo.
     echo ERROR: Installation failed.
@@ -210,8 +210,8 @@ const translations = {
         // Terminal Explanations
         aiosExplanation: 'メニュー式スクリプト (旧版)',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
-        aios2Explanation: '永続化インストールスクリプト',
-        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
+        aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
+        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -275,13 +275,13 @@ const translations = {
         // Terminal Explanations
         aiosExplanation: 'Menu-based script (Old version)',
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/aios',
-        aios2Explanation: 'Persistent installation script',
-        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2-install.sh',
+        aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
+        aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'Open in App Store',
-        connectNote: 'After download, please connect via SSH using your configured IP address',
+        aios2Explanation: 'On next boot, you can run "aios2" command from the OpenWrt console',
         // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Open in Google Play',
