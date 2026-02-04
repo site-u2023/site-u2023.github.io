@@ -975,7 +975,6 @@ function updateLanguageDisplay() {
     
     // 動的コンテンツも更新
     updateTerminalExplanation();
-    updateSetupContent();
 }
 
 function updateLanguage(lang) {
