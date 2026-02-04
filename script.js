@@ -85,7 +85,36 @@ echo.
 echo Press any key to close this window...
 pause >nul
 exit /b`,
-    
+
+    aios: `@echo off
+setlocal
+set IP=__IP_ADDRESS__
+set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
+set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
+set BASE_DIR=/tmp/aios
+set SCRIPT_PATH=%BASE_DIR%/aios
+echo ========================================
+echo aios - OpenWrt Menu Script
+echo ========================================
+echo.
+echo Target: %IP%
+echo.
+echo [1/2] Checking connection...
+ping -n 1 -w 1000 %IP% >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Cannot reach %IP%
+    pause
+    exit /b 1
+)
+echo Connected.
+echo.
+echo [2/2] Executing menu script...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \"%PROXY_URL%%AIOS_URL%\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+echo.
+echo Press any key to close this window...
+pause >nul
+exit /b`,
+
     ssh: `@echo off
 setlocal
 
