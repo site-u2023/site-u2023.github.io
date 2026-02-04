@@ -33,15 +33,6 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
-REM Self-elevate using VBScript
->nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
-if %errorLevel% neq 0 (
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
-    "%temp%\\getadmin.vbs"
-    del "%temp%\\getadmin.vbs"
-    goto :eof
-)
 
 set IP=__IP_ADDRESS__
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
@@ -85,14 +76,16 @@ echo.
 echo Press any key to close this window...
 pause >nul
 exit /b`,
-
+    
     aios: `@echo off
 setlocal
+
 set IP=__IP_ADDRESS__
 set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
 set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
 set BASE_DIR=/tmp/aios
 set SCRIPT_PATH=%BASE_DIR%/aios
+
 echo ========================================
 echo aios - OpenWrt Menu Script
 echo ========================================
@@ -110,11 +103,12 @@ echo Connected.
 echo.
 echo [2/2] Executing menu script...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \"%PROXY_URL%%AIOS_URL%\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+
 echo.
 echo Press any key to close this window...
 pause >nul
 exit /b`,
-
+    
     ssh: `@echo off
 setlocal
 
