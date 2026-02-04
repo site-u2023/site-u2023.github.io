@@ -48,7 +48,7 @@ style G2 fill:#c5e1a5,color:#000
 ### Portal Site
 [site-u.pages.dev/](https://site-u.pages.dev/)
 
-<img width="1924" height="1036" alt="portal" src="https://github.com/user-attachments/assets/5996d4ee-ef9e-43e1-9771-1f333208a1ae" />
+<img width="1924" height="1036" alt="image" src="https://github.com/user-attachments/assets/d1fe2e3b-c52f-441d-86bd-69e58c8218ab" />
 
 - Setup
 Terminal > Protocol Handler Registration > Download > Install (double-click)
