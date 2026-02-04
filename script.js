@@ -40,7 +40,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit
+    goto :eof
 )
 
 REM Register sshcmd:// protocol
@@ -87,7 +87,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit
+    goto :eof
 )
 
 REM Register sshcmd:// protocol
@@ -135,7 +135,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit
+    goto :eof
 )
 
 REM Register sshcmd:// protocol
