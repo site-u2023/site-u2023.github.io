@@ -599,7 +599,6 @@ function bindEvents() {
     
     // ターミナル関連
     const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
     const terminalUpdate = document.getElementById('terminal-update');
     const openTerminal = document.getElementById('open-terminal');
     const terminalAdd = document.getElementById('terminal-add');
@@ -614,7 +613,21 @@ function bindEvents() {
         });
     }
     
+    if (terminalUpdate) {
+        terminalUpdate.addEventListener('click', function() {
+            updateTerminalExplanation();
+        });
+    }
+    
     if (openTerminal) {
+        openTerminal.addEventListener('click', function() {
+            const terminalSelector = document.getElementById('terminal-selector');
+            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
+            downloadBatFile(terminalType);
+        });
+    }
+    
+    if (terminalAdd) {
         openTerminal.addEventListener('click', function() {
             const terminalSelector = document.getElementById('terminal-selector');
             const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
