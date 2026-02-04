@@ -33,6 +33,15 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
+REM Self-elevate using VBScript
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if %errorLevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    goto :eof
+)
 
 set IP=__IP_ADDRESS__
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
