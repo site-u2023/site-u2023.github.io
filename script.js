@@ -69,7 +69,8 @@ ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFil
 if %ERRORLEVEL% EQU 0 (
     echo.
     echo Installation completed successfully!
-    echo From now on, you can start it by typing 'aios2' in the console.
+    echo Persistent command '/usr/bin/aios2' has been created.
+    echo You can now run 'aios2' from the OpenWrt console.
 ) else (
     echo.
     echo ERROR: Installation failed.
