@@ -104,51 +104,34 @@
                 </section>         
 
                 <section id="terminal" class="content-section">
-                    <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
+                <h2 class="section-title" data-i18n="terminal">Terminal<span class="section-subtitle">(for Windows)</span></h2>
 
-                    <div class="input-group connection">
-                        <!-- Terminal Type Selector -->
-                        <div class="input-container service-container-half">
-                            <div class="input-label">Type</div>
-                            <select id="terminal-selector" class="service-select">
-                                <option value="aios" selected>aios</option>
-                                <option value="ssh">SSH</option>
-                            </select>
-                        </div>
-
-                        <!-- Add/Remove Buttons -->
-                        <div class="add-remove-container">
-                            <button id="terminal-add" class="add-item-btn">+</button>
-                            <button id="terminal-remove" class="remove-item-btn">-</button>
-                        </div>
-
-                        <!-- Command Input -->
-                        <div class="input-container command-container-half">
-                            <div class="command-label">Command</div>
-                            <input
-                                type="text"
-                                id="command-input"
-                                inputmode="text"
-                                lang="en"
-                                autocomplete="off"
-                                value=""
-                                placeholder=""
-                                class="input-field command-field-terminal"
-                            >
-                        </div>
-                        
-                        <!-- Apply Button -->
-                        <button id="terminal-update" class="update-button-standalone" data-i18n="apply">Apply</button>
-                        
-                        <!-- Open Button -->
-                        <button id="open-terminal" class="open-button-standalone" data-i18n="open">Open</button>
+                <div class="input-group connection">
+                    <!-- Terminal Type Selector -->
+                    <div class="input-container service-container-half">
+                        <div class="input-label">Type</div>
+                        <select id="terminal-selector" class="service-select">
+                            <option value="aios2" selected>aios2</option>
+                            <option value="aios">aios</option>
+                            <option value="ssh">SSH</option>
+                        </select>
                     </div>
 
-                    <!-- Terminal Explanation -->
-                    <div class="explanation-box">
-                        <p id="terminal-explanation-text" data-i18n="aiosExplanation">Menu-based configuration script for OpenWrt initial setup.</p>
+                    <!-- Add/Remove Buttons -->
+                    <div class="add-remove-container">
+                        <button id="terminal-add" class="add-item-btn">+</button>
+                        <button id="terminal-remove" class="remove-item-btn">-</button>
                     </div>
-                </section>
+                    
+                    <!-- Download Button -->
+                    <button id="open-terminal" class="open-button-standalone" data-i18n="download">Download</button>
+                </div>
+
+                <!-- Terminal Explanation -->
+                <div class="explanation-box">
+                    <p id="terminal-explanation-text" data-i18n="aiosExplanation">Menu-based configuration script for OpenWrt initial setup.</p>
+                </div>
+            </section>
 
                 <section id="openwrt-official" class="content-section">
                     <h2 class="section-title" data-i18n="OpenWrtCustom">Firmware Selector (Custom)</h2>
