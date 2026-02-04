@@ -76,7 +76,8 @@ echo.
 echo [3/3] Executing installation script...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 echo.
-pause`,
+echo Press any key to close this window...
+pause >nul`,
     
     aios: `@echo off
 setlocal
@@ -123,8 +124,8 @@ echo Connected.
 echo.
 echo [3/3] Executing menu script...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \\"%PROXY_URL%%AIOS_URL%\\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
-echo.
-pause`,
+echo Press any key to close this window...
+pause >nul`,
     
     ssh: `@echo off
 setlocal
@@ -159,7 +160,8 @@ echo.
 echo [2/2] Connecting...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
 echo.
-pause`
+echo Press any key to close this window...
+pause >nul`
 };
 
 const DEFAULT_TERMINALS = {
