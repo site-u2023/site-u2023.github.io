@@ -189,7 +189,7 @@ let currentServices = {};
 let currentTerminals = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
-let currentSelectedTerminal = 'aios';
+let currentSelectedTerminal = 'aios2';
 
 // Multi-language Support
 const translations = {
