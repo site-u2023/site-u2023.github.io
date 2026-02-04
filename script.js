@@ -614,19 +614,6 @@ function bindEvents() {
         });
     }
     
-    if (commandInput) {
-        commandInput.addEventListener('input', function() {
-            const terminalSelector = document.getElementById('terminal-selector');
-            if (terminalSelector) {
-                const selectedType = terminalSelector.value;
-                if (currentTerminals[selectedType]) {
-                    currentTerminals[selectedType].command = this.value;
-                    localStorage.setItem('terminals', JSON.stringify(currentTerminals));
-                }
-            }
-        });
-    }
-    
     if (openTerminal) {
         openTerminal.addEventListener('click', function() {
             const terminalSelector = document.getElementById('terminal-selector');
@@ -818,18 +805,7 @@ function updateTerminalSelector() {
 }
 
 function updateTerminalCommand() {
-    const terminalSelector = document.getElementById('terminal-selector');
-    const commandInput = document.getElementById('command-input');
-    if (!terminalSelector || !commandInput) return;
-
-    const type = terminalSelector.value || currentSelectedTerminal;
-    const terminal = currentTerminals[type];
-
-    if (terminal) {
-        commandInput.value = terminal.command;
-    }
-    
-    // 説明文も更新
+    // 説明文を更新
     updateTerminalExplanation();
 }
 
