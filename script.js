@@ -28,7 +28,137 @@ const BASE_DIR = '/tmp/aios';
 const BASE_DIR2 = '/tmp/aios2';
 const AIOS_PATH = `${BASE_DIR}/aios`;
 const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
-const SSHCMD_REG_URL = 'https://site-u.pages.dev/build/scripts/sshcmd.reg';
+
+// .batテンプレート（新規追加）
+const BAT_TEMPLATES = {
+    aios2: `@echo off
+setlocal
+REM Self-elevate using VBScript
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if %errorLevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    exit /B
+)
+
+REM Register sshcmd:// protocol
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
+
+set IP=__IP_ADDRESS__
+set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
+set BASE_DIR=/tmp/aios2
+set SCRIPT_PATH=%BASE_DIR%/aios2.sh
+
+echo ========================================
+echo aios2 - OpenWrt Setup (One-Click)
+echo ========================================
+echo.
+echo Target: %IP%
+echo.
+echo [1/3] Registering sshcmd:// protocol...
+echo Done.
+echo.
+echo [2/3] Checking connection to %IP%...
+ping -n 1 -w 1000 %IP% >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Cannot reach %IP%
+    pause
+    exit /b 1
+)
+echo Connected.
+echo.
+echo [3/3] Executing installation script...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+echo.
+pause`,
+    
+    aios: `@echo off
+setlocal
+REM Self-elevate using VBScript
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if %errorLevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    exit /B
+)
+
+REM Register sshcmd:// protocol
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
+
+set IP=__IP_ADDRESS__
+set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
+set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
+set BASE_DIR=/tmp/aios
+set SCRIPT_PATH=%BASE_DIR%/aios
+
+echo ========================================
+echo aios - OpenWrt Setup (One-Click)
+echo ========================================
+echo.
+echo Target: %IP%
+echo.
+echo [1/3] Registering sshcmd:// protocol...
+echo Done.
+echo.
+echo [2/3] Checking connection to %IP%...
+ping -n 1 -w 1000 %IP% >nul 2>&1
+if %ERRORLEVEL% NEQ 0 (
+    echo ERROR: Cannot reach %IP%
+    pause
+    exit /b 1
+)
+echo Connected.
+echo.
+echo [3/3] Executing menu script...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \\"%PROXY_URL%%AIOS_URL%\\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+echo.
+pause`,
+    
+    ssh: `@echo off
+setlocal
+REM Self-elevate using VBScript
+>nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
+if %errorLevel% neq 0 (
+    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
+    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
+    "%temp%\\getadmin.vbs"
+    del "%temp%\\getadmin.vbs"
+    exit /B
+)
+
+REM Register sshcmd:// protocol
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
+reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
+
+set IP=__IP_ADDRESS__
+
+echo ========================================
+echo SSH - OpenWrt Connection (One-Click)
+echo ========================================
+echo.
+echo Target: root@%IP%
+echo.
+echo [1/2] Registering sshcmd:// protocol...
+echo Done.
+echo.
+echo [2/2] Connecting to %IP%...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
+echo.
+pause`
+};
+
 const DEFAULT_TERMINALS = {
   aios2: {
     name: 'aios2',
@@ -45,7 +175,7 @@ const DEFAULT_TERMINALS = {
 };
 
 const DEFAULT_SETUP_LINKS = {
-    windows: 'file/sshcmd.reg',
+    windows: 'bat',
     iphone: 'https://apps.apple.com/app/termius/id549039908',
     android: 'https://play.google.com/store/apps/details?id=com.sonelli.juicessh'
 };
@@ -1048,7 +1178,13 @@ function openSetupLink(url) {
     console.log('Opening setup link:', url);
     
     try {
-        if (url.startsWith('file/')) {
+        if (url === 'bat') {
+            // Windowsの場合は.batファイルを生成してダウンロード
+            const terminalSelector = document.getElementById('terminal-selector');
+            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
+            downloadBatFile(terminalType);
+            console.log('BAT file download initiated for:', terminalType);
+        } else if (url.startsWith('file/')) {
             // ローカルファイルの場合はダウンロード
             const link = document.createElement('a');
             link.href = url;
@@ -1068,49 +1204,26 @@ function openSetupLink(url) {
     }
 }
 
-// ==================================================
-// SSH Handler ダウンロード機能
-// ==================================================
-async function downloadSSHHandler() {
+// .batファイル生成＆ダウンロード（新規追加）
+function downloadBatFile(terminalType) {
     try {
-        console.log('SSH Handler のダウンロードを開始...');
+        const template = BAT_TEMPLATES[terminalType] || BAT_TEMPLATES.aios2;
+        const batContent = template.replace(/__IP_ADDRESS__/g, currentIP);
         
-        // まず直接ダウンロードを試す
-        let response;
-        try {
-            response = await fetch(SSHCMD_REG_URL);
-            if (!response.ok) {
-                throw new Error(`Direct download failed: ${response.status}`);
-            }
-            console.log('直接ダウンロード成功');
-        } catch (error) {
-            console.log('直接ダウンロード失敗、プロキシ経由で試行中...', error.message);
-            // プロキシ経由でダウンロードを試す
-            response = await fetch(PROXY_URL + encodeURIComponent(SSHCMD_REG_URL));
-            if (!response.ok) {
-                throw new Error(`Proxy download failed: ${response.status}`);
-            }
-            console.log('プロキシ経由でのダウンロード成功');
-        }
-        
-        // レスポンスをBlobとして取得
-        const blob = await response.blob();
-        
-        // ダウンロードリンクを作成
+        const blob = new Blob([batContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = 'sshcmd.reg';
+        a.download = `openwrt-setup-${terminalType}.bat`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
         
-        console.log('sshcmd.reg のダウンロードが完了しました');
-        
+        console.log(`${terminalType}.bat downloaded with IP: ${currentIP}`);
     } catch (error) {
-        console.error('SSH Handler のダウンロードに失敗しました:', error);
-        alert('ダウンロードに失敗しました。しばらく後に再試行してください。');
+        console.error('Failed to download BAT file:', error);
+        alert('BATファイルのダウンロードに失敗しました。');
     }
 }
 
