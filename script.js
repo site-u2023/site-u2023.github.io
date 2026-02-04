@@ -74,9 +74,9 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [3/3] Executing installation script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && cat << 'EEOF' > /usr/bin/aios2
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && cat > /usr/bin/aios2 << 'EEOF'
 #!/bin/sh
-mkdir -p /tmp/aios2 && wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\$(date +%%s)\" && chmod +x /tmp/aios2/aios2.sh && exec /tmp/aios2/aios2.sh \"\$@\"
+mkdir -p /tmp/aios2 && wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=$(date +%%s)\" && chmod +x /tmp/aios2/aios2.sh && exec /tmp/aios2/aios2.sh \"$@\"
 EEOF
 chmod +x /usr/bin/aios2"
 
