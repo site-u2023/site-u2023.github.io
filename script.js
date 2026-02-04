@@ -40,7 +40,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit /B
+    exit
 )
 
 REM Register sshcmd:// protocol
@@ -69,7 +69,7 @@ ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
     pause
-    exit /b 1
+    exit 1
 )
 echo Connected.
 echo.
@@ -87,7 +87,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit /B
+    exit
 )
 
 REM Register sshcmd:// protocol
@@ -117,7 +117,7 @@ ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
     pause
-    exit /b 1
+    exit 1
 )
 echo Connected.
 echo.
@@ -135,7 +135,7 @@ if %errorLevel% neq 0 (
     echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
     "%temp%\\getadmin.vbs"
     del "%temp%\\getadmin.vbs"
-    exit /B
+    exit
 )
 
 REM Register sshcmd:// protocol
