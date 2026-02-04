@@ -29,7 +29,7 @@ const BASE_DIR2 = '/tmp/aios2';
 const AIOS_PATH = `${BASE_DIR}/aios`;
 const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 
-// .batテンプレート（新規追加）
+// .batテンプレート
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
@@ -55,7 +55,7 @@ set BASE_DIR=/tmp/aios2
 set SCRIPT_PATH=%BASE_DIR%/aios2.sh
 
 echo ========================================
-echo aios2 - OpenWrt Setup (One-Click)
+echo aios2 - OpenWrt Setup
 echo ========================================
 echo.
 echo Target: %IP%
@@ -63,7 +63,7 @@ echo.
 echo [1/3] Registering sshcmd:// protocol...
 echo Done.
 echo.
-echo [2/3] Checking connection to %IP%...
+echo [2/3] Checking connection...
 ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
@@ -102,7 +102,7 @@ set BASE_DIR=/tmp/aios
 set SCRIPT_PATH=%BASE_DIR%/aios
 
 echo ========================================
-echo aios - OpenWrt Setup (One-Click)
+echo aios - OpenWrt Menu Script
 echo ========================================
 echo.
 echo Target: %IP%
@@ -110,7 +110,7 @@ echo.
 echo [1/3] Registering sshcmd:// protocol...
 echo Done.
 echo.
-echo [2/3] Checking connection to %IP%...
+echo [2/3] Checking connection...
 ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
@@ -145,7 +145,7 @@ reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windo
 set IP=__IP_ADDRESS__
 
 echo ========================================
-echo SSH - OpenWrt Connection (One-Click)
+echo SSH - OpenWrt Connection
 echo ========================================
 echo.
 echo Target: root@%IP%
@@ -153,7 +153,7 @@ echo.
 echo [1/2] Registering sshcmd:// protocol...
 echo Done.
 echo.
-echo [2/2] Connecting to %IP%...
+echo [2/2] Connecting...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
 echo.
 pause`
@@ -161,23 +161,14 @@ pause`
 
 const DEFAULT_TERMINALS = {
   aios2: {
-    name: 'aios2',
-    command: `mkdir -p ${BASE_DIR2}; wget --no-check-certificate -O ${AIOS_PATH2} ${AIOS_URL2} && chmod +x ${AIOS_PATH2} && ${AIOS_PATH2}`
+    name: 'aios2'
   },
   aios: {
-    name: 'aios (Old version)',
-    command: `mkdir -p ${BASE_DIR}; wget --no-check-certificate -O ${AIOS_PATH} "${PROXY_URL}${AIOS_URL}" && chmod +x ${AIOS_PATH} && ${AIOS_PATH}`
+    name: 'aios (Old version)'
   },
   ssh: {
-    name: 'SSH',
-    command: ''
+    name: 'SSH'
   }
-};
-
-const DEFAULT_SETUP_LINKS = {
-    windows: 'bat',
-    iphone: 'https://apps.apple.com/app/termius/id549039908',
-    android: 'https://play.google.com/store/apps/details?id=com.sonelli.juicessh'
 };
 
 // プロンプト用デフォルト値（一元管理）
@@ -196,11 +187,9 @@ const PROMPT_DEFAULTS = {
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
-let currentSetupLinks = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
 let currentSelectedTerminal = 'aios';
-let currentSelectedSetup = 'windows';
 
 // Multi-language Support
 const translations = {
@@ -378,52 +367,10 @@ function initializeSettings() {
     const savedTerminals = localStorage.getItem('terminals');
     currentTerminals = savedTerminals ? JSON.parse(savedTerminals) : {...DEFAULT_TERMINALS};
     
-    // 初期設定リンクの復元
-    const savedSetupLinks = localStorage.getItem('setupLinks');
-    currentSetupLinks = savedSetupLinks ? JSON.parse(savedSetupLinks) : {...DEFAULT_SETUP_LINKS};
-    
-    // **修正: 保存された現在のIPアドレスを確実に復元**
-    const savedIP = localStorage.getItem('currentIP');
-    if (savedIP && savedIP.trim()) {
-        currentIP = savedIP;
-        // 保存されたIPが現在のアドレス一覧にない場合は追加
-        if (!currentAddresses.includes(currentIP)) {
-            currentAddresses.unshift(currentIP);
-            localStorage.setItem('addresses', JSON.stringify(currentAddresses));
-        }
-    } else {
-        currentIP = currentAddresses[0] || '192.168.1.1';
-    }
-    
-    // **修正: 保存された現在選択中のサービスを確実に復元**
-    const savedService = localStorage.getItem('currentSelectedService');
-    if (savedService && currentServices[savedService]) {
-        currentSelectedService = savedService;
-    } else {
-        currentSelectedService = Object.keys(currentServices)[0] || 'luci';
-    }
-    
-    // **修正: 保存された現在選択中のターミナルを確実に復元**
-    const savedTerminal = localStorage.getItem('currentSelectedTerminal');
-    if (savedTerminal && currentTerminals[savedTerminal]) {
-        currentSelectedTerminal = savedTerminal;
-    } else {
-        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
-    }
-    
-    // 初期設定セクションの復元
-    const savedSetup = localStorage.getItem('currentSelectedSetup');
-    if (savedSetup && currentSetupLinks[savedSetup]) {
-        currentSelectedSetup = savedSetup;
-    } else {
-        currentSelectedSetup = Object.keys(currentSetupLinks)[0] || 'windows';
-    }
-    
     // UI要素の初期化
     updateAddressSelector();
     updateServiceSelector();
     updateTerminalSelector();
-    updateSetupSelector();
     
     // **修正: より確実な値の設定**
     setTimeout(() => {
@@ -451,16 +398,9 @@ function restoreUIValues() {
         console.log('Terminal selector restored to:', currentSelectedTerminal);
     }
     
-    const setupSelector = document.getElementById('setup-selector');
-    if (setupSelector) {
-        setupSelector.value = currentSelectedSetup;
-        console.log('Setup selector restored to:', currentSelectedSetup);
-    }
-    
     // 各要素の表示を更新
     updateServicePort();
     updateTerminalCommand();
-    updateSetupContent();
     updateTerminalExplanation();
 }
 
@@ -682,29 +622,14 @@ function bindEvents() {
                     localStorage.setItem('terminals', JSON.stringify(currentTerminals));
                 }
             }
-            updateTerminalPreview();
-        });
-        
-        commandInput.addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                updateTerminalDisplay();
-            }
-        });
-    }
-    
-    if (terminalUpdate) {
-        terminalUpdate.addEventListener('click', function() {
-            updateTerminalDisplay();
         });
     }
     
     if (openTerminal) {
         openTerminal.addEventListener('click', function() {
-            const url = generateTerminalURL();
-            if (url) {
-                console.log('Generated Terminal URL:', url);
-                window.location.href = url;
-            }
+            const terminalSelector = document.getElementById('terminal-selector');
+            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
+            downloadBatFile(terminalType);
         });
     }
     
@@ -765,119 +690,6 @@ function bindEvents() {
             } else if (Object.keys(currentTerminals).length <= 1) {
                 alert(getText('alertMinimumTerminal'));
             }
-        });
-    }
-    
-    // 初期設定関連のイベントリスナー（修正：実装を追加）
-    const setupSelector = document.getElementById('setup-selector');
-    const setupLinkInput = document.getElementById('setup-link-input');
-    const setupUpdate = document.getElementById('setup-update');
-    const openSetup = document.getElementById('open-setup');
-    const setupAdd = document.getElementById('setup-add');
-    const setupRemove = document.getElementById('setup-remove');
-    
-    if (setupSelector) {
-        setupSelector.addEventListener('change', function() {
-            currentSelectedSetup = this.value;
-            localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
-            console.log('Setup changed to:', currentSelectedSetup);
-            updateSetupContent();
-        });
-    }
-    
-    if (setupLinkInput) {
-        setupLinkInput.addEventListener('input', function() {
-            const setupSelector = document.getElementById('setup-selector');
-            if (setupSelector) {
-                const selectedSetup = setupSelector.value;
-                if (currentSetupLinks[selectedSetup]) {
-                    currentSetupLinks[selectedSetup] = this.value;
-                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
-                }
-            }
-        });
-    }
-    
-    if (setupUpdate) {
-        setupUpdate.addEventListener('click', function() {
-            updateSetupContent();
-        });
-    }
-    
-    if (openSetup) {
-        openSetup.addEventListener('click', function() {
-            const linkInput = document.getElementById('setup-link-input');
-            if (linkInput && linkInput.value) {
-                openSetupLink(linkInput.value);
-            }
-        });
-    }
-    
-    // 修正：初期設定の追加機能
-    if (setupAdd) {
-        setupAdd.addEventListener('click', function() {
-            const setupName = prompt(getText('promptSetupName'), PROMPT_DEFAULTS.setupName);
-            if (setupName && setupName.trim()) {
-                const setupKey = setupName.toLowerCase().replace(/[^a-z0-9]/g, '');
-                const setupLink = prompt(getText('promptSetupLink'), PROMPT_DEFAULTS.setupLink);
-                
-                if (setupKey && setupLink && !currentSetupLinks[setupKey]) {
-                    currentSetupLinks[setupKey] = setupLink.trim();
-                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
-                    
-                    // 新しく追加した初期設定を選択
-                    currentSelectedSetup = setupKey;
-                    localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
-                    
-                    updateSetupSelector();
-                    
-                    // セレクタの値を確実に設定
-                    setTimeout(() => {
-                        if (setupSelector) {
-                            setupSelector.value = currentSelectedSetup;
-                        }
-                        updateSetupContent();
-                    }, 10);
-                }
-            }
-        });
-    }
-    
-    // 修正：初期設定の削除機能
-    if (setupRemove) {
-        setupRemove.addEventListener('click', function() {
-            const selectedSetup = setupSelector ? setupSelector.value : currentSelectedSetup;
-            if (selectedSetup && Object.keys(currentSetupLinks).length > 1) {
-                if (confirm(getText('confirmDeleteSetup', selectedSetup))) {
-                    delete currentSetupLinks[selectedSetup];
-                    localStorage.setItem('setupLinks', JSON.stringify(currentSetupLinks));
-                    
-                    // 削除後の新しい選択値を設定
-                    currentSelectedSetup = Object.keys(currentSetupLinks)[0];
-                    localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
-                    
-                    updateSetupSelector();
-                    
-                    // セレクタの値を確実に設定
-                    setTimeout(() => {
-                        if (setupSelector) {
-                            setupSelector.value = currentSelectedSetup;
-                        }
-                        updateSetupContent();
-                    }, 10);
-                }
-            } else if (Object.keys(currentSetupLinks).length <= 1) {
-                alert(getText('alertMinimumSetup'));
-            }
-        });
-    }
-    
-    // SSH Handler ダウンロードリンク
-    const sshHandlerDownloadLink = document.getElementById('ssh-handler-download-link');
-    if (sshHandlerDownloadLink) {
-        sshHandlerDownloadLink.addEventListener('click', function(e) {
-            e.preventDefault();
-            downloadSSHHandler();
         });
     }
 }
@@ -1014,43 +826,9 @@ function updateTerminalCommand() {
     if (terminal) {
         commandInput.value = terminal.command;
     }
-
-    updateTerminalDisplay();
     
     // 説明文も更新
     updateTerminalExplanation();
-}
-
-function updateTerminalDisplay() {
-    updateTerminalPreview();
-}
-
-function updateTerminalPreview() {
-    const previewElement = document.getElementById('command-preview');
-    if (previewElement) {
-        const generatedURL = generateTerminalURL();
-        previewElement.textContent = generatedURL || '';
-    }
-}
-
-function generateTerminalURL() {
-    const commandInput = document.getElementById('command-input');
-    const terminalSelector = document.getElementById('terminal-selector');
-    
-    const selectedType = terminalSelector ? terminalSelector.value : currentSelectedTerminal;
-    const terminal = currentTerminals[selectedType];
-    let fullCommand = commandInput ? commandInput.value.trim() : '';
-
-    // コマンド欄が空の場合はデフォルトを使用
-    if (!fullCommand && terminal) {
-        fullCommand = terminal.command;
-    }
-
-    let baseURL = `sshcmd://root@${currentIP}`;
-    if (!fullCommand) return baseURL;
-    
-    const encodedCommand = encodeURIComponent(fullCommand);
-    return `${baseURL}/${encodedCommand}`;
 }
 
 // ターミナル説明文更新機能
@@ -1094,127 +872,22 @@ function updateTerminalExplanation() {
 }
 
 // ==================================================
-// 初期設定管理機能
+// .bat ファイルダウンロード機能
 // ==================================================
-
-// 修正：初期設定セレクター更新機能を追加
-function updateSetupSelector() {
-    const setupSelector = document.getElementById('setup-selector');
-    if (!setupSelector) return;
-    
-    // セレクタをクリア
-    setupSelector.innerHTML = '';
-    
-    // 初期設定一覧を追加
-    Object.keys(currentSetupLinks).forEach(key => {
-        const option = document.createElement('option');
-        option.value = key;
-        option.textContent = key.charAt(0).toUpperCase() + key.slice(1); // 先頭文字を大文字に
-        setupSelector.appendChild(option);
-    });
-    
-    // 現在選択中の初期設定が確実に選択されるように
-    if (currentSetupLinks[currentSelectedSetup]) {
-        setupSelector.value = currentSelectedSetup;
-    } else {
-        // 現在選択中の初期設定が存在しない場合は最初の初期設定を使用
-        currentSelectedSetup = Object.keys(currentSetupLinks)[0] || 'windows';
-        setupSelector.value = currentSelectedSetup;
-        localStorage.setItem('currentSelectedSetup', currentSelectedSetup);
-    }
-}
-
-// 初期設定コンテンツ更新機能
-function updateSetupContent() {
-    const setupSelector = document.getElementById('setup-selector');
-    const linkInput = document.getElementById('setup-link-input');
-    const explanationText = document.getElementById('setup-explanation-text');
-    
-    if (!setupSelector || !linkInput || !explanationText) return;
-    
-    const selectedType = setupSelector.value || currentSelectedSetup;
-    
-    // リンク入力フィールドの更新
-    if (currentSetupLinks[selectedType]) {
-        linkInput.value = currentSetupLinks[selectedType];
-    }
-    
-    // 説明文の更新
-    let explanationKey, linkKey;
-    switch(selectedType) {
-        case 'windows':
-            explanationKey = 'windowsSetupExplanation';
-            linkKey = 'windowsSetupExplanationLink';
-            break;
-        case 'iphone':
-            explanationKey = 'iphoneSetupExplanation';
-            linkKey = null;
-            break;
-        case 'android':
-            explanationKey = 'androidSetupExplanation';
-            linkKey = null;
-            break;
-        default:
-            explanationKey = 'windowsSetupExplanation';
-            linkKey = null;
-    }
-    
-    const text = getText(explanationKey);
-    const link = linkKey ? getText(linkKey) : null;
-    
-    explanationText.setAttribute('data-i18n', explanationKey);
-    
-    if (link) {
-        explanationText.innerHTML = `${text}<br><a href="${link}" target="_blank" rel="noopener noreferrer" style="color: inherit; text-decoration: underline;">${link}</a>`;
-    } else {
-        explanationText.textContent = text;
-    }
-}
-
-// 初期設定リンクを開く機能
-function openSetupLink(url) {
-    if (!url) return;
-    
-    console.log('Opening setup link:', url);
-    
-    try {
-        if (url === 'bat') {
-            // Windowsの場合は.batファイルを生成してダウンロード
-            const terminalSelector = document.getElementById('terminal-selector');
-            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
-            downloadBatFile(terminalType);
-            console.log('BAT file download initiated for:', terminalType);
-        } else if (url.startsWith('file/')) {
-            // ローカルファイルの場合はダウンロード
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = url.split('/').pop();
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            console.log('File download initiated:', url);
-        } else {
-            // 外部URLの場合は新しいタブで開く
-            window.open(url, '_blank');
-            console.log('External URL opened:', url);
-        }
-    } catch (error) {
-        console.error('Failed to open setup link:', error);
-        alert('リンクを開くことができませんでした。');
-    }
-}
-
-// .batファイル生成＆ダウンロード（新規追加）
 function downloadBatFile(terminalType) {
     try {
-        const template = BAT_TEMPLATES[terminalType] || BAT_TEMPLATES.aios2;
+        const template = BAT_TEMPLATES[terminalType];
+        if (!template) {
+            throw new Error(`Template not found: ${terminalType}`);
+        }
+        
         const batContent = template.replace(/__IP_ADDRESS__/g, currentIP);
         
         const blob = new Blob([batContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
-        a.download = `openwrt-setup-${terminalType}.bat`;
+        a.download = `openwrt-${terminalType}.bat`;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
@@ -1317,7 +990,6 @@ function updateLanguage(lang) {
 function updateAllDisplays() {
     updateServicePort();
     updateTerminalCommand();
-    updateSetupContent();
     updateQRCode();
 }
 
