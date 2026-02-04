@@ -33,22 +33,6 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 const BAT_TEMPLATES = {
     aios2: `@echo off
 setlocal
-REM Self-elevate using VBScript
->nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
-if %errorLevel% neq 0 (
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
-    "%temp%\\getadmin.vbs"
-    del "%temp%\\getadmin.vbs"
-    goto :eof
-)
-
-REM Register sshcmd:// protocol
-reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
 
 set IP=__IP_ADDRESS__
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
@@ -61,10 +45,7 @@ echo ========================================
 echo.
 echo Target: %IP%
 echo.
-echo [1/3] Registering sshcmd:// protocol...
-echo Done.
-echo.
-echo [2/3] Checking connection...
+echo [1/2] Checking connection...
 ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
@@ -73,7 +54,7 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo Connected.
 echo.
-echo [3/3] Executing installation script...
+echo [2/2] Executing installation script...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR%
 wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL%
 chmod +x %SCRIPT_PATH%
@@ -81,16 +62,11 @@ chmod +x %SCRIPT_PATH%
 cat << 'EOF' > /usr/bin/aios2
 #!/bin/sh
 mkdir -p /tmp/aios2
-wget --no-check-certificate -O /tmp/aios2/aios2.sh "https://site-u.pages.dev/www/aios2.sh?t=$(date +%s)"
+wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\$(date +%%s)\"
 chmod +x /tmp/aios2/aios2.sh
-exec /tmp/aios2/aios2.sh "$@"
+exec /tmp/aios2/aios2.sh \"\$@\"
 EOF
 chmod +x /usr/bin/aios2"
-aios2"
-
-REM Cleanup registry
-reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
-
 echo.
 echo From now on, you can start it by typing 'aios2' in the console.
 echo.
@@ -99,22 +75,6 @@ pause >nul`,
     
     aios: `@echo off
 setlocal
-REM Self-elevate using VBScript
->nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
-if %errorLevel% neq 0 (
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
-    "%temp%\\getadmin.vbs"
-    del "%temp%\\getadmin.vbs"
-    goto :eof
-)
-
-REM Register sshcmd:// protocol
-reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
 
 set IP=__IP_ADDRESS__
 set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
@@ -128,10 +88,7 @@ echo ========================================
 echo.
 echo Target: %IP%
 echo.
-echo [1/3] Registering sshcmd:// protocol...
-echo Done.
-echo.
-echo [2/3] Checking connection...
+echo [1/2] Checking connection...
 ping -n 1 -w 1000 %IP% >nul 2>&1
 if %ERRORLEVEL% NEQ 0 (
     echo ERROR: Cannot reach %IP%
@@ -140,29 +97,13 @@ if %ERRORLEVEL% NEQ 0 (
 )
 echo Connected.
 echo.
-echo [3/3] Executing menu script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \\"%PROXY_URL%%AIOS_URL%\\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+echo [2/2] Executing menu script...
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \"%PROXY_URL%%AIOS_URL%\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 echo Press any key to close this window...
 pause >nul`,
     
     ssh: `@echo off
 setlocal
-REM Self-elevate using VBScript
->nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
-if %errorLevel% neq 0 (
-    echo Set UAC = CreateObject^("Shell.Application"^) > "%temp%\\getadmin.vbs"
-    echo UAC.ShellExecute "%~s0", "", "", "runas", 1 >> "%temp%\\getadmin.vbs"
-    "%temp%\\getadmin.vbs"
-    del "%temp%\\getadmin.vbs"
-    goto :eof
-)
-
-REM Register sshcmd:// protocol
-reg delete "HKEY_CLASSES_ROOT\\sshcmd" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /ve /d "URL:SSH Command Protocol" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd" /v "URL Protocol" /d "" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\DefaultIcon" /ve /d "C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe,0" /f >nul 2>&1
-reg add "HKEY_CLASSES_ROOT\\sshcmd\\shell\\open\\command" /ve /d "\\"C:\\\\Windows\\\\System32\\\\WindowsPowerShell\\\\v1.0\\\\powershell.exe\\" -NoExit -NoProfile -ExecutionPolicy Bypass -Command \\"& { param([string]$u) $uri=[Uri]$u; $h=$uri.Host; $c=[Uri]::UnescapeDataString($uri.AbsolutePath.TrimStart('/')); if ([string]::IsNullOrEmpty($c)) { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h } else { & 'C:\\\\Windows\\\\System32\\\\OpenSSH\\\\ssh.exe' -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@$h $c } }\\" \\"%%1\\"" /f >nul 2>&1
 
 set IP=__IP_ADDRESS__
 
@@ -172,10 +113,7 @@ echo ========================================
 echo.
 echo Target: root@%IP%
 echo.
-echo [1/2] Registering sshcmd:// protocol...
-echo Done.
-echo.
-echo [2/2] Connecting...
+echo Connecting...
 ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
 echo.
 echo Press any key to close this window...
