@@ -406,17 +406,15 @@ firewall_wan() {
     }
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
-    if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
-        [ -z "${apache_keep}" ] && {
-            ${INIT}/apache stop 2>&- || true
-            LIBS="libapr*.so* libexpat.so* libuuid.so*"
-            [ -f /usr/bin/htpasswd ] && cp /usr/bin/htpasswd /tmp/
-            for L in $LIBS; do cp /usr/lib/$L /tmp/ 2>&-; done
-            apk del apache 2>&- || opkg remove apache 2>&-
-            mv /tmp/htpasswd /usr/bin/ 2>&-
-            for L in $LIBS; do mv /tmp/$L /usr/lib/ 2>&-; done
-        }
-    fi
+    [ -z "${apache_keep}" ] && {
+        ${INIT}/apache stop 2>&- || true
+        LIBS="libapr*.so* libexpat.so* libuuid.so*"
+        [ -f /usr/bin/htpasswd ] && cp /usr/bin/htpasswd /tmp/
+        for L in $LIBS; do cp /usr/lib/$L /tmp/ 2>&-; done
+        apk del apache 2>&- || opkg remove apache 2>&-
+        mv /tmp/htpasswd /usr/bin/ 2>&-
+        for L in $LIBS; do mv /tmp/$L /usr/lib/ 2>&-; done
+    }
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
     lan_ip_address=$(GET network.lan.ipaddr | cut -d/ -f1)
