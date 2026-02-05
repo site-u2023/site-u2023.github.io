@@ -5132,9 +5132,9 @@ generate_execution_plan() {
     
     # 設定チェック（SETUP_VARS が空でないか）
     if [ -f "$SETUP_VARS" ] && [ -s "$SETUP_VARS" ]; then
-    	has_setup=1
-    	echo "[PLAN] has_setup=1" >> "$CONFIG_DIR/debug.log"
-	fi
+        has_setup=1
+        echo "[PLAN] has_setup=1" >> "$CONFIG_DIR/debug.log"
+    fi
     
     # カスタムスクリプトチェック（script_vars_*.txt が存在するか）
     for var_file in "$CONFIG_DIR"/script_vars_*.txt; do
