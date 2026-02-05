@@ -1875,6 +1875,10 @@ EOF
     tr_review=$(translate "tr-tui-review-configuration")
     breadcrumb=$(build_breadcrumb "$tr_main_menu" "$tr_review")
     
+    # ★ サマリー生成前に generate_files() を実行
+    echo "Generating installation scripts..."
+    generate_files
+    
     summary_file=$(generate_config_summary)
     
     summary_content=$(cat "$summary_file")
