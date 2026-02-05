@@ -5247,8 +5247,58 @@ EOF
         local custom_remove=""
         local customfeed_header_printed=0
 
-        # ... （カスタムフィード収集はそのまま） ...
+        # 削除検出
+        if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ] && [ -f "$CUSTOMFEEDS_JSON" ]; then
+            while read -r snapshot_line; do
+                [ -z "$snapshot_line" ] && continue
+                
+                local pkg_id=$(echo "$snapshot_line" | cut -d= -f1)
+                
+                local pattern exclude
+                pattern=$(get_customfeed_package_pattern "$pkg_id")
+                exclude=$(get_customfeed_package_exclude "$pkg_id")
+                
+                [ -z "$pattern" ] && continue
+                
+                local installed_pkgs
+                installed_pkgs=$(is_customfeed_installed "$pattern" "$exclude")
+                [ -z "$installed_pkgs" ] && continue
+                
+                if ! grep -q "^${pkg_id}=" "$SELECTED_CUSTOM_PACKAGES" 2>/dev/null; then
+                    while read -r installed_pkg; do
+                        [ -z "$installed_pkg" ] && continue
+                        custom_remove="${custom_remove}${installed_pkg}
+"
+                    done <<EOF2
+$installed_pkgs
+EOF2
+                fi
+            done < "$CONFIG_DIR/custom_packages_initial_snapshot.txt"
+        fi
 
+        # 追加検出
+        if [ -s "$SELECTED_CUSTOM_PACKAGES" ]; then
+            while read -r cache_line; do
+                [ -z "$cache_line" ] && continue
+                
+                local pkg_id=$(echo "$cache_line" | cut -d= -f1)
+                
+                local in_snapshot=0
+                if [ -f "$CONFIG_DIR/custom_packages_initial_snapshot.txt" ]; then
+                    if grep -q "^${pkg_id}=" "$CONFIG_DIR/custom_packages_initial_snapshot.txt" 2>/dev/null; then
+                        in_snapshot=1
+                    fi
+                fi
+                
+                if [ "$in_snapshot" -eq 0 ]; then
+                    local pkg_name=$(echo "$cache_line" | cut -d= -f2)
+                    custom_install="${custom_install}${pkg_name}
+"
+                fi
+            done < "$SELECTED_CUSTOM_PACKAGES"
+        fi
+
+        # 表示
         if [ -n "$custom_remove" ]; then
             if [ "$customfeed_header_printed" -eq 0 ]; then
                 get_summary_section_header "customfeeds"
