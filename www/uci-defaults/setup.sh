@@ -418,12 +418,12 @@ firewall_wan() {
 }
 [ "${dns_adblock}" = "adguardhome" ] && {
     lan_ip_address=$(GET network.lan.ipaddr | cut -d/ -f1)
+    cfg_dhcp="${CONF}/dhcp"
+    cfg_fw="${CONF}/firewall"
+    cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
+    cp "$cfg_fw" "$cfg_fw.adguard.bak"
     if [ "$MEM" -ge "${agh_min_memory}" ] && [ "$FLASH" -ge "${agh_min_flash}" ]; then
         mkdir -p "${agh_dir}"
-        cfg_dhcp="${CONF}/dhcp"
-        cfg_fw="${CONF}/firewall"
-        cp "$cfg_dhcp" "$cfg_dhcp.adguard.bak"
-        cp "$cfg_fw" "$cfg_fw.adguard.bak"
         agh_hash=$(htpasswd -B -n -b "" "${agh_pass}" 2>&- | cut -d: -f2)
         [ -n "$agh_hash" ] && {
         cat > "$agh_yaml" << 'AGHEOF'
@@ -480,7 +480,7 @@ AGHEOF
         ADDLIST @dnsmasq[0].server="::1#${agh_dns_port}"
         DEL lan.dhcp_option
         DEL lan.dhcp_option6
-        ADDLIST lan.dhcp_option="6,${lan_ip_address}"
+        ADDLIST lan.dhcp_option="6,${lan_ip_address}" 
         SEC=firewall
         agh_rule="adguardhome_dns_${agh_dns_port}"
         DEL "${agh_rule}" 2>&-
