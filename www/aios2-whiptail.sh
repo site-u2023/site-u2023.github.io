@@ -1925,9 +1925,6 @@ EOF
             fi
         done
         
-        echo "Generating installation scripts..."
-        generate_files
-        
         local HAS_REMOVE=0 HAS_INSTALL=0 HAS_CUSTOMFEEDS=0 HAS_SETUP=0 HAS_CUSTOMSCRIPTS=0 NEEDS_UPDATE=0
         
         if [ -f "$CONFIG_DIR/execution_plan.sh" ]; then
