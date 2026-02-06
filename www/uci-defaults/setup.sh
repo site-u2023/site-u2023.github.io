@@ -240,7 +240,7 @@ firewall_wan() {
     HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
     HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
     [ "$HASH" = "$HASH1" ] && {
-        SET ${MAPE}.legacymap='1'
+        uci set network.mape.legacymap='1'
         cp "$MAPSH" "$MAPSH".old
         sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
         sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
