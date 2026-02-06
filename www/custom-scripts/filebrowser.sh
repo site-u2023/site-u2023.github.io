@@ -1,6 +1,6 @@
 #!/bin/sh
 
-SCRIPT_VERSION="R8.0128.1048"
+SCRIPT_VERSION="R8.0206.0100"
 
 # =============================================================================
 # BEGIN_VARIABLE_DEFINITIONS
@@ -12,6 +12,13 @@ INSTALL_DIR="/usr/bin"
 CONFIG_DIR="/etc/filebrowser"
 DB_FILE="${CONFIG_DIR}/filebrowser.db"
 
+# Defaults (overridden by injected variables)
+: "${FB_USER:=admin}"
+: "${FB_PASS:=admin12345678}"
+: "${FB_PORT:=8080}"
+: "${FB_LANG:=en}"
+: "${FB_ROOT:=/}"
+
 # =============================================================================
 # Utility Functions
 # =============================================================================
@@ -21,18 +28,34 @@ print_ok()  { printf "\033[1;32m%s\033[0m\n" "$1"; }
 print_err() { printf "\033[1;31m%s\033[0m\n" "$1"; }
 print_warn(){ printf "\033[1;33m%s\033[0m\n" "$1"; }
 
-detect_arch() {
-    # DEVICE_ARCH優先（aios2からエクスポートされる）
-    if [ -n "$DEVICE_ARCH" ]; then
-        case "$DEVICE_ARCH" in
-            aarch64_*) echo "arm64"; return 0 ;;
-            arm_*)     echo "armv7"; return 0 ;;
-            x86_64)    echo "amd64"; return 0 ;;
-            i386)      echo "386"; return 0 ;;
-        esac
+# Download file with IPv6-first fallback to IPv4
+# Matches adguardhome.sh download_file pattern
+# Args:
+#   $1 - URL
+#   $2 - Output file path
+# Returns:
+#   0 - Success
+#   1 - Failed
+download_file() {
+    local url="$1"
+    local output="$2"
+
+    # Try IPv6 first (native connection for MAP-E/DS-Lite environments)
+    if wget --no-check-certificate -c --timeout=60 "$url" -O "$output" 2>/dev/null; then
+        [ -s "$output" ] && return 0
     fi
-    
-    # フォールバック: uname -m
+
+    print_warn "IPv6 failed, falling back to IPv4..."
+    if wget --no-check-certificate -4 -c --timeout=60 "$url" -O "$output" 2>/dev/null; then
+        [ -s "$output" ] && return 0
+    fi
+
+    print_err "Download failed"
+    rm -f "$output"
+    return 1
+}
+
+detect_arch() {
     case "$(uname -m)" in
         aarch64|arm64) echo "arm64" ;;
         armv7l)        echo "armv7" ;;
@@ -50,51 +73,65 @@ detect_arch() {
 
 install_filebrowser() {
     local arch ver tar_file url dest
-    
+
     arch=$(detect_arch) || return 1
     print_msg "Detected architecture: $arch"
-    
+
     # Get latest version from GitHub API
-    ver=$(wget -qO- "https://api.github.com/repos/filebrowser/filebrowser/releases/latest" 2>/dev/null | \
-          jsonfilter -e '@.tag_name' 2>/dev/null | sed 's/^v//')
-    [ -z "$ver" ] && ver="2.31.2"
-    
+    ver=$(
+        { wget -q --timeout=15 -O - "https://api.github.com/repos/filebrowser/filebrowser/releases/latest" || \
+          wget -q --timeout=15 --no-check-certificate -O - "https://api.github.com/repos/filebrowser/filebrowser/releases/latest"; } \
+          2>/dev/null | jsonfilter -e '@.tag_name' 2>/dev/null | sed 's/^v//'
+    )
+    if [ -z "$ver" ]; then
+        print_err "Failed to get version from GitHub API"
+        return 1
+    fi
+
     tar_file="linux-${arch}-filebrowser.tar.gz"
     url="https://github.com/filebrowser/filebrowser/releases/download/v${ver}/${tar_file}"
     dest="/tmp/${tar_file}"
-    
+
     print_msg "Downloading filebrowser v${ver}..."
-    if ! wget -qO "$dest" "$url" 2>/dev/null; then
-        wget --no-check-certificate -qO "$dest" "$url" 2>/dev/null || {
-            print_err "Download failed"
-            return 1
-        }
+    if ! download_file "$url" "$dest"; then
+        print_err "Download failed. Please check network connection."
+        return 1
     fi
-    
+
+    # 展開とインストール
     cd /tmp || return 1
-    tar -xzf "$tar_file" filebrowser || { print_err "Extract failed"; return 1; }
-    mv filebrowser "$INSTALL_DIR/" || { print_err "Move failed"; return 1; }
+    tar -xzf "$dest" filebrowser 2>/dev/null || {
+        print_err "Extract failed (corrupted or wrong format)"
+        rm -f "$dest"
+        return 1
+    }
+
+    mv filebrowser "$INSTALL_DIR/" || {
+        print_err "Move failed (insufficient space?)"
+        rm -f /tmp/filebrowser "$dest"
+        return 1
+    }
     chmod +x "$INSTALL_DIR/filebrowser"
     rm -f "$dest"
-    
+
     # バイナリ実行テスト
     if ! "$INSTALL_DIR/filebrowser" version >/dev/null 2>&1; then
         print_err "Binary verification failed (wrong architecture or corrupted)"
         rm -f "$INSTALL_DIR/filebrowser"
         return 1
     fi
-    
+
     print_ok "Filebrowser v${ver} installed"
 }
 
 configure_filebrowser() {
     mkdir -p "$CONFIG_DIR"
-    
+
     # Initialize DB only if not exists
     if [ ! -f "$DB_FILE" ]; then
         print_msg "Initializing database..."
         filebrowser config init --database "$DB_FILE" >/dev/null 2>&1
-        
+
         # Set config BEFORE creating user
         filebrowser config set \
             --database "$DB_FILE" \
@@ -103,7 +140,7 @@ configure_filebrowser() {
             --port "$FB_PORT" \
             --locale "$FB_LANG" \
             >/dev/null 2>&1
-        
+
         # Create user (will inherit locale from config)
         filebrowser users add "$FB_USER" "$FB_PASS" --perm.admin --database "$DB_FILE" >/dev/null 2>&1
     else
@@ -116,7 +153,7 @@ configure_filebrowser() {
             --locale "$FB_LANG" \
             >/dev/null 2>&1
     fi
-    
+
     print_ok "Configuration completed"
 }
 
@@ -149,7 +186,7 @@ show_access_info() {
     local lan_ip
     lan_ip=$(ip -4 addr show br-lan 2>/dev/null | awk '/inet / {sub(/\/.*/, "", $2); print $2; exit}')
     [ -z "$lan_ip" ] && lan_ip="192.168.1.1"
-    
+
     printf "\n"
     print_ok "=== Filebrowser Access ==="
     print_ok "URL: http://${lan_ip}:${FB_PORT}/"
@@ -167,19 +204,19 @@ remove_filebrowser() {
         print_err "Filebrowser not installed"
         return 1
     fi
-    
+
     if [ "$REMOVE_MODE" != "auto" ] && [ "$TUI_MODE" != "1" ]; then
         printf "Remove filebrowser? (y/N): "
         read -r confirm
         case "$confirm" in [yY]*) ;; *) print_warn "Cancelled"; return 0 ;; esac
     fi
-    
+
     "/etc/init.d/$SERVICE_NAME" stop 2>/dev/null
     "/etc/init.d/$SERVICE_NAME" disable 2>/dev/null
     rm -f "$INSTALL_DIR/filebrowser"
     rm -f "/etc/init.d/$SERVICE_NAME"
     rm -rf "$CONFIG_DIR"
-    
+
     print_ok "Filebrowser removed"
 }
 
@@ -205,7 +242,7 @@ EOF
 
 filebrowser_main() {
     local action=""
-    
+
     while getopts "ir:th" opt; do
         case "$opt" in
             i) action="install" ;;
@@ -215,7 +252,7 @@ filebrowser_main() {
             *) show_usage; exit 1 ;;
         esac
     done
-    
+
     # TUI mode: determine action from SELECTED_OPTION
     if [ "$TUI_MODE" = "1" ] && [ -z "$action" ]; then
         case "$SELECTED_OPTION" in
@@ -226,7 +263,7 @@ filebrowser_main() {
                 ;;
         esac
     fi
-    
+
     case "$action" in
         install)
             if command -v filebrowser >/dev/null 2>&1; then
