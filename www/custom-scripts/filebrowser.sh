@@ -22,6 +22,17 @@ print_err() { printf "\033[1;31m%s\033[0m\n" "$1"; }
 print_warn(){ printf "\033[1;33m%s\033[0m\n" "$1"; }
 
 detect_arch() {
+    # DEVICE_ARCH優先（aios2からエクスポートされる）
+    if [ -n "$DEVICE_ARCH" ]; then
+        case "$DEVICE_ARCH" in
+            aarch64_*) echo "arm64"; return 0 ;;
+            arm_*)     echo "armv7"; return 0 ;;
+            x86_64)    echo "amd64"; return 0 ;;
+            i386)      echo "386"; return 0 ;;
+        esac
+    fi
+    
+    # フォールバック: uname -m
     case "$(uname -m)" in
         aarch64|arm64) echo "arm64" ;;
         armv7l)        echo "armv7" ;;
@@ -65,6 +76,13 @@ install_filebrowser() {
     mv filebrowser "$INSTALL_DIR/" || { print_err "Move failed"; return 1; }
     chmod +x "$INSTALL_DIR/filebrowser"
     rm -f "$dest"
+    
+    # バイナリ実行テスト
+    if ! "$INSTALL_DIR/filebrowser" version >/dev/null 2>&1; then
+        print_err "Binary verification failed (wrong architecture or corrupted)"
+        rm -f "$INSTALL_DIR/filebrowser"
+        return 1
+    fi
     
     print_ok "Filebrowser v${ver} installed"
 }
