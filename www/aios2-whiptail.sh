@@ -514,11 +514,13 @@ show_network_info() {
                 continue
             fi
             
-            # field_cache に保存（変数名を小文字に変換）
+            # field_cache に保存（label から setup.sh 用の変数名を抽出）
             if [ -n "$field_var_name" ] && [ -n "$field_value" ]; then
-                local var_lower
-                var_lower=$(echo "$field_var_name" | tr 'A-Z' 'a-z')
-                echo "${var_lower}=${field_value}" >> "$field_cache"
+                # label から "option xxx" の xxx 部分を抽出
+                local setup_var_name
+                setup_var_name=$(echo "$field_label" | sed -n 's/^option \([a-z0-9_]*\).*/\1/p')
+                
+                echo "${setup_var_name}=${field_value}" >> "$field_cache"
             fi
             
             # 値がある場合のみ表示
