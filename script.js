@@ -212,7 +212,7 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
-        aios2msiExplanation: 'Windowsインストーラー',
+        aios2msiExplanation: 'Windowsインストーラー<br>※ブラウザ警告が出た場合は「詳細を表示」＞「保持する」を選択してください',
         aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/0802071708',
         sshExplanation: 'SSHログイン',
         // iPhone
@@ -276,7 +276,7 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
-        aios2msiExplanation: 'Windows Installer',
+        aios2msiExplanation: 'Windows Installer<br>*If browser warning appears, click "Show more" → "Keep"',
         aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/0802071708',
         sshExplanation: 'SSH login',
         // iPhone
