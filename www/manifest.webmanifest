@@ -8,7 +8,7 @@
   "theme_color": "#43b0e8",
   "icons": [
     {
-      "src": "img/OpenWrt_Logo.svg",
+      "src": "./logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
