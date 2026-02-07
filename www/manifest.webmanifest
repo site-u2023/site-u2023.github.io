@@ -1,15 +1,16 @@
 {
-  "id": "/www/",
+  "id": "https://site-u.pages.dev/www/",
+  "scope": "/www/",
   "name": "OpenWrt Custom Builder",
   "short_name": "OpenWrt Builder",
   "description": "OpenWrtカスタムファームウェアビルダー",
-  "start_url": "./index.html",
+  "start_url": "/www/index.html",
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#43b0e8",
   "icons": [
     {
-      "src": "./logo.svg",
+      "src": "/www/logo.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
