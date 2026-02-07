@@ -153,13 +153,13 @@ const DEFAULT_TERMINALS = {
     name: 'aios2.msi (β)'
   },
   aios2: {
-    name: 'aios2'
+    name: 'aios2.bat'
   },
   aios: {
-    name: 'aios (Old version)'
+    name: 'aios.bat (Old version)'
   },
   ssh: {
-    name: 'SSH'
+    name: 'SSH.bat'
   }
 };
 
@@ -212,7 +212,7 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
-        aios2msiExplanation: 'Windows用インストーラー',
+        aios2msiExplanation: 'Windowsインストーラー',
         aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/0802071708',
         sshExplanation: 'SSHログイン',
         // iPhone
