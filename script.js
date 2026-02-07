@@ -1,10 +1,10 @@
-// R8.0204.1440
+// R8.0207.1726
 // ==================================================
 // グローバル変数と定数
 // ==================================================
 let currentLanguage = 'en';
 let currentTheme = 'auto';
-// デフォルト設定（キャッシュクリア時の復元用）
+// デフォルト設定(キャッシュクリア時の復元用)
 const DEFAULT_ADDRESSES = [
     '192.168.1.1',
     '192.168.0.1',
@@ -149,6 +149,9 @@ pause >nul`
 };
 
 const DEFAULT_TERMINALS = {
+  aios2msi: {
+    name: 'aios2.msi (β)'
+  },
   aios2: {
     name: 'aios2'
   },
@@ -160,7 +163,7 @@ const DEFAULT_TERMINALS = {
   }
 };
 
-// プロンプト用デフォルト値（一元管理）
+// プロンプト用デフォルト値(一元管理)
 const PROMPT_DEFAULTS = {
     newAddress: '192.168.1.2',
     serviceName: 'custom',
@@ -172,13 +175,13 @@ const PROMPT_DEFAULTS = {
     setupLink: 'https://example.com'
 };
 
-// 現在の設定（localStorage と DEFAULT をマージして使用）
+// 現在の設定(localStorage と DEFAULT をマージして使用)
 let currentAddresses = [];
 let currentServices = {};
 let currentTerminals = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
-let currentSelectedTerminal = 'aios2';
+let currentSelectedTerminal = 'aios2msi';
 
 // Multi-language Support
 const translations = {
@@ -195,9 +198,9 @@ const translations = {
         OpenWrtCustom: 'カスタムファームウェアビルダー',
         firmwareDownload: 'デバイス用のOpenWtファームウェアをダウンロード',
         disclaimerPageTitle: '免責事項',
-        disclaimerSiteUTitle: 'site-u（当サイト）に関する免責事項',
+        disclaimerSiteUTitle: 'site-u(当サイト)に関する免責事項',
         disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
-        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ（ウェブサイト、スクリプト、その他の著作物を含む）は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
+        disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ(ウェブサイト、スクリプト、その他の著作物を含む)は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
         disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、OpenWrt公式サイトをご参照ください。',
         footerMemo: 'OpenWrt初心者備忘録',
         footerCopyright: '© site-u',
@@ -209,6 +212,8 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
+        aios2msiExplanation: 'Windows用インストーラー',
+        aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/0802071708',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -227,16 +232,16 @@ const translations = {
         alertMinimumAddress: '最低1つのアドレスは必要です',
         promptServiceName: 'サービス名を入力してください:',
         promptPortNumber: 'ポート番号を入力してください:',
-        promptProtocol: 'プロトコル（http/https）を入力してください:',
-        confirmDeleteService: 'サービス "{0}" を削除しますか？',
+        promptProtocol: 'プロトコル(http/https)を入力してください:',
+        confirmDeleteService: 'サービス "{0}" を削除しますか?',
         alertMinimumService: '最低1つのサービスは必要です',
         promptTerminalName: 'ターミナル名を入力してください:',
         promptDefaultCommand: 'デフォルトコマンドを入力してください:',
-        confirmDeleteTerminal: 'ターミナル "{0}" を削除しますか？',
+        confirmDeleteTerminal: 'ターミナル "{0}" を削除しますか?',
         alertMinimumTerminal: '最低1つのターミナルは必要です',
         promptSetupName: '初期設定名を入力してください:',
         promptSetupLink: 'リンクまたはファイルパスを入力してください:',
-        confirmDeleteSetup: '初期設定 "{0}" を削除しますか？',
+        confirmDeleteSetup: '初期設定 "{0}" を削除しますか?',
         alertMinimumSetup: '最低1つの初期設定は必要です',
         promptItemName: '項目名を入力してください:',
         promptValue: '値を入力してください:',
@@ -271,11 +276,12 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
+        aios2msiExplanation: 'Windows Installer',
+        aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/0802071708',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
         appStore: 'Open in App Store',
-        aios2Explanation: 'On next boot, you can run "aios2" command from the OpenWrt console',
         // Android
         juiceSSH: 'JuiceSSH',
         googlePlay: 'Open in Google Play',
@@ -595,8 +601,14 @@ function bindEvents() {
     if (openTerminal) {
         openTerminal.addEventListener('click', function() {
             const terminalSelector = document.getElementById('terminal-selector');
-            const terminalType = terminalSelector ? terminalSelector.value : 'aios2';
-            downloadBatFile(terminalType);
+            const terminalType = terminalSelector ? terminalSelector.value : 'aios2msi';
+            
+            // aios2msi の場合は直接リンクを開く
+            if (terminalType === 'aios2msi') {
+                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/0802071708/aios2.msi', '_blank');
+            } else {
+                downloadBatFile(terminalType);
+            }
         });
     }
 }
@@ -716,7 +728,7 @@ function updateTerminalSelector() {
         terminalSelector.value = currentSelectedTerminal;
     } else {
         // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
-        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios';
+        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios2msi';
         terminalSelector.value = currentSelectedTerminal;
         localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
@@ -733,6 +745,10 @@ function updateTerminalExplanation() {
     
     let explanationKey, linkKey;
     switch(selectedType) {
+        case 'aios2msi':
+            explanationKey = 'aios2msiExplanation';
+            linkKey = 'aios2msiExplanationLink';
+            break;
         case 'aios':
             explanationKey = 'aiosExplanation';
             linkKey = 'aiosExplanationLink';
@@ -746,8 +762,8 @@ function updateTerminalExplanation() {
             linkKey = null;
             break;
         default:
-            explanationKey = 'aiosExplanation';
-            linkKey = 'aiosExplanationLink';
+            explanationKey = 'aios2msiExplanation';
+            linkKey = 'aios2msiExplanationLink';
     }
     
     const text = getText(explanationKey);
@@ -884,7 +900,7 @@ function updateAllDisplays() {
 }
 
 // ==================================================
-// ヘッダー・フッター対応（動的読み込み用）
+// ヘッダー・フッター対応(動的読み込み用)
 // ==================================================
 function loadHeaderFooter() {
     // ヘッダーの読み込み
