@@ -1,5 +1,5 @@
 {
-  "id": "https://site-u.pages.dev/www/",
+  "id": "/www/",
   "scope": "/www/",
   "name": "OpenWrt Custom Builder",
   "short_name": "OpenWrt Builder",
@@ -10,12 +10,12 @@
   "theme_color": "#43b0e8",
   "icons": [
     {
-      "src": "/www/android-chrome-192x192.png",
+      "src": "/www/img/android-chrome-192x192.png",
       "sizes": "192x192",
       "type": "image/png"
     },
     {
-      "src": "/www/android-chrome-512x512.png",
+      "src": "/www/img/android-chrome-512x512.png",
       "sizes": "512x512",
       "type": "image/png"
     }
