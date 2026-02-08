@@ -68,7 +68,9 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 )
 
 :gw_done
-set /p "IP=Enter OpenWrt IP address [%IP%]: "
+set "DEFAULT_IP=%IP%"
+set /p "IP=Enter OpenWrt IP address [%DEFAULT_IP%]: "
+if "%IP%"=="" set "IP=%DEFAULT_IP%"
 
 echo.
 echo Target: %IP%
@@ -137,7 +139,9 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 )
 
 :gw_done
-set /p "IP=Enter OpenWrt IP address [%IP%]: "
+set "DEFAULT_IP=%IP%"
+set /p "IP=Enter OpenWrt IP address [%DEFAULT_IP%]: "
+if "%IP%"=="" set "IP=%DEFAULT_IP%"
 
 echo.
 echo Target: %IP%
@@ -192,7 +196,9 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 )
 
 :gw_done
-set /p "IP=Enter OpenWrt IP address [%IP%]: "
+set "DEFAULT_IP=%IP%"
+set /p "IP=Enter OpenWrt IP address [%DEFAULT_IP%]: "
+if "%IP%"=="" set "IP=%DEFAULT_IP%"
 
 echo.
 echo Target: root@%IP%
