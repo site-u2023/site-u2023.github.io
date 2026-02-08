@@ -844,7 +844,10 @@ function downloadBatFile(terminalType) {
             throw new Error(`Template not found: ${terminalType}`);
         }
         
-        const batContent = template.replace(/__IP_ADDRESS__/g, currentIP);
+        // IP置換後、改行コードをCRLFに変換
+        const batContent = template
+            .replace(/__IP_ADDRESS__/g, currentIP)
+            .replace(/\r?\n/g, '\r\n');
         
         const blob = new Blob([batContent], { type: 'text/plain' });
         const url = window.URL.createObjectURL(blob);
