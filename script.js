@@ -83,7 +83,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing installation script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
@@ -152,7 +152,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing menu script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 
 echo.
 echo Press any key to close this window...
@@ -198,7 +198,7 @@ echo.
 echo Target: root@%IP%
 echo.
 echo Connecting...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
 echo.
 echo Press any key to close this window...
 pause >nul`
