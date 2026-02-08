@@ -667,7 +667,7 @@ function bindEvents() {
             
             // aios2msi の場合は直接リンクを開く
             if (terminalType === 'aios2msi') {
-                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/untagged-06374f8c03322e16712e/aios2.msi', '_blank');
+                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/0802080100/aios2.msi', '_blank');
             } else {
                 downloadBatFile(terminalType);
             }
