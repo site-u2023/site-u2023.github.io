@@ -43,7 +43,6 @@ if %errorLevel% neq 0 (
     goto :eof
 )
 
-set IP=__IP_ADDRESS__
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
 set BASE_DIR=/tmp/aios2
 set SCRIPT_PATH=%BASE_DIR%/aios2.sh
@@ -51,6 +50,26 @@ set SCRIPT_PATH=%BASE_DIR%/aios2.sh
 echo ========================================
 echo aios2 - OpenWrt Setup
 echo ========================================
+echo.
+
+REM Detect default gateway
+set "IP=__IP_ADDRESS__"
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
+)
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
+set /p "IP=Enter OpenWrt IP address [%IP%]: "
+
 echo.
 echo Target: %IP%
 echo.
@@ -64,7 +83,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing installation script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \"https://site-u.pages.dev/www/aios2.sh?t=\$(date +%%s)\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \"\$@\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
 
 if %ERRORLEVEL% EQU 0 (
     echo.
@@ -92,7 +111,6 @@ if %errorLevel% neq 0 (
     goto :eof
 )
 
-set IP=__IP_ADDRESS__
 set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
 set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
 set BASE_DIR=/tmp/aios
@@ -101,6 +119,26 @@ set SCRIPT_PATH=%BASE_DIR%/aios
 echo ========================================
 echo aios - OpenWrt Menu Script
 echo ========================================
+echo.
+
+REM Detect default gateway
+set "IP=__IP_ADDRESS__"
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
+)
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
+set /p "IP=Enter OpenWrt IP address [%IP%]: "
+
 echo.
 echo Target: %IP%
 echo.
@@ -114,7 +152,7 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing menu script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% \"%PROXY_URL%%AIOS_URL%\" && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 
 echo.
 echo Press any key to close this window...
@@ -133,11 +171,29 @@ if %errorLevel% neq 0 (
     goto :eof
 )
 
-set IP=__IP_ADDRESS__
-
 echo ========================================
 echo SSH - OpenWrt Connection
 echo ========================================
+echo.
+
+REM Detect default gateway
+set "IP=__IP_ADDRESS__"
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
+)
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
+set /p "IP=Enter OpenWrt IP address [%IP%]: "
+
 echo.
 echo Target: root@%IP%
 echo.
