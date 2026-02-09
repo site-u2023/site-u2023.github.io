@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-# VERSION="R8.0117.1930"
+VERSION="R8.0117.1930"
 
 # =============================================================================
 # Package Management Architecture
