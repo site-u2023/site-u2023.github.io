@@ -54,14 +54,20 @@ echo.
 
 REM Detect default gateway
 set "IP=__IP_ADDRESS__"
-for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do set "GW=%%a"
-if defined GW (
-    for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
-        if "%%x"=="10" set "IP=%GW%"
-        if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
-        if "%%x"=="172" set "IP=%GW%"
-    )
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
 )
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
 echo.
@@ -117,14 +123,20 @@ echo.
 
 REM Detect default gateway
 set "IP=__IP_ADDRESS__"
-for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do set "GW=%%a"
-if defined GW (
-    for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
-        if "%%x"=="10" set "IP=%GW%"
-        if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
-        if "%%x"=="172" set "IP=%GW%"
-    )
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
 )
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
 echo.
@@ -166,14 +178,20 @@ echo.
 
 REM Detect default gateway
 set "IP=__IP_ADDRESS__"
-for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do set "GW=%%a"
-if defined GW (
-    for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
-        if "%%x"=="10" set "IP=%GW%"
-        if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
-        if "%%x"=="172" set "IP=%GW%"
-    )
+for /f "tokens=3" %%a in ('route print 0.0.0.0 ^| findstr /R "0\\.0\\.0\\.0.*0\\.0\\.0\\.0"') do (
+    set "GW=%%a"
+    goto :check_gw
 )
+goto :gw_done
+
+:check_gw
+for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
+    if "%%x"=="10" set "IP=%GW%"
+    if "%%x"=="192" if "%%y"=="168" set "IP=%GW%"
+    if "%%x"=="172" set "IP=%GW%"
+)
+
+:gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
 echo.
