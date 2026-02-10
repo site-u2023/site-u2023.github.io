@@ -206,7 +206,7 @@ pause >nul`
 
 const DEFAULT_TERMINALS = {
   aios2msi: {
-    name: 'aios2.msi (β)'
+    name: 'aios2.msi'
   },
   aios2: {
     name: 'aios2.bat'
