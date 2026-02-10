@@ -46,6 +46,7 @@ if %errorLevel% neq 0 (
 set AIOS2_URL=https://site-u.pages.dev/www/aios2.sh
 set BASE_DIR=/tmp/aios2
 set SCRIPT_PATH=%BASE_DIR%/aios2.sh
+set SSH_OPTS=-o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa
 
 echo ========================================
 echo aios2 - OpenWrt Setup
@@ -70,6 +71,36 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 :gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
+REM Generate key paths based on IP address
+set "IP_SAFE=%IP:.=_%"
+set "KEY_NAME=aios2_%IP_SAFE%_rsa"
+set "SSH_DIR=%USERPROFILE%\\.ssh"
+set "KEY_PATH=%SSH_DIR%\\%KEY_NAME%"
+set "PUB_PATH=%KEY_PATH%.pub"
+set "USE_KEY=0"
+
+REM Ensure SSH key exists
+if not exist "%KEY_PATH%" (
+    if not exist "%SSH_DIR%" mkdir "%SSH_DIR%"
+    echo Generating SSH key...
+    ssh-keygen -t rsa -N "" -f "%KEY_PATH%" >nul 2>&1
+)
+
+REM Test key authentication
+if exist "%KEY_PATH%" (
+    ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        set "USE_KEY=1"
+    ) else (
+        if exist "%PUB_PATH%" (
+            echo Registering public key ^(password required once^)...
+            echo.
+            type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
+            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+        )
+    )
+)
+
 echo.
 echo Target: %IP%
 echo.
@@ -83,7 +114,12 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing installation script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
+
+if "%USE_KEY%"=="1" (
+    ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
+) else (
+    ssh %SSH_OPTS% -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
+)
 
 if %ERRORLEVEL% EQU 0 (
     echo.
@@ -115,6 +151,7 @@ set AIOS_URL=https://raw.githubusercontent.com/site-u2023/aios/main/aios
 set PROXY_URL=https://proxy.site-u.workers.dev/proxy?url=
 set BASE_DIR=/tmp/aios
 set SCRIPT_PATH=%BASE_DIR%/aios
+set SSH_OPTS=-o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa
 
 echo ========================================
 echo aios - OpenWrt Menu Script
@@ -139,6 +176,36 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 :gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
+REM Generate key paths based on IP address
+set "IP_SAFE=%IP:.=_%"
+set "KEY_NAME=aios2_%IP_SAFE%_rsa"
+set "SSH_DIR=%USERPROFILE%\\.ssh"
+set "KEY_PATH=%SSH_DIR%\\%KEY_NAME%"
+set "PUB_PATH=%KEY_PATH%.pub"
+set "USE_KEY=0"
+
+REM Ensure SSH key exists
+if not exist "%KEY_PATH%" (
+    if not exist "%SSH_DIR%" mkdir "%SSH_DIR%"
+    echo Generating SSH key...
+    ssh-keygen -t rsa -N "" -f "%KEY_PATH%" >nul 2>&1
+)
+
+REM Test key authentication
+if exist "%KEY_PATH%" (
+    ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        set "USE_KEY=1"
+    ) else (
+        if exist "%PUB_PATH%" (
+            echo Registering public key ^(password required once^)...
+            echo.
+            type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
+            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+        )
+    )
+)
+
 echo.
 echo Target: %IP%
 echo.
@@ -152,7 +219,12 @@ if %ERRORLEVEL% NEQ 0 (
 echo Connected.
 echo.
 echo [2/2] Executing menu script...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+
+if "%USE_KEY%"=="1" (
+    ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+) else (
+    ssh %SSH_OPTS% -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
+)
 
 echo.
 echo Press any key to close this window...
@@ -170,6 +242,8 @@ if %errorLevel% neq 0 (
     del "%temp%\\getadmin.vbs"
     goto :eof
 )
+
+set SSH_OPTS=-o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa
 
 echo ========================================
 echo SSH - OpenWrt Connection
@@ -194,11 +268,47 @@ for /f "tokens=1,2 delims=." %%x in ("%GW%") do (
 :gw_done
 set /p "IP=Enter OpenWrt IP address [%IP%]: "
 
+REM Generate key paths based on IP address
+set "IP_SAFE=%IP:.=_%"
+set "KEY_NAME=aios2_%IP_SAFE%_rsa"
+set "SSH_DIR=%USERPROFILE%\\.ssh"
+set "KEY_PATH=%SSH_DIR%\\%KEY_NAME%"
+set "PUB_PATH=%KEY_PATH%.pub"
+set "USE_KEY=0"
+
+REM Ensure SSH key exists
+if not exist "%KEY_PATH%" (
+    if not exist "%SSH_DIR%" mkdir "%SSH_DIR%"
+    echo Generating SSH key...
+    ssh-keygen -t rsa -N "" -f "%KEY_PATH%" >nul 2>&1
+)
+
+REM Test key authentication
+if exist "%KEY_PATH%" (
+    ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
+    if %ERRORLEVEL% EQU 0 (
+        set "USE_KEY=1"
+    ) else (
+        if exist "%PUB_PATH%" (
+            echo Registering public key ^(password required once^)...
+            echo.
+            type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
+            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+        )
+    )
+)
+
 echo.
 echo Target: root@%IP%
 echo.
 echo Connecting...
-ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=NUL -o GlobalKnownHostsFile=NUL -o LogLevel=ERROR -o HostKeyAlgorithms=+ssh-rsa -o PubkeyAcceptedKeyTypes=+ssh-rsa -tt root@%IP%
+
+if "%USE_KEY%"=="1" (
+    ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP%
+) else (
+    ssh %SSH_OPTS% -tt root@%IP%
+)
+
 echo.
 echo Press any key to close this window...
 pause >nul`
