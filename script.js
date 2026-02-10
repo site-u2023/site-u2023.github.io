@@ -1,4 +1,4 @@
-// R8.0207.1726
+// R8.0210.1125
 // ==================================================
 // グローバル変数と定数
 // ==================================================
@@ -32,7 +32,7 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 // .batテンプレート
 const BAT_TEMPLATES = {
     aios2: `@echo off
-setlocal
+setlocal enabledelayedexpansion
 REM Self-elevate using VBScript
 >nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
 if %errorLevel% neq 0 (
@@ -89,14 +89,14 @@ if not exist "%KEY_PATH%" (
 REM Test key authentication
 if exist "%KEY_PATH%" (
     ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         set "USE_KEY=1"
     ) else (
         if exist "%PUB_PATH%" (
             echo Registering public key ^(password required once^)...
             echo.
             type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
-            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+            if !ERRORLEVEL! EQU 0 set "USE_KEY=1"
         )
     )
 )
@@ -115,7 +115,7 @@ echo Connected.
 echo.
 echo [2/2] Executing installation script...
 
-if "%USE_KEY%"=="1" (
+if "!USE_KEY!"=="1" (
     ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
 ) else (
     ssh %SSH_OPTS% -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% %AIOS2_URL% && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH% && echo '#!/bin/sh' > /usr/bin/aios2 && echo 'mkdir -p /tmp/aios2' >> /usr/bin/aios2 && echo 'wget --no-check-certificate -O /tmp/aios2/aios2.sh \\"https://site-u.pages.dev/www/aios2.sh?t=\\$(date +%%s)\\"' >> /usr/bin/aios2 && echo 'chmod +x /tmp/aios2/aios2.sh' >> /usr/bin/aios2 && echo 'exec /tmp/aios2/aios2.sh \\"\\$@\\"' >> /usr/bin/aios2 && chmod +x /usr/bin/aios2"
@@ -136,7 +136,7 @@ pause >nul
 exit /b`,
     
     aios: `@echo off
-setlocal
+setlocal enabledelayedexpansion
 REM Self-elevate using VBScript
 >nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
 if %errorLevel% neq 0 (
@@ -194,14 +194,14 @@ if not exist "%KEY_PATH%" (
 REM Test key authentication
 if exist "%KEY_PATH%" (
     ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         set "USE_KEY=1"
     ) else (
         if exist "%PUB_PATH%" (
             echo Registering public key ^(password required once^)...
             echo.
             type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
-            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+            if !ERRORLEVEL! EQU 0 set "USE_KEY=1"
         )
     )
 )
@@ -220,7 +220,7 @@ echo Connected.
 echo.
 echo [2/2] Executing menu script...
 
-if "%USE_KEY%"=="1" (
+if "!USE_KEY!"=="1" (
     ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
 ) else (
     ssh %SSH_OPTS% -tt root@%IP% "mkdir -p %BASE_DIR% && wget --no-check-certificate -O %SCRIPT_PATH% '%PROXY_URL%%AIOS_URL%' && chmod +x %SCRIPT_PATH% && %SCRIPT_PATH%"
@@ -232,7 +232,7 @@ pause >nul
 exit /b`,
     
     ssh: `@echo off
-setlocal
+setlocal enabledelayedexpansion
 REM Self-elevate using VBScript
 >nul 2>&1 "%SYSTEMROOT%\\system32\\cacls.exe" "%SYSTEMROOT%\\system32\\config\\system"
 if %errorLevel% neq 0 (
@@ -286,14 +286,14 @@ if not exist "%KEY_PATH%" (
 REM Test key authentication
 if exist "%KEY_PATH%" (
     ssh %SSH_OPTS% -o BatchMode=yes -o ConnectTimeout=5 -i "%KEY_PATH%" root@%IP% exit >nul 2>&1
-    if %ERRORLEVEL% EQU 0 (
+    if !ERRORLEVEL! EQU 0 (
         set "USE_KEY=1"
     ) else (
         if exist "%PUB_PATH%" (
             echo Registering public key ^(password required once^)...
             echo.
             type "%PUB_PATH%" | ssh %SSH_OPTS% root@%IP% "cat >> /etc/dropbear/authorized_keys && chmod 600 /etc/dropbear/authorized_keys"
-            if %ERRORLEVEL% EQU 0 set "USE_KEY=1"
+            if !ERRORLEVEL! EQU 0 set "USE_KEY=1"
         )
     )
 )
@@ -303,7 +303,7 @@ echo Target: root@%IP%
 echo.
 echo Connecting...
 
-if "%USE_KEY%"=="1" (
+if "!USE_KEY!"=="1" (
     ssh %SSH_OPTS% -i "%KEY_PATH%" -tt root@%IP%
 ) else (
     ssh %SSH_OPTS% -tt root@%IP%
