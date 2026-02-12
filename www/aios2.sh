@@ -5437,6 +5437,8 @@ update_package_manager() {
             apk) apk update || return 1 ;;
         esac
     fi
+    
+    return 0
 }
 
 needs_reboot_check() {
