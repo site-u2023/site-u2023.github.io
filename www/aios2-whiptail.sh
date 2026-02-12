@@ -3,7 +3,7 @@
 # OpenWrt Device Setup Tool - whiptail TUI Module
 # This file contains whiptail-specific UI functions
 
-VERSION="R8.0127.1319"
+VERSION="R8.0212.2037"
 TITLE="all in one scripts 2"
 
 UI_WIDTH="78"
@@ -1838,6 +1838,8 @@ enable_installed_services() {
             (sleep 3; /etc/init.d/ttyd restart 2>/dev/null) &
         fi
     fi
+
+    return 0
 }
 
 review_and_apply() {
