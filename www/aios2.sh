@@ -5433,24 +5433,8 @@ update_package_manager() {
     if [ "$needs_update" -eq 1 ]; then
         echo "Updating package database..."
         case "$PKG_MGR" in
-            opkg)
-                if ! opkg update; then
-                    echo ""
-                    echo "\033[1;31mPackage manager update failed\033[0m"
-                    echo "Please check your network connection and repository settings."
-                    echo ""
-                    return 1
-                fi
-                ;;
-            apk)
-                if ! apk update; then
-                    echo ""
-                    echo "\033[1;31mPackage manager update failed\033[0m"
-                    echo "Please check your network connection and repository settings."
-                    echo ""
-                    return 1
-                fi
-                ;;
+            opkg) opkg update || return 1 ;;
+            apk) apk update || return 1 ;;
         esac
     fi
 }
