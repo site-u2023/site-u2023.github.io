@@ -1961,7 +1961,7 @@ EOF
         fi
         
         if ! update_package_manager; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-package-update-failed')
+            show_msgbox "$breadcrumb" "$(translate 'tr-tui-package-removal-failed')
 
 Please check your network connection and repository settings."
             return 1
