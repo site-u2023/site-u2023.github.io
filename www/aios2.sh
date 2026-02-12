@@ -5441,11 +5441,31 @@ update_package_manager() {
     
     # 更新実行
     if [ "$needs_update" -eq 1 ]; then
+        echo "[DEBUG] Running package manager update" >> "$CONFIG_DIR/debug.log"
         echo "Updating package database..."
+        
         case "$PKG_MGR" in
-            opkg) opkg update || return 1 ;;
-            apk) apk update || return 1 ;;
+            opkg)
+                if ! opkg update; then
+                    echo "[ERROR] opkg update failed" >> "$CONFIG_DIR/debug.log"
+                    return 1
+                fi
+                ;;
+            apk)
+                if ! apk update; then
+                    echo "[ERROR] apk update failed" >> "$CONFIG_DIR/debug.log"
+                    return 1
+                fi
+                ;;
+            *)
+                echo "[ERROR] Unknown package manager: $PKG_MGR" >> "$CONFIG_DIR/debug.log"
+                return 1
+                ;;
         esac
+        
+        echo "[DEBUG] Package manager update successful" >> "$CONFIG_DIR/debug.log"
+    else
+        echo "[DEBUG] No package update needed" >> "$CONFIG_DIR/debug.log"
     fi
     
     return 0
