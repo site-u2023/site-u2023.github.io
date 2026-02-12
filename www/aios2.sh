@@ -757,6 +757,8 @@ init() {
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
 }
 
+
+
 # Language and Translation
 
 download_language_json() {
@@ -5806,8 +5808,45 @@ aios2_main() {
     }
 
     wait $API_PID
+    wait $PKG_MGR_DL_PID
+    
+    load_package_manager_config || {
+        echo "Failed to load package manager config"
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    }
+    
+    # Update package database in background
+    (
+        echo "Checking package database..."
+        local update_log="$CONFIG_DIR/startup_update.log"
+        
+        case "$PKG_MGR" in
+            opkg)
+                opkg update > "$update_log" 2>&1
+                ;;
+            apk)
+                apk update > "$update_log" 2>&1
+                ;;
+        esac
+    ) &
+    UPDATE_PID=$!
     
     get_extended_device_info
+    
+    wait $UPDATE_PID
+    UPDATE_STATUS=$?
+    
+    if [ $UPDATE_STATUS -ne 0 ]; then
+        echo ""
+        echo "ERROR: Package database update failed"
+        echo "Some repository mirrors may be unavailable."
+        echo "Please check your network connection and try again later."
+        printf "Press [Enter] to exit. "
+        read -r _
+        return 1
+    fi
     
     build_version_compat_cache
 
