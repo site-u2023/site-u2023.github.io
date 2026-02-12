@@ -841,6 +841,7 @@ install_htpasswd_from_apache() {
             return 0
         else
             printf "Failed\n"
+            printf "\033[1;31m%s package installation failed\033[0m\n" "$HTPASSWD_PROVIDER"
             return 1
         fi
     elif [ ! -x /usr/bin/htpasswd ]; then
