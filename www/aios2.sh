@@ -4,7 +4,7 @@
 # ASU (Attended SysUpgrade) Compatible
 # Common Functions (UI-independent)
 
-VERSION="R8.0117.1930"
+VERSION="R8.0212.2036"
 
 # =============================================================================
 # Package Management Architecture
@@ -1512,6 +1512,8 @@ cache_available_languages() {
     
     local count=$(wc -l < "$cache_file" 2>/dev/null || echo 0)
     debug_log "Available languages cached: $count"
+
+    return 0
 }
 
 # ========================================
@@ -3639,6 +3641,8 @@ auto_add_conditional_packages() {
     done
     
     debug_log "=== auto_add_conditional_packages finished ==="
+
+    return 0
 }
 
 get_section_controlling_radio_info() {
@@ -3866,6 +3870,8 @@ EOF
             echo "[AUTO] Removed variable: $variable (condition not met for $item_id, expected=$expected, current=$current_val)" >> "$CONFIG_DIR/debug.log"
         fi
     fi
+
+    return 0
 }
 
 # enableVar のクリーンアップ
@@ -3927,6 +3933,8 @@ EOF
     
     mv "$temp_file" "$SETUP_VARS"
     echo "[DEBUG] === cleanup_orphaned_enablevars finished ===" >> "$CONFIG_DIR/debug.log"
+
+    return 0
 }
 
 reset_state_for_next_session() {
@@ -4165,6 +4173,8 @@ track_api_value_changes() {
     # スナップショットを更新
     cp "$SETUP_VARS" "$snapshot_file"
     echo "[DEBUG] === track_api_value_changes finished ===" >> "$CONFIG_DIR/debug.log"
+
+    return 0
 }
 
 # ========================================
