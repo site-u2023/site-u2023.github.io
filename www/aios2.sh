@@ -5861,7 +5861,7 @@ aios2_main() {
         
         echo "Installing whiptail..."
         echo "Updating package lists..."
-        eval "$PKG_UPDATE_CMD" || echo "Warning: Failed to update package lists"
+        eval "$PKG_UPDATE_CMD" || return 1
         
         if ! install_package whiptail; then
             echo ""
