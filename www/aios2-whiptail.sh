@@ -1960,13 +1960,6 @@ EOF
             fi
         fi
         
-        if ! update_package_manager; then
-            show_msgbox "$breadcrumb" "$(translate 'tr-tui-package-removal-failed')
-
-Please check your network connection and repository settings."
-            return 1
-        fi
-        
         if [ "$HAS_INSTALL" -eq 1 ]; then
             echo ""
             echo "$(translate 'tr-tui-installing-packages')"
