@@ -5821,6 +5821,11 @@ aios2_main() {
     }
 
 	get_extended_device_info
+
+	if [ -z "$AUTO_LANGUAGE" ] && [ -n "$API_LANGUAGE" ]; then
+		AUTO_LANGUAGE="$API_LANGUAGE"
+		echo "[DEBUG] AUTO_LANGUAGE set from API: $AUTO_LANGUAGE" >> "$CONFIG_DIR/debug.log"
+	fi
 	
     wait $LANG_EN_PID
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
