@@ -5727,6 +5727,25 @@ show_log() {
     fi
 }
 
+# =============================================================================
+# Load critical translation messages into memory
+# =============================================================================
+into_memory_message_definitions() {
+    case "$AUTO_LANGUAGE" in
+        ja)
+            MSG_CHECKING_PKG_DB="パッケージマネージャーが実行中"
+            MSG_PKG_UPDATE_FAILED="コマンド %s がエラーコード %s で失敗しました。"
+            ;;
+        *)
+            MSG_CHECKING_PKG_DB="Executing package manager"
+            MSG_PKG_UPDATE_FAILED="Command %s failed with error code %s."
+            ;;
+    esac
+    
+    export MSG_CHECKING_PKG_DB
+    export MSG_PKG_UPDATE_FAILED
+}
+
 aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -5739,7 +5758,9 @@ aios2_main() {
     print_banner
     mkdir -p "$CONFIG_DIR"
     get_language_code
-    
+
+	into_memory_message_definitions
+	
     if ! check_network_connectivity; then
         echo "Error: Network connectivity check failed"
         echo "Please check your internet connection"
@@ -5822,7 +5843,7 @@ aios2_main() {
     
     # Update package database in background
     (
-        echo "$(translate 'tr-tui-checking-package-database')"
+        echo "$MSG_CHECKING_PKG_DB"
         local update_log="$CONFIG_DIR/startup_update.log"
         
         case "$PKG_MGR" in
@@ -5852,7 +5873,7 @@ aios2_main() {
             done
         fi
         echo ""
-        printf "$(translate 'tr-tui-package-update-command-failed')\n" "$PKG_MGR update" "$UPDATE_STATUS"
+        printf "$MSG_PKG_UPDATE_FAILED\n" "$PKG_MGR update" "$UPDATE_STATUS"
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
