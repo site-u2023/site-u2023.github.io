@@ -5845,11 +5845,14 @@ aios2_main() {
         echo ""
         if [ -f "$CONFIG_DIR/startup_update.log" ]; then
             grep -E "ERROR:|WARNING:" "$CONFIG_DIR/startup_update.log" | while IFS= read -r line; do
-                printf "\033[31m%s\033[0m\n" "$line"
+                case "$line" in
+                    ERROR:*) printf "\033[31m%s\033[0m\n" "$line" ;;
+                    WARNING:*) printf "\033[33m%s\033[0m\n" "$line" ;;
+                esac
             done
         fi
         echo ""
-        printf "\033[33m$(translate 'tr-tui-package-update-command-failed')\033[0m\n" "$PKG_MGR update" "$UPDATE_STATUS"
+        printf "$(translate 'tr-tui-package-update-command-failed')\n" "$PKG_MGR update" "$UPDATE_STATUS"
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
