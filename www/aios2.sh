@@ -5727,25 +5727,6 @@ show_log() {
     fi
 }
 
-# =============================================================================
-# Load critical translation messages into memory
-# =============================================================================
-into_memory_message_definitions() {
-    case "$AUTO_LANGUAGE" in
-        ja)
-            MSG_CHECKING_PKG_DB="パッケージマネージャーが実行中"
-            MSG_PKG_UPDATE_FAILED="コマンド %s がエラーコード %s で失敗しました。"
-            ;;
-        *)
-            MSG_CHECKING_PKG_DB="Executing package manager"
-            MSG_PKG_UPDATE_FAILED="Command %s failed with error code %s."
-            ;;
-    esac
-    
-    export MSG_CHECKING_PKG_DB
-    export MSG_PKG_UPDATE_FAILED
-}
-
 aios2_main() {
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
@@ -5840,11 +5821,13 @@ aios2_main() {
     }
 
 	get_extended_device_info
-	into_memory_message_definitions
+
+    wait $LANG_EN_PID
+    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
 	
     # Update package database in background
     (
-        echo "$MSG_CHECKING_PKG_DB"
+        echo "$(translate 'tr-tui-checking-package-database')"
         local update_log="$CONFIG_DIR/startup_update.log"
         
         case "$PKG_MGR" in
@@ -5872,7 +5855,7 @@ aios2_main() {
             done
         fi
         echo ""
-        printf "$MSG_PKG_UPDATE_FAILED\n" "$PKG_MGR update" "$UPDATE_STATUS"
+        printf "$(translate 'tr-tui-package-update-command-failed')\n" "$PKG_MGR update" "$UPDATE_STATUS"
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
@@ -5947,7 +5930,7 @@ aios2_main() {
     TIME_BEFORE_UI=$(elapsed_time)
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
-	wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $LANG_EN_PID $UI_DL_PID $INIT_PKG_PID
+	wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $UI_DL_PID $INIT_PKG_PID
 
     if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
@@ -5956,8 +5939,6 @@ aios2_main() {
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME}")
     debug_log "Total auto-processing: ${TOTAL_AUTO_TIME}s"
-    
-    [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
     
     if [ -f "$CONFIG_DIR/aios2-whiptail.sh" ]; then
         . "$CONFIG_DIR/aios2-whiptail.sh"
