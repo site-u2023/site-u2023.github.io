@@ -317,5 +317,5 @@
     
     "_section_32": "=== Other ===",
     "tr-feedback-link": "Forum",
-    "tr-error-package-db-update-failed": "ERROR: Package database update failed"
+    "tr-tui-error-package-db-update-failed": "ERROR: Package database update failed"
 }
