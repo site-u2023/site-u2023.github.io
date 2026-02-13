@@ -5843,8 +5843,12 @@ aios2_main() {
     
     if [ $UPDATE_STATUS -ne 0 ]; then
         echo ""
-        printf "\033[31m$(translate 'tr-tui-package-update-command-failed')\033[0m\n" "$PKG_MGR update" "$UPDATE_STATUS"
-		echo ""
+        [ -f "$update_log" ] && grep -E "ERROR:|WARNING:" "$update_log" | while IFS= read -r line; do
+            printf "\033[31m%s\033[0m\n" "$line"
+        done
+        echo ""
+        printf "$(translate 'tr-tui-package-update-command-failed')\n" "$PKG_MGR update" "$UPDATE_STATUS"
+        echo ""
         printf "Press [Enter] to exit. "
         read -r _
         return 1
