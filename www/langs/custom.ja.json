@@ -317,5 +317,5 @@
     
     "_section_32": "=== その他 ===",
     "tr-feedback-link": "フォーラム",
-    "tr-tui-error-package-db-update-failed": "エラー: パッケージデータベースの更新に失敗しました"
+    "tr-tui-error-package-db-update-failed": "エラー: パッケージデータベースサーバーに接続できません"
 }
