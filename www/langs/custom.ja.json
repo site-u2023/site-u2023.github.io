@@ -1,7 +1,5 @@
 {
-    "_comment": "OpenWrt Firmware Selector カスタム日本語翻訳ファイル (整理版)",
-    "_version": "R7.0106.1800",
-    "_last_updated": "2025-02-03",
+    "_version": "R8.0213.2136",
 
     "_section_1": "=== パッケージ管理 ===",
     "tr-custom-packages": "インストールされたパッケージ (Post-Install)",
