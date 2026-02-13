@@ -1,7 +1,6 @@
 {
     "_comment": "OpenWrt Firmware Selector Custom English Translation File (Organized)",
-    "_version": "R7.0106.1800",
-    "_last_updated": "2026-02-13",
+    "_version": "R8.0213.2136",
 
     "_section_1": "=== Package Management ===",
     "tr-custom-packages": "Installed Packages (Post-Install)",
