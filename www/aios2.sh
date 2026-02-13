@@ -5843,7 +5843,7 @@ aios2_main() {
     
     if [ $UPDATE_STATUS -ne 0 ]; then
         echo ""
-        echo "\033[31mERROR: Package database update failed\033[0m"
+        printf "\033[31mERROR: Package database update failed\033[0m\n"
         echo "Please check your network connection and try again later."
         printf "Press [Enter] to exit. "
         read -r _
