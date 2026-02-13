@@ -5787,7 +5787,7 @@ aios2_main() {
         NATIVE_LANG_PID=$!
     fi
     
-        (
+    (
         [ -n "$WHIPTAIL_UI_URL" ] && __download_file_core "$WHIPTAIL_UI_URL" "$CONFIG_DIR/aios2-whiptail.sh"
     ) &
     UI_DL_PID=$!
@@ -5825,15 +5825,19 @@ aios2_main() {
     wait $LANG_EN_PID
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
 
-	    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
         if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
             download_language_json "${AUTO_LANGUAGE}"
         fi
     fi
 	
+    # メッセージを事前に取得
+    local PKG_DB_CHECK_MSG="$(translate 'tr-tui-checking-package-database')"
+    local PKG_UPDATE_FAILED_MSG="$(translate 'tr-tui-package-update-command-failed')"
+	
     # Update package database in background
     (
-        echo "$(translate 'tr-tui-checking-package-database')"
+        echo "$PKG_DB_CHECK_MSG"
         local update_log="$CONFIG_DIR/startup_update.log"
         
         case "$PKG_MGR" in
@@ -5861,7 +5865,7 @@ aios2_main() {
             done
         fi
         echo ""
-        printf "$(translate 'tr-tui-package-update-command-failed')\n" "$PKG_MGR update" "$UPDATE_STATUS"
+        printf "$PKG_UPDATE_FAILED_MSG\n" "$PKG_MGR update" "$UPDATE_STATUS"
         echo ""
         printf "Press [Enter] to exit. "
         read -r _
