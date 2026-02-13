@@ -316,5 +316,6 @@
     "_section_32": "=== Other ===",
     "tr-feedback-link": "Forum",
     "tr-tui-checking-package-database": "Executing package manager",
+    "tr-tui-checking-package-database": "Executing package manager",
     "tr-tui-package-update-command-failed": "Command %s failed with error code %s."
 }
