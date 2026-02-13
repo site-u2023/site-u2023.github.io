@@ -316,5 +316,6 @@
     "tr-disabled": "Disabled",
     
     "_section_32": "=== Other ===",
-    "tr-feedback-link": "Forum"
+    "tr-feedback-link": "Forum",
+    "tr-error-package-db-update-failed": "ERROR: Package database update failed"
 }
