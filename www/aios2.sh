@@ -966,7 +966,6 @@ get_language_code() {
         fi
     fi
     
-    [ -z "$AUTO_LANGUAGE" ] && AUTO_LANGUAGE=""
     echo "[DEBUG] get_language_code: Final AUTO_LANGUAGE='$AUTO_LANGUAGE'" >> "$CONFIG_DIR/debug.log"
 }
 
@@ -1065,8 +1064,8 @@ get_extended_device_info() {
     # auto-config.json ベースで全API値をパース
     parse_api_fields
     
-    # AUTO_LANGUAGE: LuCIの設定を優先（get_language_code()で既に設定済み）
-    # LuCIに設定がない、または複数言語で自動判定できない場合はAPIの言語を使用
+    # AUTO_LANGUAGE: LuCIの設定を優先
+    # auto/空 の場合のみAPIの言語を使用
     if [ -z "$AUTO_LANGUAGE" ] || [ "$AUTO_LANGUAGE" = "auto" ]; then
         AUTO_LANGUAGE="$API_LANGUAGE"
         echo "[DEBUG] Using API language: AUTO_LANGUAGE='$AUTO_LANGUAGE' (from API_LANGUAGE='$API_LANGUAGE')" >> "$CONFIG_DIR/debug.log"
@@ -5822,11 +5821,6 @@ aios2_main() {
 
 	get_extended_device_info
 
-	if [ -z "$AUTO_LANGUAGE" ] && [ -n "$API_LANGUAGE" ]; then
-		AUTO_LANGUAGE="$API_LANGUAGE"
-		echo "[DEBUG] AUTO_LANGUAGE set from API: $AUTO_LANGUAGE" >> "$CONFIG_DIR/debug.log"
-	fi
-	
     wait $LANG_EN_PID
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
 
@@ -5840,23 +5834,14 @@ aios2_main() {
     local PKG_DB_CHECK_MSG="$(translate 'tr-tui-checking-package-database')"
     local PKG_UPDATE_FAILED_MSG="$(translate 'tr-tui-package-update-command-failed')"
 	
-    # Update package database in background
-    (
-        echo "$PKG_DB_CHECK_MSG"
-        local update_log="$CONFIG_DIR/startup_update.log"
-        
-        case "$PKG_MGR" in
-            opkg)
-                opkg update > "$update_log" 2>&1
-                ;;
-            apk)
-                apk update > "$update_log" 2>&1
-                ;;
-        esac
-    ) &
-    UPDATE_PID=$!
+    # パッケージデータベース更新
+    echo "$PKG_DB_CHECK_MSG"
+    local update_log="$CONFIG_DIR/startup_update.log"
     
-    wait $UPDATE_PID
+    case "$PKG_MGR" in
+        opkg) opkg update > "$update_log" 2>&1 ;;
+        apk)  apk update > "$update_log" 2>&1 ;;
+    esac
     UPDATE_STATUS=$?
     
     if [ $UPDATE_STATUS -ne 0 ]; then
@@ -5917,16 +5902,6 @@ aios2_main() {
     echo "[DEBUG] $(date): Init complete (PKG_MGR=$PKG_MGR, PKG_CHANNEL=$PKG_CHANNEL)" >> "$CONFIG_DIR/debug.log"
     
     if ! command -v whiptail >/dev/null 2>&1; then
-        echo "Waiting for package manager configuration..."
-        wait $PKG_MGR_DL_PID
-        
-        load_package_manager_config || {
-            echo "Failed to load package manager config"
-            printf "Press [Enter] to exit. "
-            read -r _
-            return 1
-        }
-        
         echo "Installing whiptail..."
         echo "Updating package lists..."
         eval "$PKG_UPDATE_CMD" || return 1
