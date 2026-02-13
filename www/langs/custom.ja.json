@@ -315,5 +315,6 @@
     
     "_section_32": "=== その他 ===",
     "tr-feedback-link": "フォーラム",
+    "tr-tui-checking-package-database": "パッケージマネージャーが実行中",
     "tr-tui-package-update-command-failed": "コマンド %s がエラーコード %s で失敗しました。"
 }
