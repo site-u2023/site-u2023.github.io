@@ -5758,8 +5758,6 @@ aios2_main() {
     print_banner
     mkdir -p "$CONFIG_DIR"
     get_language_code
-
-	into_memory_message_definitions
 	
     if ! check_network_connectivity; then
         echo "Error: Network connectivity check failed"
@@ -5840,7 +5838,10 @@ aios2_main() {
         read -r _
         return 1
     }
-    
+
+	get_extended_device_info
+	into_memory_message_definitions
+	
     # Update package database in background
     (
         echo "$MSG_CHECKING_PKG_DB"
@@ -5856,8 +5857,6 @@ aios2_main() {
         esac
     ) &
     UPDATE_PID=$!
-    
-    get_extended_device_info
     
     wait $UPDATE_PID
     UPDATE_STATUS=$?
