@@ -5843,7 +5843,7 @@ aios2_main() {
     
     if [ $UPDATE_STATUS -ne 0 ]; then
         echo ""
-        printf "\033[31mERROR: Package database update failed\033[0m\n"
+        printf "\033[31m%s\033[0m\n" "$(translate 'tr-tui-error-package-db-update-failed')"
         echo "Please check your network connection and try again later."
         printf "Press [Enter] to exit. "
         read -r _
