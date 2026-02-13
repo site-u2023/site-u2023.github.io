@@ -5822,7 +5822,7 @@ aios2_main() {
     
     # Update package database in background
     (
-        echo "Checking package database..."
+        echo "$(translate 'tr-tui-checking-package-database')"
         local update_log="$CONFIG_DIR/startup_update.log"
         
         case "$PKG_MGR" in
