@@ -316,5 +316,6 @@
     "tr-disabled": "無効",
     
     "_section_32": "=== その他 ===",
-    "tr-feedback-link": "フォーラム"
+    "tr-feedback-link": "フォーラム",
+    "tr-error-package-db-update-failed": "エラー: パッケージデータベースの更新に失敗しました"
 }
