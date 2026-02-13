@@ -5824,6 +5824,12 @@ aios2_main() {
 
     wait $LANG_EN_PID
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
+
+	    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
+        if [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ]; then
+            download_language_json "${AUTO_LANGUAGE}"
+        fi
+    fi
 	
     # Update package database in background
     (
@@ -5931,10 +5937,6 @@ aios2_main() {
     echo "[TIME] Pre-UI processing: ${TIME_BEFORE_UI}s" >> "$CONFIG_DIR/debug.log"
     
 	wait $CUSTOMFEEDS_PID $CUSTOMSCRIPTS_PID $TEMPLATES_PID $UI_DL_PID $INIT_PKG_PID
-
-    if [ -n "$AUTO_LANGUAGE" ] && [ "$AUTO_LANGUAGE" != "en" ]; then
-        [ ! -f "$CONFIG_DIR/lang_${AUTO_LANGUAGE}.json" ] && download_language_json "${AUTO_LANGUAGE}"
-    fi
     
     CURRENT_TIME=$(cut -d' ' -f1 /proc/uptime)
     TOTAL_AUTO_TIME=$(awk "BEGIN {printf \"%.3f\", $CURRENT_TIME - $START_TIME}")
