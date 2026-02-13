@@ -5841,7 +5841,6 @@ aios2_main() {
     if [ $UPDATE_STATUS -ne 0 ]; then
         echo ""
         echo "ERROR: Package database update failed"
-        echo "Some repository mirrors may be unavailable."
         echo "Please check your network connection and try again later."
         printf "Press [Enter] to exit. "
         read -r _
