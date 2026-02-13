@@ -3952,9 +3952,11 @@ reset_state_for_next_session() {
     unset _SELECTED_PACKAGES_CACHE
     unset _SELECTED_CUSTOM_CACHE
     unset _INSTALLED_PACKAGES_CACHE
+	unset _PACKAGE_AVAILABILITY_CACHE
     _SELECTED_PACKAGES_CACHE_LOADED=0
     _SELECTED_CUSTOM_CACHE_LOADED=0
     _INSTALLED_PACKAGES_LOADED=0
+	_PACKAGE_AVAILABILITY_LOADED=0
     
     # スナップショットファイルをクリア（後でcpで上書き）
     : > "$CONFIG_DIR/packages_initial_snapshot.txt"
