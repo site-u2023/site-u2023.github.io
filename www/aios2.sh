@@ -5821,8 +5821,6 @@ aios2_main() {
     }
 
 	get_extended_device_info
-
-	export AUTO_LANGUAGE
 	
     wait $LANG_EN_PID
     [ -n "$NATIVE_LANG_PID" ] && wait $NATIVE_LANG_PID
