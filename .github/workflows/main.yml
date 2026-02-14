@@ -1,0 +1,120 @@
+name: Setup (1回だけ実行)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Extract and setup
+        run: |
+          # zipから展開
+          mkdir -p aios2-installer
+          cd aios2-installer
+          unzip ../www/file/aios2-installer.zip
+          
+          # ビルド済みファイルは削除
+          rm -f aios2.exe aios2.msi *.wixobj *.wixpdb
+          
+          cd ..
+          
+          # 自動ビルドワークフローを作成
+          mkdir -p .github/workflows
+          cat > .github/workflows/build-aios2.yml << 'EOF'
+name: Auto Build AIOS2 Installer
+
+on:
+  push:
+    paths:
+      - 'aios2-installer/**'
+      - '.github/workflows/build-aios2.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      
+      - name: Setup MinGW
+        shell: pwsh
+        run: |
+          $url = "https://github.com/brechtsanders/winlibs_mingw/releases/download/13.2.0-16.0.6-11.0.0-msvcrt-r1/winlibs-x86_64-posix-seh-gcc-13.2.0-mingw-w64msvcrt-11.0.0-r1.zip"
+          Invoke-WebRequest -Uri $url -OutFile mingw.zip
+          Expand-Archive mingw.zip -DestinationPath C:\
+          echo "C:\mingw64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      
+      - name: Setup WiX
+        run: |
+          choco install wixtoolset -y --version=3.11.2
+          echo "C:\Program Files (x86)\WiX Toolset v3.11\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      
+      - name: Build aios2.exe
+        shell: cmd
+        run: |
+          cd aios2-installer
+          windres aios2.rc -o aios2_res.o
+          gcc -o aios2.exe aios2.c aios2_res.o -mconsole -liphlpapi -lws2_32 -static
+          strip aios2.exe
+      
+      - name: Build aios2.msi
+        shell: cmd
+        run: |
+          cd aios2-installer
+          candle.exe Product.wxs -ext WixUIExtension
+          light.exe Product.wixobj -ext WixUIExtension -out aios2.msi -sval
+      
+      - name: Generate checksums
+        shell: pwsh
+        run: |
+          cd aios2-installer
+          $date = Get-Date -Format "yyyy-MM-dd HH:mm:ss UTC"
+          $commit = git rev-parse --short HEAD
+          
+          "# AIOS2 Installer - Build Info`n" | Out-File BUILD_INFO.txt
+          "Build Date: $date" | Out-File BUILD_INFO.txt -Append
+          "Commit: $commit" | Out-File BUILD_INFO.txt -Append
+          "GitHub Actions: https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID`n" | Out-File BUILD_INFO.txt -Append
+          
+          "## SHA256 Checksums`n" | Out-File BUILD_INFO.txt -Append
+          (Get-FileHash aios2.exe -Algorithm SHA256).Hash + "  aios2.exe" | Out-File BUILD_INFO.txt -Append
+          (Get-FileHash aios2.msi -Algorithm SHA256).Hash + "  aios2.msi" | Out-File BUILD_INFO.txt -Append
+      
+      - name: Create zip
+        shell: pwsh
+        run: |
+          cd aios2-installer
+          Compress-Archive -Path aios2.exe,aios2.msi,BUILD_INFO.txt,README.md,license.rtf -DestinationPath aios2-installer.zip -Force
+      
+      - name: Deploy to www/file/
+        shell: pwsh
+        run: |
+          Copy-Item aios2-installer/aios2-installer.zip www/file/ -Force
+          Copy-Item aios2-installer/BUILD_INFO.txt www/file/ -Force
+          
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          
+          git add www/file/aios2-installer.zip www/file/BUILD_INFO.txt
+          git diff --staged --quiet || git commit -m "Auto-build: Update aios2-installer.zip [skip ci]"
+          git push
+EOF
+          
+          # コミット
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add aios2-installer/ .github/workflows/build-aios2.yml
+          git commit -m "Setup auto-build system"
+          git push
