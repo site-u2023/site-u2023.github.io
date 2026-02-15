@@ -1099,7 +1099,7 @@
     {
       "id": "custom-scripts",
       "title": "Custom Script",
-      "class": "tr-customscripts-title",
+      "class": "tr-custom-scripts",
       "description": "User-defined custom scripts for system configuration",
       "guiOnly": "true",
       "items": [
