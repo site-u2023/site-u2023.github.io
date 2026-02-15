@@ -272,7 +272,7 @@
     "tr-tui-feed-jerrykuku": "jerrykukuリポジトリ",
     
     "_section_27": "=== カスタムスクリプト ===",
-    "tr-tui-custom-scripts": "カスタムスクリプト",
+    "tr-custom-scripts": "カスタムスクリプト",
     "tr-tui-customscripts-title": "カスタムスクリプト",
     "tr-tui-customscript-resource-check": "リソースチェック",
     "tr-tui-customscript-memory": "メモリ",
