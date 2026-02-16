@@ -205,8 +205,8 @@ pause >nul`
 };
 
 const DEFAULT_TERMINALS = {
-  aios2msi: {
-    name: 'aios2.msi'
+  openwrtconnect: {
+    name: 'openwrt-connect.msi'
   },
   aios2: {
     name: 'aios2.bat'
@@ -237,7 +237,7 @@ let currentServices = {};
 let currentTerminals = {};
 let currentIP = '192.168.1.1';
 let currentSelectedService = 'luci';
-let currentSelectedTerminal = 'aios2msi';
+let currentSelectedTerminal = 'openwrtconnect';
 
 // Multi-language Support
 const translations = {
@@ -268,8 +268,8 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
-        aios2msiExplanation: 'Windowsインストーラー<br>※ブラウザ警告が出た場合は「詳細を表示」＞「保持する」を選択してください',
-        aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases',
+        openwrtconnectExplanation: 'Windowsインストーラー<br>※ブラウザ警告が出た場合は「詳細を表示」＞「保持する」を選択してください',
+        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/file/openwrt-connect.README.md',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -332,8 +332,8 @@ const translations = {
         aiosExplanationLink: 'https://github.com/site-u2023/aios/blob/main/README.md',
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
-        aios2msiExplanation: 'Windows Installer<br>*If browser warning appears, click "Show more" → "Keep"',
-        aios2msiExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases',
+        openwrtconnectExplanation: 'Windows Installer<br>*If browser warning appears, click "Show more" → "Keep"',
+        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/file/openwrt-connect.README.md',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -657,11 +657,11 @@ function bindEvents() {
     if (openTerminal) {
         openTerminal.addEventListener('click', function() {
             const terminalSelector = document.getElementById('terminal-selector');
-            const terminalType = terminalSelector ? terminalSelector.value : 'aios2msi';
+            const terminalType = terminalSelector ? terminalSelector.value : 'openwrtconnect';
             
-            // aios2msi の場合は直接リンクを開く
-            if (terminalType === 'aios2msi') {
-                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/0802080100/aios2.msi', '_blank');
+            // openwrtconnect の場合は直接リンクを開く
+            if (terminalType === 'openwrtconnect') {
+                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/release/openwrt-connect.msi', '_blank');
             } else {
                 downloadBatFile(terminalType);
             }
@@ -784,7 +784,7 @@ function updateTerminalSelector() {
         terminalSelector.value = currentSelectedTerminal;
     } else {
         // 現在選択中のターミナルが存在しない場合は最初のターミナルを使用
-        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'aios2msi';
+        currentSelectedTerminal = Object.keys(currentTerminals)[0] || 'openwrtconnect';
         terminalSelector.value = currentSelectedTerminal;
         localStorage.setItem('currentSelectedTerminal', currentSelectedTerminal);
     }
@@ -801,9 +801,9 @@ function updateTerminalExplanation() {
     
     let explanationKey, linkKey;
     switch(selectedType) {
-        case 'aios2msi':
-            explanationKey = 'aios2msiExplanation';
-            linkKey = 'aios2msiExplanationLink';
+        case 'openwrtconnect':
+            explanationKey = 'openwrtconnectExplanation';
+            linkKey = 'openwrtconnectExplanationLink';
             break;
         case 'aios':
             explanationKey = 'aiosExplanation';
@@ -818,8 +818,8 @@ function updateTerminalExplanation() {
             linkKey = null;
             break;
         default:
-            explanationKey = 'aios2msiExplanation';
-            linkKey = 'aios2msiExplanationLink';
+            explanationKey = 'openwrtconnectExplanation';
+            linkKey = 'openwrtconnectExplanationLink';
     }
     
     const text = getText(explanationKey);
