@@ -1,4 +1,4 @@
-# aios2 インストーラー
+# OpenWrt Connect インストーラー
 
 ## このインストーラーでできること
 
@@ -18,7 +18,7 @@ Windows PC から OpenWrt ルーターへ SSH 接続し、自動設定を行う�
 
 ## インストール方法
 
-1. `aios2.msi` をダブルクリック
+1. `openwrt-connect.msi` をダブルクリック
 2. インストールウィザードに従う
 3. 必要な機能を選択
 4. インストール完了
@@ -39,6 +39,13 @@ Windows PC から OpenWrt ルーターへ SSH 接続し、自動設定を行う�
 3. root パスワードを入力
 4. コマンドラインで操作できます
 
+## 主な特徴
+
+- **IP アドレス自動検出**: デフォルトゲートウェイから OpenWrt ルーターを自動検出
+- **SSH 鍵認証自動設定**: 初回接続時にSSH鍵を生成し、パスワード入力は一度だけ
+- **dropbear / openssh-server 両対応**: OpenWrt の SSH サーバー構成を問わず動作
+- **コマンド永続化**: aios2 / aios をルーター側に自動インストール
+
 ## システム要件
 
 - Windows 10/11（64bit）
@@ -48,15 +55,15 @@ Windows PC から OpenWrt ルーターへ SSH 接続し、自動設定を行う�
 ## インストール先
 
 ```
-C:\Program Files\AIOS2\
-  └─ aios2.exe
+C:\Program Files\OpenWrt Connect\
+  ├─ openwrt-connect.exe
+  └─ openwrt-connect.conf
 ```
 
 ## アンインストール
 
-Windows の「設定」→「アプリ」→「aios2」から削除できます。
+Windows の「設定」→「アプリ」→「OpenWrt Connect」から削除できます。
 
 ---
-
-**製作**: siteU  
-**ライセンス**: 提供されるまま（無保証）
+**製作**: siteU
+**ライセンス**: MIT
