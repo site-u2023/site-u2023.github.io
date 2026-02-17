@@ -292,6 +292,25 @@ EOF
         sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
         sed -i 's/json_add_boolean connlimit_ports 1/json_add_string connlimit_ports "1"/' "$MAPSH"
     }
+    SEC=firewall
+    SET block_quic_ipoe=rule
+    SET block_quic_ipoe.name='Block-QUIC-IPoE'
+    SET block_quic_ipoe.proto='udp'
+    SET block_quic_ipoe.dest_port='443'
+    SET block_quic_ipoe.src='lan'
+    SET block_quic_ipoe.dest='wan'
+    SET block_quic_ipoe.target='DROP'
+    SET block_quic_ipoe.family='ipv4'
+    SET block_quic_ipoe.enabled='1'
+    sed -i '/^}$/,$!{/proto_map_setup/,/^}/{/^}/i\
+\t# conntrack tuning for MAP-E port conservation\
+\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=180 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=180 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
+}}' "$MAPSH"
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
@@ -334,24 +353,6 @@ EOF
     SET @prometheus-node-exporter-lua[0]=prometheus-node-exporter-lua
     SET @prometheus-node-exporter-lua[0].listen_address='0.0.0.0'
     SET @prometheus-node-exporter-lua[0].listen_port='9100'
-}
-[ -n "${samba4}" ] && {
-    SEC=samba4
-    SET @samba[0]=samba
-    SET @samba[0].workgroup='WORKGROUP'
-    SET @samba[0].charset='UTF-8'
-    SET @samba[0].description='Samba on OpenWRT'
-    SET @samba[0].enable_extra_tuning='1'
-    SET @samba[0].interface='lan'
-    SET sambashare=sambashare
-    SET sambashare.name="${NAS}"
-    SET sambashare.path="${MNT}"
-    SET sambashare.read_only='no'
-    SET sambashare.force_root='1'
-    SET sambashare.guest_ok='yes'
-    SET sambashare.inherit_owner='yes'
-    SET sambashare.create_mask='0777'
-    SET sambashare.dir_mask='0777'
 }
 [ -n "${usb_rndis}" ] && {
     printf '%s\n%s\n' "rndis_host" "cdc_ether" > /etc/modules.d/99-usb-net
