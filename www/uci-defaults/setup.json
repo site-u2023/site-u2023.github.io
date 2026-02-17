@@ -549,15 +549,14 @@
             "auto": [
               "peeraddr", "ipaddr", "ip4prefixlen",
               "ip6prefix", "ip6prefixlen", "ealen",
-              "psidlen", "offset", "ip6prefix_gua"
+              "psidlen", "offset", "ip6prefix_gua",
+              "ip6prefix_static"
             ],
-            "dhcp": [],
-            "pppoe": ["pppoe_username", "pppoe_password"],
-            "dslite": ["dslite_peeraddr"],
             "mape": [
               "peeraddr", "ipaddr", "ip4prefixlen",
               "ip6prefix", "ip6prefixlen", "ealen",
-              "psidlen", "offset", "ip6prefix_gua"
+              "psidlen", "offset", "ip6prefix_gua",
+              "ip6prefix_static"
             ],
             "ap": ["ipaddr", "gateway"],
             "disabled": []
