@@ -1373,7 +1373,7 @@ function getConnectionTypeFromApi(apiInfo) {
         
         const value = CustomUtils.getNestedValue(apiInfo, checkPath);
         if (value !== null && value !== undefined && value !== '') {
-            return typeConfig.returnValue;
+            return typeName;
         }
     }
     
