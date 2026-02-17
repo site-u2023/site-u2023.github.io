@@ -10,8 +10,6 @@ AP="ap"
 AP6="ap6"
 CONF="/etc/config"
 INIT="/etc/init.d"
-NAS="openwrt"
-MNT="/mnt/sda"
 GET() { uci -q get "$@"; }
 SET() { uci -q set "${SEC}${SEC:+.}$*"; }
 DEL() { uci -q delete "${SEC}${SEC:+.}$*"; }
