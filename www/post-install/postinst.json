@@ -676,8 +676,7 @@
         {
           "id": "luci-app-samba4",
           "name": "luci-app-samba4",
-          "dependencies": ["wsdd2"],
-          "enableVar": "samba4"
+          "dependencies": ["wsdd2"]
         },
         {
           "id": "wsdd2",
