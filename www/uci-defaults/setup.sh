@@ -186,12 +186,20 @@ firewall_wan() {
     SET ${ZONE}.masq='1'
     SET ${ZONE}.mtu_fix='1'
 }
+dscp_zero() {
+    mkdir -p /usr/share/nftables.d/chain-post/mangle_postrouting
+    cat > /usr/share/nftables.d/chain-post/mangle_postrouting/90-dscp-zero.nft << 'EOF'
+ip dscp set cs0
+ip6 dscp set cs0
+EOF
+}
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
     SEC=network
     RESET
     SET wan.proto='pppoe'
     SET wan.username="${pppoe_username}"
     [ -n "${pppoe_password}" ] && SET wan.password="${pppoe_password}"
+    dscp_zero
 }
 { [ "${connection_type}" = "dslite" ] || { [ "${connection_type}" = "auto" ] && [ "${connection_auto}" = "dslite" ]; }; } && [ -n "${dslite_peeraddr}" ] && {
     SEC=network
@@ -210,6 +218,7 @@ firewall_wan() {
     SET ${DSL}.encaplimit='ignore'
     dhcp_relay "${DSL6}"
     firewall_wan "${DSL}" "${DSL6}"
+    dscp_zero
 }
 { [ "${connection_type}" = "mape" ] || { [ "${connection_type}" = "auto" ] && [ "${connection_auto}" = "mape" ]; }; } && [ -n "${peeraddr}" ] && {
     SEC=network
@@ -243,6 +252,7 @@ firewall_wan() {
     HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
     [ "$HASH" = "$HASH1" ] && {
         uci set network.mape.legacymap='1'
+        dscp_zero
         cp "$MAPSH" "$MAPSH".old
         sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
         sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
