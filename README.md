@@ -23,24 +23,25 @@ C([**Console Tool**<br/>TUI Version])
 D([**Network Auto-Config API**])
 F([**Shared Resources**])
 E([**Official ASU Server**])
-G1([**User Device**<br/>Flash<br/>・Post-Install<br/>・UCI-defaults])
-G2([**User Device**<br/>Install<br/>Config])
-
+H([**OpenWrt Connect**<br/>Windows SSH Tool])
+G1([**User Device**<br/>Flash / Post-Install / UCI-defaults])
+G2([**User Device**<br/>Install / Config])
 A --> B
 A --> C
 B --> D
 C --> D
 D --> F
 F --> E
+F --> H
 E --> G1
-F --> G2
-
+H --> G2
 style A fill:#90caf9,color:#000
 style B fill:#90caf9,color:#000
 style C fill:#90caf9,color:#000
 style D fill:#90caf9,color:#000
 style E fill:#ffccbc,color:#000
 style F fill:#90caf9,color:#000
+style H fill:#ffccbc,color:#000
 style G1 fill:#c5e1a5,color:#000
 style G2 fill:#c5e1a5,color:#000
 ```
