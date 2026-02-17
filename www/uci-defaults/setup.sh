@@ -253,8 +253,7 @@ EOF
     SET block_quic_ipoe.target='DROP'
     SET block_quic_ipoe.family='ipv4'
     SET block_quic_ipoe.enabled='1'
-    MAPSH="/lib/netifd/proto/map.sh"
-    [ "$(sha1sum "$MAPSH" | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
+    [ "$(sha1sum /lib/netifd/proto/map.sh | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
         uci set network.mape.legacymap='1'
         dscp_zero
         cp "$MAPSH" "$MAPSH".old
