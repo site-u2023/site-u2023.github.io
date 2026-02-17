@@ -1308,8 +1308,6 @@ function evaluateInitialPackages() {
         let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
             effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
-            const typeKeyMap = { 'MAP-E': 'mape', 'DS-Lite': 'dslite', 'DHCP/PPPoE': 'dhcp' };
-            effectiveConnectionType = typeKeyMap[effectiveConnectionType] || effectiveConnectionType;
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
@@ -1505,8 +1503,6 @@ function updatePackagesForRadioGroup(variableName) {
         let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
             effectiveConnectionType = getConnectionTypeFromApi(state.apiInfo);
-            const typeKeyMap = { 'MAP-E': 'mape', 'DS-Lite': 'dslite', 'DHCP/PPPoE': 'dhcp' };
-            effectiveConnectionType = typeKeyMap[effectiveConnectionType] || effectiveConnectionType;
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
