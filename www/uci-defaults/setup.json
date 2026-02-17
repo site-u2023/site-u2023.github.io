@@ -221,7 +221,9 @@
                     "ealen",
                     "psidlen",
                     "offset",
-                    "ip6prefix_gua"
+                    "ip6prefix_gua",
+                    "ip6prefix_static",
+                    "dslite_peeraddr"
                 ]
             },
             "net_optimizer": {
