@@ -143,6 +143,7 @@ SET @system[0].notes="site-u.pages.dev"
         SET mlo.key="${wlan_password}"
         SET mlo.ieee80211w='2'
         SET mlo.mlo='1'
+        SET mlo.network='lan'
         for r in $radios; do ADDLIST mlo.device="$r"; done
     }
     [ "${wifi_mode}" = "usteer" ] && {
