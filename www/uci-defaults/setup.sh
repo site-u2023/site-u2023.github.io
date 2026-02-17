@@ -247,6 +247,15 @@ EOF
     [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
+    SET block_quic_ipoe=rule
+    SET block_quic_ipoe.name='Block-QUIC-IPoE'
+    SET block_quic_ipoe.proto='udp'
+    SET block_quic_ipoe.dest_port='443'
+    SET block_quic_ipoe.src='lan'
+    SET block_quic_ipoe.dest='wan'
+    SET block_quic_ipoe.target='DROP'
+    SET block_quic_ipoe.family='ipv4'
+    SET block_quic_ipoe.enabled='1'
     MAPSH="/lib/netifd/proto/map.sh"
     HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
     HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
@@ -293,16 +302,6 @@ EOF
         sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
         sed -i 's/json_add_boolean connlimit_ports 1/json_add_string connlimit_ports "1"/' "$MAPSH"
     }
-    SEC=firewall
-    SET block_quic_ipoe=rule
-    SET block_quic_ipoe.name='Block-QUIC-IPoE'
-    SET block_quic_ipoe.proto='udp'
-    SET block_quic_ipoe.dest_port='443'
-    SET block_quic_ipoe.src='lan'
-    SET block_quic_ipoe.dest='wan'
-    SET block_quic_ipoe.target='DROP'
-    SET block_quic_ipoe.family='ipv4'
-    SET block_quic_ipoe.enabled='1'
     sed -i '/^}$/,$!{/proto_map_setup/,/^}/{/^}/i\
 \t# conntrack tuning for MAP-E port conservation\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
