@@ -24,7 +24,6 @@ RESET() {
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
-DATE="$(date '+%Y-%m-%d %H:%M')"
 LAN="$(GET network.lan.ifname 2>&- || GET network.lan.device 2>&-)"
 WAN="$(GET network.wan.ifname 2>&- || GET network.wan.device 2>&-)"
 ZONE="$(uci show firewall | grep "=zone" | grep "network=.*wan" | cut -d. -f2 | cut -d= -f1 | head -n1)"
@@ -33,11 +32,9 @@ MEM=$(awk '/MemTotal/{print int($2/1024)}' /proc/meminfo)
 FLASH=$(df -k / | awk 'NR==2 {print int($4/1024)}')
 exec >/etc/uci-defaults/setup.log 2>&1
 SEC=system
-SET @system[0].description="${DATE}"
-SET @system[0].notes="site-u.pages.dev"
+SET @system[0].description="$(date '+%Y-%m-%d %H:%M')"
 [ -n "${enable_log}" ] && {
     SEC=system
-    SET @system[0].log_size='32'
     SET @system[0].conloglevel='1'
     SET @system[0].cronloglevel='9'
     SEC=dhcp
