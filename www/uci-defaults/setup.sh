@@ -20,6 +20,7 @@ RESET() {
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
     [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
+    [ "$SEC" = "network" ] && { SEC=firewall; DEL block_quic_ipoe; SEC=network; }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
