@@ -257,10 +257,7 @@ EOF
     SET block_quic_ipoe.family='ipv4'
     SET block_quic_ipoe.enabled='1'
     MAPSH="/lib/netifd/proto/map.sh"
-    HASH0="431ad78fc976b70c53cdc5adc4e09b3eb91fd97f"
-    HASH1="7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4"
-    HASH="$(sha1sum "$MAPSH" | awk '{print $1}')"
-    [ "$HASH" = "$HASH1" ] && {
+    [ "$(sha1sum "$MAPSH" | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
         uci set network.mape.legacymap='1'
         dscp_zero
         cp "$MAPSH" "$MAPSH".old
@@ -284,7 +281,7 @@ EOF
 \t\tfor x in $(seq $startport $endport); do\
 \t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
 \t\t\t\tallports="$allports $portcount : $x , "\
-\t\t\t\tportcount=`expr $portcount + 1`\
+\t\t\t\tportcount=`expr $portcount + 1\`\
 \t\t\tfi\
 \t\tdone\
 \t    done\
@@ -296,13 +293,7 @@ EOF
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
 \t    done\
 \t  fi' "$MAPSH"
-    }
-    [ "$HASH" = "$HASH0" ] && {
-        cp "$MAPSH" "$MAPSH".old
-        sed -i 's/#export LEGACY=1/export LEGACY=1/' "$MAPSH"
-        sed -i 's/json_add_boolean connlimit_ports 1/json_add_string connlimit_ports "1"/' "$MAPSH"
-    }
-    sed -i '/^}$/,$!{/proto_map_setup/,/^}/{/^}/i\
+        sed -i '/^}$/,$!{/proto_map_setup/,/^}/{/^}/i\
 \t# conntrack tuning for MAP-E port conservation\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
@@ -311,6 +302,7 @@ EOF
 \tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
 }}' "$MAPSH"
+    }
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
