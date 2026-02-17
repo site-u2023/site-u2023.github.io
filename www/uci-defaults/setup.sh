@@ -137,6 +137,7 @@ SET @system[0].notes="site-u.pages.dev"
     done
     [ "${wifi_mode}" = "mlo" ] && {
         SET mlo=wifi-iface
+        SET mlo.mode='ap'
         SET mlo.ssid="${wlan_ssid}"
         SET mlo.encryption='sae'
         SET mlo.key="${wlan_password}"
