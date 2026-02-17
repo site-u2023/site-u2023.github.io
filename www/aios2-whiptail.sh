@@ -954,6 +954,64 @@ process_items() {
                     return $RETURN_BACK
                 fi
                 
+                # lookupTrigger の処理（TUI版 API自動フェッチ）
+                local lookup_trigger
+                lookup_trigger=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[*].items[@.id='${item_id}'].lookupTrigger" 2>/dev/null | head -1)
+                [ -z "$lookup_trigger" ] && lookup_trigger=$(jsonfilter -i "$SETUP_JSON" -e "@.categories[*].items[@.id='${item_id}'].lookupTrigger" 2>/dev/null | head -1)
+                
+                if [ "$lookup_trigger" = "true" ] && [ -n "$value" ]; then
+                    echo "[DEBUG] lookupTrigger: fetching MAP-E params for IPv6=$value" >> "$CONFIG_DIR/debug.log"
+                    
+                    local lookup_ipv6
+                    lookup_ipv6=$(echo "$value" | sed 's|/[0-9]*$||')
+                    local lookup_url="${AUTO_CONFIG_API_URL}?ipv6=${lookup_ipv6}"
+                    if wget -q -O "$AUTO_CONFIG_JSON" "$lookup_url" 2>/dev/null && \
+                       jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
+                        
+                        echo "[DEBUG] lookupTrigger: API success" >> "$CONFIG_DIR/debug.log"
+                        parse_api_fields
+                        
+                        # targetFields の各フィールドに apiSource の値をセット
+                        local tf_idx=0
+                        local target_field_id target_var target_api_src target_val
+                        while true; do
+                            target_field_id=$(jsonfilter -i "$SETUP_JSON" \
+                                -e "@.categories[*].items[*].items[@.id='${item_id}'].targetFields[${tf_idx}]" \
+                                2>/dev/null | head -1)
+                            [ -z "$target_field_id" ] && break
+                            
+                            target_var=$(get_setup_item_variable "$target_field_id")
+                            target_api_src=$(get_setup_item_api_source "$target_field_id")
+                            
+                            if [ -n "$target_var" ] && [ -n "$target_api_src" ]; then
+                                target_val=$(get_api_value "$target_api_src")
+                                if [ -n "$target_val" ]; then
+                                    set_var "$target_var" "$target_val"
+                                    echo "[DEBUG] lookupTrigger: set $target_var='$target_val'" >> "$CONFIG_DIR/debug.log"
+                                fi
+                            fi
+                            
+                            tf_idx=$((tf_idx + 1))
+                        done
+                        
+                        # mape_type の Static/PD 自動判定
+                        local static_prefix
+                        static_prefix=$(get_api_value "mape.ipv6Prefix_static")
+                        if [ -n "$static_prefix" ]; then
+                            set_var "mape_type" "static"
+                            set_var "ip6prefix_static" "$static_prefix"
+                            echo "[DEBUG] lookupTrigger: mape_type=static, ip6prefix_static=$static_prefix" >> "$CONFIG_DIR/debug.log"
+                        else
+                            set_var "mape_type" "pd"
+                            echo "[DEBUG] lookupTrigger: mape_type=pd" >> "$CONFIG_DIR/debug.log"
+                        fi
+                        
+                    else
+                        echo "[DEBUG] lookupTrigger: API fetch failed for $value" >> "$CONFIG_DIR/debug.log"
+                        show_msgbox "$item_breadcrumb" "MAP-E lookup failed for IPv6: ${value}"
+                    fi
+                fi
+                
                 echo "[DEBUG] Input received but not saved (no variable): '$value'" >> "$CONFIG_DIR/debug.log"
                 return $RETURN_STAY
             fi
