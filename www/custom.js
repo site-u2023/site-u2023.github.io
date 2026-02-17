@@ -1379,7 +1379,7 @@ function getConnectionTypeFromApi(apiInfo) {
         }
     }
     
-    return detection.default;
+    return typeName;
 }
 
 function handleRadioChange(e) {
