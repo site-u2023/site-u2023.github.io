@@ -287,7 +287,7 @@ EOF
 \t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
 \t    done\
 \t  fi' "$MAPSH"
-        sed -i '/^}$/,$!{/proto_map_setup/,/^}/{/^}/i\
+        sed -i '/ubus call network add_dynamic/,/^}/{/^}/i\
 \t# conntrack tuning for MAP-E port conservation\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
@@ -295,7 +295,7 @@ EOF
 \tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=180 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
-}}' "$MAPSH"
+}' "$MAPSH"
         sed -i '/proto_map_teardown/,/proto_map_init_config/{/^\tesac$/a\
 \t[ -x /sbin/fw4 ] \&\& nft delete table inet mape 2>/dev/null
 }' "$MAPSH"
