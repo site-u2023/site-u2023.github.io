@@ -296,6 +296,9 @@ EOF
 \tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
 }}' "$MAPSH"
+        sed -i '/proto_map_teardown/,/proto_map_init_config/{/^\tesac$/a\
+\t[ -x /sbin/fw4 ] \&\& nft delete table inet mape 2>/dev/null
+}' "$MAPSH"
     }
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
