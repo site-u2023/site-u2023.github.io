@@ -1885,7 +1885,7 @@ enable_installed_services() {
     done < "$SETUP_VARS"
     
     if [ -n "$services_to_enable" ]; then
-        if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart -question')\n\n$services_to_enable"; then
+        if show_yesno "$breadcrumb" "$(translate 'tr-tui-restart-question')\n\n$services_to_enable"; then
             for svc in $services_to_enable; do
                 /etc/init.d/$svc enable 2>/dev/null
                 /etc/init.d/$svc start 2>/dev/null
