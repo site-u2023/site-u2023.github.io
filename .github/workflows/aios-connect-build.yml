@@ -15,7 +15,7 @@ jobs:
       - name: Copy aios files
         shell: cmd
         run: |
-          copy /Y aios-connect\aios-connect.conf build\aios-connect.conf
+          copy /Y aios-connect\aios-connect.conf build\openwrt-connect.conf
           copy /Y aios-connect\aios.ico build\aios.ico
           copy /Y aios-connect\aios2.ico build\aios2.ico
 
