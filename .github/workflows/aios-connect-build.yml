@@ -1,17 +1,15 @@
 name: Build (aios)
-
 on:
   workflow_dispatch:
-
 jobs:
   build:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-
+        with:
+          ref: dev/v2
       - name: Clone openwrt-connect
-        run: git clone https://github.com/site-u2023/openwrt-connect.git build
-
+        run: git clone --branch dev/v2 https://github.com/site-u2023/openwrt-connect.git build
       - name: Copy aios files
         shell: cmd
         run: |
@@ -21,17 +19,14 @@ jobs:
           copy /Y aios-connect\aios2.ico build\aios2.ico
           copy /Y aios-connect\aios2.sh build\aios2.sh
           copy /Y aios-connect\aios.sh build\aios.sh
-
       - name: Build
         shell: cmd
         working-directory: build
         run: openwrt-connect-build.bat
-
       - name: Rename MSI
         shell: cmd
         working-directory: build
         run: move /Y openwrt-connect.msi aios-connect.msi
-
       - name: Upload to release
         run: gh release upload release build\aios-connect.msi --clobber --repo site-u2023/site-u2023.github.io
         env:
