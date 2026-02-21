@@ -13,8 +13,8 @@ jobs:
       - name: Copy aios files
         shell: cmd
         run: |
-          copy /Y aios-connect\aios-connect.ini build\aios-connect.ini
-          copy /Y aios-connect\aios-connect.conf build\aios-connect.conf
+          copy /Y aios-connect\aios-connect.ini build\openwrt-connect.ini
+          copy /Y aios-connect\aios-connect.conf build\openwrt-connect.conf
           copy /Y aios-connect\aios.ico build\aios.ico
           copy /Y aios-connect\aios2.ico build\aios2.ico
           copy /Y aios-connect\aios2.sh build\aios2.sh
@@ -27,7 +27,8 @@ jobs:
         shell: cmd
         working-directory: build
         run: move /Y openwrt-connect.msi aios-connect.msi
-      - name: Upload to release
-        run: gh release upload release build\aios-connect.msi --clobber --repo site-u2023/site-u2023.github.io
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aios-connect
+          path: build\aios-connect.msi
