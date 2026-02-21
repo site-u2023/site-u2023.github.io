@@ -15,16 +15,21 @@ jobs:
       - name: Copy aios files
         shell: cmd
         run: |
-          copy /Y openwrt-connect\openwrt-connect.conf build\openwrt-connect.conf
-          copy /Y openwrt-connect\aios.ico build\aios.ico
-          copy /Y openwrt-connect\aios2.ico build\aios2.ico
+          copy /Y aios-connect\aios-connect.conf build\aios-connect.conf
+          copy /Y aios-connect\aios.ico build\aios.ico
+          copy /Y aios-connect\aios2.ico build\aios2.ico
 
       - name: Build
         shell: cmd
         working-directory: build
         run: openwrt-connect-build.bat
 
+      - name: Rename MSI
+        shell: cmd
+        working-directory: build
+        run: move /Y openwrt-connect.msi aios-connect.msi
+
       - name: Upload to release
-        run: gh release upload release build\openwrt-connect.msi --clobber --repo site-u2023/site-u2023.github.io
+        run: gh release upload release build\aios-connect.msi --clobber --repo site-u2023/site-u2023.github.io
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
