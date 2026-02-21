@@ -1,4 +1,4 @@
-name: Build
+name: Build (aios)
 
 on:
   workflow_dispatch:
@@ -9,11 +9,28 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone openwrt-connect
+        run: git clone --branch dev/v2 https://github.com/site-u2023/openwrt-connect.git build
+
+      - name: Copy aios files
+        shell: cmd
+        run: |
+          copy /Y aios-connect\aios-connect.conf build\aios-connect.conf
+          copy /Y aios-connect\aios.ico build\aios.ico
+          copy /Y aios-connect\aios2.ico build\aios2.ico
+
       - name: Build
         shell: cmd
+        working-directory: build
         run: openwrt-connect-build.bat
 
-      - name: Upload to release
-        run: gh release upload v2.0.0 openwrt-connect.msi --clobber
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rename MSI
+        shell: cmd
+        working-directory: build
+        run: move /Y openwrt-connect.msi aios-connect.msi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: aios-connect
+          path: build\aios-connect.msi
