@@ -518,6 +518,31 @@
       "description": "USB storage kernel module and filesystem tools",
       "packages": [
         {
+          "id": "lsblk",
+          "name": "lsblk",
+          "dependencies": ["blkid", "fdisk", "cfdisk", "sfdisk"]
+        },
+        {
+          "id": "blkid",
+          "name": "blkid",
+          "hidden": "true"
+        },
+        {
+          "id": "fdisk",
+          "name": "fdisk",
+          "hidden": "true"
+        },
+        {
+          "id": "cfdisk",
+          "name": "cfdisk",
+          "hidden": "true"
+        },
+        {
+          "id": "sfdisk",
+          "name": "sfdisk",
+          "hidden": "true"
+        },
+        {
           "id": "kmod-usb-storage-uas",
           "name": "kmod-usb-storage-uas",
           "dependencies": [
