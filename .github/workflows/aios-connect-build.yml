@@ -8,6 +8,8 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: dev/v2
 
       - name: Clone openwrt-connect
         run: git clone --branch dev/v2 https://github.com/site-u2023/openwrt-connect.git build
