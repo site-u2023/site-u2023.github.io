@@ -242,6 +242,7 @@ EOF
     [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
+    MAPSH="/lib/netifd/proto/map.sh"
     SET block_quic_ipoe=rule
     SET block_quic_ipoe.name='Block-QUIC-IPoE'
     SET block_quic_ipoe.proto='udp'
