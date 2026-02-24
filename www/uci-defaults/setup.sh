@@ -18,7 +18,7 @@ RESET() {
     [ -f "/rom${CONF}/${SEC}" ] && cp -f "/rom${CONF}/${SEC}" "${CONF}/${SEC}" && return
     [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
-    [ "$SEC" = "network" ] && { SEC=firewall; DEL block_quic_ipoe; SEC=network; }
+    [ "$SEC" = "network" ] && { SEC=firewall; DEL block_quic_mape; SEC=network; }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
@@ -183,10 +183,15 @@ firewall_wan() {
     SET ${ZONE}.mtu_fix='1'
 }
 dscp_zero() {
-    mkdir -p /usr/share/nftables.d/chain-post/mangle_postrouting
-    cat > /usr/share/nftables.d/chain-post/mangle_postrouting/90-dscp-zero.nft << 'EOF'
-ip dscp set cs0
-ip6 dscp set cs0
+    mkdir -p /etc/nftables.d
+    cat > /etc/nftables.d/10-dscp-zero.nft << 'EOF'
+table inet dscp_zero {
+    chain postrouting {
+        type filter hook postrouting priority mangle; policy accept;
+        ip dscp set cs0 comment "dscp-reset-v4"
+        ip6 dscp set cs0 comment "dscp-reset-v6"
+    }
+}
 EOF
 }
 [ "${connection_type}" = "pppoe" ] && [ -n "${pppoe_username}" ] && {
@@ -243,15 +248,15 @@ EOF
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     MAPSH="/lib/netifd/proto/map.sh"
-    SET block_quic_ipoe=rule
-    SET block_quic_ipoe.name='Block-QUIC-IPoE'
-    SET block_quic_ipoe.proto='udp'
-    SET block_quic_ipoe.dest_port='443'
-    SET block_quic_ipoe.src='lan'
-    SET block_quic_ipoe.dest='wan'
-    SET block_quic_ipoe.target='DROP'
-    SET block_quic_ipoe.family='ipv4'
-    SET block_quic_ipoe.enabled='1'
+    SET block_quic_mape=rule
+    SET block_quic_mape.name='Block-QUIC-MAP-E'
+    SET block_quic_mape.proto='udp'
+    SET block_quic_mape.dest_port='443'
+    SET block_quic_mape.src='lan'
+    SET block_quic_mape.dest='wan'
+    SET block_quic_mape.target='DROP'
+    SET block_quic_mape.family='ipv4'
+    SET block_quic_mape.enabled='1'
     [ "$(sha1sum /lib/netifd/proto/map.sh | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
         uci set network.mape.legacymap='1'
         dscp_zero
