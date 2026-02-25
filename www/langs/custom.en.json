@@ -284,8 +284,7 @@
     "tr-tui-customscript-resource-ok": "Installation possible",
     "tr-tui-customscript-resource-ng": "Insufficient resources",
     "tr-tui-customscript-force-install-question": "Force installation?",
-    "tr-tui-customscript-pkgdiff": "Package Diff",
-    "tr-tui-customscript-pkgdiff-run": "Run Package Diff",
+    "tr-tui-customscript-pkgdiff": "Added Packages",
     
     "_section_28": "=== AdGuard Home ===",
     "tr-tui-customscript-adguardhome": "AdGuard Home",
