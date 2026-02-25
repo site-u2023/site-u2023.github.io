@@ -191,6 +191,22 @@
           "requireInstalled": "true"
         }
       ]
+    },
+    {
+      "id": "pkgdiff",
+      "name": "Package Diff",
+      "class": "tr-tui-customscript-pkgdiff",
+      "description": "Compare installed packages against profiles.json baseline",
+      "script": "pkg-diff.sh",
+      "options": [
+        {
+          "id": "run",
+          "label": "tr-tui-customscript-pkgdiff-run",
+          "skipInputs": "true",
+          "requiresConfirmation": "false",
+          "envVars": {}
+        }
+      ]
     }
   ]
 }
