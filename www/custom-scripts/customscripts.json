@@ -198,6 +198,8 @@
       "class": "tr-tui-customscript-pkgdiff",
       "description": "Compare installed packages against profiles.json baseline",
       "script": "pkg-diff.sh",
+      "runImmediately": true,
+      "resultFile": "/tmp/aios2/pkg-diff-result.txt",
       "options": [
         {
           "id": "run",
