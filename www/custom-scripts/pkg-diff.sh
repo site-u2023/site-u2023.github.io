@@ -241,13 +241,11 @@ pkgdiff_main() {
     echo ""
 
     # ---- diff計算 ----
-    # added  : current にあって baseline にない = ユーザー追加分
-    # removed: baseline にあって current にない = 削除分
-    # comm コマンドは BusyBox に含まれないため awk で代替
-    awk 'NR==FNR { base[$0]=1; next } !base[$0]' \
-        "$baseline_file" "$current_file" > "$added_file"
-    awk 'NR==FNR { cur[$0]=1; next } !cur[$0]' \
-        "$current_file" "$baseline_file" > "$removed_file"
+    # comm -23: current にあって baseline にないもの = 追加分
+    # comm -13: baseline にあって current にないもの = 削除分
+    # ※ 両ファイルはすでに LC_ALL=C sort 済み
+    comm -23 "$current_file" "$baseline_file" > "$added_file"
+    comm -13 "$current_file" "$baseline_file" > "$removed_file"
 
     local added_count removed_count
     added_count=$(wc -l < "$added_file" | tr -d ' ')
