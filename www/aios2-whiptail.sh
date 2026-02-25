@@ -240,8 +240,31 @@ EOF
         fi
         
         if [ -n "$choice" ]; then
-            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
-            custom_script_options "$selected_script" "$breadcrumb"
+            selected_script=$(echo "$configured_scripts" | sed -n "${choice}p")
+
+            local run_immediately result_file script_file script_url template_path
+            run_immediately=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" \
+                -e "@.scripts[@.id='$selected_script'].runImmediately" 2>/dev/null | head -1)
+
+            if [ "$run_immediately" = "true" ]; then
+                script_file=$(get_customscript_file "$selected_script")
+                result_file=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" \
+                    -e "@.scripts[@.id='$selected_script'].resultFile" 2>/dev/null | head -1)
+                script_url="${BASE_URL}/custom-scripts/${script_file}"
+                template_path="$CONFIG_DIR/tpl_customscript_${selected_script}.sh"
+
+                if ! fetch_cached_template "$script_url" "$template_path"; then
+                    show_msgbox "$breadcrumb" "Error: Failed to download script"
+                else
+                    clear
+                    sh "$template_path"
+                    if [ -n "$result_file" ] && [ -f "$result_file" ]; then
+                        show_textbox "$breadcrumb" "$result_file"
+                    fi
+                fi
+            else
+                custom_script_options "$selected_script" "$breadcrumb"
+            fi
         fi
     done
 }
