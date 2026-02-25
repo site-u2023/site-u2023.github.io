@@ -284,8 +284,7 @@
     "tr-tui-customscript-resource-ok": "インストール可能です",
     "tr-tui-customscript-resource-ng": "リソースが不足しています",
     "tr-tui-customscript-force-install-question": "強制インストールしますか？",
-    "tr-tui-customscript-pkgdiff": "パッケージ差分",
-    "tr-tui-customscript-pkgdiff-run": "パッケージ差分を実行",
+    "tr-tui-customscript-pkgdiff": "追加パッケージ一覧",
     
     "_section_28": "=== AdGuard Home ===",
     "tr-tui-customscript-adguardhome": "アドガードホーム",
