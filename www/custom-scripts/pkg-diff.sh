@@ -26,6 +26,9 @@ BASE_TMP_DIR="/tmp"
 OUTPUT_DIR="$BASE_TMP_DIR/aios2"
 OUTPUT_FILE="$OUTPUT_DIR/pkg-diff-result.txt"
 
+# ビルドシステムがハードコートで追加するパッケージ (profiles.json に含まれない)
+EXTRA_BASELINE="luci"
+
 # =============================================================================
 # Device Information Detection
 # Self-contained: reads /etc/openwrt_release and /etc/board.json directly
@@ -39,7 +42,6 @@ _pkgdiff_detect_device() {
 
     # /etc/openwrt_release から version と target を取得
     if [ -f /etc/openwrt_release ]; then
-        # . でsourceすると既存変数を上書きするため、grepで個別取得
         _PKGDIFF_VERSION=$(grep '^DISTRIB_RELEASE=' /etc/openwrt_release | cut -d"'" -f2 | cut -d'"' -f2)
         _PKGDIFF_TARGET=$(grep '^DISTRIB_TARGET=' /etc/openwrt_release | cut -d"'" -f2 | cut -d'"' -f2)
     fi
@@ -95,7 +97,7 @@ _pkgdiff_profiles_url() {
 # =============================================================================
 # Fetch profiles.json and compute baseline package list
 #
-# Baseline = default_packages + device_packages
+# Baseline = default_packages + device_packages + EXTRA_BASELINE
 # Note: device_packages entries starting with "-" REMOVE packages from
 #       default_packages (e.g., "-wpad-basic-mbedtls" in GL.iNet profiles)
 #
@@ -103,11 +105,10 @@ _pkgdiff_profiles_url() {
 # =============================================================================
 _pkgdiff_get_baseline() {
     local url tmp_json
-
     url=$(_pkgdiff_profiles_url)
-    tmp_json="/tmp/pkgdiff_profiles_$$.json"
+    tmp_json="$BASE_TMP_DIR/pkgdiff_profiles_$$.json"
 
-    echo "  Fetching: $url"
+    echo "  Fetching: $url" >&2
 
     if ! wget -qO "$tmp_json" "$url" 2>/dev/null; then
         echo "ERROR: Failed to fetch profiles.json" >&2
@@ -123,9 +124,8 @@ _pkgdiff_get_baseline() {
     fi
 
     # プロファイルが存在するか確認
-    local check
-    check=$(jsonfilter -i "$tmp_json" -e "@['${_PKGDIFF_PROFILE}'].device_packages[0]" 2>/dev/null)
-    local default_check
+    local check default_check
+    check=$(jsonfilter -i "$tmp_json" -e "@.profiles['${_PKGDIFF_PROFILE}'].device_packages[0]" 2>/dev/null)
     default_check=$(jsonfilter -i "$tmp_json" -e '@.default_packages[0]' 2>/dev/null)
 
     if [ -z "$check" ] && [ -z "$default_check" ]; then
@@ -139,61 +139,134 @@ _pkgdiff_get_baseline() {
     #   D <pkg>  → default_packages のエントリ
     #   V <pkg>  → device_packages のエントリ (通常)
     #   V -<pkg> → device_packages の除外指定
-    #
-    # awk:
-    #   D行 → defaults[] に追加
-    #   V行 で先頭が - → defaults[] から削除
-    #   V行 で先頭が - 以外 → extras[] に追加
-    #   END → defaults + extras を出力
     {
-        jsonfilter -i "$tmp_json" -e '@.default_packages[*]' 2>/dev/null \
-            | sed 's/^/D /'
-        jsonfilter -i "$tmp_json" -e "@['${_PKGDIFF_PROFILE}'].device_packages[*]" 2>/dev/null \
-            | sed 's/^/V /'
-    } | awk '
-        /^D / {
-            pkg = substr($0, 3)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
-            if (pkg != "") defaults[pkg] = 1
-        }
-        /^V -/ {
-            pkg = substr($0, 4)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
-            if (pkg != "") delete defaults[pkg]
-        }
-        /^V [^-]/ {
-            pkg = substr($0, 3)
-            gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
-            if (pkg != "") extras[pkg] = 1
-        }
-        END {
-            for (p in defaults) print p
-            for (p in extras) print p
-        }
-    ' | LC_ALL=C sort -u
+        {
+            jsonfilter -i "$tmp_json" -e '@.default_packages[*]' 2>/dev/null \
+                | sed 's/^/D /'
+            jsonfilter -i "$tmp_json" -e "@.profiles['${_PKGDIFF_PROFILE}'].device_packages[*]" 2>/dev/null \
+                | sed 's/^/V /'
+        } | awk '
+            /^D / {
+                pkg = substr($0, 3)
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
+                if (pkg != "") defaults[pkg] = 1
+            }
+            /^V -/ {
+                pkg = substr($0, 4)
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
+                if (pkg != "") delete defaults[pkg]
+            }
+            /^V [^-]/ {
+                pkg = substr($0, 3)
+                gsub(/^[[:space:]]+|[[:space:]]+$/, "", pkg)
+                if (pkg != "") extras[pkg] = 1
+            }
+            END {
+                for (p in defaults) print p
+                for (p in extras) print p
+            }
+        '
+
+        # profiles.json に含まれないハードコート分を追加
+        for _pkg in $EXTRA_BASELINE; do
+            echo "$_pkg"
+        done
+    } | LC_ALL=C sort -u
 
     rm -f "$tmp_json"
     return 0
 }
 
 # =============================================================================
-# Get currently installed package list
+# Get currently installed package list (explicit installs only)
+#
+# apk:  /etc/apk/world に明示インストール分のみ記録されている
+#       バージョン接尾辞 (=1690~...) を除去して比較用に整形
+#
+# opkg: /usr/lib/opkg/status から Status: install user installed を抽出
+#       overlay が無い / status が無い場合は opkg list-installed にフォールバック
+#
 # Output: sorted package list, one per line, to stdout
 # =============================================================================
 _pkgdiff_get_current() {
     case "$_PKGDIFF_PKG_MGR" in
         apk)
-            apk info 2>/dev/null | LC_ALL=C sort -u
+            if [ -f /etc/apk/world ]; then
+                sed 's/=.*//' /etc/apk/world | grep -v '^$' | LC_ALL=C sort -u
+            else
+                echo "WARNING: /etc/apk/world not found, falling back to apk info" >&2
+                apk info 2>/dev/null | LC_ALL=C sort -u
+            fi
             ;;
         opkg)
-            opkg list-installed 2>/dev/null | awk '{print $1}' | LC_ALL=C sort -u
+            if [ -f /usr/lib/opkg/status ]; then
+                awk '/^Package:/{pkg=$2} /^Status: install user installed/{print pkg}' \
+                    /usr/lib/opkg/status | LC_ALL=C sort -u
+            else
+                echo "WARNING: /usr/lib/opkg/status not found, falling back to opkg list-installed" >&2
+                opkg list-installed 2>/dev/null | awk '{print $1}' | LC_ALL=C sort -u
+            fi
             ;;
     esac
 }
 
 # =============================================================================
+# Filter top-level packages (remove packages that are dependencies of others)
+#
+# Added パッケージの中で、他の Added パッケージの依存になっているものを除外し、
+# 最上位パッケージのみを返す。
+# 例: luci-i18n-ttyd-ja が Added なら、その依存 luci-app-ttyd は除外される
+#
+# $1: added_file (sorted, one package per line)
+# Output: top-level packages to stdout (sorted)
+# =============================================================================
+_pkgdiff_filter_toplevel() {
+    local added_file="$1"
+    local all_deps="$BASE_TMP_DIR/pkgdiff_alldeps_$$.txt"
+
+    echo "[pkg-diff] Resolving dependency tree for top-level extraction..." >&2
+
+    : > "$all_deps"
+
+    case "$_PKGDIFF_PKG_MGR" in
+        apk)
+            # apk info --depends <pkg> 出力:
+            #   <pkg>-<ver> depends on:
+            #   dep1
+            #   dep2
+            # ヘッダ行 ("depends on:") と空行を除外し、パッケージ名のみ抽出
+            while IFS= read -r pkg; do
+                apk info --depends "$pkg" 2>/dev/null \
+                    | grep -v "depends on:" \
+                    | grep -v "^$" \
+                    | sed 's/[><=~].*//' \
+                    | tr -d ' '
+            done < "$added_file" | LC_ALL=C sort -u >> "$all_deps"
+            ;;
+        opkg)
+            # opkg depends <pkg> 出力:
+            #   <pkg> depends on:
+            #       dep1
+            #       dep2
+            while IFS= read -r pkg; do
+                opkg depends "$pkg" 2>/dev/null \
+                    | grep "^\t" \
+                    | awk '{print $1}'
+            done < "$added_file" | LC_ALL=C sort -u >> "$all_deps"
+            ;;
+    esac
+
+    # all_deps と added_file の積集合 = 他パッケージの依存として含まれるもの
+    # added_file からそれを除外 = 最上位パッケージ
+    awk 'NR==FNR{deps[$1]=1;next} !deps[$1]' "$all_deps" "$added_file" \
+        | LC_ALL=C sort
+
+    rm -f "$all_deps"
+}
+
+# =============================================================================
 # Main function
-# $1: "-t" when called from aios2 template (no effect on logic)
+# $1: "-t" when called from aios2 template (no effect currently)
 # =============================================================================
 pkgdiff_main() {
     [ "${_PKGDIFF_DID_RUN:-0}" = "1" ] && return 0
@@ -237,21 +310,40 @@ pkgdiff_main() {
 
     local current_count
     current_count=$(wc -l < "$current_file" | tr -d ' ')
-    echo "  Installed: ${current_count} packages"
+    echo "  Installed: ${current_count} packages (explicit)"
     echo ""
 
-    # ---- diff計算 ----
-    # comm -23: current にあって baseline にないもの = 追加分
-    # comm -13: baseline にあって current にないもの = 削除分
-    # ※ 両ファイルはすでに LC_ALL=C sort 済み
-    comm -23 "$current_file" "$baseline_file" > "$added_file"
-    comm -13 "$current_file" "$baseline_file" > "$removed_file"
+    # ---- diff計算 (awk で実装) ----
+    # current にあって baseline にないもの = 追加分
+    awk 'NR==FNR{base[$1]=1;next} !base[$1]' "$baseline_file" "$current_file" \
+        | LC_ALL=C sort > "$added_file"
+
+    # baseline にあって current にないもの = 削除分
+    awk 'NR==FNR{curr[$1]=1;next} !curr[$1]' "$current_file" "$baseline_file" \
+        | LC_ALL=C sort > "$removed_file"
 
     local added_count removed_count
     added_count=$(wc -l < "$added_file" | tr -d ' ')
     removed_count=$(wc -l < "$removed_file" | tr -d ' ')
 
-    # ---- 出力生成 ----
+    # ---- 依存解決: コピペ用トップレベル抽出 ----
+    local toplevel_file="$BASE_TMP_DIR/pkgdiff_toplevel_$$.txt"
+    local toplevel_count=0
+
+    if [ "$added_count" -gt 0 ]; then
+        _pkgdiff_filter_toplevel "$added_file" > "$toplevel_file"
+        toplevel_count=$(wc -l < "$toplevel_file" | tr -d ' ')
+    else
+        : > "$toplevel_file"
+    fi
+
+    # ---- コピペ用文字列生成 ----
+    local toplevel_str=""
+    if [ "$toplevel_count" -gt 0 ]; then
+        toplevel_str=$(tr '\n' ' ' < "$toplevel_file" | sed 's/[[:space:]]*$//')
+    fi
+
+    # ---- レポートファイル保存 (常に全詳細を保存) ----
     mkdir -p "$OUTPUT_DIR"
 
     {
@@ -265,7 +357,7 @@ pkgdiff_main() {
         echo " Baseline : ${baseline_count} pkgs  |  Installed: ${current_count} pkgs"
         echo "------------------------------------------------------------"
         echo ""
-        echo "[+] Added packages (${added_count})  ← not in baseline (user-installed)"
+        echo "[+] Added packages (${added_count})  <- not in baseline (user-installed)"
         echo "------------------------------------------------------------"
         if [ "$added_count" -gt 0 ]; then
             cat "$added_file"
@@ -273,7 +365,7 @@ pkgdiff_main() {
             echo "(none)"
         fi
         echo ""
-        echo "[-] Removed packages (${removed_count})  ← in baseline but not installed"
+        echo "[-] Removed packages (${removed_count})  <- in baseline but not installed"
         echo "------------------------------------------------------------"
         if [ "$removed_count" -gt 0 ]; then
             cat "$removed_file"
@@ -282,11 +374,11 @@ pkgdiff_main() {
         fi
         echo ""
         echo "============================================================"
-        echo " [ Copy-paste: added packages ]"
+        echo " [ Copy-paste: top-level packages (${toplevel_count}) ]"
+        echo "   Dependencies auto-resolved; only root packages listed."
         echo "============================================================"
-        if [ "$added_count" -gt 0 ]; then
-            tr '\n' ' ' < "$added_file" | sed 's/[[:space:]]*$//'
-            echo ""
+        if [ -n "$toplevel_str" ]; then
+            echo "$toplevel_str"
         else
             echo "(none)"
         fi
@@ -294,10 +386,12 @@ pkgdiff_main() {
         echo "============================================================"
         echo " Saved to: ${OUTPUT_FILE}"
         echo "============================================================"
-    } | tee "$OUTPUT_FILE"
+    } > "$OUTPUT_FILE"
+
+    cat "$OUTPUT_FILE"
 
     # ---- クリーンアップ ----
-    rm -f "$baseline_file" "$current_file" "$added_file" "$removed_file"
+    rm -f "$baseline_file" "$current_file" "$added_file" "$removed_file" "$toplevel_file"
 
     return 0
 }
