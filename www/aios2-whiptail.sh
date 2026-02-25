@@ -240,7 +240,7 @@ EOF
         fi
         
         if [ -n "$choice" ]; then
-            selected_script=$(echo "$configured_scripts" | sed -n "${choice}p")
+            selected_script=$(echo "$all_scripts" | sed -n "${choice}p")
 
             local run_immediately result_file script_file script_url template_path
             run_immediately=$(jsonfilter -i "$CUSTOMSCRIPTS_JSON" \
