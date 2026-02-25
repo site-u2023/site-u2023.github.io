@@ -21,6 +21,11 @@
 # BEGIN_VARIABLE_DEFINITIONS
 # END_VARIABLE_DEFINITIONS
 
+SCRIPT_NAME="${0##*/}"
+BASE_TMP_DIR="/tmp"
+OUTPUT_DIR="$BASE_TMP_DIR/aios2"
+OUTPUT_FILE="$OUTPUT_DIR/pkg-diff-result.txt"
+
 # =============================================================================
 # Device Information Detection
 # Self-contained: reads /etc/openwrt_release and /etc/board.json directly
@@ -191,12 +196,13 @@ _pkgdiff_get_current() {
 # $1: "-t" when called from aios2 template (no effect on logic)
 # =============================================================================
 pkgdiff_main() {
-    local output_dir="/tmp/aios2"
-    local output_file="${output_dir}/pkg-diff-result.txt"
-    local baseline_file="/tmp/pkgdiff_baseline_$$.txt"
-    local current_file="/tmp/pkgdiff_current_$$.txt"
-    local added_file="/tmp/pkgdiff_added_$$.txt"
-    local removed_file="/tmp/pkgdiff_removed_$$.txt"
+    [ "${_PKGDIFF_DID_RUN:-0}" = "1" ] && return 0
+    _PKGDIFF_DID_RUN=1
+
+    local baseline_file="$BASE_TMP_DIR/pkgdiff_baseline_$$.txt"
+    local current_file="$BASE_TMP_DIR/pkgdiff_current_$$.txt"
+    local added_file="$BASE_TMP_DIR/pkgdiff_added_$$.txt"
+    local removed_file="$BASE_TMP_DIR/pkgdiff_removed_$$.txt"
 
     # ---- デバイス情報検出 ----
     echo ""
@@ -246,7 +252,7 @@ pkgdiff_main() {
     removed_count=$(wc -l < "$removed_file" | tr -d ' ')
 
     # ---- 出力生成 ----
-    mkdir -p "$output_dir"
+    mkdir -p "$OUTPUT_DIR"
 
     {
         echo "============================================================"
@@ -286,9 +292,9 @@ pkgdiff_main() {
         fi
         echo ""
         echo "============================================================"
-        echo " Saved to: ${output_file}"
+        echo " Saved to: ${OUTPUT_FILE}"
         echo "============================================================"
-    } | tee "$output_file"
+    } | tee "$OUTPUT_FILE"
 
     # ---- クリーンアップ ----
     rm -f "$baseline_file" "$current_file" "$added_file" "$removed_file"
@@ -297,8 +303,10 @@ pkgdiff_main() {
 }
 
 # =============================================================================
-# Entry point (standalone execution only)
-# When used as aios2 template, aios2 appends "pkgdiff_main -t" automatically.
-# This guard prevents double-execution in that context.
+# Entry point
+# Works in all execution contexts:
+#   - standalone : sh pkg-diff.sh
+#   - copy-paste : pasted into terminal
+#   - aios2      : appends pkgdiff_main -t; run-once flag prevents double-execution
 # =============================================================================
-[ "$(basename "$0")" = "pkg-diff.sh" ] && pkgdiff_main "$@"
+pkgdiff_main "$@"
