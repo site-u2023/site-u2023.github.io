@@ -269,7 +269,7 @@ const translations = {
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         openwrtconnectExplanation: 'Windowsインストーラー<br>※ブラウザ警告が出た場合は「詳細を表示」＞「保持する」を選択してください',
-        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/release',
+        openwrtconnectExplanationLink: 'https://site-u.pages.dev/aios-connect.msi',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -333,7 +333,7 @@ const translations = {
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         openwrtconnectExplanation: 'Windows Installer<br>*If browser warning appears, click "Show more" → "Keep"',
-        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/release',
+        openwrtconnectExplanationLink: 'https://site-u.pages.dev/aios-connect.msi',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -661,7 +661,7 @@ function bindEvents() {
             
             // openwrtconnect の場合は直接リンクを開く
             if (terminalType === 'openwrtconnect') {
-                window.open('https://github.com/site-u2023/site-u2023.github.io/releases/download/release/openwrt-connect.msi', '_blank');
+                window.open('https://site-u.pages.dev/aios-connect.msi', '_blank');
             } else {
                 downloadBatFile(terminalType);
             }
