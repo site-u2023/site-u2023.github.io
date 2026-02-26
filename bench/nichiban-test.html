@@ -3,21 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MAP-E Bench — 焼いたらMAP-E</title>
+<title>MAP-E Nichiban Bench — 焼いたらMAP-E</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,400;0,700;1,400&family=Noto+Sans+JP:wght@400;700;900&display=swap');
 
 :root {
-  --bg:       #0a0c0f;
-  --surface:  #111418;
-  --border:   #1e2530;
-  --accent:   #00e5ff;
-  --warn:     #ff6b35;
-  --ok:       #39ff14;
-  --dim:      #3a4555;
-  --text:     #c8d8e8;
-  --mono:     'JetBrains Mono', monospace;
-  --sans:     'Noto Sans JP', sans-serif;
+  --bg:      #070a0d;
+  --surf:    #0d1117;
+  --surf2:   #131a22;
+  --border:  #1c2733;
+  --accent:  #00e5ff;
+  --ok:      #39ff14;
+  --warn:    #ff6b35;
+  --caution: #ffd600;
+  --dim:     #354555;
+  --text:    #b8ccd8;
+  --mono:    'JetBrains Mono', monospace;
+  --sans:    'Noto Sans JP', sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,217 +32,346 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 1rem 4rem;
+  padding: 2rem 1rem 5rem;
 }
 
-/* スキャンライン演出 */
+/* ─── スキャンライン ─── */
 body::before {
   content: '';
   position: fixed;
   inset: 0;
   background: repeating-linear-gradient(
     0deg,
-    transparent,
-    transparent 2px,
-    rgba(0,229,255,.018) 2px,
-    rgba(0,229,255,.018) 4px
+    transparent 0px,
+    transparent 3px,
+    rgba(0,229,255,.012) 3px,
+    rgba(0,229,255,.012) 4px
   );
   pointer-events: none;
-  z-index: 999;
+  z-index: 9999;
 }
 
+/* ─── ヘッダー ─── */
 header {
   text-align: center;
   margin-bottom: 2.5rem;
+  padding-top: 1rem;
 }
 
 .title {
   font-family: var(--mono);
-  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-size: clamp(1.3rem, 4vw, 2rem);
   font-weight: 700;
   color: var(--accent);
-  letter-spacing: .08em;
-  text-shadow: 0 0 24px rgba(0,229,255,.5);
+  letter-spacing: .1em;
+  text-shadow: 0 0 30px rgba(0,229,255,.55);
 }
 
 .subtitle {
-  font-size: .85rem;
-  color: var(--dim);
-  margin-top: .4rem;
   font-family: var(--mono);
+  font-size: .78rem;
+  color: var(--dim);
+  margin-top: .5rem;
+  letter-spacing: .08em;
 }
 
-/* プリセット選択 */
+.subtitle span {
+  color: var(--caution);
+}
+
+/* ─── ISPプリセット ─── */
+.section-label {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  letter-spacing: .15em;
+  text-transform: uppercase;
+  margin-bottom: .75rem;
+}
+
 .presets {
   display: flex;
-  gap: .75rem;
-  margin-bottom: 2rem;
+  gap: .6rem;
   flex-wrap: wrap;
   justify-content: center;
+  margin-bottom: 2rem;
+  width: 100%;
+  max-width: 760px;
 }
 
 .preset-btn {
-  background: var(--surface);
+  background: var(--surf);
   border: 1px solid var(--border);
   color: var(--text);
   font-family: var(--mono);
-  font-size: .8rem;
-  padding: .5rem 1.2rem;
+  font-size: .75rem;
+  padding: .6rem 1.1rem;
   cursor: pointer;
   transition: all .15s;
-  letter-spacing: .06em;
+  letter-spacing: .05em;
+  line-height: 1.5;
+  text-align: center;
+  min-width: 120px;
+}
+
+.preset-btn .isp-name {
+  display: block;
+  font-weight: 700;
+  font-size: .82rem;
+  letter-spacing: .08em;
+}
+
+.preset-btn .isp-meta {
+  display: block;
+  font-size: .62rem;
+  color: var(--dim);
+  margin-top: .15rem;
 }
 
 .preset-btn:hover,
 .preset-btn.active {
   border-color: var(--accent);
   color: var(--accent);
-  box-shadow: 0 0 12px rgba(0,229,255,.2);
+  box-shadow: 0 0 14px rgba(0,229,255,.22);
 }
 
 .preset-btn.active {
-  background: rgba(0,229,255,.08);
+  background: rgba(0,229,255,.07);
 }
 
-/* メインパネル */
-.panel {
-  width: 100%;
-  max-width: 720px;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  padding: 1.5rem;
-  margin-bottom: 1.5rem;
+.preset-btn.active .isp-meta {
+  color: rgba(0,229,255,.5);
 }
 
-.panel-title {
-  font-family: var(--mono);
-  font-size: .7rem;
-  color: var(--dim);
-  letter-spacing: .12em;
-  text-transform: uppercase;
-  margin-bottom: 1rem;
-  border-bottom: 1px solid var(--border);
-  padding-bottom: .5rem;
-}
-
-/* ゲージ */
-.gauge-row {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: .8rem;
-}
-
-.gauge-label {
-  font-family: var(--mono);
-  font-size: .75rem;
-  color: var(--dim);
-  width: 7rem;
-  flex-shrink: 0;
-}
-
-.gauge-bar {
-  flex: 1;
-  height: 6px;
-  background: var(--border);
-  position: relative;
-  overflow: hidden;
-}
-
-.gauge-fill {
-  height: 100%;
-  width: 0%;
-  background: var(--accent);
-  transition: width .1s linear;
-  box-shadow: 0 0 8px rgba(0,229,255,.6);
-}
-
-.gauge-fill.warn { background: var(--warn); box-shadow: 0 0 8px rgba(255,107,53,.6); }
-.gauge-fill.ok   { background: var(--ok);   box-shadow: 0 0 8px rgba(57,255,20,.6); }
-
-.gauge-val {
-  font-family: var(--mono);
-  font-size: .75rem;
-  width: 5rem;
-  text-align: right;
-  flex-shrink: 0;
-}
-
-/* 大きい数値 */
+/* ─── メトリクス ─── */
 .metrics {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem;
-  margin-bottom: 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: .75rem;
   width: 100%;
-  max-width: 720px;
+  max-width: 760px;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 560px) {
+  .metrics { grid-template-columns: repeat(2, 1fr); }
 }
 
 .metric-card {
-  background: var(--surface);
+  background: var(--surf);
   border: 1px solid var(--border);
-  padding: 1rem;
+  padding: 1rem .75rem;
   text-align: center;
 }
 
 .metric-val {
   font-family: var(--mono);
-  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-size: clamp(1.4rem, 3.5vw, 1.9rem);
   font-weight: 700;
   color: var(--accent);
   line-height: 1;
-  text-shadow: 0 0 16px rgba(0,229,255,.4);
+  text-shadow: 0 0 18px rgba(0,229,255,.4);
+  transition: color .3s, text-shadow .3s;
 }
 
-.metric-val.ok   { color: var(--ok);   text-shadow: 0 0 16px rgba(57,255,20,.4); }
-.metric-val.warn { color: var(--warn); text-shadow: 0 0 16px rgba(255,107,53,.4); }
+.metric-val.ok      { color: var(--ok);      text-shadow: 0 0 18px rgba(57,255,20,.4); }
+.metric-val.warn    { color: var(--warn);    text-shadow: 0 0 18px rgba(255,107,53,.4); }
+.metric-val.caution { color: var(--caution); text-shadow: 0 0 18px rgba(255,214,0,.4); }
 
 .metric-unit {
   font-family: var(--mono);
-  font-size: .65rem;
+  font-size: .62rem;
   color: var(--dim);
-  margin-top: .25rem;
+  margin-top: .3rem;
   letter-spacing: .1em;
 }
 
-/* ログ */
+/* ─── ポートビジュアライザ ─── */
+.visualizer-wrap {
+  width: 100%;
+  max-width: 760px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.viz-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 1rem;
+}
+
+.viz-title {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+
+.viz-legend {
+  display: flex;
+  gap: 1rem;
+  font-family: var(--mono);
+  font-size: .62rem;
+}
+
+.legend-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 1px;
+  display: inline-block;
+  margin-right: .3rem;
+  vertical-align: middle;
+}
+
+/* ポートドットグリッド */
+#port-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  min-height: 80px;
+}
+
+.port-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--border);
+  border-radius: 1px;
+  transition: background .08s, box-shadow .08s;
+}
+
+.port-dot.open {
+  background: var(--accent);
+  box-shadow: 0 0 4px rgba(0,229,255,.5);
+}
+
+.port-dot.failed {
+  background: var(--warn);
+  box-shadow: 0 0 3px rgba(255,107,53,.4);
+}
+
+/* ─── プログレス ─── */
+.progress-wrap {
+  width: 100%;
+  max-width: 760px;
+  background: var(--surf);
+  border: 1px solid var(--border);
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.gauge-row {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .7rem;
+}
+
+.gauge-label {
+  font-family: var(--mono);
+  font-size: .72rem;
+  color: var(--dim);
+  width: 8rem;
+  flex-shrink: 0;
+}
+
+.gauge-bar {
+  flex: 1;
+  height: 5px;
+  background: var(--border);
+  overflow: hidden;
+  position: relative;
+}
+
+.gauge-fill {
+  height: 100%;
+  width: 0%;
+  transition: width .15s linear;
+}
+
+.gauge-fill.accent  { background: var(--accent); box-shadow: 0 0 6px rgba(0,229,255,.5); }
+.gauge-fill.ok      { background: var(--ok);     box-shadow: 0 0 6px rgba(57,255,20,.5); }
+.gauge-fill.warn    { background: var(--warn);   box-shadow: 0 0 6px rgba(255,107,53,.5); }
+.gauge-fill.caution { background: var(--caution);box-shadow: 0 0 6px rgba(255,214,0,.4); }
+
+.gauge-val {
+  font-family: var(--mono);
+  font-size: .7rem;
+  width: 5.5rem;
+  text-align: right;
+  flex-shrink: 0;
+  color: var(--text);
+}
+
+/* ─── ログ ─── */
 .log-box {
   width: 100%;
-  max-width: 720px;
-  background: var(--surface);
+  max-width: 760px;
+  background: var(--surf);
   border: 1px solid var(--border);
   padding: 1rem;
   height: 160px;
   overflow-y: auto;
   font-family: var(--mono);
-  font-size: .72rem;
-  line-height: 1.6;
+  font-size: .7rem;
+  line-height: 1.7;
+  margin-bottom: 1.25rem;
+  scroll-behavior: smooth;
 }
 
-.log-line { color: var(--dim); }
-.log-line.info  { color: var(--text); }
-.log-line.good  { color: var(--ok); }
-.log-line.bad   { color: var(--warn); }
+.log-box::-webkit-scrollbar { width: 4px; }
+.log-box::-webkit-scrollbar-track { background: var(--border); }
+.log-box::-webkit-scrollbar-thumb { background: var(--dim); }
 
-/* 実行ボタン */
+.ll       { color: var(--dim); }
+.ll.info  { color: var(--text); }
+.ll.good  { color: var(--ok); }
+.ll.bad   { color: var(--warn); }
+.ll.warn  { color: var(--caution); }
+.ll.head  { color: var(--accent); font-weight: 700; }
+
+/* ─── 操作 ─── */
+.actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+}
+
 .run-btn {
-  margin-top: 1.5rem;
   background: transparent;
   border: 1px solid var(--accent);
   color: var(--accent);
   font-family: var(--mono);
-  font-size: .9rem;
+  font-size: .88rem;
   font-weight: 700;
-  letter-spacing: .15em;
-  padding: .8rem 3rem;
+  letter-spacing: .18em;
+  padding: .85rem 3.5rem;
   cursor: pointer;
   transition: all .15s;
   text-transform: uppercase;
+  position: relative;
+  overflow: hidden;
+}
+
+.run-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(0,229,255,.06);
+  transform: translateX(-101%);
+  transition: transform .25s ease;
+}
+
+.run-btn:hover:not(:disabled)::before {
+  transform: translateX(0);
 }
 
 .run-btn:hover:not(:disabled) {
-  background: rgba(0,229,255,.1);
-  box-shadow: 0 0 24px rgba(0,229,255,.3);
+  box-shadow: 0 0 28px rgba(0,229,255,.28), inset 0 0 0 1px var(--accent);
 }
 
 .run-btn:disabled {
@@ -249,38 +380,65 @@ header {
   cursor: not-allowed;
 }
 
-/* 結果バッジ */
+/* ─── 結果バッジ ─── */
 .result-badge {
   display: none;
-  margin-top: 1rem;
   font-family: var(--mono);
-  font-size: 1rem;
+  font-size: .95rem;
   font-weight: 700;
   letter-spacing: .1em;
-  padding: .5rem 2rem;
+  padding: .65rem 2.5rem;
   border: 1px solid;
+  text-align: center;
 }
 
 .result-badge.pass {
   display: block;
   color: var(--ok);
   border-color: var(--ok);
-  text-shadow: 0 0 12px rgba(57,255,20,.5);
+  text-shadow: 0 0 14px rgba(57,255,20,.5);
+  background: rgba(57,255,20,.06);
+}
+
+.result-badge.caution {
+  display: block;
+  color: var(--caution);
+  border-color: var(--caution);
+  text-shadow: 0 0 14px rgba(255,214,0,.4);
+  background: rgba(255,214,0,.05);
 }
 
 .result-badge.fail {
   display: block;
   color: var(--warn);
   border-color: var(--warn);
-  text-shadow: 0 0 12px rgba(255,107,53,.5);
+  text-shadow: 0 0 14px rgba(255,107,53,.5);
+  background: rgba(255,107,53,.06);
 }
 
+/* ─── 注記 ─── */
+.note-box {
+  width: 100%;
+  max-width: 760px;
+  border-left: 2px solid var(--border);
+  padding: .75rem 1rem;
+  font-family: var(--mono);
+  font-size: .67rem;
+  color: var(--dim);
+  line-height: 1.8;
+  margin-top: 1.5rem;
+}
+
+.note-box b { color: rgba(0,229,255,.5); font-weight: 400; }
+
+/* ─── フッター ─── */
 footer {
   margin-top: 3rem;
   font-family: var(--mono);
-  font-size: .65rem;
+  font-size: .62rem;
   color: var(--dim);
   letter-spacing: .08em;
+  text-align: center;
 }
 </style>
 </head>
@@ -288,265 +446,502 @@ footer {
 
 <header>
   <div class="title">MAP-E // NICHIBAN BENCH</div>
-  <div class="subtitle">焼いたらMAP-E — port exhaustion stress test</div>
+  <div class="subtitle">
+    焼いたらMAP-E —
+    <span>WebSocket 同時保持によるポート枯渇ストレステスト</span>
+  </div>
 </header>
 
-<!-- プリセット -->
+<!-- ISPプリセット -->
+<div class="section-label">ISP / MAP-E プロファイル選択</div>
 <div class="presets">
-  <button class="preset-btn active" data-parallel="50"  data-size="10240" data-id="light">
-    LIGHT<br><span style="font-size:.65rem;color:var(--dim)">50並列 × 10KB</span>
+  <button class="preset-btn active"
+          data-id="transix"
+          data-ratio="64"
+          data-threshold="700"
+          data-target="400">
+    <span class="isp-name">transix</span>
+    <span class="isp-meta">ratio 64 / ~1008 port</span>
   </button>
-  <button class="preset-btn" data-parallel="100" data-size="10240" data-id="medium">
-    MEDIUM<br><span style="font-size:.65rem;color:var(--dim)">100並列 × 10KB</span>
+  <button class="preset-btn"
+          data-id="crosspass"
+          data-ratio="32"
+          data-threshold="1400"
+          data-target="400">
+    <span class="isp-name">Cross Pass</span>
+    <span class="isp-meta">ratio 32 / ~2016 port</span>
   </button>
-  <button class="preset-btn" data-parallel="200" data-size="10240" data-id="heavy">
-    HEAVY<br><span style="font-size:.65rem;color:var(--dim)">200並列 × 10KB</span>
+  <button class="preset-btn"
+          data-id="v6plus"
+          data-ratio="16"
+          data-threshold="2800"
+          data-target="400">
+    <span class="isp-name">v6プラス</span>
+    <span class="isp-meta">ratio 16 / ~4032 port</span>
   </button>
-  <button class="preset-btn" data-parallel="300" data-size="10240" data-id="soyabus">
-    SOYABUS<br><span style="font-size:.65rem;color:var(--dim)">300並列 × 10KB</span>
+  <button class="preset-btn"
+          data-id="ocn"
+          data-ratio="16"
+          data-threshold="2800"
+          data-target="400">
+    <span class="isp-name">OCN VC</span>
+    <span class="isp-meta">ratio 16 / ~4032 port</span>
+  </button>
+  <button class="preset-btn"
+          data-id="custom"
+          data-ratio="0"
+          data-threshold="0"
+          data-target="400">
+    <span class="isp-name">CUSTOM</span>
+    <span class="isp-meta">手動設定</span>
   </button>
 </div>
 
 <!-- メトリクス -->
 <div class="metrics">
   <div class="metric-card">
-    <div class="metric-val" id="val-mbps">—</div>
-    <div class="metric-unit">Mbps</div>
+    <div class="metric-val" id="val-active">0</div>
+    <div class="metric-unit">アクティブ接続</div>
   </div>
   <div class="metric-card">
-    <div class="metric-val" id="val-complete">—</div>
-    <div class="metric-unit">完走率 %</div>
+    <div class="metric-val" id="val-peak">0</div>
+    <div class="metric-unit">最大同時接続</div>
   </div>
   <div class="metric-card">
-    <div class="metric-val" id="val-time">—</div>
-    <div class="metric-unit">所要時間 sec</div>
+    <div class="metric-val" id="val-fail">0</div>
+    <div class="metric-unit">失敗</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-val" id="val-rate">—</div>
+    <div class="metric-unit">成功率 %</div>
   </div>
 </div>
 
-<!-- プログレス -->
-<div class="panel" style="max-width:720px;width:100%">
-  <div class="panel-title">progress</div>
-
-  <div class="gauge-row">
-    <div class="gauge-label">完了</div>
-    <div class="gauge-bar"><div class="gauge-fill" id="bar-done"></div></div>
-    <div class="gauge-val" id="txt-done">0 / 0</div>
+<!-- ポートビジュアライザ -->
+<div class="visualizer-wrap">
+  <div class="viz-header">
+    <div class="viz-title">port slot visualizer (1dot = 1 TCP connection)</div>
+    <div class="viz-legend">
+      <span><span class="legend-dot" style="background:var(--accent)"></span>open</span>
+      <span><span class="legend-dot" style="background:var(--warn)"></span>failed</span>
+      <span><span class="legend-dot" style="background:var(--border)"></span>unused</span>
+    </div>
   </div>
+  <div id="port-grid"></div>
+</div>
+
+<!-- プログレス -->
+<div class="progress-wrap">
+  <div class="panel-title" style="font-family:var(--mono);font-size:.65rem;color:var(--dim);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1rem;border-bottom:1px solid var(--border);padding-bottom:.5rem;">progress</div>
 
   <div class="gauge-row">
-    <div class="gauge-label">成功</div>
+    <div class="gauge-label">接続試行</div>
+    <div class="gauge-bar"><div class="gauge-fill accent" id="bar-total"></div></div>
+    <div class="gauge-val" id="txt-total">0 / 0</div>
+  </div>
+  <div class="gauge-row">
+    <div class="gauge-label">成功 (保持中)</div>
     <div class="gauge-bar"><div class="gauge-fill ok" id="bar-ok"></div></div>
     <div class="gauge-val" id="txt-ok">0</div>
   </div>
-
   <div class="gauge-row">
     <div class="gauge-label">失敗</div>
     <div class="gauge-bar"><div class="gauge-fill warn" id="bar-fail"></div></div>
     <div class="gauge-val" id="txt-fail">0</div>
   </div>
-
   <div class="gauge-row">
-    <div class="gauge-label">転送量</div>
-    <div class="gauge-bar"><div class="gauge-fill" id="bar-bytes"></div></div>
-    <div class="gauge-val" id="txt-bytes">0 KB</div>
+    <div class="gauge-label">ISP閾値比</div>
+    <div class="gauge-bar"><div class="gauge-fill caution" id="bar-thresh"></div></div>
+    <div class="gauge-val" id="txt-thresh">—</div>
   </div>
 </div>
 
 <!-- ログ -->
 <div class="log-box" id="log"></div>
 
-<!-- ボタン・結果 -->
-<button class="run-btn" id="run-btn">▶  RUN BENCHMARK</button>
-<div class="result-badge" id="result-badge">—</div>
+<!-- 操作 -->
+<div class="actions">
+  <button class="run-btn" id="run-btn">▶  RUN BENCHMARK</button>
+  <div class="result-badge" id="result-badge">—</div>
+</div>
 
-<footer>site-u MAP-E bench • external traffic: zero • self-contained</footer>
+<!-- 注記 -->
+<div class="note-box">
+  <b>テスト原理：</b>
+  WebSocket は TCP コネクションを保持します。
+  同時に N 本の WS 接続を確立 = MAP-E 割当ポートを N 消費。
+  接続失敗が発生し始めた時点がポート枯渇ライン。<br>
+  <b>ブラウザ制約：</b>
+  Chrome は約 250〜300 本の WS 同時接続を上限とします (per-origin)。
+  transix (1008 port) の全枯渇を再現するにはスクリプトが必要ですが、
+  このテストで「接続失敗が皆無 ≒ MAP-E 設定が有効」の確認は可能です。<br>
+  <b>外部通信：</b>site-u.pages.dev のみ (CloudFlare)
+</div>
+
+<footer>site-u MAP-E bench • nichiban-test v2 • powered by WebSocket hold test</footer>
 
 <script>
 (function () {
-  // ========================================
-  // 状態
-  // ========================================
-  let cfg = { parallel: 50, size: 10240 };
-  let running = false;
+  /* ================================================
+     設定
+  ================================================ */
+  const WS_ENDPOINT = 'wss://site-u.pages.dev/bench/ws';
+  const HOLD_MS     = 28000;   // 接続保持時間
+  const BATCH_SIZE  = 30;      // 1波のコネクション数
+  const BATCH_DELAY = 300;     // 波間の待機 ms
+  const CONN_TO     = 8000;    // 接続タイムアウト ms
+  const FAIL_ABORT  = 10;      // この数以上連続失敗で中断
 
-  // ========================================
-  // プリセット選択
-  // ========================================
+  /* ================================================
+     状態
+  ================================================ */
+  let cfg = {
+    id: 'transix',
+    ratio: 64,
+    threshold: 700,   // ISP危険ライン (テスト到達目標)
+    target: 400       // テスト目標接続数
+  };
+  let running    = false;
+  let abortFlag  = false;
+  let activeSockets = [];
+  let totalTried = 0, totalOk = 0, totalFail = 0;
+  let peakActive = 0;
+  let dotEls     = [];
+
+  /* ================================================
+     プリセット
+  ================================================ */
   document.querySelectorAll('.preset-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       if (running) return;
       document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      cfg.parallel = parseInt(btn.dataset.parallel);
-      cfg.size     = parseInt(btn.dataset.size);
-      log('info', `プリセット: ${btn.dataset.id.toUpperCase()} — ${cfg.parallel}並列 × ${cfg.size/1024}KB`);
+      cfg.id        = btn.dataset.id;
+      cfg.ratio     = parseInt(btn.dataset.ratio);
+      cfg.threshold = parseInt(btn.dataset.threshold);
+      cfg.target    = parseInt(btn.dataset.target);
+      log('info', `ISP: ${cfg.id.toUpperCase()} — ratio ${cfg.ratio} — 危険閾値 ${cfg.threshold} port`);
+      if (cfg.id === 'custom') promptCustom();
     });
   });
 
-  // ========================================
-  // ログ
-  // ========================================
-  const logBox = document.getElementById('log');
+  function promptCustom() {
+    const r = prompt('PSID ratio を入力 (例: 32):', '32');
+    if (!r) return;
+    const ratio = parseInt(r);
+    if (isNaN(ratio) || ratio <= 0) return;
+    cfg.ratio     = ratio;
+    cfg.threshold = Math.floor(64512 / ratio * 0.7);
+    log('info', `CUSTOM: ratio ${ratio} → 推定ポート数 ~${Math.floor(64512/ratio)} → 閾値 ${cfg.threshold}`);
+  }
+
+  /* ================================================
+     ログ
+  ================================================ */
+  const logEl = document.getElementById('log');
   function log(type, msg) {
     const now = new Date();
     const ts  = `${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(now.getMilliseconds()).padStart(3,'0')}`;
     const el  = document.createElement('div');
-    el.className = `log-line ${type}`;
+    el.className = `ll ${type}`;
     el.textContent = `[${ts}] ${msg}`;
-    logBox.appendChild(el);
-    logBox.scrollTop = logBox.scrollHeight;
+    logEl.appendChild(el);
+    logEl.scrollTop = logEl.scrollHeight;
   }
 
-  // ========================================
-  // ペイロード生成（ローカル・外部通信ゼロ）
-  // ========================================
-  function makePayload(size) {
-    const buf = new Uint8Array(size);
-    crypto.getRandomValues(buf);
-    return buf;
+  /* ================================================
+     ドットグリッド構築
+  ================================================ */
+  function buildGrid(total) {
+    const grid = document.getElementById('port-grid');
+    grid.innerHTML = '';
+    dotEls = [];
+    for (let i = 0; i < total; i++) {
+      const d = document.createElement('div');
+      d.className = 'port-dot';
+      grid.appendChild(d);
+      dotEls.push(d);
+    }
   }
 
-  // ========================================
-  // ゲージ更新
-  // ========================================
-  function updateGauge(id, barId, val, max, unit) {
-    const pct = max > 0 ? Math.min(100, val / max * 100) : 0;
-    document.getElementById(barId).style.width = pct + '%';
-    document.getElementById(id).textContent = unit ? `${val} ${unit}` : val;
+  function setDot(idx, state) {
+    if (idx >= 0 && idx < dotEls.length) {
+      dotEls[idx].className = `port-dot ${state}`;
+    }
   }
 
+  /* ================================================
+     UI 更新
+  ================================================ */
   function setMetric(id, val, cls) {
     const el = document.getElementById(id);
     el.textContent = val;
-    el.className = 'metric-val' + (cls ? ' ' + cls : '');
+    el.className   = 'metric-val' + (cls ? ' ' + cls : '');
   }
 
-  // ========================================
-  // リセット
-  // ========================================
+  function updateGauges() {
+    const target = cfg.target;
+
+    /* 接続試行 */
+    const pTried = totalTried / target * 100;
+    document.getElementById('bar-total').style.width = Math.min(pTried, 100) + '%';
+    document.getElementById('txt-total').textContent = `${totalTried} / ${target}`;
+
+    /* 成功 */
+    const pOk = totalOk / target * 100;
+    document.getElementById('bar-ok').style.width = Math.min(pOk, 100) + '%';
+    document.getElementById('txt-ok').textContent  = totalOk;
+
+    /* 失敗 */
+    const pFail = totalTried > 0 ? totalFail / totalTried * 100 : 0;
+    document.getElementById('bar-fail').style.width = Math.min(pFail, 100) + '%';
+    document.getElementById('txt-fail').textContent  = totalFail;
+
+    /* ISP閾値比 */
+    if (cfg.threshold > 0) {
+      const pThresh = totalOk / cfg.threshold * 100;
+      document.getElementById('bar-thresh').style.width = Math.min(pThresh, 100) + '%';
+      document.getElementById('txt-thresh').textContent =
+        `${totalOk} / ${cfg.threshold} (${Math.round(pThresh)}%)`;
+    }
+
+    /* メトリクス */
+    setMetric('val-active', activeSockets.length);
+    if (activeSockets.length > peakActive) peakActive = activeSockets.length;
+    setMetric('val-peak', peakActive);
+    setMetric('val-fail', totalFail, totalFail > 0 ? 'warn' : '');
+    const rate = totalTried > 0 ? Math.round(totalOk / totalTried * 100) : 0;
+    setMetric('val-rate', rate + '%',
+      rate >= 95 ? 'ok' : rate >= 70 ? 'caution' : 'warn');
+  }
+
+  /* ================================================
+     1接続オープン
+  ================================================ */
+  function openOne(idx) {
+    return new Promise((resolve) => {
+      const url = `${WS_ENDPOINT}?id=${idx}&d=${HOLD_MS}`;
+      let ws;
+      let done = false;
+
+      const timeout = setTimeout(() => {
+        if (done) return;
+        done = true;
+        try { ws.close(); } catch {}
+        resolve({ ok: false, reason: 'timeout' });
+      }, CONN_TO);
+
+      try {
+        ws = new WebSocket(url);
+      } catch (e) {
+        clearTimeout(timeout);
+        resolve({ ok: false, reason: e.message });
+        return;
+      }
+
+      ws.onopen = () => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+
+        /* 成功: ソケットをリストに追加 */
+        activeSockets.push(ws);
+        setDot(idx, 'open');
+
+        /* 保持時間後または早期切断でリストから削除 */
+        ws.onclose = () => {
+          const pos = activeSockets.indexOf(ws);
+          if (pos !== -1) activeSockets.splice(pos, 1);
+          setDot(idx, '');
+          updateGauges();
+        };
+
+        resolve({ ok: true, ws });
+      };
+
+      ws.onerror = (e) => {
+        if (done) return;
+        done = true;
+        clearTimeout(timeout);
+        try { ws.close(); } catch {}
+        resolve({ ok: false, reason: 'error' });
+      };
+
+      /* onerror の後に onclose が呼ばれることがあるため二重解決を防ぐ */
+    });
+  }
+
+  /* ================================================
+     全ソケットを閉じる
+  ================================================ */
+  function closeAll() {
+    const copy = [...activeSockets];
+    copy.forEach(ws => { try { ws.close(); } catch {} });
+    activeSockets = [];
+  }
+
+  /* ================================================
+     リセット
+  ================================================ */
   function reset() {
-    ['bar-done','bar-ok','bar-fail','bar-bytes'].forEach(id => {
+    closeAll();
+    totalTried = 0;
+    totalOk    = 0;
+    totalFail  = 0;
+    peakActive = 0;
+    dotEls     = [];
+
+    ['bar-total','bar-ok','bar-fail','bar-thresh'].forEach(id => {
       document.getElementById(id).style.width = '0%';
     });
-    ['txt-done','txt-ok','txt-fail','txt-bytes'].forEach(id => {
+    ['txt-total','txt-ok','txt-fail','txt-thresh'].forEach(id => {
       document.getElementById(id).textContent = '0';
     });
-    setMetric('val-mbps',     '—');
-    setMetric('val-complete', '—');
-    setMetric('val-time',     '—');
+    setMetric('val-active', '0');
+    setMetric('val-peak',   '0');
+    setMetric('val-fail',   '0');
+    setMetric('val-rate',   '—');
+
     document.getElementById('result-badge').className = 'result-badge';
     document.getElementById('result-badge').textContent = '—';
   }
 
-  // ========================================
-  // ベンチマーク本体
-  // ========================================
+  /* ================================================
+     ベンチメイン
+  ================================================ */
   async function runBench() {
     if (running) return;
-    running = true;
+    running   = true;
+    abortFlag = false;
 
     const btn = document.getElementById('run-btn');
     btn.disabled = true;
     btn.textContent = '⏳  RUNNING...';
 
     reset();
+    buildGrid(cfg.target);
 
-    const { parallel, size } = cfg;
-    const totalBytes = parallel * size;
+    log('head', `━━━ START: ${cfg.id.toUpperCase()} target=${cfg.target} threshold=${cfg.threshold} ━━━`);
+    log('info', `WS エンドポイント: ${WS_ENDPOINT}`);
+    log('info', `バッチサイズ: ${BATCH_SIZE} / 波間遅延: ${BATCH_DELAY}ms / 保持: ${HOLD_MS}ms`);
 
-    log('info', `===== START: ${parallel}並列 × ${size/1024}KB = ${(totalBytes/1024).toFixed(0)}KB =====`);
+    const batches     = Math.ceil(cfg.target / BATCH_SIZE);
+    let   consFailRun = 0;   // 連続失敗カウンタ
 
-    let done = 0, ok = 0, fail = 0, rxBytes = 0;
-    const t0 = performance.now();
+    outerLoop:
+    for (let b = 0; b < batches; b++) {
+      if (abortFlag) break;
 
-    // 1リクエスト: Cloudflareへの実fetch（外部だが自サイト）
-    // サイズはURLパラメータで指定、Workerが動的生成して返す
-    // Workerが無い場合は自サイトのindex.htmlを小分けfetchで代替
-    const TARGET = location.origin + '/bench/';
+      const bStart = b * BATCH_SIZE;
+      const bEnd   = Math.min(bStart + BATCH_SIZE, cfg.target);
+      const bSize  = bEnd - bStart;
 
-    async function oneRequest(i) {
-      try {
-        // ランダムクエリパラメータでキャッシュ回避
-        const url = `${TARGET}?t=${Date.now()}&i=${i}&r=${Math.random().toString(36).slice(2)}`;
-        const res = await fetch(url, {
-          method: 'GET',
-          cache: 'no-store',
-          signal: AbortSignal.timeout(10000)
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const buf = await res.arrayBuffer();
-        rxBytes += buf.byteLength;
-        ok++;
-      } catch (e) {
-        fail++;
-        if (fail <= 5) log('bad', `req[${i}] 失敗: ${e.message}`);
-        if (fail === 6) log('bad', '(以降の失敗ログは省略)');
-      } finally {
-        done++;
-        const pct = done / parallel * 100;
-        updateGauge('txt-done', 'bar-done', done, parallel, `/ ${parallel}`);
-        updateGauge('txt-ok',   'bar-ok',   ok,   parallel, '');
-        updateGauge('txt-fail', 'bar-fail', fail, parallel, '');
-        updateGauge('txt-bytes','bar-bytes', Math.round(rxBytes/1024), Math.round(totalBytes/1024), 'KB');
+      log('info', `Wave ${b + 1}/${batches}  [${bStart}〜${bEnd - 1}] 発行中...`);
 
-        // リアルタイムMbps
-        const elapsed = (performance.now() - t0) / 1000;
-        if (elapsed > 0 && rxBytes > 0) {
-          const mbps = (rxBytes * 8 / 1e6 / elapsed).toFixed(1);
-          setMetric('val-mbps', mbps);
+      const tasks = [];
+      for (let i = bStart; i < bEnd; i++) {
+        tasks.push(openOne(i));
+      }
+
+      const results = await Promise.all(tasks);
+
+      let waveOk = 0, waveFail = 0;
+      for (const r of results) {
+        totalTried++;
+        if (r.ok) {
+          totalOk++;
+          waveOk++;
+          consFailRun = 0;
+        } else {
+          totalFail++;
+          waveFail++;
+          consFailRun++;
+          setDot(totalTried - 1, 'failed');
+          if (waveFail <= 3) log('bad', `接続失敗 [idx=${totalTried-1}] reason=${r.reason}`);
         }
+      }
+
+      updateGauges();
+      log(
+        waveFail === 0 ? 'good' : waveFail < bSize * 0.5 ? 'warn' : 'bad',
+        `Wave ${b + 1} 完了 — 成功: ${waveOk} / 失敗: ${waveFail}  (累計 open: ${activeSockets.length})`
+      );
+
+      /* 連続失敗が閾値を超えたら中断 */
+      if (consFailRun >= FAIL_ABORT) {
+        log('bad', `連続失敗 ${consFailRun} 回 → ポート枯渇検出。テスト中断。`);
+        break outerLoop;
+      }
+
+      /* 波間遅延 */
+      if (b < batches - 1) {
+        await sleep(BATCH_DELAY);
       }
     }
 
-    // 全リクエストを並列発行
-    log('info', `${parallel}リクエスト 並列発行中...`);
-    const promises = Array.from({ length: parallel }, (_, i) => oneRequest(i));
-    await Promise.allSettled(promises);
+    /* ================================================
+       結果集計
+    ================================================ */
+    const rate       = totalTried > 0 ? totalOk / totalTried * 100 : 0;
+    const portOccRate = cfg.threshold > 0 ? totalOk / cfg.threshold * 100 : null;
 
-    // ========================================
-    // 結果集計
-    // ========================================
-    const elapsed = (performance.now() - t0) / 1000;
-    const mbps     = rxBytes > 0 ? (rxBytes * 8 / 1e6 / elapsed).toFixed(2) : '0.00';
-    const compRate = Math.round(ok / parallel * 100);
+    log('head', `━━━ RESULT: 最大同時接続 ${peakActive} / 成功率 ${rate.toFixed(1)}% ━━━`);
+    log('info', `試行: ${totalTried}  成功: ${totalOk}  失敗: ${totalFail}`);
 
-    setMetric('val-mbps',     mbps,               compRate >= 95 ? 'ok' : compRate >= 70 ? '' : 'warn');
-    setMetric('val-complete', compRate + '%',      compRate >= 95 ? 'ok' : compRate >= 70 ? '' : 'warn');
-    setMetric('val-time',     elapsed.toFixed(2),  '');
-
-    log('info', `===== 完了: ${elapsed.toFixed(2)}s | ${mbps} Mbps | 完走率 ${compRate}% =====`);
-    log(compRate >= 95 ? 'good' : 'bad',
-        `成功: ${ok} / ${parallel}  失敗: ${fail}  転送: ${(rxBytes/1024).toFixed(0)}KB`);
-
-    // バッジ
     const badge = document.getElementById('result-badge');
-    if (compRate >= 95) {
-      badge.className = 'result-badge pass';
-      badge.textContent = `✓  PASS — ポート枯渇なし (${compRate}% 完走)`;
-      log('good', '→ MAP-E対策有効: ニチバンベンチ 合格');
-    } else if (compRate >= 70) {
-      badge.className = 'result-badge fail';
-      badge.textContent = `△  PARTIAL — ${compRate}% 完走 (要確認)`;
-      log('bad', '→ 一部失敗: conntrack/ポート枯渇の可能性');
+
+    if (totalFail === 0 && totalOk >= cfg.target) {
+      /* 全試行成功 */
+      badge.className   = 'result-badge pass';
+      badge.textContent = `✓  PASS — ${totalOk} 接続成功・ポート枯渇なし`;
+      log('good', `→ PASS: MAP-E対策有効。${cfg.target} 接続すべて成功。`);
+    } else if (rate >= 90) {
+      badge.className   = 'result-badge pass';
+      badge.textContent = `✓  PASS — 成功率 ${rate.toFixed(0)}% (${totalOk}/${totalTried})`;
+      log('good', `→ PASS: 軽微な失敗はあるが MAP-E 対策は有効と判断。`);
+    } else if (rate >= 70) {
+      badge.className   = 'result-badge caution';
+      badge.textContent = `△  CAUTION — 成功率 ${rate.toFixed(0)}% 要確認`;
+      log('warn', `→ CAUTION: conntrack / ポート不足の可能性。map.sh 設定を確認。`);
     } else {
-      badge.className = 'result-badge fail';
-      badge.textContent = `✗  FAIL — ポート枯渇検出 (${compRate}% のみ完走)`;
-      log('bad', '→ MAP-E対策不十分: map.sh.all の適用を推奨');
+      badge.className   = 'result-badge fail';
+      badge.textContent = `✗  FAIL — ポート枯渇検出 (成功率 ${rate.toFixed(0)}%)`;
+      log('bad', `→ FAIL: ポート枯渇を検出。map.sh.all の適用を推奨。`);
     }
 
     running = false;
     btn.disabled = false;
     btn.textContent = '▶  RUN BENCHMARK';
+
+    /* ソケット保持タイマーが切れるまで接続は継続される */
+    log('info', `接続は ${HOLD_MS/1000}s 後に自動解放されます。`);
   }
 
-  // ========================================
-  // イベント
-  // ========================================
-  document.getElementById('run-btn').addEventListener('click', runBench);
+  /* ================================================
+     中断ボタン (実行中に再クリック)
+  ================================================ */
+  document.getElementById('run-btn').addEventListener('click', () => {
+    if (running) {
+      abortFlag = true;
+      log('warn', 'ユーザーによって中断されました。');
+    } else {
+      runBench();
+    }
+  });
 
-  // 初期ログ
-  log('info', 'MAP-E Nichiban Bench 初期化完了');
-  log('info', 'プリセットを選択して RUN BENCHMARK を押してください');
+  /* ================================================
+     ユーティリティ
+  ================================================ */
+  function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /* ================================================
+     起動ログ
+  ================================================ */
+  log('info', 'MAP-E Nichiban Bench v2 初期化完了');
+  log('info', 'ISP プリセットを選択して RUN BENCHMARK を押してください');
+  log('info', `デフォルト: transix / ratio 64 / target ${cfg.target} conn`);
 })();
 </script>
 </body>
