@@ -31,7 +31,6 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 
 // .batテンプレート
 const BAT_TEMPLATES = {
-    openwrtconnect: `https://site-u.pages.dev/aios-connect.msi`,
     aios2: `@echo off
 setlocal
 REM Self-elevate using VBScript
@@ -207,7 +206,7 @@ pause >nul`
 
 const DEFAULT_TERMINALS = {
   openwrtconnect: {
-    name: 'aios-connect.msi'
+    name: 'openwrt-connect.msi'
   },
   aios2: {
     name: 'aios2.bat'
@@ -270,7 +269,7 @@ const translations = {
         aios2Explanation: 'aios2.bat実行後はOpenWrtコンソールで "aios2" コマンドから実行できます',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         openwrtconnectExplanation: 'Windowsインストーラー<br>※ブラウザ警告が出た場合は「詳細を表示」＞「保持する」を選択してください',
-        openwrtconnectExplanationLink: 'https://site-u.pages.dev/aios-connect.msi',
+        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/release',
         sshExplanation: 'SSHログイン',
         // iPhone
         termius: 'Termius (SSH)',
@@ -334,7 +333,7 @@ const translations = {
         aios2Explanation: 'After running aios2.bat, you can run "aios2" command from the OpenWrt console',
         aios2ExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/blob/main/www/README.md',
         openwrtconnectExplanation: 'Windows Installer<br>*If browser warning appears, click "Show more" → "Keep"',
-        openwrtconnectExplanationLink: 'https://site-u.pages.dev/aios-connect.msi',
+        openwrtconnectExplanationLink: 'https://github.com/site-u2023/site-u2023.github.io/releases/tag/release',
         sshExplanation: 'SSH login',
         // iPhone
         termius: 'Termius (SSH)',
@@ -660,8 +659,9 @@ function bindEvents() {
             const terminalSelector = document.getElementById('terminal-selector');
             const terminalType = terminalSelector ? terminalSelector.value : 'openwrtconnect';
             
+            // openwrtconnect の場合は直接リンクを開く
             if (terminalType === 'openwrtconnect') {
-                downloadBatFile(terminalType);
+                window.open('https://site-u.pages.dev/aios-connect.msi', '_blank');
             } else {
                 downloadBatFile(terminalType);
             }
@@ -842,19 +842,6 @@ function downloadBatFile(terminalType) {
         const template = BAT_TEMPLATES[terminalType];
         if (!template) {
             throw new Error(`Template not found: ${terminalType}`);
-        }
-        
-        if (terminalType === 'openwrtconnect') {
-            const blob = new Blob([template], { type: 'application/octet-stream' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'aios-connect.msi';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            window.URL.revokeObjectURL(url);
-            return;
         }
         
         // IP置換後、改行コードをCRLFに変換
