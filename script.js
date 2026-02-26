@@ -206,7 +206,7 @@ pause >nul`
 
 const DEFAULT_TERMINALS = {
   openwrtconnect: {
-    name: 'openwrt-connect.msi'
+    name: 'aios-connect.msi'
   },
   aios2: {
     name: 'aios2.bat'
