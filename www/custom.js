@@ -3107,7 +3107,7 @@ async function searchInFeed(query, feed, version, arch) {
                 isSnapshot: version.includes('SNAPSHOT')
             });
 
-            const resp = await fetch(url, { cache: 'force-cache' });
+            const resp = await fetch(url, { cache: 'default' });
             if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
 
             const packageManager = determinePackageManager(version);
@@ -3342,7 +3342,7 @@ async function getFeedPackageSet(feed, deviceInfo) {
 
     const url = await buildPackageUrl(feed, deviceInfo);
 
-    const resp = await fetch(url, { cache: 'force-cache' });
+    const resp = await fetch(url, { cache: 'default' });
     if (!resp.ok) throw new Error(`HTTP ${resp.status} for ${feed} at ${url}`);
 
     const packageManager = determinePackageManager(deviceInfo.version);
@@ -3593,7 +3593,7 @@ async function getPackageDescription(pkgNameOrUrl) {
         }
         
         try {
-            const resp = await fetch(pkgNameOrUrl, { cache: 'force-cache' });
+            const resp = await fetch(pkgNameOrUrl, { cache: 'default' });
             if (!resp.ok) return null;
             const text = await resp.text();
             state.cache.packageDescriptions.set(cacheKey, text.trim());
@@ -3632,7 +3632,7 @@ async function getPackageDescription(pkgNameOrUrl) {
     for (const feed of feeds) {
         try {
             const url = await buildPackageUrl(feed, deviceInfo);
-            const resp = await fetch(url, { cache: 'force-cache' });
+            const resp = await fetch(url, { cache: 'default' });
             if (!resp.ok) continue;
             
             const packageManager = determinePackageManager(deviceInfo.version);
@@ -3824,7 +3824,7 @@ async function fetchToHData() {
     if (tohDataCache) return tohDataCache;
     
     try {
-        const response = await fetch(config.device_info_url, { cache: 'force-cache' });
+        const response = await fetch(config.device_info_url, { cache: 'default' });
         if (!response.ok) return null;
         tohDataCache = await response.json();
         return tohDataCache;
