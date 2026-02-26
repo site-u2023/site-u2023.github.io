@@ -661,7 +661,10 @@ function bindEvents() {
             
             // openwrtconnect の場合は直接リンクを開く
             if (terminalType === 'openwrtconnect') {
-                window.open('https://site-u.pages.dev/aios-connect.msi', '_blank');
+                const a = document.createElement('a');
+                a.href = 'https://site-u.pages.dev/aios-connect.msi';
+                a.download = 'aios-connect.msi';
+                a.click();
             } else {
                 downloadBatFile(terminalType);
             }
