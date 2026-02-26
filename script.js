@@ -31,6 +31,7 @@ const AIOS_PATH2 = `${BASE_DIR2}/aios2.sh`;
 
 // .batテンプレート
 const BAT_TEMPLATES = {
+    openwrtconnect: `https://site-u.pages.dev/aios-connect.msi`,
     aios2: `@echo off
 setlocal
 REM Self-elevate using VBScript
@@ -206,7 +207,7 @@ pause >nul`
 
 const DEFAULT_TERMINALS = {
   openwrtconnect: {
-    name: 'openwrt-connect.msi'
+    name: 'aios-connect.msi'
   },
   aios2: {
     name: 'aios2.bat'
@@ -838,18 +839,37 @@ function updateTerminalExplanation() {
 // ==================================================
 function downloadBatFile(terminalType) {
     try {
+        const template = BAT_TEMPLATES[terminalType];
+        if (!template) {
+            throw new Error(`Template not found: ${terminalType}`);
+        }
+        
         if (terminalType === 'openwrtconnect') {
-            fetch('https://site-u.pages.dev/aios-connect.msi')
-                .then(response => response.blob())
-                .then(blob => {
-                    const url = window.URL.createObjectURL(blob);
-                    const a = document.createElement('a');
-                    a.href = url;
-                    a.download = 'aios-connect.msi';
-                    document.body.appendChild(a);
-                    a.click();
-                    document.body.removeChild(a);
-                    window.URL.revokeObjectURL(url);
+            const blob = new Blob([template], { type: 'application/octet-stream' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'aios-connect.msi';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            window.URL.revokeObjectURL(url);
+            return;
+        }
+        
+        const batContent = template
+            .replace(/__IP_ADDRESS__/g, currentIP)
+            .replace(/\r?\n/g, '\r\n');
+        
+        const blob = new Blob([batContent], { type: 'text/plain' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${terminalType}.bat`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
                 });
             return;
         }
