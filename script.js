@@ -660,18 +660,7 @@ function bindEvents() {
             const terminalType = terminalSelector ? terminalSelector.value : 'openwrtconnect';
             
             if (terminalType === 'openwrtconnect') {
-                fetch('https://site-u.pages.dev/aios-connect.msi')
-                    .then(response => response.blob())
-                    .then(blob => {
-                        const url = window.URL.createObjectURL(blob);
-                        const a = document.createElement('a');
-                        a.href = url;
-                        a.download = 'aios-connect.msi';
-                        document.body.appendChild(a);
-                        a.click();
-                        document.body.removeChild(a);
-                        window.URL.revokeObjectURL(url);
-                    });
+                downloadBatFile(terminalType);
             } else {
                 downloadBatFile(terminalType);
             }
@@ -849,6 +838,21 @@ function updateTerminalExplanation() {
 // ==================================================
 function downloadBatFile(terminalType) {
     try {
+        if (terminalType === 'openwrtconnect') {
+            fetch('https://site-u.pages.dev/aios-connect.msi')
+                .then(response => response.blob())
+                .then(blob => {
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'aios-connect.msi';
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    window.URL.revokeObjectURL(url);
+                });
+            return;
+        }
         const template = BAT_TEMPLATES[terminalType];
         if (!template) {
             throw new Error(`Template not found: ${terminalType}`);
