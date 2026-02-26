@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAP-E Bench — 焼いたらMAP-E</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Noto+Sans+JP:wght@400;700;900&display=swap');
+
+:root {
+  --bg:       #0a0c0f;
+  --surface:  #111418;
+  --border:   #1e2530;
+  --accent:   #00e5ff;
+  --warn:     #ff6b35;
+  --ok:       #39ff14;
+  --dim:      #3a4555;
+  --text:     #c8d8e8;
+  --mono:     'JetBrains Mono', monospace;
+  --sans:     'Noto Sans JP', sans-serif;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 2rem 1rem 4rem;
+}
+
+/* スキャンライン演出 */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0,229,255,.018) 2px,
+    rgba(0,229,255,.018) 4px
+  );
+  pointer-events: none;
+  z-index: 999;
+}
+
+header {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.title {
+  font-family: var(--mono);
+  font-size: clamp(1.4rem, 4vw, 2.2rem);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: .08em;
+  text-shadow: 0 0 24px rgba(0,229,255,.5);
+}
+
+.subtitle {
+  font-size: .85rem;
+  color: var(--dim);
+  margin-top: .4rem;
+  font-family: var(--mono);
+}
+
+/* プリセット選択 */
+.presets {
+  display: flex;
+  gap: .75rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.preset-btn {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: .8rem;
+  padding: .5rem 1.2rem;
+  cursor: pointer;
+  transition: all .15s;
+  letter-spacing: .06em;
+}
+
+.preset-btn:hover,
+.preset-btn.active {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 12px rgba(0,229,255,.2);
+}
+
+.preset-btn.active {
+  background: rgba(0,229,255,.08);
+}
+
+/* メインパネル */
+.panel {
+  width: 100%;
+  max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.panel-title {
+  font-family: var(--mono);
+  font-size: .7rem;
+  color: var(--dim);
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  margin-bottom: 1rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: .5rem;
+}
+
+/* ゲージ */
+.gauge-row {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: .8rem;
+}
+
+.gauge-label {
+  font-family: var(--mono);
+  font-size: .75rem;
+  color: var(--dim);
+  width: 7rem;
+  flex-shrink: 0;
+}
+
+.gauge-bar {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  position: relative;
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width .1s linear;
+  box-shadow: 0 0 8px rgba(0,229,255,.6);
+}
+
+.gauge-fill.warn { background: var(--warn); box-shadow: 0 0 8px rgba(255,107,53,.6); }
+.gauge-fill.ok   { background: var(--ok);   box-shadow: 0 0 8px rgba(57,255,20,.6); }
+
+.gauge-val {
+  font-family: var(--mono);
+  font-size: .75rem;
+  width: 5rem;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 大きい数値 */
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  width: 100%;
+  max-width: 720px;
+}
+
+.metric-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  text-align: center;
+}
+
+.metric-val {
+  font-family: var(--mono);
+  font-size: clamp(1.4rem, 4vw, 2rem);
+  font-weight: 700;
+  color: var(--accent);
+  line-height: 1;
+  text-shadow: 0 0 16px rgba(0,229,255,.4);
+}
+
+.metric-val.ok   { color: var(--ok);   text-shadow: 0 0 16px rgba(57,255,20,.4); }
+.metric-val.warn { color: var(--warn); text-shadow: 0 0 16px rgba(255,107,53,.4); }
+
+.metric-unit {
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  margin-top: .25rem;
+  letter-spacing: .1em;
+}
+
+/* ログ */
+.log-box {
+  width: 100%;
+  max-width: 720px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  padding: 1rem;
+  height: 160px;
+  overflow-y: auto;
+  font-family: var(--mono);
+  font-size: .72rem;
+  line-height: 1.6;
+}
+
+.log-line { color: var(--dim); }
+.log-line.info  { color: var(--text); }
+.log-line.good  { color: var(--ok); }
+.log-line.bad   { color: var(--warn); }
+
+/* 実行ボタン */
+.run-btn {
+  margin-top: 1.5rem;
+  background: transparent;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: .9rem;
+  font-weight: 700;
+  letter-spacing: .15em;
+  padding: .8rem 3rem;
+  cursor: pointer;
+  transition: all .15s;
+  text-transform: uppercase;
+}
+
+.run-btn:hover:not(:disabled) {
+  background: rgba(0,229,255,.1);
+  box-shadow: 0 0 24px rgba(0,229,255,.3);
+}
+
+.run-btn:disabled {
+  border-color: var(--dim);
+  color: var(--dim);
+  cursor: not-allowed;
+}
+
+/* 結果バッジ */
+.result-badge {
+  display: none;
+  margin-top: 1rem;
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: .1em;
+  padding: .5rem 2rem;
+  border: 1px solid;
+}
+
+.result-badge.pass {
+  display: block;
+  color: var(--ok);
+  border-color: var(--ok);
+  text-shadow: 0 0 12px rgba(57,255,20,.5);
+}
+
+.result-badge.fail {
+  display: block;
+  color: var(--warn);
+  border-color: var(--warn);
+  text-shadow: 0 0 12px rgba(255,107,53,.5);
+}
+
+footer {
+  margin-top: 3rem;
+  font-family: var(--mono);
+  font-size: .65rem;
+  color: var(--dim);
+  letter-spacing: .08em;
+}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="title">MAP-E // NICHIBAN BENCH</div>
+  <div class="subtitle">焼いたらMAP-E — port exhaustion stress test</div>
+</header>
+
+<!-- プリセット -->
+<div class="presets">
+  <button class="preset-btn active" data-parallel="50"  data-size="10240" data-id="light">
+    LIGHT<br><span style="font-size:.65rem;color:var(--dim)">50並列 × 10KB</span>
+  </button>
+  <button class="preset-btn" data-parallel="100" data-size="10240" data-id="medium">
+    MEDIUM<br><span style="font-size:.65rem;color:var(--dim)">100並列 × 10KB</span>
+  </button>
+  <button class="preset-btn" data-parallel="200" data-size="10240" data-id="heavy">
+    HEAVY<br><span style="font-size:.65rem;color:var(--dim)">200並列 × 10KB</span>
+  </button>
+  <button class="preset-btn" data-parallel="300" data-size="10240" data-id="soyabus">
+    SOYABUS<br><span style="font-size:.65rem;color:var(--dim)">300並列 × 10KB</span>
+  </button>
+</div>
+
+<!-- メトリクス -->
+<div class="metrics">
+  <div class="metric-card">
+    <div class="metric-val" id="val-mbps">—</div>
+    <div class="metric-unit">Mbps</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-val" id="val-complete">—</div>
+    <div class="metric-unit">完走率 %</div>
+  </div>
+  <div class="metric-card">
+    <div class="metric-val" id="val-time">—</div>
+    <div class="metric-unit">所要時間 sec</div>
+  </div>
+</div>
+
+<!-- プログレス -->
+<div class="panel" style="max-width:720px;width:100%">
+  <div class="panel-title">progress</div>
+
+  <div class="gauge-row">
+    <div class="gauge-label">完了</div>
+    <div class="gauge-bar"><div class="gauge-fill" id="bar-done"></div></div>
+    <div class="gauge-val" id="txt-done">0 / 0</div>
+  </div>
+
+  <div class="gauge-row">
+    <div class="gauge-label">成功</div>
+    <div class="gauge-bar"><div class="gauge-fill ok" id="bar-ok"></div></div>
+    <div class="gauge-val" id="txt-ok">0</div>
+  </div>
+
+  <div class="gauge-row">
+    <div class="gauge-label">失敗</div>
+    <div class="gauge-bar"><div class="gauge-fill warn" id="bar-fail"></div></div>
+    <div class="gauge-val" id="txt-fail">0</div>
+  </div>
+
+  <div class="gauge-row">
+    <div class="gauge-label">転送量</div>
+    <div class="gauge-bar"><div class="gauge-fill" id="bar-bytes"></div></div>
+    <div class="gauge-val" id="txt-bytes">0 KB</div>
+  </div>
+</div>
+
+<!-- ログ -->
+<div class="log-box" id="log"></div>
+
+<!-- ボタン・結果 -->
+<button class="run-btn" id="run-btn">▶  RUN BENCHMARK</button>
+<div class="result-badge" id="result-badge">—</div>
+
+<footer>site-u MAP-E bench • external traffic: zero • self-contained</footer>
+
+<script>
+(function () {
+  // ========================================
+  // 状態
+  // ========================================
+  let cfg = { parallel: 50, size: 10240 };
+  let running = false;
+
+  // ========================================
+  // プリセット選択
+  // ========================================
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (running) return;
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      cfg.parallel = parseInt(btn.dataset.parallel);
+      cfg.size     = parseInt(btn.dataset.size);
+      log('info', `プリセット: ${btn.dataset.id.toUpperCase()} — ${cfg.parallel}並列 × ${cfg.size/1024}KB`);
+    });
+  });
+
+  // ========================================
+  // ログ
+  // ========================================
+  const logBox = document.getElementById('log');
+  function log(type, msg) {
+    const now = new Date();
+    const ts  = `${String(now.getMinutes()).padStart(2,'0')}:${String(now.getSeconds()).padStart(2,'0')}.${String(now.getMilliseconds()).padStart(3,'0')}`;
+    const el  = document.createElement('div');
+    el.className = `log-line ${type}`;
+    el.textContent = `[${ts}] ${msg}`;
+    logBox.appendChild(el);
+    logBox.scrollTop = logBox.scrollHeight;
+  }
+
+  // ========================================
+  // ペイロード生成（ローカル・外部通信ゼロ）
+  // ========================================
+  function makePayload(size) {
+    const buf = new Uint8Array(size);
+    crypto.getRandomValues(buf);
+    return buf;
+  }
+
+  // ========================================
+  // ゲージ更新
+  // ========================================
+  function updateGauge(id, barId, val, max, unit) {
+    const pct = max > 0 ? Math.min(100, val / max * 100) : 0;
+    document.getElementById(barId).style.width = pct + '%';
+    document.getElementById(id).textContent = unit ? `${val} ${unit}` : val;
+  }
+
+  function setMetric(id, val, cls) {
+    const el = document.getElementById(id);
+    el.textContent = val;
+    el.className = 'metric-val' + (cls ? ' ' + cls : '');
+  }
+
+  // ========================================
+  // リセット
+  // ========================================
+  function reset() {
+    ['bar-done','bar-ok','bar-fail','bar-bytes'].forEach(id => {
+      document.getElementById(id).style.width = '0%';
+    });
+    ['txt-done','txt-ok','txt-fail','txt-bytes'].forEach(id => {
+      document.getElementById(id).textContent = '0';
+    });
+    setMetric('val-mbps',     '—');
+    setMetric('val-complete', '—');
+    setMetric('val-time',     '—');
+    document.getElementById('result-badge').className = 'result-badge';
+    document.getElementById('result-badge').textContent = '—';
+  }
+
+  // ========================================
+  // ベンチマーク本体
+  // ========================================
+  async function runBench() {
+    if (running) return;
+    running = true;
+
+    const btn = document.getElementById('run-btn');
+    btn.disabled = true;
+    btn.textContent = '⏳  RUNNING...';
+
+    reset();
+
+    const { parallel, size } = cfg;
+    const totalBytes = parallel * size;
+
+    log('info', `===== START: ${parallel}並列 × ${size/1024}KB = ${(totalBytes/1024).toFixed(0)}KB =====`);
+
+    let done = 0, ok = 0, fail = 0, rxBytes = 0;
+    const t0 = performance.now();
+
+    // 1リクエスト: Cloudflareへの実fetch（外部だが自サイト）
+    // サイズはURLパラメータで指定、Workerが動的生成して返す
+    // Workerが無い場合は自サイトのindex.htmlを小分けfetchで代替
+    const TARGET = location.origin + '/bench/';
+
+    async function oneRequest(i) {
+      try {
+        // ランダムクエリパラメータでキャッシュ回避
+        const url = `${TARGET}?t=${Date.now()}&i=${i}&r=${Math.random().toString(36).slice(2)}`;
+        const res = await fetch(url, {
+          method: 'GET',
+          cache: 'no-store',
+          signal: AbortSignal.timeout(10000)
+        });
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const buf = await res.arrayBuffer();
+        rxBytes += buf.byteLength;
+        ok++;
+      } catch (e) {
+        fail++;
+        if (fail <= 5) log('bad', `req[${i}] 失敗: ${e.message}`);
+        if (fail === 6) log('bad', '(以降の失敗ログは省略)');
+      } finally {
+        done++;
+        const pct = done / parallel * 100;
+        updateGauge('txt-done', 'bar-done', done, parallel, `/ ${parallel}`);
+        updateGauge('txt-ok',   'bar-ok',   ok,   parallel, '');
+        updateGauge('txt-fail', 'bar-fail', fail, parallel, '');
+        updateGauge('txt-bytes','bar-bytes', Math.round(rxBytes/1024), Math.round(totalBytes/1024), 'KB');
+
+        // リアルタイムMbps
+        const elapsed = (performance.now() - t0) / 1000;
+        if (elapsed > 0 && rxBytes > 0) {
+          const mbps = (rxBytes * 8 / 1e6 / elapsed).toFixed(1);
+          setMetric('val-mbps', mbps);
+        }
+      }
+    }
+
+    // 全リクエストを並列発行
+    log('info', `${parallel}リクエスト 並列発行中...`);
+    const promises = Array.from({ length: parallel }, (_, i) => oneRequest(i));
+    await Promise.allSettled(promises);
+
+    // ========================================
+    // 結果集計
+    // ========================================
+    const elapsed = (performance.now() - t0) / 1000;
+    const mbps     = rxBytes > 0 ? (rxBytes * 8 / 1e6 / elapsed).toFixed(2) : '0.00';
+    const compRate = Math.round(ok / parallel * 100);
+
+    setMetric('val-mbps',     mbps,               compRate >= 95 ? 'ok' : compRate >= 70 ? '' : 'warn');
+    setMetric('val-complete', compRate + '%',      compRate >= 95 ? 'ok' : compRate >= 70 ? '' : 'warn');
+    setMetric('val-time',     elapsed.toFixed(2),  '');
+
+    log('info', `===== 完了: ${elapsed.toFixed(2)}s | ${mbps} Mbps | 完走率 ${compRate}% =====`);
+    log(compRate >= 95 ? 'good' : 'bad',
+        `成功: ${ok} / ${parallel}  失敗: ${fail}  転送: ${(rxBytes/1024).toFixed(0)}KB`);
+
+    // バッジ
+    const badge = document.getElementById('result-badge');
+    if (compRate >= 95) {
+      badge.className = 'result-badge pass';
+      badge.textContent = `✓  PASS — ポート枯渇なし (${compRate}% 完走)`;
+      log('good', '→ MAP-E対策有効: ニチバンベンチ 合格');
+    } else if (compRate >= 70) {
+      badge.className = 'result-badge fail';
+      badge.textContent = `△  PARTIAL — ${compRate}% 完走 (要確認)`;
+      log('bad', '→ 一部失敗: conntrack/ポート枯渇の可能性');
+    } else {
+      badge.className = 'result-badge fail';
+      badge.textContent = `✗  FAIL — ポート枯渇検出 (${compRate}% のみ完走)`;
+      log('bad', '→ MAP-E対策不十分: map.sh.all の適用を推奨');
+    }
+
+    running = false;
+    btn.disabled = false;
+    btn.textContent = '▶  RUN BENCHMARK';
+  }
+
+  // ========================================
+  // イベント
+  // ========================================
+  document.getElementById('run-btn').addEventListener('click', runBench);
+
+  // 初期ログ
+  log('info', 'MAP-E Nichiban Bench 初期化完了');
+  log('info', 'プリセットを選択して RUN BENCHMARK を押してください');
+})();
+</script>
+</body>
+</html>
