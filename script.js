@@ -857,27 +857,6 @@ function downloadBatFile(terminalType) {
             return;
         }
         
-        const batContent = template
-            .replace(/__IP_ADDRESS__/g, currentIP)
-            .replace(/\r?\n/g, '\r\n');
-        
-        const blob = new Blob([batContent], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${terminalType}.bat`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        window.URL.revokeObjectURL(url);
-                });
-            return;
-        }
-        const template = BAT_TEMPLATES[terminalType];
-        if (!template) {
-            throw new Error(`Template not found: ${terminalType}`);
-        }
-        
         // IP置換後、改行コードをCRLFに変換
         const batContent = template
             .replace(/__IP_ADDRESS__/g, currentIP)
