@@ -661,7 +661,18 @@ function bindEvents() {
             
             // openwrtconnect の場合は直接リンクを開く
             if (terminalType === 'openwrtconnect') {
-                location.href = 'https://site-u.pages.dev/aios-connect.msi';
+                fetch('https://site-u.pages.dev/aios-connect.msi')
+                    .then(response => response.blob())
+                    .then(blob => {
+                        const url = window.URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url;
+                        a.download = 'aios-connect.msi';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        window.URL.revokeObjectURL(url);
+                    });
             } else {
                 downloadBatFile(terminalType);
             }
