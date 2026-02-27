@@ -2394,5 +2394,8 @@ EOF
 aios2_whiptail_main() {
     export NEWT_COLORS
     device_info
+    if [ -n "$DIRECT_CATEGORY" ]; then
+        category_config "$DIRECT_CATEGORY"
+    fi
     whiptail_main_menu
 }
