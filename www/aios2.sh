@@ -5727,6 +5727,8 @@ show_log() {
 }
 
 aios2_main() {
+    DIRECT_CATEGORY="${1:-}"
+    export DIRECT_CATEGORY
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
     elapsed_time() {
@@ -5941,6 +5943,6 @@ case "$1" in
         show_log
         ;;
     *)
-        aios2_main
+        aios2_main "$@"
         ;;
 esac
