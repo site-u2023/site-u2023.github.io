@@ -2395,7 +2395,23 @@ aios2_whiptail_main() {
     export NEWT_COLORS
     device_info
     if [ -n "$DIRECT_CATEGORY" ]; then
-        category_config "$DIRECT_CATEGORY"
+        case "$DIRECT_CATEGORY" in
+            packages)
+                package_categories
+                ;;
+            custom-feeds)
+                custom_feeds_selection
+                ;;
+            custom-scripts)
+                custom_scripts_selection
+                ;;
+            review)
+                review_and_apply
+                ;;
+            *)
+                category_config "$DIRECT_CATEGORY"
+                ;;
+        esac
     fi
     whiptail_main_menu
 }
