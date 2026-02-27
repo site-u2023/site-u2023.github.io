@@ -61,9 +61,10 @@ _pkgdiff_detect_device() {
         _PKGDIFF_PROFILE=$(jsonfilter -i /etc/board.json -e '@.model.id' 2>/dev/null | tr ',' '_')
     fi
 
+    # x86/64 等 model.id が空の場合は "generic" にフォールバック
     if [ -z "$_PKGDIFF_PROFILE" ]; then
-        echo "ERROR: Cannot detect device profile from /etc/board.json" >&2
-        return 1
+        _PKGDIFF_PROFILE="generic"
+        echo "  Profile  : (model.id not found, using 'generic')" >&2
     fi
 
     # パッケージマネージャー検出
@@ -200,8 +201,19 @@ _pkgdiff_get_current() {
             ;;
         opkg)
             if [ -f /usr/lib/opkg/status ]; then
-                awk '/^Package:/{pkg=$2} /^Status: install user installed/{print pkg}' \
-                    /usr/lib/opkg/status | LC_ALL=C sort -u
+                # "install user installed" が存在する場合はそれを優先（明示インストール分のみ）
+                # x86/64 等では "install ok installed" / "install hold installed" のみの場合がある
+                # その場合は全インストール済みパッケージを対象とする
+                local user_count
+                user_count=$(grep -c 'Status: install user installed' /usr/lib/opkg/status 2>/dev/null)
+                user_count="${user_count:-0}"
+                if [ "$user_count" -gt 0 ]; then
+                    awk '/^Package:/{pkg=$2} /^Status: install user installed/{print pkg}' \
+                        /usr/lib/opkg/status | LC_ALL=C sort -u
+                else
+                    awk '/^Package:/{pkg=$2} /^Status: install (ok|hold) installed/{print pkg}' \
+                        /usr/lib/opkg/status | LC_ALL=C sort -u
+                fi
             else
                 echo "WARNING: /usr/lib/opkg/status not found, falling back to opkg list-installed" >&2
                 opkg list-installed 2>/dev/null | awk '{print $1}' | LC_ALL=C sort -u
