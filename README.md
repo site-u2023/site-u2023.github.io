@@ -23,7 +23,7 @@ C([**Console Tool**<br/>TUI Version])
 D([**Network Auto-Config API**])
 F([**Shared Resources**])
 E([**Official ASU Server**])
-H([**OpenWrt Connect**<br/>Windows SSH Tool])
+H([**OpenWrt Connect**<br/>AIOS Connect])
 G1([**User Device**<br/>Flash / Post-Install / UCI-defaults])
 G2([**User Device**<br/>Install / Config])
 A --> B
@@ -129,6 +129,39 @@ IPv6 bridge/passthrough function settings for each manufacturer:
 
 ---
 </details>
+
+### OpenWrt Connect (AIOS Connect)
+
+![OpenWrt-Connect.png](https://qiita-image-store.s3.ap-northeast-1.amazonaws.com/0/3412833/727a81f8-ef7e-44c7-bcbd-b3c87d7c3dfe.png)
+
+<details><summary><b>OpenWrt Connect (AIOS Connect)</b></summary>
+
+[OpenWrt Connect SSH Key Authentication Automation Windows App](https://qiita.com/site_u/items/9111335bcbacde4b9ae5)
+
+- Without link: [openwrt-connect.msi](https://github.com/site-u2023/openwrt-connect/releases)
+- With link: [aios-connect.msi](https://github.com/site-u2023/site-u2023.github.io/releases/tag/release)
+
+| **Direct Command** | Action |
+|---|---|
+| `aios2 basic-config` | Open Basic Configuration |
+| `aios2 wifi-config` | Open Wi-Fi Configuration |
+| `aios2 internet-connection` | Open Internet Connection |
+| `aios2 tuning-config` | Open Tuning |
+| `aios2 custom-scripts` | Open Custom Scripts |
+| `aios2 packages` | Open Package Selection |
+| `aios2 custom-feeds` | Open Custom Feeds |
+| `aios2 restore-point` | Open Restore Point |
+| `aios2 review` | Open Review Screen |
+| `aios2` | Open Main Menu (no arguments) |
+
+Known Bugs:
+- [Windows 11's redesigned Start menu has some very strange bugs](https://www.neowin.net/news/windows-11s-redesigned-start-menu-has-some-very-strange-bugs/)
+
+---
+
+</details>
+
+
 
 ### Console Tool
 [aios2 TUI Version (whiptail)](https://github.com/site-u2023/site-u2023.github.io/blob/main/www/aios2.sh)
