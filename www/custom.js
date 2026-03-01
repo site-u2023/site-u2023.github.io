@@ -1,5 +1,5 @@
 // custom.js
-console.log('custom.js (R8.0228.1830) loaded');
+console.log('custom.js (R8.0301.1205) loaded');
 
 // === CONFIGURATION SWITCH ===
 const CONSOLE_MODE = {
@@ -133,9 +133,7 @@ const state = {
         lastFormStateHash: null,
         lastPackageListHash: null,
         prevUISelections: new Set(),
-        packageSizes: new Map(),
         packageDescriptions: new Map(),
-        packageVersions: new Map(),
         packageManagerCache: new Map()
     },
 
@@ -397,7 +395,6 @@ function clearSectionFields(categoryId, sectionId, excludeIds = []) {
 // ==================== DOM要素キャッシュ ====================
 function cacheFrequentlyUsedElements() {
     state.dom.textarea = document.querySelector('#asu-packages');
-    state.dom.sizeBreakdown = document.querySelector('#package-size-breakdown');
     state.dom.packageLoadingIndicator = document.querySelector('#package-loading-indicator');
 }
 
@@ -428,9 +425,7 @@ if (oldArch !== mobj.arch_packages || oldVersion !== version || oldDeviceId !== 
             state.cache.feed.clear();
             state.cache.feedPackageSet.clear();
             state.cache.availabilityIndex.clear();
-            state.cache.packageSizes.clear();
             state.cache.packageDescriptions.clear();
-            state.cache.packageVersions.clear();
             state.cache.packageManagerCache.clear();
             state.cache.kmods.token = null;
             state.cache.kmods.key = null;
@@ -1637,8 +1632,7 @@ async function updateAllPackageState(source = 'unknown') {
     console.log(`updateAllPackageState called from: ${source}`);
 
     const elements = {
-        textarea: document.querySelector('#asu-packages'),
-        sizeBreakdown: document.querySelector('#package-size-breakdown')
+        textarea: document.querySelector('#asu-packages')
     };
 
     await updateLanguagePackageCore();
@@ -3136,12 +3130,6 @@ async function searchInFeed(query, feed, version, arch) {
                     if (line.startsWith('Package: ')) {
                         currentPackage = line.substring(9).trim();
                         list.push(currentPackage);
-                    } else if (line.startsWith('Size: ') && currentPackage) {
-                        const size = parseInt(line.substring(6).trim());
-                        if (size > 0) {
-                            const sizeCacheKey = `${version}:${arch}:${currentPackage}`;
-                            state.cache.packageSizes.set(sizeCacheKey, size);
-                        }
                     }
                 }
             }
@@ -3362,27 +3350,15 @@ async function getFeedPackageSet(feed, deviceInfo) {
                         const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
                         state.cache.packageDescriptions.set(descKey, pkg.desc);
                     }
-                    if (pkg.size) {
-                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${pkg.name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(pkg.size));
-                    }
                 }
             });
         } else if (data.packages && typeof data.packages === 'object') {
             Object.entries(data.packages).forEach(([name, verOrInfo]) => {
                 names.add(name);
-                const vKey = `${deviceInfo.version}:${deviceInfo.arch}:${feed}:${name}`;
-                if (typeof verOrInfo === 'string') {
-                    state.cache.packageVersions.set(vKey, verOrInfo);
-                } else if (verOrInfo && typeof verOrInfo === 'object') {
-                    if (verOrInfo.version) state.cache.packageVersions.set(vKey, verOrInfo.version);
+                if (verOrInfo && typeof verOrInfo === 'object') {
                     const descKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
                     if (verOrInfo.desc) {
                         state.cache.packageDescriptions.set(descKey, verOrInfo.desc);
-                    }
-                    if (verOrInfo.size) {
-                        const sizeKey = `${deviceInfo.version}:${deviceInfo.arch}:${name}`;
-                        state.cache.packageSizes.set(sizeKey, parseInt(verOrInfo.size));
                     }
                 }
             });
@@ -3409,12 +3385,6 @@ async function getFeedPackageSet(feed, deviceInfo) {
                 names.push(currentPackage);
                 currentDescription = '';
                 inDescription = false;
-            } else if (line.startsWith('Size: ') && currentPackage) {
-                const size = parseInt(line.substring(6).trim());
-                if (size > 0) {
-                    const sizeCacheKey = `${deviceInfo.version}:${deviceInfo.arch}:${currentPackage}`;
-                    state.cache.packageSizes.set(sizeCacheKey, size);
-                }
             } else if (line.startsWith('Description: ') && currentPackage) {
                 currentDescription = line.substring(13).trim();
                 inDescription = true;
@@ -3914,12 +3884,6 @@ function generatePackageSelector() {
         });
     } else {
         console.log('Device architecture not available, skipping package verification');
-    }
-    
-    if (state.cache.packageSizes.size > 0) {
-        requestAnimationFrame(() => {
-            updatePackageSizeDisplay();
-        });
     }
     
     requestAnimationFrame(() => {
