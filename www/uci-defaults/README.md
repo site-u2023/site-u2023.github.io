@@ -413,8 +413,8 @@ EOF
 \t# conntrack tuning for MAP-E port conservation\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=180 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=180 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=120 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=120 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
 }' "$MAPSH"
