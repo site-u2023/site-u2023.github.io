@@ -286,6 +286,7 @@ EOF
 \t\tdone\
 \t    done\
 \t\tallports=${allports%??}\
+\t    nft delete table inet mape 2>/dev/null\
 \t    nft add table inet mape\
 \t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
 \t\tlocal counter=0\
@@ -297,8 +298,8 @@ EOF
 \t# conntrack tuning for MAP-E port conservation\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=110 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=110 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=120 >/dev/null 2>\&1\
+\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=120 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
 \tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
 }' "$MAPSH"
