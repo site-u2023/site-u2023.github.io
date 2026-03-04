@@ -5728,6 +5728,20 @@ show_log() {
 
 aios2_main() {
     DIRECT_CATEGORY="${1:-}"
+
+	# Resolve short aliases to canonical category names
+    case "$DIRECT_CATEGORY" in
+        b|basic)          DIRECT_CATEGORY="basic-config" ;;
+        w|wifi)           DIRECT_CATEGORY="wifi-config" ;;
+        i|internet)       DIRECT_CATEGORY="internet-connection" ;;
+        t|tuning)         DIRECT_CATEGORY="tuning-config" ;;
+        p|pkg)            DIRECT_CATEGORY="packages" ;;
+        f|feeds)          DIRECT_CATEGORY="custom-feeds" ;;
+        s|scripts)        DIRECT_CATEGORY="custom-scripts" ;;
+        r|restore)        DIRECT_CATEGORY="restore-point" ;;
+        v)                DIRECT_CATEGORY="review" ;;
+    esac
+	
     export DIRECT_CATEGORY
     START_TIME=$(cut -d' ' -f1 /proc/uptime)
     
