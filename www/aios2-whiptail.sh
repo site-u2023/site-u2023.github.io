@@ -2405,6 +2405,9 @@ aios2_whiptail_main() {
             custom-scripts)
                 custom_scripts_selection
                 ;;
+            restore-point)
+                restore_point_menu
+                ;;
             review)
                 review_and_apply
                 ;;
