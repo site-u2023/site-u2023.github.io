@@ -5740,6 +5740,7 @@ aios2_main() {
         s|scripts)        DIRECT_CATEGORY="custom-scripts" ;;
         r|restore)        DIRECT_CATEGORY="restore-point" ;;
         v)                DIRECT_CATEGORY="review" ;;
+		l|log)            show_log; return 0 ;;
     esac
 	
     export DIRECT_CATEGORY
@@ -5951,12 +5952,4 @@ aios2_main() {
     fi
 }
 
-# オプション処理
-case "$1" in
-    l|-log|--log)
-        show_log
-        ;;
-    *)
-        aios2_main "$@"
-        ;;
-esac
+aios2_main "$@"
