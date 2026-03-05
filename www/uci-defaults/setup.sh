@@ -185,12 +185,10 @@ firewall_wan() {
 dscp_zero() {
     mkdir -p /etc/nftables.d
     cat > /etc/nftables.d/10-dscp-zero.nft << 'EOF'
-table inet dscp_zero {
-    chain postrouting {
-        type filter hook postrouting priority mangle; policy accept;
-        ip dscp set cs0 comment "dscp-reset-v4"
-        ip6 dscp set cs0 comment "dscp-reset-v6"
-    }
+chain dscp_postrouting {
+    type filter hook postrouting priority mangle; policy accept;
+    ip dscp set cs0 comment "dscp-reset-v4"
+    ip6 dscp set cs0 comment "dscp-reset-v6"
 }
 EOF
 }
@@ -244,10 +242,11 @@ EOF
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.tunlink="${MAPE6}"
+    SET ${MAPE}.legacymap='1'
     [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
-    MAPSH="/lib/netifd/proto/map.sh"
+    SEC=firewall
     SET block_quic_mape=rule
     SET block_quic_mape.name='Block-QUIC-MAP-E'
     SET block_quic_mape.proto='udp'
@@ -257,56 +256,54 @@ EOF
     SET block_quic_mape.target='DROP'
     SET block_quic_mape.family='ipv4'
     SET block_quic_mape.enabled='1'
-    [ "$(sha1sum /lib/netifd/proto/map.sh | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
-        uci set network.mape.legacymap='1'
-        dscp_zero
-        cp "$MAPSH" "$MAPSH".old
-        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
-        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
-        sed -i '137,158d' "$MAPSH"
-        sed -i '136a\
-\t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
-\t    json_add_object ""\
-\t      json_add_string type nat\
-\t      json_add_string target SNAT\
-\t      json_add_string family inet\
-\t      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
-\t    json_close_object\
-\t  else\
-\t    local portcount=0\
-\t    local allports=""\
-\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
-\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
-\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
-\t\tfor x in $(seq $startport $endport); do\
-\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
-\t\t\t\tallports="$allports $portcount : $x , "\
-\t\t\t\tportcount=`expr $portcount + 1\`\
-\t\t\tfi\
-\t\tdone\
-\t    done\
-\t\tallports=${allports%??}\
-\t    nft delete table inet mape 2>/dev/null\
-\t    nft add table inet mape\
-\t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
-\t\tlocal counter=0\
-\t    for proto in icmp tcp udp; do\
-\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
-\t    done\
-\t  fi' "$MAPSH"
-        sed -i '/ubus call network add_dynamic/,/^}/{/^}/i\
-\t# conntrack tuning for MAP-E port conservation\
-\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
-}' "$MAPSH"
-        sed -i '/proto_map_teardown/,/proto_map_init_config/{/^\tesac$/a\
-\t[ -x /sbin/fw4 ] \&\& nft delete table inet mape 2>/dev/null
-}' "$MAPSH"
-    }
+    cat > /etc/sysctl.d/99-mape-conntrack.conf << 'EOF'
+net.netfilter.nf_conntrack_tcp_timeout_established=3600
+net.netfilter.nf_conntrack_tcp_timeout_time_wait=120
+net.netfilter.nf_conntrack_udp_timeout=120
+net.netfilter.nf_conntrack_udp_timeout_stream=120
+net.netfilter.nf_conntrack_icmp_timeout=60
+net.netfilter.nf_conntrack_generic_timeout=60
+EOF
+    mkdir -p /etc/hotplug.d/iface
+    cat > /etc/hotplug.d/iface/99-mape-snat << 'HOTPLUG'
+#!/bin/sh
+[ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "mape" ] && {
+    R="/tmp/map-mape.rules"; [ -f "$R" ] || exit 0
+    eval $(cat "$R"); k=$RULE_BMR; [ -z "$k" ] && exit 0
+    n=0; P=""
+    for p in $(eval "echo \$RULE_${k}_PORTSETS"); do
+        s=${p%%-*}; e=${p##*-}; x=$s
+        while [ $x -le $e ]; do P="$P $n : $x ,"; n=$((n+1)); x=$((x+1)); done
+    done
+    [ "$n" -eq 0 ] && exit 0; P=${P%?}
+    nft delete table inet mape 2>/dev/null
+    nft add table inet mape
+    nft add chain inet mape srcnat { type nat hook postrouting priority 0\; policy accept\; }
+    V=$(eval "echo \$RULE_${k}_IPV4ADDR")
+    for t in icmp tcp udp; do
+        nft add rule inet mape srcnat ip protocol $t oifname "map-mape" counter snat ip to $V : numgen inc mod $n map {$P }
+    done
+    nft delete table inet mape_dscp 2>/dev/null
+    nft add table inet mape_dscp
+    nft add chain inet mape_dscp postrouting { type filter hook postrouting priority mangle\; policy accept\; }
+    nft add rule inet mape_dscp postrouting ip dscp set cs0 comment \"mape-dscp-reset-v4\"
+    nft add rule inet mape_dscp postrouting ip6 dscp set cs0 comment \"mape-dscp-reset-v6\"
+}
+[ "$ACTION" = "ifdown" ] && [ "$INTERFACE" = "mape" ] && {
+    nft delete table inet mape 2>/dev/null
+    nft delete table inet mape_dscp 2>/dev/null
+}
+HOTPLUG
+    chmod +x /etc/hotplug.d/iface/99-mape-snat
+    cat > /etc/init.d/mape-patch << 'INITD'
+#!/bin/sh /etc/rc.common
+START=19
+start() {
+    sed -i '/for portset in.*PORTSETS/c\    for portset in _; do continue' /lib/netifd/proto/map.sh 2>/dev/null
+}
+INITD
+    chmod +x /etc/init.d/mape-patch
+    /etc/init.d/mape-patch enable
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
