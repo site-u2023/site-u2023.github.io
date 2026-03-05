@@ -303,7 +303,16 @@ EOF
 }
 HOTPLUG
     chmod +x /etc/hotplug.d/iface/99-mape-snat
+    cat > /etc/init.d/mape-patch << 'INITD'
+#!/bin/sh /etc/rc.common
+START=19
+
+start() {
     sed -i '/for portset in.*PORTSETS/c\    for portset in _; do continue' /lib/netifd/proto/map.sh 2>/dev/null
+}
+INITD
+    chmod +x /etc/init.d/mape-patch
+    /etc/init.d/mape-patch enable
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
