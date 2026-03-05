@@ -19,6 +19,10 @@ RESET() {
     [ -f "${CONF}/${SEC}.def" ] && cp -f "${CONF}/${SEC}.def" "${CONF}/${SEC}" && return
     [ "$SEC" = "network" ] && { DEL ${DSL}; DEL ${DSL6}; DEL ${MAPE}; DEL ${MAPE6}; DEL ${AP}; DEL ${AP6}; }
     [ "$SEC" = "network" ] && { SEC=firewall; DEL block_quic_mape; SEC=network; }
+    [ "$SEC" = "network" ] && {
+        rm -f /etc/hotplug.d/iface/99-mape-snat
+        [ -x /etc/init.d/mape-patch ] && { /etc/init.d/mape-patch disable 2>&-; rm -f /etc/init.d/mape-patch; }
+    }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
 DELLIST() { uci -q del_list "${SEC}${SEC:+.}$*"; }
@@ -256,14 +260,6 @@ EOF
     SET block_quic_mape.target='DROP'
     SET block_quic_mape.family='ipv4'
     SET block_quic_mape.enabled='1'
-    cat > /etc/sysctl.d/99-mape-conntrack.conf << 'EOF'
-net.netfilter.nf_conntrack_tcp_timeout_established=3600
-net.netfilter.nf_conntrack_tcp_timeout_time_wait=120
-net.netfilter.nf_conntrack_udp_timeout=120
-net.netfilter.nf_conntrack_udp_timeout_stream=120
-net.netfilter.nf_conntrack_icmp_timeout=60
-net.netfilter.nf_conntrack_generic_timeout=60
-EOF
     mkdir -p /etc/hotplug.d/iface
     cat > /etc/hotplug.d/iface/99-mape-snat << 'HOTPLUG'
 #!/bin/sh
@@ -288,6 +284,12 @@ EOF
     nft add chain inet mape_dscp postrouting { type filter hook postrouting priority mangle\; policy accept\; }
     nft add rule inet mape_dscp postrouting ip dscp set cs0 comment \"mape-dscp-reset-v4\"
     nft add rule inet mape_dscp postrouting ip6 dscp set cs0 comment \"mape-dscp-reset-v6\"
+    sysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 \
+        net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 \
+        net.netfilter.nf_conntrack_udp_timeout=120 \
+        net.netfilter.nf_conntrack_udp_timeout_stream=120 \
+        net.netfilter.nf_conntrack_icmp_timeout=60 \
+        net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>&1
 }
 [ "$ACTION" = "ifdown" ] && [ "$INTERFACE" = "mape" ] && {
     nft delete table inet mape 2>/dev/null
