@@ -306,7 +306,6 @@ HOTPLUG
     cat > /etc/init.d/mape-patch << 'INITD'
 #!/bin/sh /etc/rc.common
 START=19
-
 start() {
     sed -i '/for portset in.*PORTSETS/c\    for portset in _; do continue' /lib/netifd/proto/map.sh 2>/dev/null
 }
