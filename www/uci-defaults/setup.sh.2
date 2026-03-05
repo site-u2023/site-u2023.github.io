@@ -185,12 +185,10 @@ firewall_wan() {
 dscp_zero() {
     mkdir -p /etc/nftables.d
     cat > /etc/nftables.d/10-dscp-zero.nft << 'EOF'
-table inet dscp_zero {
-    chain postrouting {
-        type filter hook postrouting priority mangle; policy accept;
-        ip dscp set cs0 comment "dscp-reset-v4"
-        ip6 dscp set cs0 comment "dscp-reset-v6"
-    }
+chain dscp_postrouting {
+    type filter hook postrouting priority mangle; policy accept;
+    ip dscp set cs0 comment "dscp-reset-v4"
+    ip6 dscp set cs0 comment "dscp-reset-v6"
 }
 EOF
 }
@@ -258,7 +256,6 @@ EOF
     SET block_quic_mape.target='DROP'
     SET block_quic_mape.family='ipv4'
     SET block_quic_mape.enabled='1'
-    dscp_zero
     cat > /etc/sysctl.d/99-mape-conntrack.conf << 'EOF'
 net.netfilter.nf_conntrack_tcp_timeout_established=3600
 net.netfilter.nf_conntrack_tcp_timeout_time_wait=120
@@ -294,9 +291,15 @@ EOF
     for proto in icmp tcp udp; do
         nft add rule inet mape srcnat ip protocol $proto oifname "map-mape" counter snat ip to $IPV4 : numgen inc mod $portcount map { $allports }
     done
+    nft delete table inet mape_dscp 2>/dev/null
+    nft add table inet mape_dscp
+    nft add chain inet mape_dscp postrouting { type filter hook postrouting priority mangle\; policy accept\; }
+    nft add rule inet mape_dscp postrouting ip dscp set cs0 comment \"mape-dscp-reset-v4\"
+    nft add rule inet mape_dscp postrouting ip6 dscp set cs0 comment \"mape-dscp-reset-v6\"
 }
 [ "$ACTION" = "ifdown" ] && [ "$INTERFACE" = "mape" ] && {
     nft delete table inet mape 2>/dev/null
+    nft delete table inet mape_dscp 2>/dev/null
 }
 HOTPLUG
     chmod +x /etc/hotplug.d/iface/99-mape-snat
