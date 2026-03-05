@@ -248,15 +248,17 @@ enable_log="1"
 <details>
 <summary>dscp_zero</summary>
 
-> ニチバン対策。IPv4/IPv6両方のDSCPをCS0にリセット（nftables経由）
-> PPPoE・DS-Lite・MAP-Eから呼び出される
-
+> NTT QoS帯域制限回避。IPv4/IPv6両方のDSCPをCS0にリセット
+> PPPoE・DS-Liteから呼び出される（MAP-Eはhotplug内で独自に適用）
 ```sh
 dscp_zero() {
-    mkdir -p /usr/share/nftables.d/chain-post/mangle_postrouting
-    cat > /usr/share/nftables.d/chain-post/mangle_postrouting/90-dscp-zero.nft << 'EOF'
-ip dscp set cs0
-ip6 dscp set cs0
+    mkdir -p /etc/nftables.d
+    cat > /etc/nftables.d/10-dscp-zero.nft << 'EOF'
+chain dscp_postrouting {
+    type filter hook postrouting priority mangle; policy accept;
+    ip dscp set cs0 comment "dscp-reset-v4"
+    ip6 dscp set cs0 comment "dscp-reset-v6"
+}
 EOF
 }
 ```
@@ -320,7 +322,6 @@ EOF
 
 <details>
 <summary>connection_type: mape</summary>
-    
 ```sh
 { [ "${connection_type}" = "mape" ] || { [ "${connection_type}" = "auto" ] && [ "${connection_auto}" = "mape" ]; }; } && 
 [ -n "${peeraddr}" ] && {
@@ -350,6 +351,7 @@ EOF
     SET ${MAPE}.mtu='1460'
     SET ${MAPE}.encaplimit='ignore'
     SET ${MAPE}.tunlink="${MAPE6}"
+    SET ${MAPE}.legacymap='1'
     
     # Static IPv6プレフィックス設定
     [ -n "${ip6prefix_static}" ] && SET ${MAPE6}.ip6prefix="${ip6prefix_static}"
@@ -357,74 +359,89 @@ EOF
     dhcp_relay "${MAPE6}"
     firewall_wan "${MAPE}" "${MAPE6}"
     
-    # Block-QUIC-IPoE
-    # src=lan, dest=wan, proto=udp, dest_port=443, target=DROP, family=ipv4
-    SET block_quic_ipoe=rule
-    SET block_quic_ipoe.name='Block-QUIC-IPoE'
-    SET block_quic_ipoe.proto='udp'
-    SET block_quic_ipoe.dest_port='443'
-    SET block_quic_ipoe.src='lan'
-    SET block_quic_ipoe.dest='wan'
-    SET block_quic_ipoe.target='DROP'
-    SET block_quic_ipoe.family='ipv4'
-    SET block_quic_ipoe.enabled='1'
+    # Block-QUIC-MAP-E
+    SEC=firewall
+    SET block_quic_mape=rule
+    SET block_quic_mape.name='Block-QUIC-MAP-E'
+    SET block_quic_mape.proto='udp'
+    SET block_quic_mape.dest_port='443'
+    SET block_quic_mape.src='lan'
+    SET block_quic_mape.dest='wan'
+    SET block_quic_mape.target='DROP'
+    SET block_quic_mape.family='ipv4'
+    SET block_quic_mape.enabled='1'
     
-    # map.shパッチ適用（日本IPv6 IPoE対応 / ニチバン対策）
-    [ "$(sha1sum /lib/netifd/proto/map.sh | awk '{print $1}')" = "7f0682eeaf2dd7e048ff1ad1dbcc5b913ceb8de4" ] && {
-        uci set network.mape.legacymap='1'
-        # DSCPリセット（CS0）
-        dscp_zero
-        # map.shパッチ
-        cp "$MAPSH" "$MAPSH".old
-        sed -i '1a # github.com/fakemanhk/openwrt-jp-ipoe\nDONT_SNAT_TO="0"' "$MAPSH"
-        sed -i 's/mtu:-1280/mtu:-1460/g' "$MAPSH"
-        sed -i '137,158d' "$MAPSH"
-        sed -i '136a\
-\t  if [ -z "$(eval "echo \\$RULE_${k}_PORTSETS")" ]; then\
-\t    json_add_object ""\
-\t      json_add_string type nat\
-\t      json_add_string target SNAT\
-\t      json_add_string family inet\
-\t      json_add_string snat_ip $(eval "echo \\$RULE_${k}_IPV4ADDR")\
-\t    json_close_object\
-\t  else\
-\t    local portcount=0\
-\t    local allports=""\
-\t    for portset in $(eval "echo \\$RULE_${k}_PORTSETS"); do\
-\t\tlocal startport=$(echo $portset | cut -d"-" -f1)\
-\t\tlocal endport=$(echo $portset | cut -d"-" -f2)\
-\t\tfor x in $(seq $startport $endport); do\
-\t\t\tif ! echo "$DONT_SNAT_TO" | tr " " "\\n" | grep -qw $x; then\
-\t\t\t\tallports="$allports $portcount : $x , "\
-\t\t\t\tportcount=`expr $portcount + 1\`\
-\t\t\tfi\
-\t\tdone\
-\t    done\
-\t\tallports=${allports%??}\
-\t    nft add table inet mape\
-\t    nft add chain inet mape srcnat {type nat hook postrouting priority 0\\; policy accept\\; }\
-\t\tlocal counter=0\
-\t    for proto in icmp tcp udp; do\
-\t\t\tnft add rule inet mape srcnat ip protocol $proto oifname "map-$cfg" counter snat ip to $(eval "echo \\$RULE_${k}_IPV4ADDR") : numgen inc mod $portcount map { $allports } comment "mape-snat-$proto"\
-\t    done\
-\t  fi' "$MAPSH"
-        # conntrackタイムアウトチューニング（MAP-Eポート数制約に合わせてconntrackの保持時間を短縮）
-        sed -i '/ubus call network add_dynamic/,/^}/{/^}/i\
-\t# conntrack tuning for MAP-E port conservation\
-\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_established=3600 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_tcp_timeout_time_wait=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_udp_timeout_stream=120 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_icmp_timeout=60 >/dev/null 2>\&1\
-\tsysctl -w net.netfilter.nf_conntrack_generic_timeout=60 >/dev/null 2>\&1
-}' "$MAPSH"
-        # teardown時にクリーンアップ
-        sed -i '/proto_map_teardown/,/proto_map_init_config/{/^\tesac$/a\
-\t[ -x /sbin/fw4 ] \&\& nft delete table inet mape 2>/dev/null
-}' "$MAPSH"
-    }
+    # conntrackタイムアウトチューニング（MAP-Eポート数制約対応）
+    cat > /etc/sysctl.d/99-mape-conntrack.conf << 'EOF'
+net.netfilter.nf_conntrack_tcp_timeout_established=3600
+net.netfilter.nf_conntrack_tcp_timeout_time_wait=120
+net.netfilter.nf_conntrack_udp_timeout=120
+net.netfilter.nf_conntrack_udp_timeout_stream=120
+net.netfilter.nf_conntrack_icmp_timeout=60
+net.netfilter.nf_conntrack_generic_timeout=60
+EOF
+    
+    # SNAT numgen round-robin + DSCPリセット（hotplug: mape ifup時に発火）
+    mkdir -p /etc/hotplug.d/iface
+    cat > /etc/hotplug.d/iface/99-mape-snat << 'HOTPLUG'
+#!/bin/sh
+[ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "mape" ] && {
+    R="/tmp/map-mape.rules"; [ -f "$R" ] || exit 0
+    eval $(cat "$R"); k=$RULE_BMR; [ -z "$k" ] && exit 0
+    n=0; P=""
+    for p in $(eval "echo \$RULE_${k}_PORTSETS"); do
+        s=${p%%-*}; e=${p##*-}; x=$s
+        while [ $x -le $e ]; do P="$P $n : $x ,"; n=$((n+1)); x=$((x+1)); done
+    done
+    [ "$n" -eq 0 ] && exit 0; P=${P%?}
+    nft delete table inet mape 2>/dev/null
+    nft add table inet mape
+    nft add chain inet mape srcnat { type nat hook postrouting priority 0\; policy accept\; }
+    V=$(eval "echo \$RULE_${k}_IPV4ADDR")
+    for t in icmp tcp udp; do
+        nft add rule inet mape srcnat ip protocol $t oifname "map-mape" counter snat ip to $V : numgen inc mod $n map {$P }
+    done
+    nft delete table inet mape_dscp 2>/dev/null
+    nft add table inet mape_dscp
+    nft add chain inet mape_dscp postrouting { type filter hook postrouting priority mangle\; policy accept\; }
+    nft add rule inet mape_dscp postrouting ip dscp set cs0 comment \"mape-dscp-reset-v4\"
+    nft add rule inet mape_dscp postrouting ip6 dscp set cs0 comment \"mape-dscp-reset-v6\"
+}
+[ "$ACTION" = "ifdown" ] && [ "$INTERFACE" = "mape" ] && {
+    nft delete table inet mape 2>/dev/null
+    nft delete table inet mape_dscp 2>/dev/null
+}
+HOTPLUG
+    chmod +x /etc/hotplug.d/iface/99-mape-snat
+    
+    # map.sh portsetループ無効化（init.d: netifd起動前に適用）
+    cat > /etc/init.d/mape-patch << 'INITD'
+#!/bin/sh /etc/rc.common
+START=19
+
+start() {
+    sed -i '/for portset in.*PORTSETS/c\    for portset in _; do continue' /lib/netifd/proto/map.sh 2>/dev/null
+}
+INITD
+    chmod +x /etc/init.d/mape-patch
+    /etc/init.d/mape-patch enable
 }
 ```
+
+> **ハイブリッド方式（map.shパッチ不要アーキテクチャ）**
+> 
+> 公式map.shへの大規模sedパッチを廃止し、3つの外出しファイルで機能を実現：
+> 
+> | ファイル | 役割 | タイミング | sysupgrade保持 |
+> |---|---|---|---|
+> | `/etc/init.d/mape-patch` | map.sh portsetループ無効化 | START=19（netifd起動前） | ✅ |
+> | `/etc/hotplug.d/iface/99-mape-snat` | numgen SNAT + DSCPリセット | mape ifup後 | ✅ |
+> | `/etc/sysctl.d/99-mape-conntrack.conf` | conntrackチューニング | boot時自動読込 | ✅ |
+> 
+> - map.shへのsed: 5本 → **1本**（パターン指定、バージョン非依存）
+> - sha1sumチェック: **不要**（coreutils-sha1sumパッケージ不要）
+> - ASU/owutアップグレード: map.shが公式に戻っても**次回起動時に自動再適用**
+> - フォールバック: hotplug失敗時もfw4の公式SNATで接続維持
 
 </details>
 
