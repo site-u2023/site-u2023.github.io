@@ -268,28 +268,20 @@ EOF
     cat > /etc/hotplug.d/iface/99-mape-snat << 'HOTPLUG'
 #!/bin/sh
 [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "mape" ] && {
-    RULES="/tmp/map-mape.rules"
-    [ -f "$RULES" ] || exit 0
-    eval $(cat "$RULES")
-    k=$RULE_BMR
-    [ -z "$k" ] && exit 0
-    portcount=0; allports=""
-    for portset in $(eval "echo \$RULE_${k}_PORTSETS"); do
-        s=$(echo $portset | cut -d- -f1)
-        e=$(echo $portset | cut -d- -f2)
-        for x in $(seq $s $e); do
-            allports="$allports $portcount : $x , "
-            portcount=$((portcount + 1))
-        done
+    R="/tmp/map-mape.rules"; [ -f "$R" ] || exit 0
+    eval $(cat "$R"); k=$RULE_BMR; [ -z "$k" ] && exit 0
+    n=0; P=""
+    for p in $(eval "echo \$RULE_${k}_PORTSETS"); do
+        s=${p%%-*}; e=${p##*-}; x=$s
+        while [ $x -le $e ]; do P="$P $n : $x ,"; n=$((n+1)); x=$((x+1)); done
     done
-    [ "$portcount" -eq 0 ] && exit 0
-    allports=${allports%??}
+    [ "$n" -eq 0 ] && exit 0; P=${P%?}
     nft delete table inet mape 2>/dev/null
     nft add table inet mape
     nft add chain inet mape srcnat { type nat hook postrouting priority 0\; policy accept\; }
-    IPV4=$(eval "echo \$RULE_${k}_IPV4ADDR")
-    for proto in icmp tcp udp; do
-        nft add rule inet mape srcnat ip protocol $proto oifname "map-mape" counter snat ip to $IPV4 : numgen inc mod $portcount map { $allports }
+    V=$(eval "echo \$RULE_${k}_IPV4ADDR")
+    for t in icmp tcp udp; do
+        nft add rule inet mape srcnat ip protocol $t oifname "map-mape" counter snat ip to $V : numgen inc mod $n map {$P }
     done
     nft delete table inet mape_dscp 2>/dev/null
     nft add table inet mape_dscp
