@@ -268,6 +268,7 @@ EOF
     cat > /etc/hotplug.d/iface/99-mape-snat << 'HOTPLUG'
 #!/bin/sh
 [ "$ACTION" = "ifup" ] && [ "$INTERFACE" = "mape" ] && {
+    sed -i '/json_add_boolean connlimit_ports/,/json_close_object/d' /lib/netifd/proto/map.sh 2>/dev/null
     RULES="/tmp/map-mape.rules"
     [ -f "$RULES" ] || exit 0
     eval $(cat "$RULES")
