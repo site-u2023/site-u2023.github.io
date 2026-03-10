@@ -246,7 +246,7 @@ function translate(lang) {
   }
 
   const new_lang = lang || current_language;
-  if (current_language === new_lang) {
+  if (current_language === new_lang && current_language_json) {
     apply(current_language, current_language_json);
   } else {
     fetch(`langs/${new_lang}.json`)
