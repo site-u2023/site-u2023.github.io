@@ -656,7 +656,6 @@ function updateImages(version, mobj) {
 
     if ("manifest" in mobj === false) {
       // Not ASU. Hide fields.
-      $("#asu").open = false;
       hide("#asu-log");
       hide("#asu-buildstatus");
       // Pre-select ASU packages.
@@ -878,6 +877,7 @@ function initTranslation() {
 // connect template icon for uci-defaults
 function setup_uci_defaults() {
   let icon = $("#uci-defaults-template");
+  if (!icon) return; // カスタム版では loadUciDefaultsTemplate() が代替
   let link = icon.getAttribute("data-link");
   let textarea = $("#uci-defaults-content");
   icon.onclick = function () {
