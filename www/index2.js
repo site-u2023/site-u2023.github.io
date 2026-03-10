@@ -5693,12 +5693,6 @@ function updateAsuStatus(status, detail, queueLength = null) {
 }
 
 // ==================== 初期化 ====================
-}
-
-
-// ==================== Settings Import/Export Bar ====================
-
-// ==================== 初期化 ====================
 async function initializeCustomFeatures() {
     console.log('initializeCustomFeatures called');
 
