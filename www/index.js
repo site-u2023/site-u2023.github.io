@@ -874,33 +874,6 @@ function initTranslation() {
   select.onchange();
 }
 
-// connect template icon for uci-defaults
-function setup_uci_defaults() {
-  let icon = $("#uci-defaults-template");
-  if (!icon) return; // カスタム版では loadUciDefaultsTemplate() が代替
-  let link = icon.getAttribute("data-link");
-  let textarea = $("#uci-defaults-content");
-  icon.onclick = function () {
-    fetch(link)
-      .then((obj) => {
-        if (obj.status != 200) {
-          throw new Error(`Failed to fetch ${obj.url}`);
-        }
-        hideAlert();
-        return obj.text();
-      })
-      .then((text) => {
-        // toggle text
-        if (textarea.value.indexOf(text) != -1) {
-          textarea.value = textarea.value.replace(text, "");
-        } else {
-          textarea.value = textarea.value + text;
-        }
-      })
-      .catch((err) => showAlert(err.message));
-  };
-}
-
 function insertSnapshotVersions(versions) {
   for (const version of versions.slice()) {
     let branch = version.split(".").slice(0, -1).join(".") + "-SNAPSHOT";
@@ -1056,8 +1029,6 @@ async function init() {
       })
       .catch((err) => showAlert(err.message));
   });
-
-  setup_uci_defaults();
 
   // hide fields
   updateImages();
@@ -3027,12 +2998,6 @@ function collectFormValues() {
     return values;
 }
 
-function getActualConnectionType() {
-    if (state.apiInfo?.mape?.brIpv6Address) return 'mape';
-    if (state.apiInfo?.aftr?.aftrIpv6Address) return 'dslite';
-    return null;
-}
-
 function collectPackageEnableVars(values) {
     document.querySelectorAll('.package-selector-checkbox:checked').forEach(cb => {
 
@@ -4747,23 +4712,6 @@ function updateCategoryVisibility(packageItem) {
     }
 }
 
-// ==================== OpenWrt ToH JSON ====================
-let tohDataCache = null;
-
-async function fetchToHData() {
-    if (tohDataCache) return tohDataCache;
-    
-    try {
-        const response = await fetch(config.device_info_url, { cache: 'default' });
-        if (!response.ok) return null;
-        tohDataCache = await response.json();
-        return tohDataCache;
-    } catch (err) {
-        console.warn('ToH data fetch failed:', err.message);
-        return null;
-    }
-}
-
 // ==================== パッケージデータベース ====================
 async function loadPackageDatabase() {
     try {
@@ -5735,8 +5683,8 @@ async function initializeCustomFeatures() {
     await loadCustomTranslations(current_language);
 
     let changed = false;
-    if (window.autoConfigData || state.apiInfo) {
-        changed = applyIspAutoConfig(window.autoConfigData || state.apiInfo);
+    if (state.apiInfo) {
+        changed = applyIspAutoConfig(state.apiInfo);
     }
 
     generatePackageSelector();
