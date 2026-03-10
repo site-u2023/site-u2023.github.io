@@ -87,8 +87,6 @@ var config = {
   // フォールバック言語
   fallback_language: "en"
 };
-// Language
-current_language = "en";
 // OFSリンク
 const custom_ofs_version = "site-u2023.github.io"; 
 const custom_ofs_link    = "https://github.com/site-u2023/site-u2023.github.io";
