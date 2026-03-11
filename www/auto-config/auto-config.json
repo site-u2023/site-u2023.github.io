@@ -110,6 +110,13 @@
       "fields": [
         { "id": "dslite-aftr", "label": "option peeraddr", "varName": "DSLITE_AFTR" }
       ]
+    },
+    "autoConnectionHeader": {
+      "fields": [
+        { "varName": "IPV6", "condition": "isNull", "class": "tr-ipv6-warning-auto", "type": "warning" },
+        { "varName": "ISP", "label": "ISP: ", "condition": "hasValue" },
+        { "varName": "AS", "label": "AS: ", "condition": "hasValue" }
+      ]
     }
   }
 }
