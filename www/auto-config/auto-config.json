@@ -45,7 +45,8 @@
   "connectionDetection": {
     "mape": { "checkField": "MAPE_BR", "returnValue": "MAP-E" },
     "dslite": { "checkField": "DSLITE_AFTR", "returnValue": "DS-Lite" },
-    "default": "DHCP/PPPoE"
+    "default": "DHCP/PPPoE",
+    "skipFieldsOnTypeChange": ["aios-country", "aios-timezone", "aios-zonename"]
   },
 
   "display": {
