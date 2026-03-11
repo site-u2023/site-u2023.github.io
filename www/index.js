@@ -2318,21 +2318,17 @@ function handleRadioChange(e) {
         fetchAndDisplayIspInfo();
         
         if (state.apiInfo) {
-            requestAnimationFrame(() => {
-                const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
-                applyIspAutoConfig(state.apiInfo, { skipIds: basicInfoFieldIds });
-                updateVariableDefinitions();
-            });
+            const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
+            applyIspAutoConfig(state.apiInfo, { skipIds });
+            updateVariableDefinitions();
         }
     }
     
     if (name === 'connection_type' && value === 'mape' && state.apiInfo) {
         console.log('Connection type changed to MAP-E, applying API info');
-        requestAnimationFrame(() => {
-            const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
-            applyIspAutoConfig(state.apiInfo, { skipIds: basicInfoFieldIds });
-            updateVariableDefinitions();
-        });
+        const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
+        applyIspAutoConfig(state.apiInfo, { skipIds });
+        updateVariableDefinitions();
     }
     
     updatePackagesForRadioGroup(name, value);
@@ -2340,9 +2336,7 @@ function handleRadioChange(e) {
     updateAllPackageState(`radio-${name}`);
     
     if (current_language_json) {
-        requestAnimationFrame(() => {
-            applyCustomTranslations(current_language_json);
-        });
+        applyCustomTranslations(current_language_json);
     }
 }
 
@@ -3256,11 +3250,9 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
         const connectionType = getFieldValue('input[name="connection_type"]:checked');
         if (connectionType === 'auto') {
             console.log('AUTO mode active, applying API values to fields');
-            requestAnimationFrame(() => {
-                const basicInfoFieldIds = ['aios-country', 'aios-timezone', 'aios-zonename'];
-                applyIspAutoConfig(apiInfo, { skipIds: basicInfoFieldIds });
-                updateVariableDefinitions();
-            });
+            const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
+            applyIspAutoConfig(apiInfo, { skipIds });
+            updateVariableDefinitions();
         }
     } catch (err) {
         console.error('Failed to fetch ISP info:', err);
