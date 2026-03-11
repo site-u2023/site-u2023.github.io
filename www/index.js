@@ -5491,11 +5491,9 @@ function applyImportedSettings(data) {
         radio.dispatchEvent(new Event('change', { bubbles: true }));
     });
 
-    requestAnimationFrame(() => {
-        updateVariableDefinitions();
-        updateCustomCommands();
-        console.log('Import completed successfully');
-    });
+    updateVariableDefinitions();
+    updateCustomCommands();
+    console.log('Import completed successfully');
 }
 
 // ==================== HTML読み込み ====================
