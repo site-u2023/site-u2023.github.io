@@ -1170,6 +1170,7 @@ const state = {
     
     packages: {
         json: null,
+        byId: null,
         default: [],
         device: [],
         extra: [],
@@ -4748,7 +4749,18 @@ async function loadPackageDatabase() {
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         state.packages.json = await response.json();
         console.log('Package database loaded:', state.packages.json);
-        
+
+        state.packages.byId = new Map();
+        for (const category of state.packages.json.categories) {
+            for (const pkg of category.packages) {
+                state.packages.byId.set(pkg.id, pkg);
+                if (pkg.uniqueId && pkg.uniqueId !== pkg.id) {
+                    state.packages.byId.set(pkg.uniqueId, pkg);
+                }
+            }
+        }
+        console.log(`Package map built: ${state.packages.byId.size} entries`);
+
         return state.packages.json;
     } catch (err) {
         console.error('Failed to load package database:', err);
@@ -5048,13 +5060,8 @@ function handlePackageSelection(e) {
 }
 
 function findPackageById(id) {
-    if (!state.packages.json) return null;
-    
-    for (const category of state.packages.json.categories) {
-        const pkg = category.packages.find(p => p.uniqueId === id || p.id === id);
-        if (pkg) return pkg;
-    }
-    return null;
+    if (!state.packages.byId) return null;
+    return state.packages.byId.get(id) ?? null;
 }
 
 // ==================== コマンド入力 ====================
