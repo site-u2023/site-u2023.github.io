@@ -774,7 +774,6 @@ function updateImages(version, mobj) {
           .concat(state.packages.extra);
 
       const textarea = document.querySelector('#asu-packages');
-      const textarea = document.querySelector('#asu-packages');
       if (textarea) {
           UI.updateElement(textarea, { value: initialPackages.join(' ') });
           textarea.style.height = 'auto';
