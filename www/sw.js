@@ -1,4 +1,4 @@
-const CACHE_NAME = 'openwrt-builder-v3';
+const CACHE_NAME = 'openwrt-builder-v4';
 const urlsToCache = [
   './index.html',
   './index.js',
@@ -35,6 +35,10 @@ self.addEventListener('activate', event => {
 });
 
 self.addEventListener('fetch', event => {
+self.addEventListener('fetch', event => {
+  if (!event.request.url.startsWith(self.location.origin)) return;
+  if (!event.request.url.startsWith('http')) return;
+
   event.respondWith(
     caches.match(event.request)
       .then(response => response || fetch(event.request))
