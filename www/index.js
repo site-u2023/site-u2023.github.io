@@ -4789,38 +4789,36 @@ function generatePackageSelector() {
     
     console.log(`Generated ${state.packages.json.categories.length} package categories`);
     
-    requestAnimationFrame(() => {
-        evaluateInitialPackages();
-        
-        const arch = state.device.arch;
-        if (arch) {
-            const indicator = document.querySelector('#package-loading-indicator');
-            if (indicator) {
-                UI.updateElement(indicator, { show: true });
-            }
+    evaluateInitialPackages();
+    
+    const arch = state.device.arch;
+    if (arch) {
+        const indicator = document.querySelector('#package-loading-indicator');
+        if (indicator) {
+            UI.updateElement(indicator, { show: true });
+        }
 
-            verifyAllPackages().then(() => {
-                if (indicator) {
-                    UI.updateElement(indicator, { show: false });
-                }
-                console.log('Package verification completed');
-            }).catch(err => {
-                console.error('Package verification failed:', err);
-                if (indicator) {
-                    UI.updateElement(indicator, {
-                        html: '<span class="tr-package-check-failed">Package availability check failed</span>',
-                        show: true
-                    });
-                }
-            });
-        } else {
-            console.log('Device architecture not available, skipping package verification');
-        }
-        
-        if (current_language_json) {
-            applyCustomTranslations(current_language_json);
-        }
-    });
+        verifyAllPackages().then(() => {
+            if (indicator) {
+                UI.updateElement(indicator, { show: false });
+            }
+            console.log('Package verification completed');
+        }).catch(err => {
+            console.error('Package verification failed:', err);
+            if (indicator) {
+                UI.updateElement(indicator, {
+                    html: '<span class="tr-package-check-failed">Package availability check failed</span>',
+                    show: true
+                });
+            }
+        });
+    } else {
+        console.log('Device architecture not available, skipping package verification');
+    }
+    
+    if (current_language_json) {
+        applyCustomTranslations(current_language_json);
+    }
 }
 
 function createHiddenPackageCheckbox(pkg) {
