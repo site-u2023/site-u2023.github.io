@@ -774,14 +774,11 @@ function updateImages(version, mobj) {
           .concat(state.packages.extra);
 
       const textarea = document.querySelector('#asu-packages');
+      const textarea = document.querySelector('#asu-packages');
       if (textarea) {
           UI.updateElement(textarea, { value: initialPackages.join(' ') });
-          requestAnimationFrame(() => {
-              requestAnimationFrame(() => {
-                  textarea.style.height = 'auto';
-                  textarea.style.height = textarea.scrollHeight + 'px';
-              });
-          });
+          textarea.style.height = 'auto';
+          textarea.style.height = textarea.scrollHeight + 'px';
       }
 
       if (state.ui.initialized) {
@@ -1582,13 +1579,11 @@ function renderSetupConfig(config) {
             displayIspInfo(state.apiInfo);
             console.log('Applied ISP config after form render');
         }
-        
-        requestAnimationFrame(() => {
-            evaluateAllComputedFields();
-            if (current_language_json) {
-                applyCustomTranslations(current_language_json);
-            }
-        });
+
+        evaluateAllComputedFields();
+        if (current_language_json) {
+            applyCustomTranslations(current_language_json);
+        }
     });
 }
 
