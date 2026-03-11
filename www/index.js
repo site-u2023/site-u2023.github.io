@@ -4791,11 +4791,9 @@ function generatePackageSelector() {
     
     requestAnimationFrame(() => {
         evaluateInitialPackages();
-    });
-    
-    const arch = state.device.arch;
-    if (arch) {
-        requestAnimationFrame(() => {
+        
+        const arch = state.device.arch;
+        if (arch) {
             const indicator = document.querySelector('#package-loading-indicator');
             if (indicator) {
                 UI.updateElement(indicator, { show: true });
@@ -4815,12 +4813,10 @@ function generatePackageSelector() {
                     });
                 }
             });
-        });
-    } else {
-        console.log('Device architecture not available, skipping package verification');
-    }
-    
-    requestAnimationFrame(() => {
+        } else {
+            console.log('Device architecture not available, skipping package verification');
+        }
+        
         if (current_language_json) {
             applyCustomTranslations(current_language_json);
         }
