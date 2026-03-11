@@ -3315,21 +3315,9 @@ function updateAutoConnectionInfo(apiInfo) {
     
     const connectionType = getConnectionType(apiInfo);
     
-    if (state.apiValues.IPV6 === null) {
-        const warningSpan = document.createElement('span');
-        warningSpan.className = 'tr-ipv6-warning-auto';
-        autoInfo.appendChild(warningSpan);
-        autoInfo.appendChild(document.createElement('br'));
-        autoInfo.appendChild(document.createElement('br'));
-    }
-    
-    if (state.apiValues?.ISP) {
-        autoInfo.appendChild(document.createTextNode(`ISP: ${state.apiValues.ISP}`));
-        autoInfo.appendChild(document.createElement('br'));
-        if (state.apiValues.AS) {
-            autoInfo.appendChild(document.createTextNode(`AS: ${state.apiValues.AS}`));
-            autoInfo.appendChild(document.createElement('br'));
-        }
+    const header = state.autoConfig?.display?.autoConnectionHeader;
+    if (header?.fields) {
+        header.fields.forEach(field => renderField(autoInfo, field));
     }
     
     if (!state.autoConfig?.display) {
@@ -3366,6 +3354,18 @@ function renderField(container, field) {
     }
 
     let value = state.apiValues?.[field.varName];
+
+    if (field.condition === 'isNull') {
+        if (value !== null && value !== undefined) return;
+        if (field.type === 'warning') {
+            const span = document.createElement('span');
+            span.className = field.class || '';
+            container.appendChild(span);
+            container.appendChild(document.createElement('br'));
+            container.appendChild(document.createElement('br'));
+        }
+        return;
+    }
 
     if (field.condition === 'computeStaticPrefix') {
         if (!value) {
