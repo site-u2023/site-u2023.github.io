@@ -907,9 +907,10 @@ detect_ipv6_type() {
 
 # APIダウンロード
 download_api_with_retry() {
-    echo "[DEBUG] Starting API download: $AUTO_CONFIG_API_URL" >> "$CONFIG_DIR/debug.log"
+    local api_url_with_source="${AUTO_CONFIG_API_URL}?source=tui"
+    echo "[DEBUG] Starting API download: $api_url_with_source" >> "$CONFIG_DIR/debug.log"
     
-    if ! __download_file_core "$AUTO_CONFIG_API_URL" "$AUTO_CONFIG_JSON"; then
+    if ! __download_file_core "$api_url_with_source" "$AUTO_CONFIG_JSON"; then
         echo ""
         echo "ERROR: API error"
         echo "[DEBUG] AUTO_CONFIG_API_URL=$AUTO_CONFIG_API_URL"
