@@ -987,7 +987,7 @@ process_items() {
                     
                     local lookup_ipv6
                     lookup_ipv6=$(echo "$value" | sed 's|/[0-9]*$||')
-                    local lookup_url="${AUTO_CONFIG_API_URL}?ipv6=${lookup_ipv6}"
+                    local lookup_url="${AUTO_CONFIG_API_URL}?ipv6=${lookup_ipv6}&source=tui"
                     if wget -q -O "$AUTO_CONFIG_JSON" "$lookup_url" 2>/dev/null && \
                        jsonfilter -i "$AUTO_CONFIG_JSON" -e '@.language' >/dev/null 2>&1; then
                         
