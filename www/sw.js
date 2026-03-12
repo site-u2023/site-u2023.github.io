@@ -1,4 +1,4 @@
-const CACHE_NAME = 'openwrt-builder-v4';
+const CACHE_NAME = 'openwrt-builder-v5';
 const urlsToCache = [
   './index.html',
   './index.js',
