@@ -4886,6 +4886,30 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       }
     
       const url = new URL(request.url);
+
+      if (url.pathname === '/stats') {
+        const statsKey = url.searchParams.get('key');
+        if (!statsKey || statsKey !== env.STATS_KEY) {
+          return new Response('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+        }
+        if (!env.KV_STATS) {
+          return new Response('KV not configured', { status: 500, headers: { 'Cache-Control': 'no-store' } });
+        }
+        const list = await env.KV_STATS.list({ prefix: 'stat:' });
+        const rows = [];
+        for (const key of list.keys) {
+          const val = await env.KV_STATS.get(key.name);
+          const count = parseInt(val || '0', 10);
+          const parts = key.name.replace('stat:', '').split(':');
+          rows.push({ source: parts[0], detection: parts[1], result: parts[2], country: parts[3], count });
+        }
+        rows.sort((a, b) => b.count - a.count);
+        return new Response(JSON.stringify(rows, null, 2), {
+          status: 200,
+          headers: { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }
+        });
+      }
+
       const queryIPv6 = url.searchParams.get('ipv6');
       const hasIPv6Param = url.searchParams.has('ipv6');
 
@@ -4990,14 +5014,24 @@ function checkDSLiteRule(ipv6, userAsn = null) {
       if (env.ANALYTICS) {
           env.ANALYTICS.writeDataPoint({
               blobs: [
-                  source,                          // blob1: gui / tui / unknown
-                  hasIPv6Param ? 'manual' : 'auto', // blob2: auto / manual
-                  result,                           // blob3: mape / dslite / none
-                  cf.country || 'unknown'           // blob4: JP etc.
+                  source,
+                  hasIPv6Param ? 'manual' : 'auto',
+                  result,
+                  cf.country || 'unknown'
               ],
               doubles: [1],
               indexes: [source]
           });
+      }
+
+      if (env.KV_STATS) {
+        const kvKey = `stat:${source}:${hasIPv6Param ? 'manual' : 'auto'}:${result}:${cf.country || 'unknown'}`;
+        ctx.waitUntil(
+          env.KV_STATS.get(kvKey).then(current => {
+            const count = current ? parseInt(current, 10) + 1 : 1;
+            return env.KV_STATS.put(kvKey, String(count));
+          })
+        );
       }
 
       return new Response(
