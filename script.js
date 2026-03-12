@@ -258,7 +258,7 @@ const translations = {
         disclaimerOpenWrtTitle: 'OpenWrtに関する免責事項',
         disclaimerSiteUParagraph: '当サイトで公開されているコンテンツ(ウェブサイト、スクリプト、その他の著作物を含む)は全てオープンであり、自由にご利用いただけます。しかしながら、これらのコンテンツの利用によって生じたいかなる損害についても、当サイトの運営者は一切の責任を負いません。利用者の皆様の責任においてご利用くださいますようお願いいたします。',
         disclaimerOpenWrtParagraph: 'OpenWrtはSoftware Freedom Conservancyの登録商標です。当サイトはOpenWrtプロジェクトとは提携しておらず、また推奨もされていません。OpenWrtに関する公式情報やサポートについては、OpenWrt公式サイトをご参照ください。',
-        footerMemo: 'OpenWrt初心者備忘録',
+        footerMemo: 'OpenWrt 初心者備忘録',
         footerCopyright: '© site-u',
         footerDisclaimer: '免責事項',
         langEn: 'English',
