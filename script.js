@@ -998,6 +998,7 @@ function bindFooterEvents() {
             if (lang) {
                 updateLanguage(lang);
                 updateLanguageButtons();
+                updateLanguageDisplay(); 
             }
         });
     });
