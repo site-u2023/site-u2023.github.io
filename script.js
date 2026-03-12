@@ -998,7 +998,6 @@ function bindFooterEvents() {
             if (lang) {
                 updateLanguage(lang);
                 updateLanguageButtons();
-                updateLanguageDisplay(); 
             }
         });
     });
@@ -1016,6 +1015,7 @@ function bindFooterEvents() {
     
     updateLanguageButtons();
     updateThemeButtons();
+    updateLanguageDisplay();
 }
 
 function updateLanguageButtons() {
