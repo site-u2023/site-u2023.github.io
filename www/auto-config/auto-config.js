@@ -4983,6 +4983,23 @@ function checkDSLiteRule(ipv6, userAsn = null) {
         mape: mapRule || null
       };
 
+      // Analytics Engine: アクセス統計記録
+      const source = url.searchParams.get('source') || 'unknown';
+      const result = mapRule ? 'mape' : (aftrRule ? 'dslite' : 'none');
+
+      if (env.ANALYTICS) {
+          env.ANALYTICS.writeDataPoint({
+              blobs: [
+                  source,                          // blob1: gui / tui / unknown
+                  hasIPv6Param ? 'manual' : 'auto', // blob2: auto / manual
+                  result,                           // blob3: mape / dslite / none
+                  cf.country || 'unknown'           // blob4: JP etc.
+              ],
+              doubles: [1],
+              indexes: [source]
+          });
+      }
+
       return new Response(
         JSON.stringify(responsePayload, (k, v) => k === 'calculatedOffset' ? undefined : v, 2),
         {
