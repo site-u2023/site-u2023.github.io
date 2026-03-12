@@ -1758,7 +1758,7 @@ function buildField(field) {
                     
                     if (ipv6) {
                         try {
-                            const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}`);
+                            const response = await fetch(`${config.auto_config_api_url}?ipv6=${encodeURIComponent(ipv6)}&source=gui`);
                             const apiInfo = await response.json();
                             
                             if (field.targetFields && Array.isArray(field.targetFields)) {
@@ -3235,7 +3235,8 @@ async function fetchAndDisplayIspInfo(forceRefresh = false) {
         }
         
         const options = forceRefresh ? { cache: 'no-store' } : {};
-        const response = await fetch(config.auto_config_api_url, options);
+        const separator = config.auto_config_api_url.includes('?') ? '&' : '?';
+        const response = await fetch(config.auto_config_api_url + separator + 'source=gui', options);
         const apiInfo = await response.json();
         state.apiInfo = apiInfo;
         
