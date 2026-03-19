@@ -5024,16 +5024,6 @@ function checkDSLiteRule(ipv6, userAsn = null) {
           });
       }
 
-      if (env.KV_STATS) {
-        const kvKey = `stat:${source}:${hasIPv6Param ? 'manual' : 'auto'}:${result}:${cf.country || 'unknown'}`;
-        ctx.waitUntil(
-          env.KV_STATS.get(kvKey).then(current => {
-            const count = current ? parseInt(current, 10) + 1 : 1;
-            return env.KV_STATS.put(kvKey, String(count));
-          })
-        );
-      }
-
       return new Response(
         JSON.stringify(responsePayload, (k, v) => k === 'calculatedOffset' ? undefined : v, 2),
         {
