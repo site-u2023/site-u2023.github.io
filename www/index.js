@@ -2821,6 +2821,55 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
     }
 }
 
+function collectAutoConnectionVars(values) {
+    if (!state.apiInfo || !state.config.setup) return;
+
+    let actual = getActualConnectionType();
+
+    if (!actual) {
+        if (state.apiInfo.mape?.brIpv6Address) {
+            actual = 'mape';
+        } else if (state.apiInfo.aftr?.aftrAddress) {
+            actual = 'dslite';
+        }
+    }
+
+    if (!actual) return;
+
+    const sectionMap = { 'mape': 'mape-section', 'dslite': 'dslite-section' };
+    const targetSectionId = sectionMap[actual];
+    if (!targetSectionId) return;
+
+    const category = state.config.setup.categories.find(c => c.id === 'internet-connection');
+    if (!category) return;
+
+    const section = category.items.find(i => i.id === targetSectionId);
+    if (!section || !section.items) return;
+
+    for (const item of section.items) {
+        if (item.type !== 'field' || !item.variable) continue;
+        if (item.variable === 'dslite_aftr_type' || item.variable === 'dslite_jurisdiction') continue;
+
+        if (item.apiSource) {
+            const value = CustomUtils.getNestedValue(state.apiInfo, item.apiSource);
+            if (value !== null && value !== undefined && value !== '') {
+                values[item.variable] = String(value);
+            }
+        }
+    }
+
+    if (actual === 'mape' && !values.ip6prefix_static) {
+        const staticPrefix = CustomUtils.generateStaticPrefixFromFullAddress(state.apiInfo);
+        if (staticPrefix) {
+            values.ip6prefix_static = staticPrefix;
+        }
+    }
+
+    console.log(`collectAutoConnectionVars: type=${actual}, vars collected:`,
+        Object.keys(values).filter(k => ['peeraddr','ipaddr','ip4prefixlen','ip6prefix','ip6prefixlen','ealen','psidlen','offset','ip6prefix_static','dslite_peeraddr'].includes(k))
+    );
+}
+
 function collectItemValue(item, values) {
     if (!item) return;
     
@@ -2835,22 +2884,13 @@ function collectItemValue(item, values) {
         
         if (selectedValue === 'disabled') return;
         
-        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
-        
-        let effectiveValue = selectedValue;
-        if (item.variable === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
-            const actual = getActualConnectionType();
-            if (actual) {
-                effectiveValue = actual;
-            } else if (state.apiInfo.mape?.brIpv6Address) {
-                effectiveValue = 'mape';
-            } else if (state.apiInfo.aftr?.aftrAddress) {
-                effectiveValue = 'dslite';
-            }
-            console.log(`AUTO mode in collectItemValue: Using effective type = ${effectiveValue}`);
+        if (item.variable === 'connection_type' && selectedValue === 'auto') {
+            collectAutoConnectionVars(values);
+            return;
         }
         
-        collectExclusiveVars(varsToCollect, values, {[item.variable]: effectiveValue});
+        const varsToCollect = item.exclusiveVars?.[selectedValue] || [];
+        collectExclusiveVars(varsToCollect, values, {[item.variable]: selectedValue});
         
         return;
     }
