@@ -161,7 +161,8 @@ disable_wan() {
 }
 dhcp_relay() {
     SEC=dhcp
-    RESET
+    DEL ${MAPE6}
+    DEL ${DSL6}
     SET "$1"=dhcp
     SET $1.interface="$1"
     SET $1.master='1'
@@ -513,9 +514,6 @@ AGHEOF
 # BEGIN_CMDS
 # END_CMDS
 uci commit 2>&-
-for f in dhcp firewall; do
-    [ -f "${CONF}/${f}.adguard.bak" ] && cp -f "${CONF}/${f}" "${CONF}/${f}.adguard.bak"
-done
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 echo "All done!"
 exit 0
