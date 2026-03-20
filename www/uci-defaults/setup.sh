@@ -513,6 +513,9 @@ AGHEOF
 # BEGIN_CMDS
 # END_CMDS
 uci commit 2>&-
+for f in dhcp firewall; do
+    [ -f "${CONF}/${f}.adguard.bak" ] && cp -f "${CONF}/${f}" "${CONF}/${f}.adguard.bak"
+done
 [ -n "${backup_path}" ] && sysupgrade -q -k -b "${backup_path}"
 echo "All done!"
 exit 0
