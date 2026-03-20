@@ -2839,7 +2839,14 @@ function collectItemValue(item, values) {
         
         let effectiveValue = selectedValue;
         if (item.variable === 'connection_type' && selectedValue === 'auto' && state.apiInfo) {
-            effectiveValue = getConnectionType(state.apiInfo);
+            const actual = getActualConnectionType();
+            if (actual) {
+                effectiveValue = actual;
+            } else if (state.apiInfo.mape?.brIpv6Address) {
+                effectiveValue = 'mape';
+            } else if (state.apiInfo.aftr?.aftrAddress) {
+                effectiveValue = 'dslite';
+            }
             console.log(`AUTO mode in collectItemValue: Using effective type = ${effectiveValue}`);
         }
         
@@ -2905,8 +2912,6 @@ function collectFormValues() {
     collectPackageEnableVars(values);
     
     if (values.connection_type === 'auto') { 
-        delete values.connection_type;
-        
         if (state.apiInfo?.mape?.brIpv6Address) {
             values.connection_auto = 'mape';
         } else if (state.apiInfo?.aftr?.aftrAddress) {
