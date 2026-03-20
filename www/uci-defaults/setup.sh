@@ -306,6 +306,7 @@ start() {
 INITD
     chmod +x /etc/init.d/mape-patch
     /etc/init.d/mape-patch enable
+    /etc/init.d/mape-patch start
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
