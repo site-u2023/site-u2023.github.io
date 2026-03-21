@@ -1236,7 +1236,6 @@ async function loadPackageManagerConfig() {
         const response = await fetch(url + '?t=' + Date.now());
         if (!response.ok) throw new Error(`HTTP ${response.status}`);
         
-        state.packageManager = state.packageManager || {};
         state.packageManager.config = await response.json();
         console.log('Package manager config loaded:', state.packageManager.config);
         return state.packageManager.config;
@@ -2308,12 +2307,8 @@ function handleRadioChange(e) {
     if (name === 'connection_type' && state.apiInfo) {
         const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
         
-        if (value === 'auto') {
-            console.log('Connection type changed to AUTO, fetching API info');
-            fetchAndDisplayIspInfo();
-            applyIspAutoConfig(state.apiInfo, { skipIds });
-        } else if (value === 'mape') {
-            console.log('Connection type changed to MAP-E, applying API info');
+        if (value === 'auto' || value === 'mape') {
+            console.log(`Connection type changed to ${value.toUpperCase()}, applying cached API info`);
             applyIspAutoConfig(state.apiInfo, { skipIds });
         }
     } else if (name === 'connection_type' && value === 'auto') {
@@ -2549,12 +2544,8 @@ async function updateAllPackageState(source = 'unknown') {
 
     console.log(`updateAllPackageState called from: ${source}`);
 
-    const elements = {
-        textarea: document.querySelector('#asu-packages')
-    };
-
     await updateLanguagePackageCore();
-    updatePackageListToTextarea(source, elements);
+    updatePackageListToTextarea(source);
     updateVariableDefinitions();
 
     console.log('All package state updated successfully');
@@ -2820,16 +2811,7 @@ function collectExclusiveVars(varsToCollect, values, context = {}) {
 function collectAutoConnectionVars(values) {
     if (!state.apiInfo || !state.config.setup) return;
 
-    let actual = getActualConnectionType();
-
-    if (!actual) {
-        if (state.apiInfo.mape?.brIpv6Address) {
-            actual = 'mape';
-        } else if (state.apiInfo.aftr?.aftrAddress) {
-            actual = 'dslite';
-        }
-    }
-
+    const actual = getActualConnectionType();
     if (!actual) return;
 
     const sectionMap = { 'mape': 'mape-section', 'dslite': 'dslite-section' };
