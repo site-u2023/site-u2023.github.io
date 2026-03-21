@@ -1558,7 +1558,7 @@ function renderSetupConfig(config) {
 
         if (state.apiInfo) {
             applyIspAutoConfig(state.apiInfo);
-            displayIspInfo(state.apiInfo);
+            displayIspInfo();
             console.log('Applied ISP config after form render');
         }
 
@@ -1771,7 +1771,9 @@ function buildField(field) {
                                 }
                             }
 
-                            updateAutoConnectionInfo(apiInfo);
+                            state.apiInfo = apiInfo;
+                            parseApiValues(apiInfo);
+                            updateAutoConnectionInfo();
                             
                         } catch (err) {
                             console.error('Lookup failed:', err);
@@ -3252,8 +3254,8 @@ async function fetchAndDisplayIspInfo(forceRefresh = true) {
         
         parseApiValues(apiInfo);
         
-        displayIspInfo(apiInfo);
-        updateAutoConnectionInfo(apiInfo);
+        displayIspInfo();
+        updateAutoConnectionInfo();
         CustomUtils.setStaticPrefixIfAvailable();
         
         const connectionType = getFieldValue('input[name="connection_type"]:checked');
@@ -3270,8 +3272,8 @@ async function fetchAndDisplayIspInfo(forceRefresh = true) {
 
 // ==================== ISP情報表示 ====================
 
-function displayIspInfo(apiInfo) {
-    if (!apiInfo) return;
+function displayIspInfo() {
+    if (!state.apiInfo) return;
     
     const displayConfig = state.autoConfig?.display?.extendedInfo;
     if (!displayConfig?.fields) {
@@ -3307,10 +3309,9 @@ function displayIspInfo(apiInfo) {
 }
 
 // ==================== 接続情報表示 ====================
-
-function updateAutoConnectionInfo(apiInfo) {
+function updateAutoConnectionInfo() {
     const autoInfo = document.querySelector('#auto-info');
-    if (!autoInfo) return;
+    if (!autoInfo || !state.apiInfo) return;
     
     autoInfo.innerHTML = '';
     
@@ -3467,7 +3468,7 @@ function applyIspAutoConfig(apiInfo, options = {}) {
     state.config.setup.categories.forEach(cat => processItems(cat.items));
 
     if (mutated) {
-        updateAutoConnectionInfo(apiInfo);
+        updateAutoConnectionInfo();
     }
     return mutated;
 }
@@ -3615,7 +3616,7 @@ async function handleMainLanguageChange(e) {
 
     if (typeof updateAutoConnectionInfo === 'function') {
         const info = state.apiInfo;
-        if (info) updateAutoConnectionInfo(info);
+        if (state.apiInfo) updateAutoConnectionInfo();
     }
 
     const queueDisplay = document.getElementById('asu-queue-display');
