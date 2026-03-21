@@ -92,6 +92,7 @@
     "tr-internet-optimization-disabled": "Internet Disabled",
     "tr-static": "Static",
     "tr-pd": "PD (Prefix Delegation)",
+    "tr-standard-notice": "Standard connection (DHCP/PPPoE) will be used",
     
     "_section_9": "=== PPPoE Configuration ===",
     "tr-pppoe-username": "Username",
