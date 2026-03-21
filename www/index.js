@@ -1053,7 +1053,8 @@ async function init() {
       .catch((err) => showAlert(err.message));
   });
 
-  setup_uci_defaults();
+  // カスタム版では loadUciDefaultsTemplate() が代替するためスキップ
+  // setup_uci_defaults();
 
   // hide fields
   updateImages();
@@ -1205,7 +1206,8 @@ const state = {
         lastPackageListHash: null,
         prevUISelections: new Set(),
         packageDescriptions: new Map(),
-        packageManagerCache: new Map()
+        packageManagerCache: new Map(),
+        originalAutoDetectionTexts: {}
     },
 
     dom: {
@@ -2313,22 +2315,20 @@ function handleRadioChange(e) {
     
     applyRadioDependencies(name, value);
     
-    if (name === 'connection_type' && value === 'auto') {
+    if (name === 'connection_type' && state.apiInfo) {
+        const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
+        
+        if (value === 'auto') {
+            console.log('Connection type changed to AUTO, fetching API info');
+            fetchAndDisplayIspInfo();
+            applyIspAutoConfig(state.apiInfo, { skipIds });
+        } else if (value === 'mape') {
+            console.log('Connection type changed to MAP-E, applying API info');
+            applyIspAutoConfig(state.apiInfo, { skipIds });
+        }
+    } else if (name === 'connection_type' && value === 'auto') {
         console.log('Connection type changed to AUTO, fetching API info');
         fetchAndDisplayIspInfo();
-        
-        if (state.apiInfo) {
-            const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
-            applyIspAutoConfig(state.apiInfo, { skipIds });
-            updateVariableDefinitions();
-        }
-    }
-    
-    if (name === 'connection_type' && value === 'mape' && state.apiInfo) {
-        console.log('Connection type changed to MAP-E, applying API info');
-        const skipIds = state.autoConfig?.connectionDetection?.skipFieldsOnTypeChange || [];
-        applyIspAutoConfig(state.apiInfo, { skipIds });
-        updateVariableDefinitions();
     }
     
     updatePackagesForRadioGroup(name, value);
@@ -2526,13 +2526,19 @@ function extractLuciName(pkg) {
 }
 
 // ==================== 統合パッケージ管理 ====================
+let _devicePackagesReadyQueued = false;
+
 async function updateAllPackageState(source = 'unknown') {
     if (!state.ui.initialized && state.packages.default.length === 0 && state.packages.device.length === 0) {
         console.log('updateAllPackageState: Device packages not ready, deferring update from:', source);
-        document.addEventListener('devicePackagesReady', () => {
-            console.log('Re-running updateAllPackageState after device packages ready');
-            updateAllPackageState('force-update');
-        }, { once: true });
+        if (!_devicePackagesReadyQueued) {
+            _devicePackagesReadyQueued = true;
+            document.addEventListener('devicePackagesReady', () => {
+                _devicePackagesReadyQueued = false;
+                console.log('Re-running updateAllPackageState after device packages ready');
+                updateAllPackageState('force-update');
+            }, { once: true });
+        }
         return;
     }
 
@@ -2951,11 +2957,17 @@ function collectFormValues() {
     }
     collectPackageEnableVars(values);
     
-    if (values.connection_type === 'auto') { 
-        if (state.apiInfo?.mape?.brIpv6Address) {
-            values.connection_auto = 'mape';
-        } else if (state.apiInfo?.aftr?.aftrAddress) {
-            values.connection_auto = 'dslite';
+    if (values.connection_type === 'auto') {
+        const detection = state.autoConfig?.connectionDetection;
+        if (detection && state.apiInfo) {
+            const detected = getConnectionType(state.apiInfo);
+            if (detected === detection.mape?.returnValue) {
+                values.connection_auto = 'mape';
+            } else if (detected === detection.dslite?.returnValue) {
+                values.connection_auto = 'dslite';
+            } else {
+                values.connection_auto = 'dhcp';
+            }
         } else {
             values.connection_auto = 'dhcp';
         }
@@ -2996,39 +3008,22 @@ function collectFormValues() {
                         }
                     }
                 }
-            }
-        }
-    }
-    
-    if (dnsAdblock === 'adguardhome') {
-        let aghVariables = null;
-        for (const category of state.config.setup.categories) {
-            for (const item of category.items) {
                 if (item.type === 'radio-group' && item.variable === 'dns_adblock' && item.variables) {
-                    aghVariables = item.variables;
-                    break;
+                    const aghVariables = item.variables;
+                    const packageManager = state.packageManager?.activeManager || 'opkg';
+                    
+                    if (packageManager === 'apk') {
+                        values.agh_yaml = aghVariables.agh_yaml;
+                        values.agh_dir = aghVariables.agh_dir;
+                    } else {
+                        values.agh_yaml = aghVariables.agh_yaml_old;
+                        values.agh_dir = ':';
+                    }
+                    
+                    console.log(`AdGuard Home YAML path resolved: ${packageManager} -> ${values.agh_yaml}`);
                 }
             }
-            if (aghVariables) break;
         }
-        
-        if (aghVariables) {
-            const packageManager = state.packageManager?.activeManager || 'opkg';
-            
-            if (packageManager === 'apk') {
-                values.agh_yaml = aghVariables.agh_yaml;
-                values.agh_dir = aghVariables.agh_dir;
-            } else {
-                values.agh_yaml = aghVariables.agh_yaml_old;
-                values.agh_dir = ':';
-            }
-            
-            console.log(`AdGuard Home YAML path resolved: ${packageManager} -> ${values.agh_yaml}`);
-        }
-    }
-    
-    if (state.importedVariables && typeof state.importedVariables === 'object') {
-        Object.assign(values, state.importedVariables);
     }
     
     return values;
@@ -3756,10 +3751,6 @@ function applyCustomTranslations(map) {
     if (!map || typeof map !== 'object') return;
     
     const currentLang = current_language || config.fallback_language || 'en';
-    
-    if (!state.cache.originalAutoDetectionTexts) {
-        state.cache.originalAutoDetectionTexts = {};
-    }
     
     if (!state.cache.originalAutoDetectionTexts[currentLang] && map['tr-auto-detection']) {
         state.cache.originalAutoDetectionTexts[currentLang] = map['tr-auto-detection'];
@@ -4753,23 +4744,6 @@ function updateCategoryVisibility(packageItem) {
         UI.updateElement(category, { show: false });
     } else {
         UI.updateElement(category, { show: true });
-    }
-}
-
-// ==================== OpenWrt ToH JSON ====================
-let tohDataCache = null;
-
-async function fetchToHData() {
-    if (tohDataCache) return tohDataCache;
-    
-    try {
-        const response = await fetch(config.device_info_url, { cache: 'default' });
-        if (!response.ok) return null;
-        tohDataCache = await response.json();
-        return tohDataCache;
-    } catch (err) {
-        console.warn('ToH data fetch failed:', err.message);
-        return null;
     }
 }
 
