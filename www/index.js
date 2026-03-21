@@ -1771,20 +1771,13 @@ function buildField(field) {
                                 }
                             }
 
-                            state.apiInfo = apiInfo;
-                            parseApiValues(apiInfo);
-                            updateAutoConnectionInfo();
-                            
-                        } catch (err) {
+                            } catch (err) {
                             console.error('Lookup failed:', err);
                         }
                     } else {
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
-                        state.apiInfo = null;
-                        state.apiValues = {};
-                        updateAutoConnectionInfo();
                     }
                     
                     updateVariableDefinitions();
