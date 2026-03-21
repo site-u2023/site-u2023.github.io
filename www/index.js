@@ -1782,7 +1782,9 @@ function buildField(field) {
                         if (field.clearSection) {
                             clearSectionFields(field.clearSection.category, field.clearSection.section, [field.id]);
                         }
-                        updateAutoConnectionInfo(null);
+                        state.apiInfo = null;
+                        state.apiValues = {};
+                        updateAutoConnectionInfo();
                     }
                     
                     updateVariableDefinitions();
@@ -3614,9 +3616,8 @@ async function handleMainLanguageChange(e) {
         }
     }
 
-    if (typeof updateAutoConnectionInfo === 'function') {
-        const info = state.apiInfo;
-        if (state.apiInfo) updateAutoConnectionInfo();
+    if (state.apiInfo) {
+        updateAutoConnectionInfo();
     }
 
     const queueDisplay = document.getElementById('asu-queue-display');
