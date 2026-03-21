@@ -931,7 +931,14 @@ async function init() {
     .then((obj) => {
       const unsupported_versions_re = /^(19\.07\.\d|18\.06\.\d|17\.01\.\d)$/;
       const versions = obj.versions_list.filter(
-        (version) => !unsupported_versions_re.test(version)
+        (version) => {
+          if (unsupported_versions_re.test(version)) return false;
+          if (config.min_version && version !== 'SNAPSHOT') {
+            const versionNum = version.match(/^[\d.]+/)?.[0];
+            if (versionNum && versionNum < config.min_version) return false;
+          }
+          return true;
+        }
       );
 
       if (config.upcoming_version) {
