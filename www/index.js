@@ -981,6 +981,9 @@ async function init() {
 
   setupSelectList($("#versions"), config.versions, (version) => {
     // A new version was selected
+    if (state.ui.initialized) {
+        checkAsuServerStatus();
+    }
     let overview_url = `${config.overview_urls[version]}/.overview.json`;
     fetch(overview_url, { cache: "no-cache" })
       .then((obj) => {
