@@ -1359,14 +1359,6 @@ const UI = {
 };
 
 const CustomUtils = {
-    getVendor() {
-        return state.device.vendor;
-    },
-
-    getSubtarget() {
-        return state.device.subtarget;
-    },
-
     updateDeviceInfo(target) {
         if (!target) return;
         const [vendor, subtarget] = target.split('/');
@@ -2969,18 +2961,23 @@ function collectFormValues() {
     }
     
     if (dnsAdblock === 'adguardhome') {
+        let foundReq = false;
+        let foundVars = false;
         for (const category of state.config.setup.categories) {
+            if (foundReq && foundVars) break;
             for (const item of category.items) {
-                if (item.type === 'section' && item.id === 'adguardhome-section') {
+                if (foundReq && foundVars) break;
+                if (!foundReq && item.type === 'section' && item.id === 'adguardhome-section') {
                     for (const subItem of item.items) {
                         if (subItem.id === 'adguardhome-requirements' && subItem.requirements) {
                             values.agh_min_memory = subItem.requirements.minMemoryMB;
                             values.agh_min_flash = subItem.requirements.minFlashMB;
+                            foundReq = true;
                             break;
                         }
                     }
                 }
-                if (item.type === 'radio-group' && item.variable === 'dns_adblock' && item.variables) {
+                if (!foundVars && item.type === 'radio-group' && item.variable === 'dns_adblock' && item.variables) {
                     const aghVariables = item.variables;
                     const packageManager = state.packageManager?.activeManager || 'opkg';
                     
@@ -2993,6 +2990,7 @@ function collectFormValues() {
                     }
                     
                     console.log(`AdGuard Home YAML path resolved: ${packageManager} -> ${values.agh_yaml}`);
+                    foundVars = true;
                 }
             }
         }
