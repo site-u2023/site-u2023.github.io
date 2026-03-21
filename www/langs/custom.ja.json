@@ -92,6 +92,7 @@
     "tr-internet-optimization-disabled": "インターネット無効",
     "tr-static": "固定 (Static)",
     "tr-pd": "委任 (PD)",
+    "tr-standard-notice": "標準接続 (DHCP/PPPoE) が使用されます",
     
     "_section_9": "=== PPPoE設定 ===",
     "tr-pppoe-username": "ユーザー名",
