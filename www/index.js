@@ -2245,7 +2245,7 @@ function evaluateInitialPackages() {
         
         let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
-            effectiveConnectionType = getConnectionType(state.apiInfo);
+            effectiveConnectionType = getConnectionType();
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
@@ -2396,7 +2396,7 @@ function updatePackagesForRadioGroup(variableName) {
         
         let effectiveConnectionType = formValues.connection_type;
         if (effectiveConnectionType === 'auto' && state.apiInfo) {
-            effectiveConnectionType = getConnectionType(state.apiInfo);
+            effectiveConnectionType = getConnectionType();
             console.log(`  AUTO mode: Using effective type = ${effectiveConnectionType}`);
         }
         
@@ -2924,7 +2924,7 @@ function collectFormValues() {
     if (values.connection_type === 'auto') {
         const detection = state.autoConfig?.connectionDetection;
         if (detection && state.apiInfo) {
-            const detected = getConnectionType(state.apiInfo);
+            const detected = getConnectionType();
             if (detected === detection.mape?.returnValue) {
                 values.connection_auto = 'mape';
             } else if (detected === detection.dslite?.returnValue) {
@@ -3003,7 +3003,7 @@ function getActualConnectionType() {
     const detection = state.autoConfig?.connectionDetection;
     if (!detection || !state.apiInfo) return null;
     
-    const type = getConnectionType(state.apiInfo);
+    const type = getConnectionType();
     if (type === detection.mape?.returnValue) return 'mape';
     if (type === detection.dslite?.returnValue) return 'dslite';
     return null;
@@ -3216,7 +3216,7 @@ function parseApiValues(apiResponse) {
 
 // ==================== 接続タイプ判定 ====================
 
-function getConnectionType(apiInfo) {
+function getConnectionType() {
     const detection = state.autoConfig?.connectionDetection;
     if (!detection) {
         console.warn('autoConfig not loaded');
@@ -3284,7 +3284,7 @@ function displayIspInfo(apiInfo) {
         
         if (field.computed) {
             if (field.computed === "getConnectionType") {
-                value = getConnectionType(apiInfo);
+                value = getConnectionType();
             }
         } else if (field.varNames) {
             const values = field.varNames
@@ -3314,7 +3314,7 @@ function updateAutoConnectionInfo(apiInfo) {
     
     autoInfo.innerHTML = '';
     
-    const connectionType = getConnectionType(apiInfo);
+    const connectionType = getConnectionType();
     
     const header = state.autoConfig?.display?.autoConnectionHeader;
     if (header?.fields) {
@@ -3727,7 +3727,7 @@ function applyCustomTranslations(map) {
     const translationMap = { ...map };
     
     if (state.apiInfo && state.cache.originalAutoDetectionTexts[currentLang]) {
-        const connectionType = getConnectionType(state.apiInfo);
+        const connectionType = getConnectionType();
         if (connectionType) {
             translationMap['tr-auto-detection'] = state.cache.originalAutoDetectionTexts[currentLang] + ': ' + connectionType;
         }
