@@ -1162,8 +1162,6 @@ const state = {
     apiInfo: null,
     autoConfig: null, 
     apiValues: {},
-    lookupTargetFields: null,
-    extendedInfoConfig: null,
     
     packages: {
         json: null,
@@ -1171,8 +1169,7 @@ const state = {
         default: [],
         device: [],
         extra: [],
-        dynamic: new Set(),
-        selected: new Set()
+        dynamic: new Set()
     },
     
     config: {
@@ -1378,23 +1375,6 @@ const CustomUtils = {
         return container;
     },
   
-    buildKmodsUrl: async function(version, vendor, isSnapshot) {
-        const subtarget = this.getSubtarget();
-        if (!subtarget) {
-            throw new Error(`Missing subtarget for kmods URL: version=${version}, vendor=${vendor}`);
-        }
-        
-        const deviceInfo = {
-            version,
-            arch: state.device.arch,
-            vendor,
-            subtarget,
-            isSnapshot
-        };
-        
-        return await buildPackageUrl('kmods', deviceInfo);
-    },
-    
     inCidr: function(ipv6, cidr) {
         const [prefix, bits] = cidr.split('/');
         const addrBin = this.ipv6ToBinary(ipv6);
@@ -3047,8 +3027,6 @@ function collectPackageEnableVars(values) {
 
         const uniqueId = cb.getAttribute('data-unique-id');
         const pkgId    = cb.getAttribute('data-package');
-
-        const effectiveId = uniqueId || pkgId;
 
         const pkgInfo = findPackageById(pkgId);
         if (pkgInfo && (pkgInfo.hidden || pkgInfo.virtual)) {
