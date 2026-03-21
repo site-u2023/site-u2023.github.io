@@ -3241,7 +3241,7 @@ function getConnectionType(apiInfo) {
 
 // ==================== ISP情報取得・表示 ====================
 
-async function fetchAndDisplayIspInfo(forceRefresh = false) {
+async function fetchAndDisplayIspInfo(forceRefresh = true) {
     if (!config?.auto_config_api_url) {
         console.log('Auto config API URL not configured');
         return;
