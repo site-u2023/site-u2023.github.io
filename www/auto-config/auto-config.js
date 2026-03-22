@@ -4887,6 +4887,10 @@ function checkDSLiteRule(ipv6, userAsn = null) {
     
       const url = new URL(request.url);
 
+      if (url.pathname.startsWith('/webhook-test/')) {
+        return new Response('Not Found', { status: 404, headers: { 'Cache-Control': 'no-store' } });
+      }
+
       if (url.pathname === '/stats') {
         const statsKey = url.searchParams.get('key');
         if (!statsKey || statsKey !== env.STATS_KEY) {
