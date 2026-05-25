@@ -22,6 +22,7 @@ RESET() {
     [ "$SEC" = "network" ] && {
         rm -f /etc/hotplug.d/iface/99-mape-snat
         [ -x /etc/init.d/mape-patch ] && { /etc/init.d/mape-patch disable 2>&-; rm -f /etc/init.d/mape-patch; }
+        sed -i '/mape-patch/d;/99-mape-snat/d' /etc/sysupgrade.conf 2>&-
     }
 }
 ADDLIST() { uci -q add_list "${SEC}${SEC:+.}$*"; }
