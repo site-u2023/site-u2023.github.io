@@ -308,7 +308,9 @@ INITD
     chmod +x /etc/init.d/mape-patch
     /etc/init.d/mape-patch enable
     /etc/init.d/mape-patch start
-    echo -e '/etc/hotplug.d/iface/99-mape-snat\n/etc/init.d/mape-patch' >> /etc/sysupgrade.conf
+    for f in /etc/init.d/mape-patch /etc/rc.d/S19mape-patch /etc/hotplug.d/iface/99-mape-snat; do
+        grep -qxF "$f" /etc/sysupgrade.conf 2>/dev/null || echo "$f" >> /etc/sysupgrade.conf
+    done
 }
 [ "${connection_type}" = "ap" ] && [ -n "${ap_ipaddr}" ] && [ -n "${gateway}" ] && {
     disable_wan
