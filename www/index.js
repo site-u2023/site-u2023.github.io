@@ -992,7 +992,8 @@ async function init() {
         checkAsuServerStatus();
     }
     let overview_url = `${config.overview_urls[version]}/.overview.json`;
-    fetch(overview_url, { cache: "no-cache" })
+    // no-cache（条件付き再検証）だとCDNが断続的に501を返すため reload を使う
+    fetch(overview_url, { cache: "reload" })
       .then((obj) => {
         if (obj.status != 200) {
           throw new Error(`Failed to fetch ${obj.url}`);
@@ -5553,7 +5554,7 @@ async function checkAsuServerStatus() {
         if (version && config.overview_urls?.[version]) {
             const overview_url = `${config.overview_urls[version]}/.overview.json`;
             const overviewResponse = await fetch(overview_url, { 
-                cache: 'no-cache',
+                cache: 'reload',
                 signal: controller.signal
             });
             
